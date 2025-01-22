@@ -139,6 +139,8 @@ class Command(BaseCommand):
             field_index={"id": 0, "field_id": 1, "user_id": 2, "value": 3},
         )
 
+        already_printed = []
+
         for user in track(users):
             # get the model
             profile, _ = Profile.objects.get_or_create(
@@ -151,8 +153,6 @@ class Command(BaseCommand):
                 profile.academic_interests.clear()
             except AttributeError:
                 pass
-
-            already_printed = []
 
             # now get the data values for this user and add them to the model
             for data_value in data_values:
