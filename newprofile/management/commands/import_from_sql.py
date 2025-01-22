@@ -3,6 +3,7 @@ A management command to import data from the SQL file
 """
 
 import rich
+from django.db import transaction
 from rich.progress import track, open
 from sqloxide import parse_sql
 from django.core.management.base import BaseCommand
@@ -110,6 +111,7 @@ class Command(BaseCommand):
 
         return all_rows
 
+    @transaction.atomic
     def handle(self, *args, **options):
 
         rich.print("Parsing users...")
