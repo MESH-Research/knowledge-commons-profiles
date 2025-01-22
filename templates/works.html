@@ -1,0 +1,9 @@
+{% for work_type, work_links in works_links.items %}
+    <li><strong>{{ work_type }}</strong>
+        <ul>
+            {% for work_link in work_links %}
+                <li><a href='{{ work_link.url }}'>{{ work_link.title }}</a> {% if work_link.date %} ({{ work_link.date }}) {% endif %}</li>
+            {% endfor %}
+        </ul>
+    </li>
+{% endfor %}
