@@ -2,6 +2,8 @@
 A management command to import data from the SQL file
 """
 
+from io import StringIO, BytesIO
+
 import rich
 from django.db import transaction
 from rich.progress import track, open
@@ -11,6 +13,9 @@ from tqdm import tqdm
 
 from newprofile.models import Profile, AcademicInterest
 from newprofile.api import API
+
+from phpserialize import loads as phploads
+from phpserialize import load as phpload
 
 
 class Command(BaseCommand):
@@ -112,16 +117,54 @@ class Command(BaseCommand):
         return all_rows
 
     @transaction.atomic
-    def handle(self, *args, **options):
+    def deserialize_academic_interests(self) -> None:
+        """
+        Deserialize a list of academic interests from a list of Profile objects
+        into a list of objects.
 
+        This method takes a list of Profile objects and deserializes the
+        academic_interests field into a list of AcademicInterest objects.
+        """
+        profiles = Profile.objects.all()
+
+        for profile in profiles:
+            academic_interests = profile.academic_interests.all()
+
+            if len(academic_interests) == 0:
+                continue
+
+            interest = academic_interests[0]
+
+            # The text field is a serialized PHP array, so we need to
+            # deserialize it first.
+            stream = BytesIO(str.encode(interest.text))
+            new_array = phpload(stream)
+
+            profile.academic_interests.clear()
+
+            for item in new_array:
+                # If the academic interest does not exist, create a new instance
+                # of it. If it does exist, just add it to the many-to-many field.
+                profile.academic_interests.add(
+                    AcademicInterest.objects.get_or_create(text=item)[0]
+                )
+
+            profile.save()
+
+    @transaction.atomic
+    def handle(self, *args, **options):
+        """
+        This command imports a MySQL dump file into the Django database.
+        """
         rich.print("Parsing users...")
         users = self._parse_users(
+            # The path to the MySQL dump file
             "/home/martin/hcprod.sql",
+            # The name of the table to parse
             "wp_users",
-            [
-                "id",
-                "user_login",
-            ],
+            # The fields to parse
+            ["id", "user_login"],
+            # A dictionary of the field names to their indices
             field_index={"id": 0, "user_login": 1},
         )
 
@@ -208,3 +251,5 @@ class Command(BaseCommand):
                                     already_printed.append(data_field["name"])
 
             profile.save()
+
+            self.deserialize_academic_interests()

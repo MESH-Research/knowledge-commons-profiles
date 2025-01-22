@@ -6,3 +6,4 @@ django-debug-toolbar
 sqloxide
 rich
 tqdm
+phpserialize
