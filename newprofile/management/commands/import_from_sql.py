@@ -198,7 +198,8 @@ class Command(BaseCommand):
                                 profile.name = data_value["value"]
                             elif data_field["name"] == "<em>ORCID</em> iD":
                                 profile.orcid = data_value["value"]
-
+                            elif data_field["name"] == "Mastodon handle":
+                                profile.mastodon = data_value["value"]
                             else:
                                 if data_field["name"] not in already_printed:
                                     rich.print(
