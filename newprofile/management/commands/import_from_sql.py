@@ -2,20 +2,16 @@
 A management command to import data from the SQL file
 """
 
-from io import StringIO, BytesIO
+from io import BytesIO
 
 import rich
+from django.core.management.base import BaseCommand
 from django.db import transaction
+from phpserialize import load as phpload
 from rich.progress import track, open
 from sqloxide import parse_sql
-from django.core.management.base import BaseCommand
-from tqdm import tqdm
 
 from newprofile.models import Profile, AcademicInterest
-from newprofile.api import API
-
-from phpserialize import loads as phploads
-from phpserialize import load as phpload
 
 
 class Command(BaseCommand):
@@ -143,8 +139,9 @@ class Command(BaseCommand):
             profile.academic_interests.clear()
 
             for item in new_array:
-                # If the academic interest does not exist, create a new instance
-                # of it. If it does exist, just add it to the many-to-many field.
+                # If the academic interest does not exist, create a new
+                # instance of it. If it does exist, just add it to the
+                # many-to-many field.
                 profile.academic_interests.add(
                     AcademicInterest.objects.get_or_create(text=item)[0]
                 )
@@ -204,6 +201,10 @@ class Command(BaseCommand):
                 if data_value["user_id"] == user["id"]:
                     for data_field in data_fields:
                         if data_field["id"] == data_value["field_id"]:
+                            # unescape the value
+                            data_value["value"] = data_value["value"].decode(
+                                "string-escape"
+                            )
                             if data_field["name"] == "Academic Interests":
                                 interest, _ = (
                                     AcademicInterest.objects.get_or_create(
@@ -246,7 +247,8 @@ class Command(BaseCommand):
                             else:
                                 if data_field["name"] not in already_printed:
                                     rich.print(
-                                        f"Unhandled field: {data_field['name']}"
+                                        f'Unhandled field: "'
+                                        f"{data_field['name']}\""
                                     )
                                     already_printed.append(data_field["name"])
 

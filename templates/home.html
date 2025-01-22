@@ -587,7 +587,7 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 
             {{ about_user|safe }}
 
-        </div>		<div class="education hideable"><h4>Education</h4>{{ education|linebreaksbr }}</div>		<div class="mastodon-feed hideable"><h4>Mastodon Feed</h4>
+        </div>		<div class="education hideable"><h4>Education</h4>{{ education|safe|linebreaksbr }}</div>		<div class="mastodon-feed hideable"><h4>Mastodon Feed</h4>
         {% for post in mastodon_posts %}
             <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
         {% endfor %}
