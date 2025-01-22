@@ -25,22 +25,6 @@ This project provides an API endpoint to retrieve detailed information about use
 ## Installation
 
 1. Clone this repository:
-
-This project provides an API endpoint to retrieve detailed information about users in our system.
-
-## Features
-
-- Retrieves comprehensive user information including:
-  - Personal details (name, title, affiliation)
-  - Academic background and interests
-  - Publications and projects
-  - Social media handles and website URLs
-  - Commons activity and memberships
-  - And more...
-
-## Installation
-
-1. Clone this repository:
     git clone https://github.com/yourusername/user-profile-api.git
 
 2. Navigate to the project directory:
