@@ -40,6 +40,11 @@ class Command(BaseCommand):
         "Name": ("name", False),
         "<em>ORCID</em> iD": ("orcid", False),
         "Mastodon handle": ("mastodon", False),
+        "<em>Twitter</em> handle": ("twitter", False),
+        "CV": ("cv", False),
+        "Memberships": ("commons_groups", False),
+        "LinkedIn URL": ("linkedin", False),
+        "Website URL": ("website", False),
     }
 
     @staticmethod
