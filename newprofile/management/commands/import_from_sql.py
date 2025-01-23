@@ -10,8 +10,8 @@ import rich
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from phpserialize import load as php_load
-from rich.progress import track
 from rich.progress import open as rich_open
+from rich.progress import track
 from sqloxide import parse_sql
 
 from newprofile.models import Profile, AcademicInterest
@@ -274,6 +274,7 @@ class Command(BaseCommand):
         """
         This command imports a MySQL dump file into the Django database.
         """
+
         rich.print("Parsing users, data_fields, and data_values...")
 
         users, data_fields, data_values = self._parse_multiple_tables(

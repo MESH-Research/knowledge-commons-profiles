@@ -5,6 +5,85 @@ A set of models for user profiles
 from django.db import models
 
 
+class WpProfileData(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    field = models.ForeignKey(
+        "WpProfileFields",
+        on_delete=models.CASCADE,
+        db_column="field_id",
+    )
+    user = models.ForeignKey(
+        "WPUser", on_delete=models.CASCADE, db_column="user_id"
+    )
+    value = models.TextField()
+    last_updated = models.DateTimeField()
+
+    class Meta:
+        db_table = "wp_bp_xprofile_data"
+
+    def __str__(self):
+        return f"Profile data {self.field} for user {self.user.user_login}"
+
+
+class WpProfileFields(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    group_id = models.BigIntegerField(db_index=True)
+    parent_id = models.BigIntegerField(db_index=True)
+    type = models.CharField(max_length=150)
+    name = models.CharField(max_length=150)
+    description = models.TextField()
+    is_required = models.BooleanField(default=False, db_index=True)
+    is_default_option = models.BooleanField(default=False)
+    field_order = models.BigIntegerField(default=0, db_index=True)
+    option_order = models.BigIntegerField(default=0)
+    order_by = models.CharField(max_length=15, default="")
+    can_delete = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "wp_bp_xprofile_fields"
+
+    def __str__(self):
+        return self.name
+
+
+class WpUser(models.Model):
+    """
+    A model for a WordPress user
+    """
+
+    id = models.BigAutoField(primary_key=True, db_column="ID")
+    user_login = models.CharField(max_length=60, unique=True, default="")
+    user_pass = models.CharField(max_length=255, default="")
+    user_nicename = models.CharField(max_length=50, default="", db_index=True)
+    user_email = models.CharField(max_length=100, default="", db_index=True)
+    user_url = models.CharField(max_length=100, default="")
+    user_registered = models.DateTimeField(
+        default="0000-00-00 00:00:00", db_index=True
+    )
+    user_activation_key = models.CharField(max_length=255, default="")
+    user_status = models.IntegerField(default=0)
+    display_name = models.CharField(max_length=250, default="")
+    spam = models.SmallIntegerField(default=0)
+    deleted = models.SmallIntegerField(default=0)
+
+    class Meta:
+        """
+        Metadata for the WpUser model
+        """
+
+        db_table = "wp_users"
+        indexes = [
+            models.Index(fields=["user_login"], name="user_login_key"),
+        ]
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the Wp_User model instance
+        :return:
+        """
+        return self.user_login
+
+
 class Profile(models.Model):
     """
     A model for a user profile
@@ -38,6 +117,7 @@ class Profile(models.Model):
     title = models.TextField(blank=True, null=True)
     figshare_url = models.TextField(blank=True, null=True)
     commons_groups = models.TextField(blank=True, null=True)
+    memberships = models.TextField(blank=True, null=True)
     recent_commons_activity = models.TextField(blank=True, null=True)
 
     commons_sites = models.TextField(blank=True, null=True)
