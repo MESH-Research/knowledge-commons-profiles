@@ -276,6 +276,9 @@ atlassian-ide-plugin.xml
 
 node_modules
 
+package.json
+package-lock.json
+
 # Crashlytics plugin (for Android Studio and IntelliJ)
 com_crashlytics_export_strings.xml
 crashlytics.properties

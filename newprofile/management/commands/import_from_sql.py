@@ -148,6 +148,33 @@ class Command(BaseCommand):
 
             profile.save()
 
+    def unescape(self, input_string: str) -> str:
+        """
+        Escapes a string with special characters by converting it to a
+        latin-1 encoded string and then decoding it as a unicode-escape
+        string.
+
+        This is a workaround for a bug in the MySQL dump file where
+        special characters are escaped with a backslash, but the backslash
+        is not escaped itself.
+
+        For example, the string "hello\\world" is escaped to
+        "hello\\\\world" in the MySQL dump file.
+
+        This function takes an input string and escapes it by converting
+        it to a latin-1 encoded string and then decoding it as a
+        unicode-escape string.
+
+        Args:
+            input_string: The string to be escaped.
+
+        Returns:
+            The escaped string.
+        """
+        return input_string.encode("latin-1", "backslashreplace").decode(
+            "unicode-escape"
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
         """
@@ -202,9 +229,6 @@ class Command(BaseCommand):
                     for data_field in data_fields:
                         if data_field["id"] == data_value["field_id"]:
                             # unescape the value
-                            data_value["value"] = data_value["value"].decode(
-                                "string-escape"
-                            )
                             if data_field["name"] == "Academic Interests":
                                 interest, _ = (
                                     AcademicInterest.objects.get_or_create(
@@ -212,21 +236,32 @@ class Command(BaseCommand):
                                     )
                                 )
                                 profile.academic_interests.add(interest)
+                                break
                             elif data_field["name"] == "About":
-                                profile.about_user = data_value["value"]
+                                profile.about_user = self.unescape(
+                                    data_value["value"]
+                                )
+                                break
                             elif data_field["name"] == "Education":
-                                profile.education = data_value["value"]
+                                profile.education = self.unescape(
+                                    data_value["value"]
+                                )
+                                break
                             elif (
                                 data_field["name"]
                                 == "Upcoming Talks and Conferences"
                             ):
                                 profile.upcoming_talks = data_value["value"]
+                                break
                             elif data_field["name"] == "Projects":
                                 profile.projects = data_value["value"]
+                                break
                             elif data_field["name"] == "Publications":
                                 profile.publications = data_value["value"]
+                                break
                             elif data_field["name"] == "Site":
                                 profile.site = data_value["value"]
+                                break
                             elif (
                                 data_field["name"]
                                 == "Institutional or Other Affiliation"
@@ -234,24 +269,32 @@ class Command(BaseCommand):
                                 profile.institutional_or_other_affiliation = (
                                     data_value["value"]
                                 )
+                                break
                             elif data_field["name"] == "Title":
                                 profile.title = data_value["value"]
+                                break
                             elif data_field["name"] == "Figshare URL":
                                 profile.figshare_url = data_value["value"]
+                                break
                             elif data_field["name"] == "Name":
                                 profile.name = data_value["value"]
+                                break
                             elif data_field["name"] == "<em>ORCID</em> iD":
                                 profile.orcid = data_value["value"]
+                                break
                             elif data_field["name"] == "Mastodon handle":
                                 profile.mastodon = data_value["value"]
+                                break
                             else:
+                                break
                                 if data_field["name"] not in already_printed:
                                     rich.print(
                                         f'Unhandled field: "'
                                         f"{data_field['name']}\""
                                     )
                                     already_printed.append(data_field["name"])
+                                break
 
             profile.save()
 
-            self.deserialize_academic_interests()
+        self.deserialize_academic_interests()
