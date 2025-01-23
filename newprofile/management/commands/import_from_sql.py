@@ -40,33 +40,39 @@ class Command(BaseCommand):
             final_value = final_value["Number"][0]
         final_dict[desired] = final_value
 
-    def _parse_users(
-        self, dump_filename, target_table, desired_fields, field_index=None
+    def _parse_multiple_tables(
+        self,
+        dump_filename,
+        target_tables,
+        desired_fields_list,
+        field_indexes=None,
     ):
         """
-        Parse the SQL dump for a given table and return rows of data in a
-        generator.
+        Parse the SQL dump for multiple tables and return rows of data for
+        each table.
 
         Args:
             dump_filename (str): The path to the SQL dump file
-            target_table (str): The table to parse
-            desired_fields (list): A list of fields to include in the output
-            field_index (dict or None, optional): A pre-computed index of field
-                names to their positions in the row. If not provided, will be
-                computed. Defaults to None.
-            generator (bool, optional): If True, returns a generator of rows.
-                If False, returns a list of all rows. Defaults to True.
+            target_tables (list): List of tables to parse
+            desired_fields_list (list): List of lists, where each inner list
+                contains the desired fields for the corresponding table in
+                target_tables
+            field_indexes (list or None, optional): List of pre-computed field
+            indexes for each table. If not provided, will be computed.
+            Defaults to None.
 
-        Yields:
-            dict: A dictionary of fields for each row in the table
+        Returns:
+            list: A list of lists, where each inner list contains dictionaries
+            representing rows for each target table
         """
-        if field_index is None:
-            field_index = {}
+        if field_indexes is None:
+            field_indexes = [{} for _ in target_tables]
 
-        all_rows = []
+        # Initialize results list for each table
+        all_tables_rows = [[] for _ in target_tables]
 
         with open(dump_filename, "r", errors="ignore") as f:
-            statement_counter = 0
+            statement_counters = [0 for _ in target_tables]
 
             for line in f:
                 try:
@@ -78,39 +84,51 @@ class Command(BaseCommand):
                     for statement in parser:
                         if type(statement) is dict:
                             for key, val in statement.items():
-                                if (
-                                    key == "Insert"
-                                    and val["table_name"][0]["value"]
-                                    == target_table
-                                ):
-                                    statement_counter += 1
+                                if key == "Insert":
+                                    # Check if current table is one we're looking for
+                                    table_name = val["table_name"][0]["value"]
+                                    if table_name in target_tables:
+                                        table_idx = target_tables.index(
+                                            table_name
+                                        )
+                                        statement_counters[table_idx] += 1
 
-                                    # create an index of the fields once on the
-                                    # first time. Assume it is the same from then
-                                    # onwards
-                                    if len(field_index) == 0:
-                                        for item in val["columns"]:
-                                            if item["value"] in desired_fields:
-                                                field_index[item["value"]] = (
-                                                    val["columns"].index(item)
+                                        # Create field index for this table if not exists
+                                        if len(field_indexes[table_idx]) == 0:
+                                            for item in val["columns"]:
+                                                if (
+                                                    item["value"]
+                                                    in desired_fields_list[
+                                                        table_idx
+                                                    ]
+                                                ):
+                                                    field_indexes[table_idx][
+                                                        item["value"]
+                                                    ] = val["columns"].index(
+                                                        item
+                                                    )
+
+                                        # Process rows for this table
+                                        for row in val["source"]["body"][
+                                            "Values"
+                                        ]["rows"]:
+                                            final_dict = {}
+
+                                            for desired in desired_fields_list[
+                                                table_idx
+                                            ]:
+                                                self._build_final_dict(
+                                                    desired,
+                                                    field_indexes[table_idx],
+                                                    final_dict,
+                                                    row,
                                                 )
 
-                                    for row in val["source"]["body"]["Values"][
-                                        "rows"
-                                    ]:
-                                        final_dict = {}
-
-                                        for desired in desired_fields:
-                                            self._build_final_dict(
-                                                desired,
-                                                field_index,
-                                                final_dict,
-                                                row,
+                                            all_tables_rows[table_idx].append(
+                                                final_dict
                                             )
 
-                                        all_rows.append(final_dict)
-
-        return all_rows
+        return all_tables_rows
 
     @transaction.atomic
     def deserialize_academic_interests(self) -> None:
@@ -180,32 +198,25 @@ class Command(BaseCommand):
         """
         This command imports a MySQL dump file into the Django database.
         """
-        rich.print("Parsing users...")
-        users = self._parse_users(
-            # The path to the MySQL dump file
-            "/home/martin/hcprod.sql",
-            # The name of the table to parse
-            "wp_users",
-            # The fields to parse
-            ["id", "user_login"],
-            # A dictionary of the field names to their indices
-            field_index={"id": 0, "user_login": 1},
-        )
+        rich.print("Parsing users, data_fields, and data_values...")
 
-        rich.print("Parsing data fields...")
-        data_fields = self._parse_users(
-            "/home/martin/hcprod.sql",
-            "wp_bp_xprofile_fields",
-            ["id", "type", "name", "field_order"],
-            field_index={"id": 0, "type": 3, "name": 4, "field_order": 8},
-        )
-
-        rich.print("Parsing data values...")
-        data_values = self._parse_users(
-            "/home/martin/hcprod.sql",
-            "wp_bp_xprofile_data",
-            ["id", "field_id", "user_id", "value"],
-            field_index={"id": 0, "field_id": 1, "user_id": 2, "value": 3},
+        users, data_fields, data_values = self._parse_multiple_tables(
+            dump_filename="/home/martin/hcprod.sql",
+            target_tables=[
+                "wp_users",
+                "wp_bp_xprofile_fields",
+                "wp_bp_xprofile_data",
+            ],
+            desired_fields_list=[
+                ["id", "user_login"],
+                ["id", "type", "name", "field_order"],
+                ["id", "field_id", "user_id", "value"],
+            ],
+            field_indexes=[
+                {"id": 0, "user_login": 1},
+                {"id": 0, "type": 3, "name": 4, "field_order": 8},
+                {"id": 0, "field_id": 1, "user_id": 2, "value": 3},
+            ],
         )
 
         already_printed = []
@@ -286,7 +297,6 @@ class Command(BaseCommand):
                                 profile.mastodon = data_value["value"]
                                 break
                             else:
-                                break
                                 if data_field["name"] not in already_printed:
                                     rich.print(
                                         f'Unhandled field: "'
