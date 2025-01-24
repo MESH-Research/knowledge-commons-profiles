@@ -1,6 +1,5 @@
 from debug_toolbar.panels import Panel
 from django.db import connection
-from collections import defaultdict
 
 
 class QueryTimingPanel(Panel):
