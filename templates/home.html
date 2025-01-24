@@ -594,7 +594,7 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 
         </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><ul>
             {% for post in blog_posts %}
-            <li><a href="{{ post.post_url }}">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
+            <li><a href="https://{{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
         {% endfor %}
 
 

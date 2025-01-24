@@ -24,7 +24,9 @@ class WpPostSubTable(models.Model):
     post_author = models.ForeignKey(
         "WPUser", on_delete=models.CASCADE, db_column="post_author"
     )
-    blogname = models.CharField(max_length=200, default="")
+    blogname = models.CharField(max_length=255, default="")
+    blogdomain = models.CharField(max_length=255, default="")
+    blogpath = models.CharField(max_length=255, default="")
     post_date = models.DateTimeField(default="0000-00-00 00:00:00")
     post_date_gmt = models.DateTimeField(default="0000-00-00 00:00:00")
     post_content = models.TextField()

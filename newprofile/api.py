@@ -120,9 +120,12 @@ class API:
                     p.post_modified,
                     p.post_modified_gmt,
                     p.post_type COLLATE utf8mb4_unicode_ci as post_type,
-                    o.option_value COLLATE utf8mb4_unicode_ci as blogname
+                    o.option_value COLLATE utf8mb4_unicode_ci as blogname,
+                    b.domain COLLATE utf8mb4_unicode_ci as blogdomain,
+                    b.path COLLATE utf8mb4_unicode_ci as blogpath
                     FROM wp_{num}_posts p
                     LEFT JOIN wp_{num}_options o ON o.option_name = 'blogname'
+                    LEFT JOIN wp_blogs b ON b.blog_id = {num}
                     WHERE p.post_author = {self.wp_user.id} AND p.post_status='publish' AND p.post_type='post'
                 """
                 select_statements.append(select_stmt)
