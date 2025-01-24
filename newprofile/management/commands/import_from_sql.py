@@ -275,7 +275,7 @@ class Command(BaseCommand):
         This command imports a MySQL dump file into the Django database.
         """
 
-        rich.print("Parsing users, data_fields, and data_values...")
+        rich.print("Parsing tables from SQL file...")
 
         (
             users,
