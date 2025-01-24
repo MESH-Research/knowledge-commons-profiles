@@ -6,6 +6,10 @@ from django.db import models
 
 
 class WpProfileData(models.Model):
+    """
+    A model for WordPress user profile data
+    """
+
     id = models.BigAutoField(primary_key=True)
     field = models.ForeignKey(
         "WpProfileFields",
@@ -19,13 +23,25 @@ class WpProfileData(models.Model):
     last_updated = models.DateTimeField()
 
     class Meta:
+        """
+        Metadata for the WpProfileData model
+        """
+
         db_table = "wp_bp_xprofile_data"
 
     def __str__(self):
+        """
+        Return a human-readable representation of the WpProfileData model
+        :return:
+        """
         return f"Profile data {self.field} for user {self.user.user_login}"
 
 
 class WpProfileFields(models.Model):
+    """
+    A model for WordPress user profile fields
+    """
+
     id = models.BigAutoField(primary_key=True)
     group_id = models.BigIntegerField(db_index=True)
     parent_id = models.BigIntegerField(db_index=True)
@@ -40,10 +56,21 @@ class WpProfileFields(models.Model):
     can_delete = models.BooleanField(default=True, db_index=True)
 
     class Meta:
+        """
+        Metadata for the WpProfileFields model
+        """
+
         db_table = "wp_bp_xprofile_fields"
 
     def __str__(self):
-        return self.name
+        """
+        Return a human-readable representation of the WpProfileFields model
+        instance as a string.
+
+        Returns:
+            str: The name of the profile field.
+        """
+        return str(self.name)
 
 
 class WpUser(models.Model):
@@ -81,7 +108,7 @@ class WpUser(models.Model):
         Return a human-readable representation of the Wp_User model instance
         :return:
         """
-        return self.user_login
+        return str(self.user_login)
 
 
 class Profile(models.Model):
@@ -165,7 +192,7 @@ class Profile(models.Model):
         Returns:
             str: The name of the profile.
         """
-        return self.name
+        return str(self.name)
 
 
 class AcademicInterest(models.Model):
@@ -183,4 +210,4 @@ class AcademicInterest(models.Model):
         Returns:
             str: The text of the academic interest.
         """
-        return self.text
+        return str(self.text)
