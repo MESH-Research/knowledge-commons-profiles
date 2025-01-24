@@ -7,6 +7,193 @@ A set of models for user profiles
 from django.db import models
 
 
+class WpPostSubTable(models.Model):
+    """
+    A model for a WordPress post
+    """
+
+    class UserVoiceAlignment(models.TextChoices):
+        """
+        An enum for user voice alignment
+        """
+
+        LEFT = "left", "Left"
+        RIGHT = "right", "Right"
+
+    id = models.BigAutoField(primary_key=True, db_column="ID")
+    post_author = models.ForeignKey(
+        "WPUser", on_delete=models.CASCADE, db_column="post_author"
+    )
+    blogname = models.CharField(max_length=200, default="")
+    post_date = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_date_gmt = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_content = models.TextField()
+    post_title = models.TextField()
+    post_excerpt = models.TextField()
+    post_status = models.CharField(max_length=20, default="publish")
+    comment_status = models.CharField(max_length=20, default="open")
+    ping_status = models.CharField(max_length=20, default="open")
+    post_password = models.CharField(max_length=255, default="")
+    post_name = models.CharField(max_length=200, default="", db_index=True)
+    to_ping = models.TextField()
+    pinged = models.TextField()
+    post_modified = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_modified_gmt = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_content_filtered = models.TextField()
+    post_parent = models.BigIntegerField(default=0, db_index=True)
+    guid = models.CharField(max_length=255, default="")
+    menu_order = models.IntegerField(default=0)
+    post_type = models.CharField(max_length=20, default="post")
+    post_mime_type = models.CharField(max_length=100, default="")
+    comment_count = models.BigIntegerField(default=0)
+    user_voice_username = models.CharField(
+        max_length=128, default="", db_column="user-voice_username"
+    )
+    user_voice_slug = models.CharField(
+        max_length=128, default="general", db_column="user-voice_slug"
+    )
+    user_voice_active = models.BooleanField(
+        default=False, db_column="user-voice_active"
+    )
+    user_voice_alignment = models.CharField(
+        max_length=5,
+        choices=UserVoiceAlignment.choices,
+        default=UserVoiceAlignment.RIGHT,
+        db_column="user-voice_alignment",
+    )
+    user_voice_color = models.CharField(
+        max_length=6, default="00BCBA", db_column="user-voice_color"
+    )
+
+    class Meta:
+        """
+        Metadata for the WpPost model
+        """
+
+        db_table = "wp_posts"
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the WpPost model
+        :return:
+        """
+        return str(self.post_title)
+
+
+class WpPost(models.Model):
+    """
+    A model for a WordPress post
+    """
+
+    class UserVoiceAlignment(models.TextChoices):
+        """
+        An enum for user voice alignment
+        """
+
+        LEFT = "left", "Left"
+        RIGHT = "right", "Right"
+
+    id = models.BigAutoField(primary_key=True, db_column="ID")
+    post_author = models.ForeignKey(
+        "WPUser", on_delete=models.CASCADE, db_column="post_author"
+    )
+    post_date = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_date_gmt = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_content = models.TextField()
+    post_title = models.TextField()
+    post_excerpt = models.TextField()
+    post_status = models.CharField(max_length=20, default="publish")
+    comment_status = models.CharField(max_length=20, default="open")
+    ping_status = models.CharField(max_length=20, default="open")
+    post_password = models.CharField(max_length=255, default="")
+    post_name = models.CharField(max_length=200, default="", db_index=True)
+    to_ping = models.TextField()
+    pinged = models.TextField()
+    post_modified = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_modified_gmt = models.DateTimeField(default="0000-00-00 00:00:00")
+    post_content_filtered = models.TextField()
+    post_parent = models.BigIntegerField(default=0, db_index=True)
+    guid = models.CharField(max_length=255, default="")
+    menu_order = models.IntegerField(default=0)
+    post_type = models.CharField(max_length=20, default="post")
+    post_mime_type = models.CharField(max_length=100, default="")
+    comment_count = models.BigIntegerField(default=0)
+    user_voice_username = models.CharField(
+        max_length=128, default="", db_column="user-voice_username"
+    )
+    user_voice_slug = models.CharField(
+        max_length=128, default="general", db_column="user-voice_slug"
+    )
+    user_voice_active = models.BooleanField(
+        default=False, db_column="user-voice_active"
+    )
+    user_voice_alignment = models.CharField(
+        max_length=5,
+        choices=UserVoiceAlignment.choices,
+        default=UserVoiceAlignment.RIGHT,
+        db_column="user-voice_alignment",
+    )
+    user_voice_color = models.CharField(
+        max_length=6, default="00BCBA", db_column="user-voice_color"
+    )
+
+    class Meta:
+        """
+        Metadata for the WpPost model
+        """
+
+        db_table = "wp_posts"
+        indexes = [
+            models.Index(
+                fields=["post_type", "post_status", "post_date", "id"],
+                name="type_status_date",
+            ),
+        ]
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the WpPost model
+        :return:
+        """
+        return str(self.post_title)
+
+
+class WpBlog(models.Model):
+    """
+    A model for a WordPress blog
+    """
+
+    blog_id = models.BigAutoField(primary_key=True)
+    site_id = models.BigIntegerField(default=0)
+    domain = models.CharField(max_length=200, default="")
+    path = models.CharField(max_length=100, default="")
+    registered = models.DateTimeField(default="0000-00-00 00:00:00")
+    last_updated = models.DateTimeField(default="0000-00-00 00:00:00")
+    public = models.SmallIntegerField(default=1)
+    archived = models.SmallIntegerField(default=0)
+    mature = models.SmallIntegerField(default=0)
+    spam = models.SmallIntegerField(default=0)
+    deleted = models.SmallIntegerField(default=0)
+    lang_id = models.IntegerField(default=0, db_index=True)
+
+    class Meta:
+        """
+        Metadata for the WpBlog model
+        """
+
+        db_table = "wp_blogs"
+        indexes = [
+            models.Index(fields=["domain", "path"], name="domain"),
+        ]
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the WpBlog model
+
+        """
+        return str(self.domain)
+
+
 class WpProfileData(models.Model):
     """
     A model for WordPress user profile data

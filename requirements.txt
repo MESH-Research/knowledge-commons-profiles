@@ -6,6 +6,5 @@ django-debug-toolbar
 sqloxide
 rich
 tqdm
-phpserialize
 psycopg2-binary
 mysqlclient

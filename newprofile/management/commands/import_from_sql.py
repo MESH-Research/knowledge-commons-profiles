@@ -4,12 +4,10 @@ A management command to import data from the SQL file
 
 # pylint: disable=import-error,no-name-in-module,too-many-arguments
 # pylint: disable=too-many-positional-arguments,no-member
-from io import BytesIO
 
 import rich
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from phpserialize import load as php_load
 from rich.progress import open as rich_open
 from rich.progress import track
 from sqloxide import parse_sql
@@ -205,42 +203,6 @@ class Command(BaseCommand):
                     ].index(item)
         return table_idx
 
-    @transaction.atomic
-    def _deserialize_academic_interests(self) -> None:
-        """
-        Deserialize a list of academic interests from a list of Profile objects
-        into a list of objects.
-
-        This method takes a list of Profile objects and deserializes the
-        academic_interests field into a list of AcademicInterest objects.
-        """
-        profiles = Profile.objects.all()
-
-        for profile in profiles:
-            academic_interests = profile.academic_interests.all()
-
-            if len(academic_interests) == 0:
-                continue
-
-            interest = academic_interests[0]
-
-            # The text field is a serialized PHP array, so we need to
-            # deserialize it first.
-            stream = BytesIO(str.encode(interest.text))
-            new_array = php_load(stream)
-
-            profile.academic_interests.clear()
-
-            for item in new_array:
-                # If the academic interest does not exist, create a new
-                # instance of it. If it does exist, just add it to the
-                # many-to-many field.
-                profile.academic_interests.add(
-                    AcademicInterest.objects.get_or_create(text=item)[0]
-                )
-
-            profile.save()
-
     @staticmethod
     def _unescape(input_string: str) -> str:
         """
@@ -347,8 +309,6 @@ class Command(BaseCommand):
                 )
 
             profile.save()
-
-        self._deserialize_academic_interests()
 
     def _handle_values(
         self,

@@ -592,16 +592,12 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
             <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
         {% endfor %}
 
-        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><ul>			<li>
-				<a href='https://team.hcommons.org/2021/12/13/guest-post-martin-paul-eve-on-humanities-commons-fifth-birthday/'>Guest Post: Martin Paul Eve on Humanities Commons&#8217; Fifth Birthday</a>
-				(<em>Platypus,</em>
-				2021-12-13)
-			</li>
-						<li>
-				<a href='https://team.hcommons.org/2017/12/04/53/'>Why I Share My Work in CORE</a>
-				(<em>Platypus,</em>
-				2017-12-04)
-			</li>
+        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><ul>
+            {% for post in blog_posts %}
+            <li><a href="{{ post.post_url }}">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
+        {% endfor %}
+
+
 			</ul></div>		<div class="cv hideable"><h4>CV</h4><a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View file</a></div>		<div class="works-deposits hideable show-more"><h4>KCWorks</h4>
 
     {{ works_html | safe }}

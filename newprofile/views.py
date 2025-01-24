@@ -5,6 +5,7 @@ The main views for the profile app
 from django.shortcuts import render
 
 from newprofile.api import API
+from newprofile.models import WpBlog
 
 
 def home(request, user=""):
@@ -22,6 +23,7 @@ def home(request, user=""):
         "academic_interests": api.get_academic_interests(),
         "education": api.get_education(),
         "about_user": api.get_about_user(),
+        "blog_posts": api.get_blog_posts(),
         "mastodon_posts": (
             api.mastodon_posts.latest_posts if profile_info["mastodon"] else []
         ),
