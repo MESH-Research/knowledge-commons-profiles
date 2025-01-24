@@ -2,6 +2,8 @@
 A set of models for user profiles
 """
 
+# pylint: disable=too-few-public-methods,no-member
+
 from django.db import models
 
 
@@ -141,7 +143,6 @@ class Profile(models.Model):
     institutional_or_other_affiliation = models.TextField(
         blank=True, null=True
     )
-    title = models.TextField(blank=True, null=True)
     figshare_url = models.TextField(blank=True, null=True)
     commons_groups = models.TextField(blank=True, null=True)
     memberships = models.TextField(blank=True, null=True)

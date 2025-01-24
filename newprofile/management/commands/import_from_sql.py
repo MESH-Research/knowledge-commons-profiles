@@ -277,17 +277,30 @@ class Command(BaseCommand):
 
         rich.print("Parsing users, data_fields, and data_values...")
 
-        users, data_fields, data_values = self._parse_multiple_tables(
+        (
+            users,
+            data_fields,
+            data_values,
+            wp_term_relationships,
+            wp_term_taxonomy,
+            wp_terms,
+        ) = self._parse_multiple_tables(
             dump_filename="/home/martin/hcprod.sql",
             target_tables=[
                 "wp_users",
                 "wp_bp_xprofile_fields",
                 "wp_bp_xprofile_data",
+                "wp_term_relationships",
+                "wp_term_taxonomy",
+                "wp_terms",
             ],
             desired_fields_list=[
                 ["id", "user_login", "user_email", "user_registered"],
                 ["id", "type", "name", "field_order"],
                 ["id", "field_id", "user_id", "value"],
+                ["object_id", "term_taxonomy_id"],
+                ["term_taxonomy_id", "term_id", "taxonomy"],
+                ["term_id", "name"],
             ],
             field_indexes=[
                 {
@@ -298,6 +311,9 @@ class Command(BaseCommand):
                 },
                 {"id": 0, "type": 3, "name": 4, "field_order": 8},
                 {"id": 0, "field_id": 1, "user_id": 2, "value": 3},
+                {"object_id": 0, "term_taxonomy_id": 1},
+                {"term_taxonomy_id": 0, "term_id": 1, "taxonomy": 2},
+                {"term_id": 0, "name": 1},
             ],
         )
 
@@ -320,7 +336,14 @@ class Command(BaseCommand):
             # now get the data values for this user and add them to the model
             for data_value in data_values:
                 self._handle_values(
-                    already_printed, data_fields, data_value, profile, user
+                    already_printed,
+                    data_fields,
+                    data_value,
+                    profile,
+                    user,
+                    wp_term_relationships,
+                    wp_term_taxonomy,
+                    wp_terms,
                 )
 
             profile.save()
@@ -328,18 +351,30 @@ class Command(BaseCommand):
         self._deserialize_academic_interests()
 
     def _handle_values(
-        self, already_printed, data_fields, data_value, profile, user
+        self,
+        already_printed,
+        data_fields,
+        data_value,
+        profile,
+        user,
+        wp_term_relationships,
+        wp_term_taxonomy,
+        wp_terms,
     ):
 
         if data_value["user_id"] == user["id"]:
             for data_field in data_fields:
                 if data_field["id"] == data_value["field_id"]:
-                    # unescape the value
                     if data_field["name"] == "Academic Interests":
-                        interest, _ = AcademicInterest.objects.get_or_create(
-                            text=data_value["value"]
+                        # academic interests are nested deep in the taxonomy
+                        # system of WordPress, which is a bit of a labyrinth
+                        self._handle_academic_interests(
+                            profile,
+                            user,
+                            wp_term_relationships,
+                            wp_term_taxonomy,
+                            wp_terms,
                         )
-                        profile.academic_interests.add(interest)
                     elif data_field["name"] in self.DATA_MATCHES:
                         setattr(
                             profile,
@@ -355,3 +390,99 @@ class Command(BaseCommand):
                             f'Unhandled field: "' f"{data_field['name']}\""
                         )
                         already_printed.append(data_field["name"])
+
+    def _handle_academic_interests(
+        self, profile, user, wp_term_relationships, wp_term_taxonomy, wp_terms
+    ):
+        """
+        Handles the academic interests for a user.
+
+        This method takes a user object, the set of term relationships,
+        the set of term taxonomies, and the set of terms as input and
+        processes the academic interests for the user.
+
+        Academic interests are stored in the `wp_term_relationships`
+        table, which contains object IDs, term IDs, and taxonomy IDs.
+        The taxonomy ID is used to link the term to a taxonomy, and
+        the term ID is used to link the term to the `wp_terms` table,
+        which contains the name of the term.
+
+        The academic interests are then stored in the `academic_interests`
+        field of the user's profile object.
+
+        :param profile: The profile object associated with the user
+        :type profile: Profile
+        :param user: The user object
+        :type user: dict
+        :param wp_term_relationships: The set of term relationships
+        :type wp_term_relationships: list
+        :param wp_term_taxonomy: The set of term taxonomies
+        :type wp_term_taxonomy: list
+        :param wp_terms: The set of terms
+        :type wp_terms: list
+        """
+        for term_relationship in wp_term_relationships:
+            if term_relationship["object_id"] == user["id"]:
+                for term_taxonomy in wp_term_taxonomy:
+                    self._handle_wp_term_taxonomy(
+                        profile,
+                        term_relationship,
+                        term_taxonomy,
+                        wp_terms,
+                    )
+
+    def _handle_wp_term_taxonomy(
+        self, profile, term_relationship, term_taxonomy, wp_terms
+    ):
+        """
+        Add AcademicInterests to a Profile, given a term relationship and its
+        taxonomy.
+
+        Parameters
+        ----------
+        profile : Profile
+            The Profile to which the AcademicInterests should be added
+        term_relationship : dict
+            A dictionary representing a term relationship in the WordPress
+            taxonomy
+        term_taxonomy : dict
+            A dictionary representing the taxonomy of a term in WordPress
+        wp_terms : list
+            A list of dictionaries representing the terms in the WordPress
+            taxonomy
+
+        Returns
+        -------
+        None
+        """
+        if (
+            term_taxonomy["term_taxonomy_id"]
+            == term_relationship["term_taxonomy_id"]
+            and term_taxonomy["taxonomy"] == "mla_academic_interests"
+        ):
+            for term in wp_terms:
+                self._handle_wp_terms(profile, term, term_taxonomy)
+
+    @staticmethod
+    def _handle_wp_terms(profile, term, term_taxonomy):
+        """
+        Add an AcademicInterest to a Profile, given a term and its taxonomy.
+
+        Parameters
+        ----------
+        profile : Profile
+            The Profile to which the AcademicInterest should be added
+        term : dict
+            A dictionary representing a term in the WordPress taxonomy
+        term_taxonomy : dict
+            A dictionary representing the taxonomy of a term in WordPress
+
+        Returns
+        -------
+        None
+        """
+        if term["term_id"] == term_taxonomy["term_id"]:
+            interest, _ = AcademicInterest.objects.get_or_create(
+                text=term["name"]
+            )
+            profile.academic_interests.add(interest)
