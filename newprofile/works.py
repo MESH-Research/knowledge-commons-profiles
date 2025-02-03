@@ -3,8 +3,6 @@ Works field type.
 
 """
 
-import json
-
 import requests
 from django.core.cache import cache
 from django.template.loader import render_to_string
@@ -22,7 +20,7 @@ class WorksDeposits:
         self.works_url = works_url
 
     def display_filter(self):
-        """Front-end display of user's blog posts, ordered by date.
+        """Front-end display of user's works, ordered by date.
 
         :param mixed      field_value: Field value.
         :param string|int field_id:    ID of the field.
@@ -42,7 +40,12 @@ class WorksDeposits:
         )
 
         try:
-            response = requests.get(endpoint)
+            headers = {
+                "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; "
+                "rv:134.0) Gecko/20100101 Firefox/134.0",
+            }
+
+            response = requests.get(endpoint, headers=headers)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
             print(f"Error fetching {endpoint}: {e}")

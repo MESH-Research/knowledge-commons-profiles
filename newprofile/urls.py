@@ -15,11 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-# from django.contrib import admin
-from django.urls import path
-from newprofile import views
 from debug_toolbar.toolbar import debug_toolbar_urls
 
+# from django.contrib import admin
+from django.urls import path, include
+
+from newprofile import views
+from newprofile.views import ProfileView
+
 urlpatterns = [
-    path("<str:user>/", views.home, name="home"),
+    path(
+        r"api/v1.0/user/<str:user_name>/",
+        ProfileView.as_view(),
+        name="profile_rest_view",
+    ),
+    path("user/<str:user>/", views.home, name="home"),
+    path("api-auth/", include("rest_framework.urls")),
 ] + debug_toolbar_urls()

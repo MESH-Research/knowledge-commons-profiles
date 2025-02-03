@@ -14,7 +14,7 @@ class API:
     A class containing API calls for user details
     """
 
-    def __init__(self, request, user):
+    def __init__(self, request, user, use_wordpress=True):
         """
         Initialise the API class with a request and user object.
 
@@ -27,7 +27,11 @@ class API:
         self.profile = Profile.objects.prefetch_related(
             "academic_interests"
         ).get(username=user)
-        self.wp_user = WpUser.objects.get(user_login=user)
+
+        if use_wordpress:
+            self.wp_user = WpUser.objects.get(user_login=user)
+        else:
+            self.wp_user = None
 
         self.profile_info = {}
 
@@ -38,7 +42,7 @@ class API:
         if self.mastodon_profile:
             self.mastodon_username, self.mastodon_server = (
                 self.mastodon_profile[1:].split("@")[0],
-                "hcommons.social",
+                self.mastodon_profile[1:].split("@")[1],
             )
             self.mastodon_posts = mastodon.MastodonFeed(
                 self.mastodon_username, self.mastodon_server
@@ -170,3 +174,59 @@ class API:
             A string of the user's education details.
         """
         return self.profile.education
+
+    def update_profile(self, data):
+        """
+        Update the user's profile information.
+        """
+
+        # TODO: permissions/SAML login
+
+        """
+        {'profile_info': {'name': 'Kathleen Fitzpatrick Again', 'username': 'kfitz', 'title': 'Interim Associate Dean for Research and Graduate Studies', 'affiliation': '', 'twitter': '', 'github': '', 'email': 'kfitz@msu.edu', 'orcid': '0000-0002-5251-0307', 'mastodon': '@kfitz@hcommons.social', 'profile_image': '', 'works_username': ''}, 'academic_interests': [], 'education': 'PhD, English, <a href="https://commons.mla.org/members/?s=New+York+University" rel="nofollow">New York University</a>, 1998.\r\nMFA, English, <a href="https://commons.mla.org/members/?s=Louisiana+State+University" rel="nofollow">Louisiana State University</a>, 1991.\r\nBA, English, <a href="https://commons.mla.org/members/?s=Louisiana+State+University" rel="nofollow">Louisiana State University</a>, 1988.', 'about_user': 'Kathleen Fitzpatrick is Interim Associate Dean for Research and Graduate Studies in the College of Arts and Letters at Michigan State University, where she also holds an appointment as Professor of English. She is founder of <a href="https://meshresearch.net" rel="nofollow">MESH</a>, a research and development unit focused on the future of scholarly communication, for which she served as director between 2020 and 2024. She is project director of Knowledge Commons, an open-access, open-source network serving more than 40,000 scholars and practitioners across the disciplines and around the world. She is author of four books, the most recent of which, <a href="https://www.press.jhu.edu/books/title/12787/leading-generously" rel="nofollow"><em>Leading Generously: Tools for Transformation</em></a>, is forthcoming from Johns Hopkins University Press in fall 2024. She is president of the board of directors of the <a href="https://educopia.org" rel="nofollow">Educopia Institute</a>, and she served as president of the <a href="https://ach.org" rel="nofollow">Association for Computers and the Humanities</a> from 2020 to 2022.\r\n\r\nYou can also find me on <a href="https://hcommons.social/@kfitz" rel="me nofollow">hcommons.social</a>.'}
+        """
+
+        self.profile.name = data.get("profile_info", {}).get(
+            "name", self.profile.name
+        )
+        self.profile.title = data.get("profile_info", {}).get(
+            "title", self.profile.title
+        )
+        self.profile.affiliation = data.get("profile_info", {}).get(
+            "affiliation", self.profile.affiliation
+        )
+        self.profile.twitter = data.get("profile_info", {}).get(
+            "twitter", self.profile.twitter
+        )
+        self.profile.github = data.get("profile_info", {}).get(
+            "github", self.profile.github
+        )
+        self.profile.email = data.get("profile_info", {}).get(
+            "email", self.profile.email
+        )
+        self.profile.orcid = data.get("profile_info", {}).get(
+            "orcid", self.profile.orcid
+        )
+        self.profile.mastodon = data.get("profile_info", {}).get(
+            "mastodon", self.profile.mastodon
+        )
+        self.profile.profile_image = data.get("profile_info", {}).get(
+            "profile_image", self.profile.profile_image
+        )
+        self.profile.works_username = data.get("profile_info", {}).get(
+            "works_username", self.profile.works_username
+        )
+        self.profile.about_user = data.get(
+            "about_user", self.profile.about_user
+        )
+        self.profile.education = data.get("education", self.profile.education)
+
+        self.profile.academic_interests.clear()
+
+        for interest in data.get("academic_interests", []):
+            self.profile.academic_interests.add(interest)
+
+        for interest in data.get("academic_interests", []):
+            self.profile.academic_interests.add(interest)
+
+        self.profile.save()

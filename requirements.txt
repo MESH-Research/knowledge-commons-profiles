@@ -8,3 +8,6 @@ rich
 tqdm
 psycopg2-binary
 mysqlclient
+djangorestframework
+markdown
+django-filter
