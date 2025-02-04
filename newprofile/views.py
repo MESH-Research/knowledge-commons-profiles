@@ -48,7 +48,9 @@ def profile(request, user="", create=False):
         "works_html": api.works_html,
     }
 
-    return render(request=request, context=context, template_name="home.html")
+    return render(
+        request=request, context=context, template_name="profile.html"
+    )
 
 
 @login_required
