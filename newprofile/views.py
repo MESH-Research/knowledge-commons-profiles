@@ -12,6 +12,7 @@ from newprofile.api import API
 from django.contrib.auth import logout
 
 from newprofile.forms import ProfileForm
+from newprofile.models import Profile
 
 
 def logout_view(request):
@@ -141,10 +142,14 @@ def edit_profile(request):
     :return: A rendered HTML template with a form.
     :rtype: django.http.HttpResponse
     """
+    user = Profile.objects.prefetch_related("academic_interests").get(
+        username=request.user.username
+    )
+
     if request.method == "POST":
-        form = ProfileForm(request.POST, request.FILES)
+        form = ProfileForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
     else:
-        form = ProfileForm()
+        form = ProfileForm(instance=user)
     return render(request, "edit_profile.html", {"form": form})

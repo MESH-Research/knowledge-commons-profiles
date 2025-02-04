@@ -17,3 +17,5 @@ sphinx
 bleach
 crispy-bootstrap5
 django-crispy-forms
+django-bleach
+django-tinymce==3.7.1

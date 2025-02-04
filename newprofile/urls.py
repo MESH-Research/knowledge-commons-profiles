@@ -41,9 +41,11 @@ urlpatterns = (
             name="profile_rest_view",
         ),
         path("my_profile/", views.my_profile, name="my_profile"),
+        path("edit_profile/", views.edit_profile, name="edit_profile"),
         path("user/<str:user>/", views.profile, name="home"),
         path("api-auth/", include("rest_framework.urls")),
         path("logout/", logout_view, name="logout_to_remove"),
+        path("tinymce/", include("tinymce.urls")),
     ]
     + debug_toolbar_urls()
     + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
