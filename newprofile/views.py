@@ -11,14 +11,13 @@ from rest_framework.views import APIView
 from newprofile.api import API
 
 
-@login_required
-def home(request, user=""):
+def profile(request, user="", create=False):
     """
     The main page of the site.
 
     This view renders the main page of the site.
     """
-    api = API(request, user, use_wordpress=False)
+    api = API(request, user, use_wordpress=False, create=create)
 
     profile_info = api.get_profile_info()
 
@@ -35,6 +34,21 @@ def home(request, user=""):
     }
 
     return render(request=request, context=context, template_name="home.html")
+
+
+@login_required
+def my_profile(request):
+    """
+    A view for logged-in users to view their own profile page.
+
+    If the user is logged in, this view will redirect them to the main page with
+    their username as the user parameter.
+
+    :param request: The request object.
+    :type request: django.http.HttpRequest
+    """
+    # we call with create because this user is logged in and needs a profile
+    return profile(request, user=request.user.username, create=True)
 
 
 class ProfileView(APIView):

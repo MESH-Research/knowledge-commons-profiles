@@ -41,6 +41,7 @@ urlpatterns = [
         ProfileView.as_view(),
         name="profile_rest_view",
     ),
-    path("user/<str:user>/", views.home, name="home"),
+    path("my_profile/", views.my_profile, name="my_profile"),
+    path("user/<str:user>/", views.profile, name="home"),
     path("api-auth/", include("rest_framework.urls")),
 ] + debug_toolbar_urls()

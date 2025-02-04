@@ -3,6 +3,7 @@ A class of API calls for user details
 """
 
 from django.db import connections
+from django.http import Http404
 
 from newprofile import mastodon
 from newprofile.models import Profile, WpUser, WpBlog, WpPostSubTable
@@ -14,7 +15,7 @@ class API:
     A class containing API calls for user details
     """
 
-    def __init__(self, request, user, use_wordpress=True):
+    def __init__(self, request, user, use_wordpress=True, create=False):
         """
         Initialise the API class with a request and user object.
 
@@ -24,9 +25,16 @@ class API:
         """
         self.request = request
         self.user = user
-        self.profile = Profile.objects.prefetch_related(
-            "academic_interests"
-        ).get(username=user)
+        try:
+            self.profile = Profile.objects.prefetch_related(
+                "academic_interests"
+            ).get(username=user)
+        except Profile.DoesNotExist as exc:
+            if create:
+                self.profile = Profile.objects.create(username=user)
+            else:
+                # raise 404
+                raise Http404("Profile not found") from exc
 
         self.use_wordpress = use_wordpress
 
@@ -56,7 +64,7 @@ class API:
 
         self.works_html = self.works_deposits.display_filter()
 
-    def get_profile_info(self):
+    def get_profile_info(self, create=False):
         """
         Returns a dictionary containing profile information about the user.
 
