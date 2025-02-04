@@ -28,6 +28,8 @@ class API:
             "academic_interests"
         ).get(username=user)
 
+        self.use_wordpress = use_wordpress
+
         if use_wordpress:
             self.wp_user = WpUser.objects.get(user_login=user)
         else:
@@ -98,6 +100,9 @@ class API:
         Get blog posts from the Wordpress database
         :return:
         """
+        if not self.use_wordpress:
+            return []
+
         # first get a list of tables in the database
         with connections["wordpress_dev"].cursor() as cursor:
             cursor.execute("SHOW TABLES;")

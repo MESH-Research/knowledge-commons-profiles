@@ -18,12 +18,24 @@ Including another URLconf
 from debug_toolbar.toolbar import debug_toolbar_urls
 
 # from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 
 from newprofile import views
 from newprofile.views import ProfileView
 
+import django_saml2_auth.views
+
 urlpatterns = [
+    # These are the SAML2 related URLs. (required)
+    re_path(r"^sso/", include("django_saml2_auth.urls")),
+    # The following line will replace the default user login with SAML2 (optional)
+    # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
+    # with this view.
+    re_path(r"^accounts/login/$", django_saml2_auth.views.signin),
+    # The following line will replace the admin login with SAML2 (optional)
+    # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
+    # with this view.
+    re_path(r"^admin/login/$", django_saml2_auth.views.signin),
     path(
         r"api/v1.0/user/<str:user_name>/",
         ProfileView.as_view(),

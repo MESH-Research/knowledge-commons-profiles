@@ -2,6 +2,7 @@
 The main views for the profile app
 """
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
@@ -10,13 +11,14 @@ from rest_framework.views import APIView
 from newprofile.api import API
 
 
+@login_required
 def home(request, user=""):
     """
     The main page of the site.
 
     This view renders the main page of the site.
     """
-    api = API(request, user)
+    api = API(request, user, use_wordpress=False)
 
     profile_info = api.get_profile_info()
 
