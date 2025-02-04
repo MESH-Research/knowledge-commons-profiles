@@ -11,6 +11,8 @@ from rest_framework.views import APIView
 from newprofile.api import API
 from django.contrib.auth import logout
 
+from newprofile.forms import ProfileForm
+
 
 def logout_view(request):
     """
@@ -123,3 +125,26 @@ class ProfileView(APIView):
 
         response = Response(context, status=status.HTTP_200_OK)
         return response
+
+
+@login_required
+def edit_profile(request):
+    """
+    A view for logged-in users to edit their own profile page.
+
+    If the request is a POST, validate the form data and save it to the
+    database.  If the request is a GET, return a form page with the
+    user's current data pre-filled in.
+
+    :param request: The request object.
+    :type request: django.http.HttpRequest
+    :return: A rendered HTML template with a form.
+    :rtype: django.http.HttpResponse
+    """
+    if request.method == "POST":
+        form = ProfileForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+    else:
+        form = ProfileForm()
+    return render(request, "edit_profile.html", {"form": form})

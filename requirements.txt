@@ -15,3 +15,5 @@ grafana-django-saml2-auth
 # Needs: xmlsec1 library from distribution
 sphinx
 bleach
+crispy-bootstrap5
+django-crispy-forms

@@ -17,32 +17,34 @@ Including another URLconf
 
 import django_saml2_auth.views
 from debug_toolbar.toolbar import debug_toolbar_urls
-from django.contrib.auth import views as auth_views
-
-# from django.contrib import admin
+from django.conf.urls.static import static
 from django.urls import path, include, re_path
 
-from newprofile import views
+from newprofile import views, settings
 from newprofile.views import ProfileView, logout_view
 
-urlpatterns = [
-    # These are the SAML2 related URLs. (required)
-    re_path(r"^sso/", include("django_saml2_auth.urls")),
-    # The following line will replace the default user login with SAML2 (optional)
-    # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
-    # with this view.
-    re_path(r"^accounts/login/$", django_saml2_auth.views.signin),
-    # The following line will replace the admin login with SAML2 (optional)
-    # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
-    # with this view.
-    re_path(r"^admin/login/$", django_saml2_auth.views.signin),
-    path(
-        r"api/v1.0/user/<str:user_name>/",
-        ProfileView.as_view(),
-        name="profile_rest_view",
-    ),
-    path("my_profile/", views.my_profile, name="my_profile"),
-    path("user/<str:user>/", views.profile, name="home"),
-    path("api-auth/", include("rest_framework.urls")),
-    path("logout/", logout_view, name="logout_to_remove"),
-] + debug_toolbar_urls()
+urlpatterns = (
+    [
+        # These are the SAML2 related URLs. (required)
+        re_path(r"^sso/", include("django_saml2_auth.urls")),
+        # The following line will replace the default user login with SAML2 (optional)
+        # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
+        # with this view.
+        re_path(r"^accounts/login/$", django_saml2_auth.views.signin),
+        # The following line will replace the admin login with SAML2 (optional)
+        # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
+        # with this view.
+        re_path(r"^admin/login/$", django_saml2_auth.views.signin),
+        path(
+            r"api/v1.0/user/<str:user_name>/",
+            ProfileView.as_view(),
+            name="profile_rest_view",
+        ),
+        path("my_profile/", views.my_profile, name="my_profile"),
+        path("user/<str:user>/", views.profile, name="home"),
+        path("api-auth/", include("rest_framework.urls")),
+        path("logout/", logout_view, name="logout_to_remove"),
+    ]
+    + debug_toolbar_urls()
+    + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+)
