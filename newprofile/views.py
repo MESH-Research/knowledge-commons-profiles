@@ -9,6 +9,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from newprofile.api import API
+from django.contrib.auth import logout
+
+
+def logout_view(request):
+    """
+    A view to log out the current user.
+
+    This view logs out the current user and redirects them to the login page.
+
+    :param request: The request object.
+    :type request: django.http.HttpRequest
+    """
+    logout(request)
 
 
 def profile(request, user="", create=False):

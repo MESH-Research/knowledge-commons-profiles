@@ -15,15 +15,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+import django_saml2_auth.views
 from debug_toolbar.toolbar import debug_toolbar_urls
+from django.contrib.auth import views as auth_views
 
 # from django.contrib import admin
 from django.urls import path, include, re_path
 
 from newprofile import views
-from newprofile.views import ProfileView
-
-import django_saml2_auth.views
+from newprofile.views import ProfileView, logout_view
 
 urlpatterns = [
     # These are the SAML2 related URLs. (required)
@@ -44,4 +44,5 @@ urlpatterns = [
     path("my_profile/", views.my_profile, name="my_profile"),
     path("user/<str:user>/", views.profile, name="home"),
     path("api-auth/", include("rest_framework.urls")),
+    path("logout/", logout_view, name="logout_to_remove"),
 ] + debug_toolbar_urls()
