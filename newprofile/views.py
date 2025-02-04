@@ -83,29 +83,3 @@ class ProfileView(APIView):
 
         response = Response(context, status=status.HTTP_200_OK)
         return response
-
-    def post(self, request, *args, **kw):
-        """
-        Update the user's profile information.
-
-        The response is returned with a status of 200 OK.
-
-        :param request: The request object.
-        :type request: django.http.HttpRequest
-        :param args: Additional positional arguments.
-        :type args: list
-        :param kw: Additional keyword arguments.
-        :type kw: dict
-        :return: A JSON response containing the user's profile information.
-        :rtype: django.http.JsonResponse
-        """
-
-        user = kw.get("user_name", "")
-
-        api = API(request, user, use_wordpress=False)
-
-        print(request.data)
-
-        # api.update_profile(request.data)
-
-        return self.get(request, *args, **kw)
