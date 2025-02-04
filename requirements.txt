@@ -19,3 +19,4 @@ crispy-bootstrap5
 django-crispy-forms
 django-bleach
 django-tinymce==3.7.1
+bleach-allowlist==1.0.3

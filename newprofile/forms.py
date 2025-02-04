@@ -2,24 +2,12 @@
 Forms for the profile app
 """
 
+from bleach.linkifier import Linker
+from bleach.sanitizer import Cleaner
 from django import forms
+from tinymce.widgets import TinyMCE
+
 from newprofile.models import Profile
-
-from bleach.sanitizer import Cleaner
-from bleach.linkifier import Linker
-
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Fieldset, Div, Field, Submit, HTML
-from crispy_forms.bootstrap import TabHolder, Tab
-from django_bleach.models import BleachField
-
-from tinymce.widgets import TinyMCE
-
-
-from django import forms
-from bleach.sanitizer import Cleaner
-from bleach.linkifier import Linker
-from tinymce.widgets import TinyMCE
 
 
 class SanitizedTinyMCE(TinyMCE):
@@ -98,6 +86,8 @@ class ProfileForm(forms.ModelForm):
             "website",
         ]
         widgets = {
+            "title": forms.TextInput(attrs={"style": "width:100%"}),
+            "name": forms.TextInput(attrs={"style": "width:100%"}),
             "about_user": SanitizedTinyMCE(
                 attrs={
                     "cols": 80,
