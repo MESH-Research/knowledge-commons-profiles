@@ -19,6 +19,8 @@ def profile(request, user="", create=False):
     """
     api = API(request, user, use_wordpress=False, create=create)
 
+    # TODO: if "create" then redirect to the profile edit page
+
     profile_info = api.get_profile_info()
 
     context = {
