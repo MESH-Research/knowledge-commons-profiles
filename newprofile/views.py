@@ -36,6 +36,14 @@ def profile(request, user="", create=False):
 
     profile_info = api.get_profile_info()
 
+    # get logged in user profile
+    api_me = (
+        API(request, request.user.username, use_wordpress=False, create=False)
+        if request.user.is_authenticated
+        else None
+    )
+    my_profile_info = api_me.get_profile_info() if api_me else None
+
     context = {
         "profile_info": profile_info,
         "academic_interests": api.get_academic_interests(),
@@ -46,6 +54,7 @@ def profile(request, user="", create=False):
             api.mastodon_posts.latest_posts if profile_info["mastodon"] else []
         ),
         "works_html": api.works_html,
+        "logged_in_profile": my_profile_info,
     }
 
     return render(

@@ -22,7 +22,7 @@ class WpPostSubTable(models.Model):
 
     id = models.BigAutoField(primary_key=True, db_column="ID")
     post_author = models.ForeignKey(
-        "WPUser", on_delete=models.CASCADE, db_column="post_author"
+        "WpUser", on_delete=models.CASCADE, db_column="post_author"
     )
     blogname = models.CharField(max_length=255, default="")
     blogdomain = models.CharField(max_length=255, default="")
@@ -97,7 +97,7 @@ class WpPost(models.Model):
 
     id = models.BigAutoField(primary_key=True, db_column="ID")
     post_author = models.ForeignKey(
-        "WPUser", on_delete=models.CASCADE, db_column="post_author"
+        "WpUser", on_delete=models.CASCADE, db_column="post_author"
     )
     post_date = models.DateTimeField(default="0000-00-00 00:00:00")
     post_date_gmt = models.DateTimeField(default="0000-00-00 00:00:00")
@@ -208,7 +208,7 @@ class WpProfileData(models.Model):
         db_column="field_id",
     )
     user = models.ForeignKey(
-        "WPUser", on_delete=models.CASCADE, db_column="user_id"
+        "WpUser", on_delete=models.CASCADE, db_column="user_id"
     )
     value = models.TextField()
     last_updated = models.DateTimeField()
@@ -310,7 +310,7 @@ class Profile(models.Model):
     name = models.CharField(max_length=255)
     username = models.CharField(max_length=255, db_index=True)
     central_user_id = models.IntegerField(db_index=True, null=True)
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, null=True)
     affiliation = models.CharField(max_length=255)
     twitter = models.CharField(max_length=255, blank=True)
     github = models.CharField(max_length=255, blank=True)
@@ -340,6 +340,13 @@ class Profile(models.Model):
     commons_sites = models.TextField(blank=True, null=True)
     blog_posts = models.TextField(blank=True, null=True)
     cv = models.TextField(blank=True, null=True)
+
+    cv_file = models.FileField(
+        upload_to="cvs/",
+        blank=True,
+        null=True,
+        help_text="Upload your CV (PDF format recommended)",
+    )
 
     facebook = models.TextField(blank=True, null=True)
     linkedin = models.TextField(blank=True, null=True)
