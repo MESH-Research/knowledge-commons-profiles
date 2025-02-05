@@ -363,6 +363,7 @@ class Profile(models.Model):
     show_education = models.BooleanField(default=True)
     show_about_user = models.BooleanField(default=True)
     show_works = models.BooleanField(default=True)
+    show_blog_posts = models.BooleanField(default=True)
 
     def __str__(self):
         """

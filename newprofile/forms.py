@@ -59,6 +59,7 @@ class SanitizedTinyMCE(TinyMCE):
 
 
 class ProfileForm(forms.ModelForm):
+
     class Meta:
         model = Profile
         fields = [
@@ -86,6 +87,9 @@ class ProfileForm(forms.ModelForm):
             "website",
             "bluesky",
             "cv_file",
+            "show_works",
+            "show_cv",
+            "show_blog_posts",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"style": "width:100%"}),
@@ -97,6 +101,15 @@ class ProfileForm(forms.ModelForm):
             "mastodon": forms.TextInput(attrs={"style": "width:130px"}),
             "orcid": forms.TextInput(attrs={"style": "width:130px"}),
             "bluesky": forms.TextInput(attrs={"style": "width:130px"}),
+            "show_works": forms.CheckboxInput(
+                attrs={"style": "display: inline-block; float:right;"}
+            ),
+            "show_cv": forms.CheckboxInput(
+                attrs={"style": "display: inline-block; float:right;"}
+            ),
+            "show_blog_posts": forms.CheckboxInput(
+                attrs={"style": "display: inline-block; float:right;"}
+            ),
             "about_user": SanitizedTinyMCE(
                 attrs={
                     "cols": 80,

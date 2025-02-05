@@ -351,5 +351,17 @@
   .profile .network-profile #item-header {
     margin: 1em 2em;
   }
+}
 
+.works-deposits div, .cv div, .blog-posts div {
+  float: right;
+  margin-top: -2.5rem;
+}
+
+#label_show_works, #label_show_cv, #label_show_blog_posts {
+  float:right;
+}
+
+#div_id_cv_file {
+  float: none !important;
 }

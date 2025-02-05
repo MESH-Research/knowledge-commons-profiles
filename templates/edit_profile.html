@@ -155,13 +155,15 @@
             <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
         {% endfor %}
 
-        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><ul>
+        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4> <label for="id_show_blog_posts" class="form-label" id="label_show_blog_posts" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_blog_posts %}
+        
+        <ul>
             {% for post in blog_posts %}
             <li><a href="https://{{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
         {% endfor %}
 
 
-			</ul></div>		<div class="cv hideable"><h4>CV</h4>
+			</ul></div>		<div class="cv hideable"><h4>CV</h4> <div><label for="id_show_cv" class="form-label" id="label_show_cv" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_cv %}</div>
 
         <a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View current file</a> or upload new:
                 <div id="div_id_cv_file" class="mb-3" style="margin-top:5px;">
@@ -169,12 +171,7 @@
                 {% crispy_field form.cv_file %}
             </div>
 
-    </div>		<div class="works-deposits hideable show-more"><h4>KCWorks</h4>
-
-    {{ works_html | safe }}
-
-
-    </div>									</div>
+    </div>		<div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div>									</div>
 
 
 
