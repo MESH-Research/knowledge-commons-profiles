@@ -317,6 +317,7 @@ class Profile(models.Model):
     email = models.EmailField(blank=True)
     orcid = models.CharField(max_length=255, blank=True)
     mastodon = models.CharField(max_length=255, blank=True)
+    bluesky = models.CharField(max_length=255, blank=True)
     profile_image = models.URLField(blank=True)
     works_username = models.CharField(max_length=255, blank=True)
     academic_interests = models.ManyToManyField(

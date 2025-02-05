@@ -237,6 +237,18 @@
 .profile #item-main .mastodon a::before {
   background-image: url( '/static/img/mastodon.png' );
 }
+.profile #item-main .bluesky a::before {
+  background-image: url( '/static/img/bluesky.png' );
+  background-repeat: no-repeat;
+  background-size: contain;
+  content: "";
+  display: inline-block;
+  height: 14px;
+  padding-right: 4px;
+  position: relative;
+  top: 3px;
+  width: 14px;
+}
 .profile #item-main .orcid a::before {
   background-image: url( '/static/img/iD-icon.png' );
 }

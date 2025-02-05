@@ -9,7 +9,7 @@
 
 	<div id="item-header-content">
 
-        
+
 		<div id="item-main">
 			<h4 class="name">{{ profile_info.name }}</h4>
 			<h4 class="title">{{ profile_info.title }}</h4>
@@ -29,11 +29,22 @@
                                             <div id="div_id_mastodon" class="mb-3" style="display:inline-block"><label for="id_mastodon" class="form-label" style="width:120px;display:inline-block;"><em>Mastodon</em> handle:</label>{% crispy_field form.mastodon %}</div>
 
                                         </div>
+
+                                        <div class="bluesky">
+                                            <span class="social-label"></span> <a href="https://bsky.app/profile/" rel="me"></a>
+                                        <div id="div_id_bluesky" class="mb-3" style="display:inline-block"><label for="id_bluesky" class="form-label" style="width:120px;display:inline-block;"><em>Bluesky</em> handle: </label>{% crispy_field form.bluesky %}</div>
+
+                                        </div>
+
 										<div class="orcid">
 					<span class="social-label"><em>ORCID</em> iD:</span> <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me"></a>
                                         <div id="div_id_orcid" class="mb-3" style="display:inline-block"><label for="id_orcid" class="form-label" style="width:120px;display:inline-block;"><em>ORCID</em> iD:</label>{% crispy_field form.orcid %}</div>
 
                                         </div>
+
+
+
+
 																	</div><!-- #item-main -->
 
 
@@ -45,14 +56,11 @@
 				</div><!-- #item-header-avatar -->
 			</div>
 
-			<div class="following-n-members">
-									<a href="https://hcommons.org/members/{{ profile_info.username }}/following">
-									Following <span>23</span> members									</a>
-							</div>
+
 
 			<div id="item-buttons">
 								<span class="generic-button" style="display: none;"></span>
-				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div><div id="edit-personal-li"><a id="edit" href="https://hcommons.org/members/{{ profile_info.username }}/profile/edit/" class=" button">Edit</a></div>
+				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div>
 			</div><!-- #item-buttons -->
 
 					</div><!-- #item-meta -->
@@ -71,7 +79,7 @@
                 <div class="item-list-tabs no-ajax" id="object-nav" role="navigation">
                     <ul id="nav-bar-filter">
 
-                        <li id="xprofile-personal-li"  class="current selected"><a id="user-xprofile" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">Profile</a></li><li id="activity-personal-li" ><a id="user-activity" href="https://hcommons.org/members/{{ profile_info.username }}/activity/">Activity</a></li><li id="blogs-personal-li" ><a id="user-blogs" href="https://hcommons.org/members/{{ profile_info.username }}/blogs/">Sites <span class="count">1</span></a></li><li id="notifications-personal-li" ><a id="user-notifications" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">Notifications <span class="count">9</span></a></li><li id="messages-personal-li" ><a id="user-messages" href="https://hcommons.org/members/{{ profile_info.username }}/messages/">Messages <span class="no-count">0</span></a></li><li id="members-following-personal-li" ><a id="user-members-following" href="https://hcommons.org/members/{{ profile_info.username }}/following/">Following <span class="count">23</span></a></li><li id="members-followers-personal-li" ><a id="user-members-followers" href="https://hcommons.org/members/{{ profile_info.username }}/followers/">Followers <span class="count">49</span></a></li><li id="events-personal-li" ><a id="user-events" href="https://hcommons.org/members/{{ profile_info.username }}/events/">Events</a></li><li id="groups-personal-li" ><a id="user-groups" href="https://hcommons.org/members/{{ profile_info.username }}/groups/">Groups <span class="no-count">0</span></a></li><li id="forums-personal-li" ><a id="user-forums" href="https://hcommons.org/members/{{ profile_info.username }}/forums/">Forums</a></li><li id="docs-personal-li" ><a id="user-docs" href="https://hcommons.org/members/{{ profile_info.username }}/docs/">Docs <span class="count">0</span></a></li><li id="settings-personal-li" ><a id="user-settings" href="https://hcommons.org/members/{{ profile_info.username }}/settings/">Settings</a></li>
+                        <li id="xprofile-personal-li"  class="current selected"><a id="user-xprofile" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">Profile</a></li><li id="activity-personal-li" ><a id="user-activity" href="https://hcommons.org/members/{{ profile_info.username }}/activity/">Activity</a></li><li id="blogs-personal-li" ><a id="user-blogs" href="https://hcommons.org/members/{{ profile_info.username }}/blogs/">Sites <span class="count">1</span></a></li><li id="notifications-personal-li" ><a id="user-notifications" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">Notifications <span class="count">9</span></a></li><li id="messages-personal-li" ><a id="user-messages" href="https://hcommons.org/members/{{ profile_info.username }}/messages/">Messages <span class="no-count">0</span></a></li><li id="members-followers-personal-li" ><a id="user-members-followers" href="https://hcommons.org/members/{{ profile_info.username }}/followers/">Followers <span class="count">49</span></a></li><li id="events-personal-li" ><a id="user-events" href="https://hcommons.org/members/{{ profile_info.username }}/events/">Events</a></li><li id="groups-personal-li" ><a id="user-groups" href="https://hcommons.org/members/{{ profile_info.username }}/groups/">Groups <span class="no-count">0</span></a></li><li id="forums-personal-li" ><a id="user-forums" href="https://hcommons.org/members/{{ profile_info.username }}/forums/">Forums</a></li><li id="docs-personal-li" ><a id="user-docs" href="https://hcommons.org/members/{{ profile_info.username }}/docs/">Docs <span class="count">0</span></a></li><li id="settings-personal-li" ><a id="user-settings" href="https://hcommons.org/members/{{ profile_info.username }}/settings/">Settings</a></li>
 
                     </ul>
                 </div>
