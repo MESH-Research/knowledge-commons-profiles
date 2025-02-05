@@ -108,6 +108,18 @@
                 <label for="id_name" class="form-label">Name: </label>
                 {% crispy_field form.name %}
             </div>
+
+            <div id="div_id_affiliation" class="mb-3">
+                <label for="id_affiliation" class="form-label">Affiliation: </label>
+                {% crispy_field form.affiliation %}
+            </div>
+
+            <div id="div_id_website" class="mb-3">
+                <label for="id_website" class="form-label">Website: </label>
+                {% crispy_field form.website %}
+            </div>
+
+
         </div>
 
 		<div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
@@ -149,7 +161,15 @@
         {% endfor %}
 
 
-			</ul></div>		<div class="cv hideable"><h4>CV</h4><a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View file</a></div>		<div class="works-deposits hideable show-more"><h4>KCWorks</h4>
+			</ul></div>		<div class="cv hideable"><h4>CV</h4>
+
+        <a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View current file</a> or upload new:
+                <div id="div_id_cv_file" class="mb-3" style="margin-top:5px;">
+                <label for="id_cv_file" class="form-label">New CV file: </label>
+                {% crispy_field form.cv_file %}
+            </div>
+
+    </div>		<div class="works-deposits hideable show-more"><h4>KCWorks</h4>
 
     {{ works_html | safe }}
 

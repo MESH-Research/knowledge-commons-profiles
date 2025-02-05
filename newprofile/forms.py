@@ -85,10 +85,14 @@ class ProfileForm(forms.ModelForm):
             "linkedin",
             "website",
             "bluesky",
+            "cv_file",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"style": "width:100%"}),
             "name": forms.TextInput(attrs={"style": "width:100%"}),
+            "affiliation": forms.TextInput(attrs={"style": "width:100%"}),
+            "website": forms.TextInput(attrs={"style": "width:100%"}),
+            "cv_file": forms.FileInput(attrs={"style": "width:100%;"}),
             "twitter": forms.TextInput(attrs={"style": "width:130px"}),
             "mastodon": forms.TextInput(attrs={"style": "width:130px"}),
             "orcid": forms.TextInput(attrs={"style": "width:130px"}),

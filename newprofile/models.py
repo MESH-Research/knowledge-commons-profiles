@@ -353,34 +353,16 @@ class Profile(models.Model):
     linkedin = models.TextField(blank=True, null=True)
     website = models.TextField(blank=True, null=True)
 
-    """
-    Upcoming Talks and Conferences
-    Projects
-    Education
-    Publications
-    About
-    ORCID iD
-    Twitter handle
-    Site
-    Institutional or Other Affiliation
-    Title
-    Figshare URL
-    Academic Interests
-    Commons Groups
-    Recent Commons Activity
-    Commons Sites
-    Blog Posts
-    Mastodon handle
-    Name
-    Memberships
-    Facebook URL
-    LinkedIn URL
-    Website URL
-    CORE Deposits
-    CV
-    Works Deposits
-    Mastodon Feed
-    """
+    # visibility settings
+    show_academic_interests = models.BooleanField(default=True)
+    show_projects = models.BooleanField(default=True)
+    show_publications = models.BooleanField(default=True)
+    show_talks = models.BooleanField(default=True)
+    show_cv = models.BooleanField(default=True)
+    show_bio = models.BooleanField(default=True)
+    show_education = models.BooleanField(default=True)
+    show_about_user = models.BooleanField(default=True)
+    show_works = models.BooleanField(default=True)
 
     def __str__(self):
         """
