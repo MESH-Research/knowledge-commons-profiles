@@ -229,25 +229,25 @@
 }
 
 .profile #item-main .username a::before {
-  background-image: url( '../assets/img/hc_july8_smaller.png' );
+  background-image: url( '/static/img/hc_july8_smaller.png' );
 }
 .profile #item-main .twitter a::before {
-  background-image: url( '../assets/img/Twitter_Logo_Blue.png' );
+  background-image: url( '/static/img/Twitter_Logo_Blue.png' );
 }
 .profile #item-main .mastodon a::before {
-  background-image: url( '../assets/img/mastodon.png' );
+  background-image: url( '/static/img/mastodon.png' );
 }
 .profile #item-main .orcid a::before {
-  background-image: url( '../assets/img/iD-icon.png' );
+  background-image: url( '/static/img/iD-icon.png' );
 }
 .profile #item-main .facebook a::before {
-  background-image: url( '../assets/img/FB-f-Logo__blue_29.png' );
+  background-image: url( '/static/FB-f-Logo__blue_29.png' );
 }
 .profile #item-main .linkedin a::before {
-  background-image: url( '../assets/img/In-2C-14px.png' );
+  background-image: url( '/static/img/In-2C-14px.png' );
 }
 .profile #item-main .website a::before {
-  background-image: url( '../assets/img/www-icon.png' );
+  background-image: url( '/static/img/www-icon.png' );
 }
 
 /* jquery dynamic max height */

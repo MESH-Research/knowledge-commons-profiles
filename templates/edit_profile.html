@@ -2,6 +2,8 @@
 {% load crispy_forms_tags crispy_forms_field %}
 
 {% block content %}
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
 
     <div id="item-header-cover" class="table">
 
@@ -80,8 +82,9 @@
 <div id="profile-main" role="main">
 
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+
+<div style="display:flex">
+
 	<div class="left">
 
 
@@ -145,9 +148,9 @@
 
     </div>									</div>
 
-</form>
 
 
+</div>
 
 
 </div><!-- .profile -->
@@ -181,4 +184,5 @@
 
 </div><!-- #main .wrapper -->
 
+</form>
 {% endblock content %}
