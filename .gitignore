@@ -272,6 +272,8 @@ keys/*.crt
 # JIRA plugin
 atlassian-ide-plugin.xml
 
+staticfiles
+
 # Cursive Clojure plugin
 .idea/replstate.xml
 
