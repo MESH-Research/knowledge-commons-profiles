@@ -520,18 +520,21 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 			<div class="username">
 				<span class="social-label"><em>Commons</em> username:</span> <a href="#" title="Your username">{{ request.user.username }}</a>			</div>
 							<div class="twitter">
-					<span class="social-label"></span>
+                                <span class="social-label"></span> <a href="https://twitter.com/{{ profile_info.twitter }}" rel="me"></a>
 
-                            <div id="div_id_twitter" class="mb-3">
-                            <label for="id_twitter" class="form-label"><em>Twitter</em> handle:</label>
-                {% crispy_field form.twitter %}
-            </div>
+                            <div id="div_id_twitter" class="mb-3" style="display:inline-block"><label for="id_twitter" class="form-label" style="width:120px;display:inline-block;"><em>Twitter</em> handle:</label>{% crispy_field form.twitter %}</div>
 
                             </div>
 										<div class="mastodon">
-					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'>{{ profile_info.mastodon }}</a>				</div>
+					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'></a>
+                                            <div id="div_id_mastodon" class="mb-3" style="display:inline-block"><label for="id_mastodon" class="form-label" style="width:120px;display:inline-block;"><em>Mastodon</em> handle:</label>{% crispy_field form.mastodon %}</div>
+
+                                        </div>
 										<div class="orcid">
-					<span class="social-label"><em>ORCID</em> iD:</span> <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me">{{ profile_info.orcid }}</a>				</div>
+					<span class="social-label"><em>ORCID</em> iD:</span> <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me"></a>
+                                        <div id="div_id_orcid" class="mb-3" style="display:inline-block"><label for="id_orcid" class="form-label" style="width:120px;display:inline-block;"><em>ORCID</em> iD:</label>{% crispy_field form.orcid %}</div>
+                                        
+                                        </div>
 																	</div><!-- #item-main -->
 
 

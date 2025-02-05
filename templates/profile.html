@@ -516,7 +516,7 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 			<div class="username">
 				<span class="social-label"><em>Commons</em> username:</span> <a href="" title="Send private message">@{{ profile_info.username }}</a>			</div>
 							<div class="twitter">
-					<span class="social-label"><em>Twitter</em> handle:</span> <a href="https://twitter.com/{{ profile_info.twitter }}<" rel="me">{{ profile_info.twitter }}</a>				</div>
+					<span class="social-label"><em>Twitter</em> handle:</span> <a href="https://twitter.com/{{ profile_info.twitter }}" rel="me">{{ profile_info.twitter }}</a>				</div>
 										<div class="mastodon">
 					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'>{{ profile_info.mastodon }}</a>				</div>
 										<div class="orcid">
@@ -539,7 +539,7 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 
 			<div id="item-buttons">
 								<span class="generic-button" style="display: none;"></span>
-				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div><div id="edit-personal-li"><a id="edit" href="https://hcommons.org/members/{{ profile_info.username }}/profile/edit/" class=" button">Edit</a></div>
+				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div><div id="edit-personal-li"><a id="edit" href="{% url "edit_profile" %}" class=" button">Edit</a></div>
 			</div><!-- #item-buttons -->
 
 					</div><!-- #item-meta -->

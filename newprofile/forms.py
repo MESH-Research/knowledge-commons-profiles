@@ -88,6 +88,9 @@ class ProfileForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={"style": "width:100%"}),
             "name": forms.TextInput(attrs={"style": "width:100%"}),
+            "twitter": forms.TextInput(attrs={"style": "width:130px"}),
+            "mastodon": forms.TextInput(attrs={"style": "width:130px"}),
+            "orcid": forms.TextInput(attrs={"style": "width:130px"}),
             "about_user": SanitizedTinyMCE(
                 attrs={
                     "cols": 80,
