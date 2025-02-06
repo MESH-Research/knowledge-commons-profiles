@@ -33,7 +33,7 @@ def profile(request, user="", create=False):
 
     This view renders the main page of the site.
     """
-    api = API(request, user, use_wordpress=False, create=create)
+    api = API(request, user, use_wordpress=True, create=create)
 
     # TODO: if "create" then redirect to the profile edit page
 
@@ -41,7 +41,7 @@ def profile(request, user="", create=False):
 
     # get logged in user profile
     api_me = (
-        API(request, request.user.username, use_wordpress=False, create=False)
+        API(request, request.user.username, use_wordpress=True, create=False)
         if request.user.is_authenticated
         else None
     )
@@ -106,7 +106,7 @@ class ProfileView(APIView):
 
         user = kw.get("user_name", "")
 
-        api = API(request, user, use_wordpress=False)
+        api = API(request, user, use_wordpress=True)
 
         profile_info = api.get_profile_info()
 

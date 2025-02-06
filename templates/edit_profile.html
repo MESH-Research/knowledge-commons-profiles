@@ -123,9 +123,7 @@
         </div>
 
 		<div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
-            {%  for interest in academic_interests %}
-            <li><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow">{{ interest }}</a></li>
-            {% endfor %}
+            {{ form.academic_interests }}
 
             </ul></div>		<div class="commons-groups wordblock show-more"><h4>Commons Groups</h4><h5>HC</h5><ul class="group-type-hc"><li><a href="https://hcommons.org/groups/humanities-commons-technical-advisory-group/">Humanities Commons Technical Advisory Group</a></li><li><a href="https://hcommons.org/groups/oa-collab/">OA Collab</a></li></ul></div>		<div class="recent-commons-activity"><h4>Recent Commons Activity</h4><ul><li class="new_avatar"> changed their profile picture</li>
 <li class="joined_group"> joined the group <a href="https://mla.hcommons.org/groups/literary-and-cultural-theory/" class=""></a><a href="https://mla.hcommons.org/groups/literary-and-cultural-theory/">TM Literary and Cultural Theo&hellip;</a></li>

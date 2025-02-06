@@ -5,9 +5,12 @@ Forms for the profile app
 from bleach.linkifier import Linker
 from bleach.sanitizer import Cleaner
 from django import forms
+from django_select2.forms import ModelSelect2MultipleWidget
 from tinymce.widgets import TinyMCE
 
-from newprofile.models import Profile
+from newprofile.models import Profile, AcademicInterest
+
+from django_select2 import forms as s2forms
 
 
 class SanitizedTinyMCE(TinyMCE):
@@ -91,6 +94,7 @@ class ProfileForm(forms.ModelForm):
             "show_cv",
             "show_blog_posts",
             "show_mastodon_feed",
+            "academic_interests",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"style": "width:100%"}),
@@ -102,6 +106,16 @@ class ProfileForm(forms.ModelForm):
             "mastodon": forms.TextInput(attrs={"style": "width:130px"}),
             "orcid": forms.TextInput(attrs={"style": "width:130px"}),
             "bluesky": forms.TextInput(attrs={"style": "width:130px"}),
+            "academic_interests": ModelSelect2MultipleWidget(
+                model=AcademicInterest,
+                search_fields=["text"],
+                attrs={
+                    "data-minimum-input-length": 0,
+                    "data-placeholder": "Start typing an interest...",
+                    "data-close-on-select": "false",
+                    "style": "width:100%;",
+                },
+            ),
             "show_works": forms.CheckboxInput(
                 attrs={"style": "display: inline-block; float:right;"}
             ),

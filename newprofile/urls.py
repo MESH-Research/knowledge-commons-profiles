@@ -35,6 +35,7 @@ urlpatterns = (
         # If you want to specific the after-login-redirect-URL, use parameter "?next=/the/path/you/want"
         # with this view.
         re_path(r"^admin/login/$", django_saml2_auth.views.signin),
+        path("select2/", include("django_select2.urls")),
         path(
             r"api/v1.0/user/<str:user_name>/",
             ProfileView.as_view(),
