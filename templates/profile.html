@@ -22,8 +22,10 @@
 										<div class="mastodon">
 					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'>{{ profile_info.mastodon }}</a>				</div>
 
+                    {% if profile_info.bluesky %}
                     <div class="bluesky">
-					<span class="social-label"><em>Bluesky</em> handle:</span> <a href="https://bsky.app/profile/{{ profile_info.bluesky }}" rel="me">{{ profile_info.bluesky }}</a>				</div>
+					<span class="social-label"><a href="https://bsky.app/profile/{{ profile_info.bluesky }}" rel="me">{{ profile_info.bluesky }}</a>				</div>
+                    {% endif %}
 
 										<div class="orcid">
 					<span class="social-label"><em>ORCID</em> iD:</span> <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me">{{ profile_info.orcid }}</a>				</div>
