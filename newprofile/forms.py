@@ -5,7 +5,10 @@ Forms for the profile app
 from bleach.linkifier import Linker
 from bleach.sanitizer import Cleaner
 from django import forms
-from django_select2.forms import ModelSelect2MultipleWidget
+from django_select2.forms import (
+    ModelSelect2MultipleWidget,
+    ModelSelect2TagWidget,
+)
 from tinymce.widgets import TinyMCE
 
 from newprofile.models import Profile, AcademicInterest
@@ -61,6 +64,21 @@ class SanitizedTinyMCE(TinyMCE):
         return value
 
 
+class AcademicInterestsSelect2TagWidget(ModelSelect2TagWidget):
+    queryset = AcademicInterest.objects.all()
+
+    def value_from_datadict(self, data, files, name):
+        values = set(super().value_from_datadict(data, files, name))
+        pks = self.queryset.filter(**{"text__in": list(values)}).values_list(
+            "text", flat=True
+        )
+        pks = set(map(str, pks))
+        cleaned_values = list(pks)
+        for val in values - pks:
+            cleaned_values.append(self.queryset.create(text=val).pk)
+        return cleaned_values
+
+
 class ProfileForm(forms.ModelForm):
 
     class Meta:
@@ -106,15 +124,17 @@ class ProfileForm(forms.ModelForm):
             "mastodon": forms.TextInput(attrs={"style": "width:130px"}),
             "orcid": forms.TextInput(attrs={"style": "width:130px"}),
             "bluesky": forms.TextInput(attrs={"style": "width:130px"}),
-            "academic_interests": ModelSelect2MultipleWidget(
+            "academic_interests": AcademicInterestsSelect2TagWidget(
                 model=AcademicInterest,
-                search_fields=["text"],
+                search_fields=["text__icontains"],
                 attrs={
                     "data-minimum-input-length": 0,
                     "data-placeholder": "Start typing an interest...",
                     "data-close-on-select": "false",
+                    "data-token-separators": "[',']",
                     "style": "width:100%;",
                 },
+                build_attrs={},
             ),
             "show_works": forms.CheckboxInput(
                 attrs={"style": "display: inline-block; float:right;"}

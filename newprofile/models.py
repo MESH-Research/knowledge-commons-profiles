@@ -383,7 +383,7 @@ class AcademicInterest(models.Model):
     A model for an academic interest
     """
 
-    text = models.CharField(max_length=255)
+    text = models.CharField(max_length=255, db_index=True)
 
     def __str__(self):
         """

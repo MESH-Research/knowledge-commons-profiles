@@ -146,6 +146,10 @@ def edit_profile(request):
         username=request.user.username
     )
 
+    user = Profile.objects.prefetch_related("academic_interests").get(
+        username="kfitz"
+    )
+
     if request.method == "POST":
         form = ProfileForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
