@@ -131,11 +131,7 @@
 		<div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
             {{ form.academic_interests }}
 
-            </ul></div>		<div class="commons-groups wordblock show-more"><h4>Commons Groups</h4><h5>HC</h5><ul class="group-type-hc"><li><a href="https://hcommons.org/groups/humanities-commons-technical-advisory-group/">Humanities Commons Technical Advisory Group</a></li><li><a href="https://hcommons.org/groups/oa-collab/">OA Collab</a></li></ul></div>		<div class="recent-commons-activity"><h4>Recent Commons Activity</h4><ul><li class="new_avatar"> changed their profile picture</li>
-<li class="joined_group"> joined the group <a href="https://mla.hcommons.org/groups/literary-and-cultural-theory/" class=""></a><a href="https://mla.hcommons.org/groups/literary-and-cultural-theory/">TM Literary and Cultural Theo&hellip;</a></li>
-<li class="joined_group"> joined the group <a href="https://mla.hcommons.org/groups/book-history-print-cultures-lexicography/" class=""></a><a href="https://mla.hcommons.org/groups/book-history-print-cultures-lexicography/">TM Book History, Print Cultur&hellip;</a></li>
-<li class="joined_group"> joined the group <a href="https://mla.hcommons.org/groups/digital-humanities/" class=""></a><a href="https://mla.hcommons.org/groups/digital-humanities/">TC Digital Humanities</a></li>
-</ul></div>			</div>
+            </ul></div>		<div class="commons-groups wordblock show-more"><h4>Commons Groups</h4></div>		<div class="recent-commons-activity"><h4>Recent Commons Activity</h4></div>			</div>
 
 	<div class="right">
 		<div class="about hideable"><h4>About</h4>
@@ -162,7 +158,7 @@
             <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
         {% endfor %}
 
-        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4> <label for="id_show_blog_posts" class="form-label" id="label_show_blog_posts" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_blog_posts %}
+        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><div><label for="id_show_blog_posts" class="form-label" id="label_show_blog_posts" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_blog_posts %}</div>
 
         <ul>
             {% for post in blog_posts %}
@@ -172,13 +168,13 @@
 
 			</ul></div>		<div class="cv hideable"><h4>CV</h4> <div><label for="id_show_cv" class="form-label" id="label_show_cv" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_cv %}</div>
 
-        <a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View current file</a> or upload new:
+        {% if profile.cv %}<a href="{{ profile.cv }}" target="_blank" rel="nofollow">View current file</a> or upload new:{% endif %}
                 <div id="div_id_cv_file" class="mb-3" style="margin-top:5px;">
                 <label for="id_cv_file" class="form-label">New CV file: </label>
                 {% crispy_field form.cv_file %}
             </div>
 
-    </div>		<div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div>									</div>
+    </div>		<div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><div><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div></div>		</div>
 
 
 

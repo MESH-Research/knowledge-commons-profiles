@@ -156,4 +156,7 @@ def edit_profile(request):
             form.save()
     else:
         form = ProfileForm(instance=user)
-    return render(request, "edit_profile.html", {"form": form})
+
+    return render(
+        request, "edit_profile.html", {"form": form, "profile": user}
+    )
