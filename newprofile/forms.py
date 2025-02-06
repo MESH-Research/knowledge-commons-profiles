@@ -90,6 +90,7 @@ class ProfileForm(forms.ModelForm):
             "show_works",
             "show_cv",
             "show_blog_posts",
+            "show_mastodon_feed",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"style": "width:100%"}),
@@ -108,6 +109,9 @@ class ProfileForm(forms.ModelForm):
                 attrs={"style": "display: inline-block; float:right;"}
             ),
             "show_blog_posts": forms.CheckboxInput(
+                attrs={"style": "display: inline-block; float:right;"}
+            ),
+            "show_mastodon_feed": forms.CheckboxInput(
                 attrs={"style": "display: inline-block; float:right;"}
             ),
             "about_user": SanitizedTinyMCE(

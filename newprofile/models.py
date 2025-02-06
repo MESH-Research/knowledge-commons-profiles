@@ -364,6 +364,8 @@ class Profile(models.Model):
     show_about_user = models.BooleanField(default=True)
     show_works = models.BooleanField(default=True)
     show_blog_posts = models.BooleanField(default=True)
+    show_commons_groups = models.BooleanField(default=True)
+    show_mastodon_feed = models.BooleanField(default=True)
 
     def __str__(self):
         """

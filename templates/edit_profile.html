@@ -151,12 +151,15 @@
                 </div>
 
     </div>		<div class="mastodon-feed hideable"><h4>Mastodon Feed</h4>
+
+        <div><label for="id_show_mastodon_feed" class="form-label" id="label_show_mastodon_feed" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_mastodon_feed %}</div>
+
         {% for post in mastodon_posts %}
             <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
         {% endfor %}
 
         </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4> <label for="id_show_blog_posts" class="form-label" id="label_show_blog_posts" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_blog_posts %}
-        
+
         <ul>
             {% for post in blog_posts %}
             <li><a href="https://{{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
