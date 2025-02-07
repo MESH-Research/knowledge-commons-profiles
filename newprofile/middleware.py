@@ -7,7 +7,10 @@ from datetime import datetime
 from urllib.parse import unquote
 
 import phpserialize
-from django.contrib.auth import get_user_model, login
+from django.contrib.auth import (
+    get_user_model,
+    login,
+)
 from django.db import connections
 
 User = get_user_model()
@@ -58,7 +61,7 @@ class WordPressAuthMiddleware:
         return None
 
     @staticmethod
-    def get_wordpress_user_id_and_and_email(username):
+    def get_wordpress_values(username):
         """
         Get the WordPress user ID and email associated with the given username
 
@@ -70,7 +73,7 @@ class WordPressAuthMiddleware:
             # This is stored in the wp_users table
             cursor.execute(
                 """
-                SELECT ID, user_email 
+                SELECT ID, user_email, user_pass
                 FROM wp_users 
                 WHERE user_login = %s
                 """,
@@ -80,9 +83,9 @@ class WordPressAuthMiddleware:
             if not user_id:
                 return None
 
-            user_id, user_email = user_id
+            user_id, user_email, user_password = user_id
 
-            return user_id, user_email
+            return user_id, user_email, user_password
 
     @staticmethod
     def get_meta_value(user_id):
@@ -121,9 +124,7 @@ class WordPressAuthMiddleware:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
         # get user ID and email from WordPress database
-        user_id, user_email = self.get_wordpress_user_id_and_and_email(
-            username
-        )
+        user_id, user_email, _ = self.get_wordpress_values(username)
 
         # get the session from the database
         meta_value_dict = self.get_meta_value(user_id=user_id)
