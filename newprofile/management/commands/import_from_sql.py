@@ -156,7 +156,10 @@ class Command(BaseCommand):
         if key == "Insert":
             # Check if current table is one we're
             # looking for
-            table_name = val["table_name"][0]["value"]
+
+            table_name = val["table"]["TableName"][0]["value"]
+
+            # table_name = val["table_name"][0]["value"]
 
             if table_name in target_tables:
                 table_idx = self._build_index(

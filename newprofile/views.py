@@ -142,9 +142,9 @@ def edit_profile(request):
     :return: A rendered HTML template with a form.
     :rtype: django.http.HttpResponse
     """
-    user = Profile.objects.prefetch_related("academic_interests").get(
-        username=request.user.username
-    )
+    # user = Profile.objects.prefetch_related("academic_interests").get(
+    #    username=request.user.username
+    # )
 
     user = Profile.objects.prefetch_related("academic_interests").get(
         username="kfitz"

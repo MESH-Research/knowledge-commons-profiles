@@ -1,0 +1,36 @@
+[tool.setuptools]
+py-modules = []
+
+[project]
+name = "newprofile"
+version = "0.1.0"
+description = "The profiles system for Knowledge Commons"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bleach>=6.2.0",
+    "bleach-allowlist==1.0.3",
+    "bs4>=0.0.2",
+    "crispy-bootstrap5>=2024.10",
+    "django>=5.1.6",
+    "django-bleach>=1.0.0",
+    "django-crispy-forms>=2.3",
+    "django-debug-toolbar>=5.0.1",
+    "django-filter>=24.3",
+    "django-redis>=5.4.0",
+    "django-select2>=8.2.3",
+    "django-sslserver>=0.22",
+    "django-tinymce==3.7.1",
+    "djangorestframework>=3.15.2",
+    "grafana-django-saml2-auth>=3.18.2",
+    "lxml>=5.3.0",
+    "markdown>=3.7",
+    "mysqlclient>=2.2.7",
+    "phpserialize>=1.3",
+    "psycopg2-binary>=2.9.10",
+    "requests>=2.32.3",
+    "rich>=13.9.4",
+    "sphinx>=8.1.3",
+    "sqloxide>=0.1.54",
+    "tqdm>=4.67.1",
+]

@@ -262,6 +262,11 @@ cmake-build-*/
 # IntelliJ
 out/
 
+stunnel
+
+uv.lock
+.python-version
+
 keys/*.pem
 keys/*.key
 keys/*.crt
