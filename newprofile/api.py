@@ -224,3 +224,18 @@ class API:
         )
 
         return groups
+
+    def get_cover_image(self):
+        """
+        Return the path to the user's cover image
+        :return: a cover image
+        """
+        cover = self.profile.coverimage_set.first()
+        if cover:
+            return cover.file_path
+
+        result = WpUserMeta.objects.filter(meta_key="_bb_cover_photo").first()
+
+        return phpserialize.unserialize(result.meta_value.encode())[
+            b"attachment"
+        ].decode("utf-8")

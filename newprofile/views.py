@@ -57,7 +57,7 @@ def profile(request, user="", create=False):
 
     context = {
         "profile_info": profile_info,
-        "cover_image": api.profile.coverimage_set.first().file_path,
+        "cover_image": api.get_cover_image,
         "academic_interests": api.get_academic_interests(),
         "education": api.get_education(),
         "about_user": api.get_about_user(),
