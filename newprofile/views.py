@@ -39,13 +39,21 @@ def profile(request, user="", create=False):
 
     profile_info = api.get_profile_info()
 
-    # get logged in user profile
-    api_me = (
-        API(request, request.user.username, use_wordpress=True, create=False)
-        if request.user.is_authenticated
-        else None
-    )
-    my_profile_info = api_me.get_profile_info() if api_me else None
+    if user == request.user.username:
+        my_profile_info = profile_info
+    else:
+        # get logged in user profile
+        api_me = (
+            API(
+                request,
+                request.user.username,
+                use_wordpress=True,
+                create=False,
+            )
+            if request.user.is_authenticated
+            else None
+        )
+        my_profile_info = api_me.get_profile_info() if api_me else None
 
     context = {
         "profile_info": profile_info,

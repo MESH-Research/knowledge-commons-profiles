@@ -24,8 +24,10 @@
 			</h4>
 			<div class="username">
 				<span class="social-label"><em>Commons</em> username:</span> <a href="" title="Send private message">@{{ profile_info.username }}</a>			</div>
-							<div class="twitter">
+					{% if profile_info.twitter %}
+                    <div class="twitter">
 					<span class="social-label"><em>Twitter</em> handle:</span> <a href="https://twitter.com/{{ profile_info.twitter }}" rel="me">{{ profile_info.twitter }}</a>				</div>
+                    {% endif %}
 
 										<div class="mastodon">
 					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'>{{ profile_info.mastodon }}</a>				</div>
@@ -55,7 +57,11 @@
 
 			<div id="item-buttons">
 								<span class="generic-button" style="display: none;"></span>
-				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div><div id="edit-personal-li"><a id="edit" href="{% url "edit_profile" %}" class=" button">Edit</a></div>
+				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div>
+
+                {% if request.user.username == profile_info.username %}
+                    <div id="edit-personal-li"><a id="edit" href="{% url "edit_profile" %}" class=" button">Edit</a></div>
+                {% endif %}
 			</div><!-- #item-buttons -->
 
 					</div><!-- #item-meta -->
@@ -87,39 +93,56 @@
 
 <form>
 	<div class="left">
-		<div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
+        <div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
             {%  for interest in academic_interests %}
-            <li><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow">{{ interest }}</a></li>
+                <li><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow">{{ interest }}</a></li>
             {% endfor %}
+            </ul></div>
 
-            </ul></div>		<div class="commons-groups wordblock show-more"><h4>Commons Groups</h4><ul class="group-type-hc">
-        {% for group in groups %}
-        <li><a href="https://hcommons.org/groups/{{ group.group.slug }}/">{{ group.group.name }}</a></li>
-        {% endfor %}
-        </ul></div>			</div>
+        {% if groups|length > 0 %}
+            <div class="commons-groups wordblock show-more"><h4>Commons Groups</h4><ul class="group-type-hc">
+            {% for group in groups %}
+                <li><a href="https://hcommons.org/groups/{{ group.group.slug }}/">{{ group.group.name }}</a></li>
+            {% endfor %}
+            </ul></div>
+        {% endif %}
+    </div>
 
 	<div class="right">
 		<div class="about hideable"><h4>About</h4>
+                {% if about_user %}
+                    {{ about_user|safe }}
+                {% else %}
+                    This user has not yet completed their profile.
+                {% endif %}
+        </div>
+        {% if profile_info.education %}
+        <div class="education hideable"><h4>Education</h4>{{ education|safe|linebreaksbr }}</div>
+        {% endif %}
 
-            {{ about_user|safe }}
+        {% if mastodon_posts|length > 0 %}
+            <div class="mastodon-feed hideable"><h4>Mastodon Feed</h4>
+            {% for post in mastodon_posts %}
+                <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
+            {% endfor %}
+            </div>
+        {% endif %}
 
-        </div>		<div class="education hideable"><h4>Education</h4>{{ education|safe|linebreaksbr }}</div>		<div class="mastodon-feed hideable"><h4>Mastodon Feed</h4>
-        {% for post in mastodon_posts %}
-            <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
-        {% endfor %}
-
-        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><ul>
+        {% if blog_posts|length > 0 %}
+        <div class="blog-posts hideable show-more"><h4>Blog Posts</h4><ul>
             {% for post in blog_posts %}
-            <li><a href="https://{{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
-        {% endfor %}
+                <li><a href="https://{{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
+            {% endfor %}
+			</ul></div>
+        {% endif %}
 
-
-			</ul></div>		<div class="cv hideable"><h4>CV</h4><a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View file</a></div>		<div class="works-deposits hideable show-more"><h4>KCWorks</h4>
-
-    {{ works_html | safe }}
-
-
-    </div>									</div>
+        <div class="cv hideable"><h4>CV</h4><a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View file</a></div>
+        {% if works_html %}
+        <div class="works-deposits hideable show-more"><h4>KCWorks</h4>
+            {{ works_html | safe }}
+        </div>
+        {% endif %}
+    </div>
 
 </form>
 

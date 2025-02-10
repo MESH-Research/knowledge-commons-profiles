@@ -397,6 +397,10 @@ class AcademicInterest(models.Model):
 
 
 class WpBpGroupMember(models.Model):
+    """
+    A model for a WordPress group member
+    """
+
     id = models.BigAutoField(primary_key=True)
     group = models.ForeignKey(
         "WpBpGroup",
@@ -420,6 +424,10 @@ class WpBpGroupMember(models.Model):
     invite_sent = models.BooleanField(default=False)
 
     class Meta:
+        """
+        Metadata for the WpBpGroupMember model
+        """
+
         db_table = "wp_bp_groups_members"
         indexes = [
             models.Index(fields=["group_id"]),
@@ -432,6 +440,10 @@ class WpBpGroupMember(models.Model):
 
 
 class WpBpGroup(models.Model):
+    """
+    A model for a WordPress group
+    """
+
     STATUS_CHOICES = (
         ("public", "Public"),
         ("private", "Private"),
@@ -453,6 +465,10 @@ class WpBpGroup(models.Model):
     parent_id = models.BigIntegerField(default=0, db_index=True)
 
     class Meta:
+        """
+        Metadata for the WpBpGroup model
+        """
+
         db_table = "wp_bp_groups"
         indexes = [
             models.Index(fields=["creator_id"]),
