@@ -35,8 +35,7 @@ class WorksDeposits:
         api_endpoint = self.works_url + "/api/records"
         endpoint = (
             f"{api_endpoint}?q=metadata.creators.person_or_org."
-            f"identifiers.identifier:{self.user}&size=100&sort="
-            f"published-desc"
+            f"identifiers.identifier:{self.user}&size=100"
         )
 
         try:

@@ -8,6 +8,13 @@ from django.http import Http404
 from newprofile import mastodon
 from newprofile.models import Profile, WpUser, WpBlog, WpPostSubTable
 from newprofile.works import WorksDeposits
+from django.contrib.auth import (
+    get_user_model,
+    login,
+)
+from django.db import connections
+
+User = get_user_model()
 
 
 class API:
@@ -18,10 +25,6 @@ class API:
     def __init__(self, request, user, use_wordpress=True, create=False):
         """
         Initialise the API class with a request and user object.
-
-        Args:
-            request: The request object.
-            user: The user object.
         """
         self.request = request
         self.user = user
@@ -31,10 +34,19 @@ class API:
             ).get(username=user)
         except Profile.DoesNotExist as exc:
             if create:
-                self.profile = Profile.objects.create(username=user)
+                self.profile = Profile.objects.create(
+                    username=user, email=email
+                )
             else:
-                # raise 404
-                raise Http404("Profile not found") from exc
+                # if the user exists but the Profile doesn't, then create it
+                try:
+                    user_object = User.objects.get(username=user)
+                    self.profile = Profile.objects.create(
+                        username=user, email=user_object.email
+                    )
+                except User.DoesNotExist as exc:
+                    # raise 404
+                    raise Http404("Profile not found") from exc
 
         self.use_wordpress = use_wordpress
 
