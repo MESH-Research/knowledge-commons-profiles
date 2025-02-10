@@ -510,3 +510,17 @@ class CoverImage(models.Model):
     file_path = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class ProfileImage(models.Model):
+    """
+    A model for a profile image
+    """
+
+    profile = models.ForeignKey(
+        "Profile", on_delete=models.CASCADE, null=True, default=""
+    )
+    thumb = models.CharField(max_length=255)
+    full = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

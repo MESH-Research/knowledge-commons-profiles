@@ -2,7 +2,13 @@
 A class of API calls for user details
 """
 
+import hashlib
+from urllib.parse import urlencode
+
 import phpserialize
+from django.contrib.auth import (
+    get_user_model,
+)
 from django.db import connections
 from django.http import Http404
 
@@ -16,11 +22,6 @@ from newprofile.models import (
     WpUserMeta,
 )
 from newprofile.works import WorksDeposits
-from django.contrib.auth import (
-    get_user_model,
-    login,
-)
-from django.db import connections
 
 User = get_user_model()
 
@@ -42,9 +43,7 @@ class API:
             ).get(username=user)
         except Profile.DoesNotExist as exc:
             if create:
-                self.profile = Profile.objects.create(
-                    username=user, email=email
-                )
+                self.profile = Profile.objects.create(username=user)
             else:
                 # if the user exists but the Profile doesn't, then create it
                 try:
@@ -239,3 +238,31 @@ class API:
         return phpserialize.unserialize(result.meta_value.encode())[
             b"attachment"
         ].decode("utf-8")
+
+    def get_profile_photo(self):
+        """
+        Return the path to the user's profile image
+        :return:
+        """
+
+        # see if we have a local entry
+        print(self.profile.profileimage_set.count())
+        profile_image = self.profile.profileimage_set.first()
+        print(profile_image)
+        if profile_image:
+            return profile_image.full
+
+        # Fall back to Gravatar
+        email = self.profile.email
+        # default = "https://www.gravatar.com/avatar/ad42b9f55af0c9b73cd642b3c8b7853b?s=150&r=g&d=identicon"
+        size = 150
+
+        # Encode the email to lowercase and then to bytes
+        email_encoded = email.lower().encode("utf-8")
+
+        # Generate the SHA256 hash of the email
+        email_hash = hashlib.sha256(email_encoded).hexdigest()
+
+        # Construct the URL with encoded query parameters
+        query_params = urlencode({"s": str(size)})
+        return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
