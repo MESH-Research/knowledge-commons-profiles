@@ -20,6 +20,7 @@ from newprofile.models import (
     WpPostSubTable,
     WpBpGroupMember,
     WpUserMeta,
+    WpTermRelationships,
 )
 from newprofile.works import WorksDeposits
 
@@ -246,9 +247,7 @@ class API:
         """
 
         # see if we have a local entry
-        print(self.profile.profileimage_set.count())
         profile_image = self.profile.profileimage_set.first()
-        print(profile_image)
         if profile_image:
             return profile_image.full
 
@@ -266,3 +265,33 @@ class API:
         # Construct the URL with encoded query parameters
         query_params = urlencode({"s": str(size)})
         return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
+
+    def get_memberships(self):
+        meta_object = WpUserMeta.objects.filter(
+            meta_key="shib_ismemberof", user=self.wp_user
+        ).first()
+
+        try:
+            # this is double serialized
+            decoded_list = phpserialize.unserialize(
+                phpserialize.unserialize(meta_object.meta_value.encode())
+            )
+
+            memberships = []
+
+            # we're looking for things like this:
+            # CO:COU:HASTAC:members:active
+            for item in decoded_list:
+                item = decoded_list[item].decode("utf-8")
+                if item.startswith("CO:COU:") and item.endswith(
+                    ":members:active"
+                ):
+                    society = item.split(":")[2]
+
+                    if society != "HC":
+                        memberships.append(society)
+
+            return memberships
+
+        except Exception as e:
+            return []

@@ -72,6 +72,7 @@ class WpPostSubTable(models.Model):
         Metadata for the WpPost model
         """
 
+        managed = False
         db_table = "wp_posts"
 
     def __str__(self):
@@ -145,6 +146,7 @@ class WpPost(models.Model):
         """
 
         db_table = "wp_posts"
+        managed = False
         indexes = [
             models.Index(
                 fields=["post_type", "post_status", "post_date", "id"],
@@ -184,6 +186,7 @@ class WpBlog(models.Model):
         """
 
         db_table = "wp_blogs"
+        managed = False
         indexes = [
             models.Index(fields=["domain", "path"], name="domain"),
         ]
@@ -218,6 +221,7 @@ class WpProfileData(models.Model):
         Metadata for the WpProfileData model
         """
 
+        managed = False
         db_table = "wp_bp_xprofile_data"
 
     def __str__(self):
@@ -251,6 +255,7 @@ class WpProfileFields(models.Model):
         Metadata for the WpProfileFields model
         """
 
+        managed = False
         db_table = "wp_bp_xprofile_fields"
 
     def __str__(self):
@@ -290,6 +295,7 @@ class WpUser(models.Model):
         """
 
         db_table = "wp_users"
+        managed = False
         indexes = [
             models.Index(fields=["user_login"], name="user_login_key"),
         ]
@@ -429,6 +435,7 @@ class WpBpGroupMember(models.Model):
         """
 
         db_table = "wp_bp_groups_members"
+        managed = False
         indexes = [
             models.Index(fields=["group_id"]),
             models.Index(fields=["is_admin"]),
@@ -470,6 +477,7 @@ class WpBpGroup(models.Model):
         """
 
         db_table = "wp_bp_groups"
+        managed = False
         indexes = [
             models.Index(fields=["creator_id"]),
             models.Index(fields=["status"]),
@@ -495,6 +503,7 @@ class WpUserMeta(models.Model):
         """
 
         db_table = "wp_usermeta"
+        managed = False
         indexes = [models.Index(fields=["meta_key"], name="meta_key_idx")]
 
 
@@ -524,3 +533,47 @@ class ProfileImage(models.Model):
     full = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class WpTermTaxonomy(models.Model):
+    """
+    A model for a WordPress term taxonomy
+    """
+
+    term_taxonomy_id = models.BigAutoField(primary_key=True)
+    term_id = models.BigIntegerField()
+    taxonomy = models.CharField(max_length=32)
+    description = models.TextField()
+    parent = models.BigIntegerField(default=0)
+    count = models.BigIntegerField(default=0)
+
+    class Meta:
+        """
+        Metadata for the WpTermTaxonomy model
+        """
+
+        db_table = "wp_term_taxonomy"
+        unique_together = (("term_id", "taxonomy"),)
+        managed = False
+        indexes = [models.Index(fields=["taxonomy"])]
+
+
+class WpTermRelationships(models.Model):
+    """
+    A model for a WordPress term relationship
+    """
+
+    object_id = models.BigIntegerField(primary_key=True)
+    term_taxonomy = models.ForeignKey(
+        WpTermTaxonomy, on_delete=models.CASCADE, db_column="term_taxonomy_id"
+    )
+    term_order = models.IntegerField(default=0)
+
+    class Meta:
+        """
+        Metadata for the WpTermRelationships model
+        """
+
+        db_table = "wp_term_relationships"
+        managed = False
+        indexes = [models.Index(fields=["term_taxonomy"])]
