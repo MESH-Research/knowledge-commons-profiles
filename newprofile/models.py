@@ -311,7 +311,7 @@ class Profile(models.Model):
     username = models.CharField(max_length=255, db_index=True)
     central_user_id = models.IntegerField(db_index=True, null=True)
     title = models.CharField(max_length=255, null=True)
-    affiliation = models.CharField(max_length=255)
+    affiliation = models.CharField(max_length=255, null=True)
     twitter = models.CharField(max_length=255, blank=True)
     github = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
@@ -475,3 +475,38 @@ class WpBpGroup(models.Model):
             models.Index(fields=["status"]),
             models.Index(fields=["parent_id"]),
         ]
+
+
+class WpUserMeta(models.Model):
+    """
+    A model for a WordPress user meta
+    """
+
+    umeta_id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(
+        "WpUser", on_delete=models.CASCADE, db_column="user_id"
+    )
+    meta_key = models.CharField(max_length=255, null=True, db_index=True)
+    meta_value = models.TextField(null=True)
+
+    class Meta:
+        """
+        Metadata for the WpUserMeta model
+        """
+
+        db_table = "wp_usermeta"
+        indexes = [models.Index(fields=["meta_key"], name="meta_key_idx")]
+
+
+class CoverImage(models.Model):
+    """
+    A model for a cover image
+    """
+
+    profile = models.ForeignKey(
+        "Profile", on_delete=models.CASCADE, null=True, default=""
+    )
+    filename = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

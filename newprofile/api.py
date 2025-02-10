@@ -2,6 +2,7 @@
 A class of API calls for user details
 """
 
+import phpserialize
 from django.db import connections
 from django.http import Http404
 
@@ -12,6 +13,7 @@ from newprofile.models import (
     WpBlog,
     WpPostSubTable,
     WpBpGroupMember,
+    WpUserMeta,
 )
 from newprofile.works import WorksDeposits
 from django.contrib.auth import (
@@ -36,7 +38,7 @@ class API:
         self.user = user
         try:
             self.profile = Profile.objects.prefetch_related(
-                "academic_interests"
+                "academic_interests", "coverimage_set"
             ).get(username=user)
         except Profile.DoesNotExist as exc:
             if create:

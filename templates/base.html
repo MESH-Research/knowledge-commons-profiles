@@ -500,7 +500,7 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
       <button class="update-cover-photo" onclick="window.location.href = 'https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/'"><i class="fa fa-camera"></i><div>Update Cover Photo<i class="fa fa-spinner fa-spin" style="display:none"></i></div></button>
       <div class="progress"><span></span></div>
       <button class="update-cover-photo refresh-cover-photo" data-routine="remove" title="Remove cover photo" id="refresh-cover-photo-btn"><i class="fa fa-times"></i><div>Remove cover photo<i class="fa fa-spinner fa-spin" style="display:none"></i></div></button>
-    <div class="holder" id="header-cover-image" style="background-image:url(https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg)"></div>
+    <div class="holder" id="header-cover-image" style="background-image:url({% if cover_image %}{{ cover_image }}{% else %}https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg{% endif %})"></div>
     </div><script>
       jQuery('document').ready(function() {
          option = {
