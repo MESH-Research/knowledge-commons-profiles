@@ -211,8 +211,14 @@ class API:
         Return a list of groups that the user is a member of
         :return:
         """
-        groups = WpBpGroupMember.objects.filter(
-            user_id=self.wp_user.id, is_confirmed=True, group__status="public"
+        groups = (
+            WpBpGroupMember.objects.filter(
+                user_id=self.wp_user.id,
+                is_confirmed=True,
+                group__status="public",
+            )
+            .prefetch_related("group")
+            .order_by("group__name")
         )
 
         return groups
