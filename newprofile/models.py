@@ -394,3 +394,68 @@ class AcademicInterest(models.Model):
             str: The text of the academic interest.
         """
         return str(self.text)
+
+
+class WpBpGroupMember(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    group = models.ForeignKey(
+        "WpBpGroup",
+        on_delete=models.CASCADE,
+        db_column="group_id",
+    )
+    user = models.ForeignKey(
+        "WpUser",
+        on_delete=models.CASCADE,
+        db_column="user_id",
+        related_name="group_memberships",
+    )
+    inviter_id = models.BigIntegerField(db_index=True)
+    is_admin = models.BooleanField(default=False, db_index=True)
+    is_mod = models.BooleanField(default=False, db_index=True)
+    user_title = models.CharField(max_length=100)
+    date_modified = models.DateTimeField()
+    comments = models.TextField()
+    is_confirmed = models.BooleanField(default=False, db_index=True)
+    is_banned = models.BooleanField(default=False)
+    invite_sent = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "wp_bp_groups_members"
+        indexes = [
+            models.Index(fields=["group_id"]),
+            models.Index(fields=["is_admin"]),
+            models.Index(fields=["is_mod"]),
+            models.Index(fields=["user_id"]),
+            models.Index(fields=["inviter_id"]),
+            models.Index(fields=["is_confirmed"]),
+        ]
+
+
+class WpBpGroup(models.Model):
+    STATUS_CHOICES = (
+        ("public", "Public"),
+        ("private", "Private"),
+        ("hidden", "Hidden"),
+    )
+
+    id = models.BigAutoField(primary_key=True)
+    creator = models.ForeignKey(
+        "WpUser", on_delete=models.CASCADE, db_column="creator_id"
+    )
+    name = models.CharField(max_length=100)
+    slug = models.CharField(max_length=200)
+    description = models.TextField()
+    status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default="public", db_index=True
+    )
+    enable_forum = models.BooleanField(default=True)
+    date_created = models.DateTimeField()
+    parent_id = models.BigIntegerField(default=0, db_index=True)
+
+    class Meta:
+        db_table = "wp_bp_groups"
+        indexes = [
+            models.Index(fields=["creator_id"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["parent_id"]),
+        ]

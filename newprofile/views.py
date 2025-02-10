@@ -56,6 +56,7 @@ def profile(request, user="", create=False):
         "mastodon_posts": (
             api.mastodon_posts.latest_posts if profile_info["mastodon"] else []
         ),
+        "groups": api.get_groups(),
         "works_html": api.works_html,
         "logged_in_profile": my_profile_info,
     }
@@ -121,6 +122,7 @@ class ProfileView(APIView):
                 if profile_info["mastodon"]
                 else []
             ),
+            "groups": api.get_groups(),
             "works_html": api.works_html,
         }
 

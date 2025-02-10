@@ -6,7 +6,13 @@ from django.db import connections
 from django.http import Http404
 
 from newprofile import mastodon
-from newprofile.models import Profile, WpUser, WpBlog, WpPostSubTable
+from newprofile.models import (
+    Profile,
+    WpUser,
+    WpBlog,
+    WpPostSubTable,
+    WpBpGroupMember,
+)
 from newprofile.works import WorksDeposits
 from django.contrib.auth import (
     get_user_model,
@@ -199,3 +205,14 @@ class API:
             A string of the user's education details.
         """
         return self.profile.education
+
+    def get_groups(self):
+        """
+        Return a list of groups that the user is a member of
+        :return:
+        """
+        groups = WpBpGroupMember.objects.filter(
+            user_id=self.wp_user.id, is_confirmed=True, group__status="public"
+        )
+
+        return groups
