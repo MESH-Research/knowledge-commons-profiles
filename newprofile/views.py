@@ -35,8 +35,6 @@ def profile(request, user="", create=False):
     """
     api = API(request, user, use_wordpress=True, create=create)
 
-    print(api.get_memberships())
-
     # TODO: if "create" then redirect to the profile edit page
 
     profile_info = api.get_profile_info()
@@ -71,6 +69,7 @@ def profile(request, user="", create=False):
         "groups": api.get_groups(),
         "works_html": api.works_html,
         "logged_in_profile": my_profile_info,
+        "memberships": api.get_memberships(),
     }
 
     return render(

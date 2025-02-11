@@ -291,7 +291,7 @@ class API:
                     if society != "HC":
                         memberships.append(society)
 
-            return memberships
+            return sorted(memberships)
 
         except Exception as e:
             return []
