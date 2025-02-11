@@ -3,12 +3,14 @@ A class of API calls for user details
 """
 
 import hashlib
+from operator import itemgetter
 from urllib.parse import urlencode
 
 import phpserialize
 from django.contrib.auth import (
     get_user_model,
 )
+from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
 
@@ -20,7 +22,8 @@ from newprofile.models import (
     WpPostSubTable,
     WpBpGroupMember,
     WpUserMeta,
-    WpTermRelationships,
+    WpBpFollow,
+    WpBpUserBlogMeta,
 )
 from newprofile.works import WorksDeposits
 
@@ -131,6 +134,12 @@ class API:
         if not self.use_wordpress:
             return []
 
+        cache_key = f"blog_post_list-{self.user}"
+        cached_response = cache.get(cache_key)
+
+        if cached_response is not None:
+            return cached_response
+
         # first get a list of tables in the database
         with connections["wordpress_dev"].cursor() as cursor:
             cursor.execute("SHOW TABLES;")
@@ -184,6 +193,8 @@ class API:
 
         for item in WpPostSubTable.objects.raw(final_query):
             results.append(item)
+
+        cache.set(cache_key, results, timeout=600)
 
         return results
 
@@ -295,3 +306,47 @@ class API:
 
         except Exception as e:
             return []
+
+    def follower_count(self):
+        """
+        Return the number of followers
+        :return: an integer
+        """
+        return WpBpFollow.objects.filter(follower=self.wp_user).count()
+
+    def get_user_blogs(self):
+        """
+        Return a list of user blogs
+        :return:
+        """
+        initial_sql = f"""
+            SELECT DISTINCT
+            b.blog_id, 
+            b.domain, 
+            u.user_email,
+            b.public as is_public
+            FROM wp_blogs b 
+            JOIN wp_usermeta um ON um.meta_key = CONCAT('wp_', b.blog_id, '_capabilities') 
+            JOIN wp_users u ON u.ID = um.user_id 
+            JOIN wp_blogmeta bm ON bm.blog_id = b.blog_id 
+            WHERE um.user_id = { self.wp_user.id }
+            AND b.public = 1 
+            AND b.site_id = 2 # restrict to HC
+            AND um.meta_value LIKE '%administrator%' 
+            GROUP BY b.domain
+        """
+
+        with connections["wordpress_dev"].cursor() as cursor:
+            cursor.execute(initial_sql)
+            rows = cursor.fetchall()
+
+        results = []
+
+        for row in rows:
+            blog_meta = WpBpUserBlogMeta.objects.select_related("blog").get(
+                blog_id=row[0], meta_key="name"
+            )
+
+            results.append((blog_meta.meta_value, blog_meta.blog.domain))
+
+        return sorted(results, key=itemgetter(0))

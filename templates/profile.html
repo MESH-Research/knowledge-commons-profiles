@@ -55,17 +55,19 @@
 
 			<div class="following-n-members">
 									<a href="https://hcommons.org/members/{{ profile_info.username }}/following">
-									Following <span>23</span> members									</a>
+									Following <span>{{ follower_count }}</span> members									</a>
 							</div>
 
-			<div id="item-buttons">
+			{% if request.user.username == profile_info.username %}
+            <div id="item-buttons">
 								<span class="generic-button" style="display: none;"></span>
 				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div>
 
-                {% if request.user.username == profile_info.username %}
+
                     <div id="edit-personal-li"><a id="edit" href="{% url "edit_profile" %}" class=" button">Edit</a></div>
-                {% endif %}
+
 			</div><!-- #item-buttons -->
+            {% endif %}
 
 					</div><!-- #item-meta -->
 
@@ -109,17 +111,28 @@
             {% endfor %}
             </ul></div>
         {% endif %}
+
+        {% if commons_sites|length > 0 %}
+        <div class="commons-sites wordblock show-more">
+            <h4>Commons Sites</h4>
+                <ul>
+                    {% for site in commons_sites %}
+                    <li><a href="{{ site.1 }}">{{ site.0}}</a></li>
+                    {% endfor %}
+                </ul>
+        </div>
+        {% endif %}
     </div>
 
 	<div class="right">
 		<div class="about hideable"><h4>About</h4>
                 {% if about_user %}
-                    {{ about_user|safe }}
+                    {{ about_user|safe|linebreaksbr }}
                 {% else %}
                     This user has not yet completed their profile.
                 {% endif %}
         </div>
-        {% if profile_info.education %}
+        {% if education %}
         <div class="education hideable"><h4>Education</h4>{{ education|safe|linebreaksbr }}</div>
         {% endif %}
 

@@ -70,6 +70,8 @@ def profile(request, user="", create=False):
         "works_html": api.works_html,
         "logged_in_profile": my_profile_info,
         "memberships": api.get_memberships(),
+        "follower_count": api.follower_count(),
+        "commons_sites": api.get_user_blogs(),
     }
 
     return render(

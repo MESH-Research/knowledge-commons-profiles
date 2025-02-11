@@ -577,3 +577,62 @@ class WpTermRelationships(models.Model):
         db_table = "wp_term_relationships"
         managed = False
         indexes = [models.Index(fields=["term_taxonomy"])]
+
+
+class WpBpFollow(models.Model):
+    """
+    A model for a WordPress follow
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    leader = models.ForeignKey(
+        "WpUser",
+        on_delete=models.CASCADE,
+        db_column="leader_id",
+        related_name="following",
+    )
+    follower = models.ForeignKey(
+        "WpUser",
+        on_delete=models.CASCADE,
+        db_column="follower_id",
+        related_name="followers",
+    )
+    follow_type = models.CharField(max_length=75)
+    date_recorded = models.DateTimeField()
+
+    class Meta:
+        """
+        Metadata for the WpBpFollow model
+        """
+
+        managed = False
+        db_table = "wp_bp_follow"
+        indexes = [
+            models.Index(fields=["leader", "follower"], name="followers"),
+            models.Index(fields=["follow_type"]),
+        ]
+
+
+class WpBpUserBlogMeta(models.Model):
+    """
+    A model for a WordPress blog meta
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    blog = models.ForeignKey(
+        "WpBlog", on_delete=models.CASCADE, db_column="blog_id"
+    )
+    meta_key = models.CharField(max_length=255, null=True)
+    meta_value = models.TextField(null=True)
+
+    class Meta:
+        """
+        Metadata for the WpBpUserBlogMeta model
+        """
+
+        db_table = "wp_bp_user_blogs_blogmeta"
+        managed = False
+        indexes = [
+            models.Index(fields=["blog_id"]),
+            models.Index(fields=["meta_key"]),
+        ]
