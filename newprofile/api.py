@@ -113,6 +113,7 @@ class API:
             "profile_image": self.profile.profile_image,
             "works_username": self.profile.works_username,
             "publications": self.profile.publications,
+            "projects": self.profile.projects,
         }
 
         return self.profile_info

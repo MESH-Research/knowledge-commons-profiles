@@ -175,8 +175,18 @@
                 {% crispy_field form.cv_file %}
             </div>
 
-    </div>		<div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><div><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div></div>		</div>
+        </div>
+        
+        <div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><div><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div></div>		
 
+        <div class="publications hideable show-more"><h4 style="width:25%;">Publications</h4>
+            <div id="div_id_publications" class="mb-3" style="margin-top:5px;">
+                <label for="id_publications" class="form-label">Publications</label>
+                {% crispy_field form.publications %}
+            </div>
+        </div>		
+
+</div>
 
 
 </div>

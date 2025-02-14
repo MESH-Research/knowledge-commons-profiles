@@ -184,6 +184,12 @@
                 {{ profile_info.publications | safe | linebreaksbr }}
             </div>
         {% endif %}
+
+        {% if profile_info.projects %}
+            <div class="projects hideable show-more"><h4>Projects</h4>
+                {{ profile_info.projects | safe | linebreaksbr }}
+            </div>
+        {% endif %}
     </div>
 
 </form>
