@@ -72,6 +72,7 @@ def profile(request, user="", create=False):
         "memberships": api.get_memberships(),
         "follower_count": api.follower_count(),
         "commons_sites": api.get_user_blogs(),
+        "activities": api.get_activity(),
     }
 
     return render(

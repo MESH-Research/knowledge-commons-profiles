@@ -118,6 +118,19 @@
             </ul></div>
         {% endif %}
 
+    {% if activities|length > 0 %}
+        <div class="recent-commons-activity wordblock show-more">
+            <h4>Recent Commons Activity</h4>
+                <ul>
+                    {% for activity in activities %}
+                    {% spaceless %}
+                        <li>{{ activity.action|safe }}</li>
+                    {% endspaceless %}
+                    {% endfor %}
+                </ul>
+        </div>
+        {% endif %}
+
         {% if commons_sites|length > 0 %}
         <div class="commons-sites wordblock show-more">
             <h4>Commons Sites</h4>

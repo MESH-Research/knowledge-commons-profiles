@@ -12,6 +12,7 @@ from django.contrib.auth import (
 )
 from django.core.cache import cache
 from django.db import connections
+from django.db.models import Prefetch
 from django.http import Http404
 
 import newprofile
@@ -25,6 +26,8 @@ from newprofile.models import (
     WpUserMeta,
     WpBpFollow,
     WpBpUserBlogMeta,
+    WpBpActivity,
+    WpBpActivityMeta,
 )
 from newprofile.works import WorksDeposits
 
@@ -376,3 +379,44 @@ class API:
         )
 
         return sorted(results, key=itemgetter(0))
+
+    def get_activity(self):
+        """
+        Return a list of user activities
+        """
+        cache.clear()
+
+        cache_key = f"user_activities_list-{self.user}"
+        cached_response = cache.get(cache_key, version=newprofile.__version__)
+
+        if cached_response is not None:
+            return cached_response
+
+        activities = (
+            WpBpActivity.objects.prefetch_related("meta")
+            .filter(
+                user_id=self.wp_user.id,
+                hide_sitewide=False,
+                meta__meta_key="society_id",
+                meta__meta_value="hc",
+            )
+            .order_by("-date_recorded")
+        )[:100]
+
+        distinct_entries = []
+        distinct_objects = []
+
+        for activity in activities:
+            if activity.type not in distinct_entries:
+                distinct_entries.append(activity.type)
+                distinct_objects.append(activity)
+                print(activity.action)
+
+        cache.set(
+            cache_key,
+            distinct_objects[:5],
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+        return distinct_objects[:5]

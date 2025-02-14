@@ -679,3 +679,28 @@ class WpBpActivity(models.Model):
             models.Index(fields=["hide_sitewide"]),
             models.Index(fields=["is_spam"]),
         ]
+
+
+class WpBpActivityMeta(models.Model):
+    """
+    A model for a WordPress activity meta
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    activity = models.ForeignKey(
+        "WpBpActivity",
+        on_delete=models.CASCADE,
+        db_column="activity_id",
+        related_name="meta",
+    )
+    meta_key = models.CharField(max_length=255, null=True)
+    meta_value = models.TextField(null=True)
+
+    class Meta:
+        """
+        Metadata for the WpBpActivityMeta model
+        """
+
+        db_table = "wp_bp_activity_meta"
+        indexes = [models.Index(fields=["meta_key"])]
+        managed = False
