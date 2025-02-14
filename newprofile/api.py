@@ -14,6 +14,7 @@ from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
 
+import newprofile
 from newprofile import mastodon
 from newprofile.models import (
     Profile,
@@ -135,7 +136,7 @@ class API:
             return []
 
         cache_key = f"blog_post_list-{self.user}"
-        cached_response = cache.get(cache_key)
+        cached_response = cache.get(cache_key, version=newprofile.__version__)
 
         if cached_response is not None:
             return cached_response
@@ -194,7 +195,9 @@ class API:
         for item in WpPostSubTable.objects.raw(final_query):
             results.append(item)
 
-        cache.set(cache_key, results, timeout=600)
+        cache.set(
+            cache_key, results, timeout=600, version=newprofile.__version__
+        )
 
         return results
 

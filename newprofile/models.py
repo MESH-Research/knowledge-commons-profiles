@@ -636,3 +636,46 @@ class WpBpUserBlogMeta(models.Model):
             models.Index(fields=["blog_id"]),
             models.Index(fields=["meta_key"]),
         ]
+
+
+class WpBpActivity(models.Model):
+    """
+    A model for a WordPress activity
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(
+        "WpUser", on_delete=models.CASCADE, db_column="user_id"
+    )
+    component = models.CharField(max_length=75)
+    type = models.CharField(max_length=75)
+    action = models.TextField()
+    content = models.TextField()
+    primary_link = models.TextField()
+    item_id = models.BigIntegerField()
+    secondary_item_id = models.BigIntegerField(null=True)
+    date_recorded = models.DateTimeField()
+    hide_sitewide = models.BooleanField(default=False)
+    mptt_left = models.IntegerField(default=0)
+    mptt_right = models.IntegerField(default=0)
+    is_spam = models.BooleanField(default=False)
+
+    class Meta:
+        """
+        Metadata for the WpBpActivity model
+        """
+
+        db_table = "wp_bp_activity"
+        managed = False
+        indexes = [
+            models.Index(fields=["date_recorded"]),
+            models.Index(fields=["user_id"]),
+            models.Index(fields=["item_id"]),
+            models.Index(fields=["secondary_item_id"]),
+            models.Index(fields=["component"]),
+            models.Index(fields=["type"]),
+            models.Index(fields=["mptt_left"]),
+            models.Index(fields=["mptt_right"]),
+            models.Index(fields=["hide_sitewide"]),
+            models.Index(fields=["is_spam"]),
+        ]

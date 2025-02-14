@@ -9,6 +9,8 @@ import requests
 from django.core.cache import cache
 from lxml import etree
 
+import newprofile
+
 
 class MastodonFeed:
     """
@@ -47,7 +49,7 @@ class MastodonFeed:
         - reblogged: Whether the post is a reblog or not
         """
         cache_key = f"{self.username}_{self.server}_latest_posts"
-        latest_posts = cache.get(cache_key)
+        latest_posts = cache.get(cache_key, version=newprofile.__version__)
 
         if latest_posts is None:
             try:
@@ -111,5 +113,7 @@ class MastodonFeed:
                     print(f"Error parsing XML from {self.api_url}: {e}")
                     return []
 
-            cache.set(cache_key, latest_posts, 1800)
+            cache.set(
+                cache_key, latest_posts, 1800, version=newprofile.__version__
+            )
         return latest_posts

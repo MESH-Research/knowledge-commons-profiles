@@ -17,7 +17,7 @@
 	<div id="item-header-content">
 
 		<div id="item-main">
-			<h4 class="name">{{ profile_info.name }}</h4>
+			<h4 class="name">{% if profile_info.name %}{{ profile_info.name }}{% else %}Anonymous User{% endif %}</h4>
 			<h4 class="title">{{ profile_info.title }}</h4>
 			<h4 class="affiliation">
 				<a href="/?s={{ profile_info.affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile_info.affiliation }}</a>
