@@ -281,6 +281,12 @@ class API:
         return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
 
     def get_memberships(self):
+        cache_key = f"user_memberships-{self.user}"
+        cached_response = cache.get(cache_key, version=newprofile.__version__)
+
+        if cached_response is not None:
+            return cached_response
+
         meta_object = WpUserMeta.objects.filter(
             meta_key="shib_ismemberof", user=self.wp_user
         ).first()
@@ -305,6 +311,13 @@ class API:
                     if society != "HC":
                         memberships.append(society)
 
+            cache.set(
+                cache_key,
+                memberships,
+                timeout=600,
+                version=newprofile.__version__,
+            )
+
             return sorted(memberships)
 
         except Exception as e:
@@ -322,6 +335,12 @@ class API:
         Return a list of user blogs
         :return:
         """
+        cache_key = f"user_blog_post_list-{self.user}"
+        cached_response = cache.get(cache_key, version=newprofile.__version__)
+
+        if cached_response is not None:
+            return cached_response
+
         initial_sql = f"""
             SELECT DISTINCT
             b.blog_id, 
@@ -351,5 +370,9 @@ class API:
             )
 
             results.append((blog_meta.meta_value, blog_meta.blog.domain))
+
+        cache.set(
+            cache_key, results, timeout=600, version=newprofile.__version__
+        )
 
         return sorted(results, key=itemgetter(0))
