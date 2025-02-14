@@ -172,10 +172,17 @@
         {% endif %}
 
         <div class="cv hideable"><h4>CV</h4><a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View file</a></div>
+
         {% if works_html %}
-        <div class="works-deposits hideable show-more"><h4>KCWorks</h4>
-            {{ works_html | safe }}
-        </div>
+            <div class="works-deposits hideable show-more"><h4>KCWorks</h4>
+                {{ works_html | safe }}
+            </div>
+        {% endif %}
+
+        {% if profile_info.publications %}
+            <div class="publications hideable show-more"><h4>Publications</h4>
+                {{ profile_info.publications | safe | linebreaksbr }}
+            </div>
         {% endif %}
     </div>
 

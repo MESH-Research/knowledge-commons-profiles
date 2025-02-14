@@ -112,6 +112,7 @@ class API:
             "mastodon": self.profile.mastodon,
             "profile_image": self.profile.profile_image,
             "works_username": self.profile.works_username,
+            "publications": self.profile.publications,
         }
 
         return self.profile_info
@@ -384,8 +385,6 @@ class API:
         """
         Return a list of user activities
         """
-        cache.clear()
-
         cache_key = f"user_activities_list-{self.user}"
         cached_response = cache.get(cache_key, version=newprofile.__version__)
 
