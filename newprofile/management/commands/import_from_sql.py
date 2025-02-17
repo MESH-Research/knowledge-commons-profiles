@@ -342,6 +342,10 @@ class Command(BaseCommand):
                             wp_terms,
                         )
                     elif data_field["name"] in self.DATA_MATCHES:
+                        # if the data field has a match in the DATA_MATCHES
+                        # and it has the value of the second field set to True
+                        # then escape it. Put the value into the associated
+                        # field of profile.
                         setattr(
                             profile,
                             self.DATA_MATCHES[data_field["name"]][0],
