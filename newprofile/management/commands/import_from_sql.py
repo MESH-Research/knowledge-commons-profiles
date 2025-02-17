@@ -22,12 +22,15 @@ class Command(BaseCommand):
 
     help = "Import data from SQL into the Profile model"
 
+    # the fields we want to grab
+    # the boolean value refers to whether or not an "unescape" will be
+    # performed on the field
     DATA_MATCHES = {
         "About": ("about_user", True),
         "Education": ("education", True),
-        "Upcoming Talks and Conferences": ("upcoming_talks", False),
-        "Publications": ("publications", False),
-        "Projects": ("projects", False),
+        "Upcoming Talks and Conferences": ("upcoming_talks", True),
+        "Publications": ("publications", True),
+        "Projects": ("projects", True),
         "Site": ("site", False),
         "Institutional or Other Affiliation": (
             "institutional_or_other_affiliation",
@@ -40,7 +43,7 @@ class Command(BaseCommand):
         "Mastodon handle": ("mastodon", False),
         "<em>Twitter</em> handle": ("twitter", False),
         "CV": ("cv", False),
-        "Memberships": ("commons_groups", False),
+        "Memberships": ("commons_groups", True),
         "LinkedIn URL": ("linkedin", False),
         "Website URL": ("website", False),
     }

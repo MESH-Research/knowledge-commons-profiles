@@ -182,4 +182,5 @@ class ProfileForm(forms.ModelForm):
             "education": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
             "projects": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
             "publications": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
+            "memberships": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
         }

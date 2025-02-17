@@ -12,7 +12,6 @@ from django.contrib.auth import (
 )
 from django.core.cache import cache
 from django.db import connections
-from django.db.models import Prefetch
 from django.http import Http404
 
 import newprofile
@@ -27,7 +26,6 @@ from newprofile.models import (
     WpBpFollow,
     WpBpUserBlogMeta,
     WpBpActivity,
-    WpBpActivityMeta,
 )
 from newprofile.works import WorksDeposits
 
@@ -114,6 +112,7 @@ class API:
             "works_username": self.profile.works_username,
             "publications": self.profile.publications,
             "projects": self.profile.projects,
+            "memberships": self.profile.memberships,
         }
 
         return self.profile_info
