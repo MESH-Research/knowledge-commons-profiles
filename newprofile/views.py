@@ -55,6 +55,8 @@ def profile(request, user="", create=False):
         )
         my_profile_info = api_me.get_profile_info() if api_me else None
 
+    notifications = api_me.get_short_notifications()
+
     context = {
         "profile_info": profile_info,
         "cover_image": api.get_cover_image(),
@@ -73,6 +75,8 @@ def profile(request, user="", create=False):
         "follower_count": api.follower_count(),
         "commons_sites": api.get_user_blogs(),
         "activities": api.get_activity(),
+        "short_notifications": notifications,
+        "notification_count": len(notifications),
     }
 
     return render(

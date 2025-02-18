@@ -704,3 +704,61 @@ class WpBpActivityMeta(models.Model):
         db_table = "wp_bp_activity_meta"
         indexes = [models.Index(fields=["meta_key"])]
         managed = False
+
+
+class WpBpNotification(models.Model):
+    """
+    A model for a WordPress notification
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(
+        "WpUser", on_delete=models.CASCADE, db_column="user_id"
+    )
+    item_id = models.BigIntegerField()
+    secondary_item_id = models.BigIntegerField(null=True)
+    component_name = models.CharField(max_length=75)
+    component_action = models.CharField(max_length=75)
+    date_notified = models.DateTimeField()
+    is_new = models.BooleanField(default=False)
+
+    class Meta:
+        """
+        Metadata for the WpBpNotification model
+        """
+
+        db_table = "wp_bp_notifications"
+        managed = False
+        indexes = [
+            models.Index(fields=["item_id"]),
+            models.Index(fields=["secondary_item_id"]),
+            models.Index(fields=["is_new"]),
+            models.Index(fields=["component_name"]),
+            models.Index(fields=["component_action"]),
+            models.Index(fields=["user", "is_new"], name="useritem"),
+        ]
+
+    def __str__(self):
+        from newprofile import notifications
+
+        return str(notifications.BuddyPressNotification(self))
+
+    def get_string(self, username):
+        """
+        Get a string representation of the notification without aggregation
+        """
+        from newprofile import notifications
+
+        return notifications.BuddyPressNotification(self).get_string(
+            username=username
+        )
+
+    def get_short_string(self, username):
+        """
+        Get a short string representation of the notification for the dropdown
+        """
+        from newprofile import notifications
+
+        return notifications.BuddyPressNotification(self).get_string(
+            short=True, username=username
+        )

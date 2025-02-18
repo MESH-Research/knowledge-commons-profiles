@@ -26,6 +26,7 @@ from newprofile.models import (
     WpBpFollow,
     WpBpUserBlogMeta,
     WpBpActivity,
+    WpBpNotification,
 )
 from newprofile.works import WorksDeposits
 
@@ -409,7 +410,6 @@ class API:
             if activity.type not in distinct_entries:
                 distinct_entries.append(activity.type)
                 distinct_objects.append(activity)
-                print(activity.action)
 
         cache.set(
             cache_key,
@@ -419,3 +419,54 @@ class API:
         )
 
         return distinct_objects[:5]
+
+    def get_short_notifications(self):
+        """
+        Return an HTML-formatted list of user notifications
+        """
+        if not self.use_wordpress:
+            return []
+
+        # get all new notifications for this user
+        notifications_list = WpBpNotification.objects.filter(
+            user_id=self.wp_user.id, is_new=True
+        )
+
+        handled_follows = False
+        human_list = []
+        limit = 5
+        count = 0
+
+        for notification in notifications_list:
+            # followers are aggregated and counted in the dropdown
+            if (
+                notification.component_action == "new_follow"
+                and handled_follows is False
+            ):
+                result = notification.get_short_string(
+                    username=self.wp_user.user_login
+                )
+
+                if result:
+                    human_list.append(result)
+
+                handled_follows = True
+                count += 1
+            elif (
+                notification.component_action == "new_follow"
+                and handled_follows is True
+            ):
+                continue
+            else:
+                count += 1
+                result = notification.get_string(
+                    username=self.wp_user.user_login
+                )
+
+                if result:
+                    human_list.append(result)
+
+            if count >= limit:
+                break
+
+        return human_list

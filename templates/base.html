@@ -276,10 +276,21 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 		<!-- Notification -->
 		<div class="header-notifications all-notifications">
 			<a class="notification-link fa fa-bell" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">
-					 <span id="ab-pending-notifications" class="pending-count alert">2</span>			</a>
+					 <span id="ab-pending-notifications" class="pending-count alert">{{ notification_count }}</span>			</a>
 
+            {% if notification_count > 0 %}
 			<div class="pop">
-				<a href="https://hcommons.org/members/{{ profile_info.username }}/settings/notifications">You have not opted in to receive the Humanities Commons newsletter. Visit your email settings to opt in.</a><a href="https://hcommons.org/members/{{ profile_info.username }}/notifications/?action=new_follow">8 more users are now following you</a>			</div>
+                {% for notification in short_notifications %}
+                    {% if notification.2 == False %}
+                        <a href="{{ notification.1 }}">{{ notification.0 }}</a>
+                    {% else %}
+                        {% if notification.1 %}
+                            <a href="{% url ""|add:notification.1.0 notification.1.1 %}">{{ notification.0 }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
 		</div>
 
 
@@ -585,11 +596,6 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 	document.body.className = document.body.className.replace( 'bbp-no-js', 'bbp-js' );
 </script>
 
-		<script type="text/javascript">
-		    jQuery( 'document' ).ready( function ( $ ) {
-		        $( '.header-notifications .notification-link span.alert' ).html( '9' );
-		    } );
-		</script>
 		<div class="buddyboss-bp-legacy page-title">
     <header class="entry-header">
       <h1 class="entry-title">
