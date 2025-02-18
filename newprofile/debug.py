@@ -1,7 +1,12 @@
+"""
+Django Debug Toolbar debug customization
+"""
+
 from debug_toolbar.panels import Panel
 from django.db import connection
 
 
+# pylint: disable=abstract-method
 class QueryTimingPanel(Panel):
     """
     Simple panel showing only query count
@@ -9,6 +14,7 @@ class QueryTimingPanel(Panel):
 
     title = "SQL Count"
 
+    @property
     def nav_subtitle(self):
         return f"{len(connection.queries)} queries"
 
