@@ -286,6 +286,10 @@ class API:
         return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
 
     def get_memberships(self):
+        """
+        Return a list of groups that the user is a member of
+        :return:
+        """
         cache_key = f"user_memberships-{self.user}"
         cached_response = cache.get(cache_key, version=newprofile.__version__)
 

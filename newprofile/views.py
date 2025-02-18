@@ -40,6 +40,7 @@ def profile(request, user="", create=False):
     profile_info = api.get_profile_info()
 
     if user == request.user.username:
+        api_me = api
         my_profile_info = profile_info
     else:
         # get logged in user profile
@@ -55,7 +56,7 @@ def profile(request, user="", create=False):
         )
         my_profile_info = api_me.get_profile_info() if api_me else None
 
-    notifications = api_me.get_short_notifications()
+    notifications = api_me.get_short_notifications() if api_me else None
 
     context = {
         "profile_info": profile_info,
@@ -76,7 +77,7 @@ def profile(request, user="", create=False):
         "commons_sites": api.get_user_blogs(),
         "activities": api.get_activity(),
         "short_notifications": notifications,
-        "notification_count": len(notifications),
+        "notification_count": len(notifications) if notifications else 0,
     }
 
     return render(

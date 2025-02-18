@@ -274,24 +274,26 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 
 
 		<!-- Notification -->
-		<div class="header-notifications all-notifications">
-			<a class="notification-link fa fa-bell" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">
-					 <span id="ab-pending-notifications" class="pending-count alert">{{ notification_count }}</span>			</a>
+		{% if request.user.is_authenticated %}
+            <div class="header-notifications all-notifications">
+                <a class="notification-link fa fa-bell" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">
+                         <span id="ab-pending-notifications" class="pending-count alert">{{ notification_count }}</span>			</a>
 
-            {% if notification_count > 0 %}
-			<div class="pop">
-                {% for notification in short_notifications %}
-                    {% if notification.2 == False %}
-                        <a href="{{ notification.1 }}">{{ notification.0 }}</a>
-                    {% else %}
-                        {% if notification.1 %}
-                            <a href="{% url ""|add:notification.1.0 notification.1.1 %}">{{ notification.0 }}</a>
+                {% if notification_count > 0 %}
+                <div class="pop">
+                    {% for notification in short_notifications %}
+                        {% if notification.2 == False %}
+                            <a href="{{ notification.1 }}">{{ notification.0 }}</a>
+                        {% else %}
+                            {% if notification.1 %}
+                                <a href="{% url ""|add:notification.1.0 notification.1.1 %}">{{ notification.0 }}</a>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
-		</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+		    </div>
+        {% endif %}
 
 
 
@@ -299,7 +301,7 @@ var BuddyBossOptions = {"select_label":"Show:","post_in_label":"Post in:","tpl_u
 
 
 	<!--Account details -->
-    {% if request.user.is_authenticated %}
+    {% if not request.user.is_authenticated %}
         <div class="table-cell">
             <a href="/membership/" class="register screen-reader-shortcut">Register</a>
             <a href="https://hcommons.org/wp-login.php" class="login">Log In</a>
