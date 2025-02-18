@@ -1,8 +1,14 @@
-from unittest import TestCase
-from unittest.mock import patch, MagicMock
+"""
+Test suite for the QueryTimingPanel class
 
-from django.test import override_settings
+"""
+
+# pylint: disable=broad-exception-caught, import-error
+from unittest import TestCase
+from unittest.mock import patch
+
 from debug_toolbar.panels import Panel
+from django.test import override_settings
 
 from newprofile.debug import QueryTimingPanel
 
