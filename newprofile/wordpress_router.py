@@ -24,7 +24,7 @@ class ReadWriteRouter:
         """
         Controls which database should be used for writes for a given model.
         """
-        return None if model.__name__.lower().startswith("wp_") else "default"
+        return None if model.__name__.lower().startswith("wp") else "default"
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         """
