@@ -78,6 +78,9 @@ def profile(request, user="", create=False):
         "activities": api.get_activity(),
         "short_notifications": notifications,
         "notification_count": len(notifications) if notifications else 0,
+        "logged_in_profile_image": (
+            api_me.get_profile_photo() if api_me else None
+        ),
     }
 
     return render(
