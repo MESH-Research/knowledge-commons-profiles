@@ -3,11 +3,14 @@ A router to control all database operations on models in the WordPress DB
 """
 
 
+# pylint: disable=unused-argument
 class ReadWriteRouter:
     """
     A router to control all database operations on models in the WordPress
     DB
     """
+
+    db_name = "wordpress_dev"
 
     def db_for_read(self, model, **hints):
         """
@@ -15,7 +18,7 @@ class ReadWriteRouter:
         model.
         """
         return (
-            "wordpress_dev"
+            self.db_name
             if model.__name__.lower().startswith("wp")
             else "default"
         )
