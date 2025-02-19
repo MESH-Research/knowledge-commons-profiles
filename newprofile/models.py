@@ -2,7 +2,7 @@
 A set of models for user profiles
 """
 
-# pylint: disable=too-few-public-methods,no-member
+# pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 
 from django.db import models
 
@@ -739,6 +739,7 @@ class WpBpNotification(models.Model):
         ]
 
     def __str__(self):
+        # pylint: disable=import-outside-toplevel
         from newprofile import notifications
 
         return str(notifications.BuddyPressNotification(self))
@@ -747,6 +748,7 @@ class WpBpNotification(models.Model):
         """
         Get a string representation of the notification without aggregation
         """
+        # pylint: disable=import-outside-toplevel
         from newprofile import notifications
 
         return notifications.BuddyPressNotification(self).get_string(
@@ -757,6 +759,7 @@ class WpBpNotification(models.Model):
         """
         Get a short string representation of the notification for the dropdown
         """
+        # pylint: disable=import-outside-toplevel
         from newprofile import notifications
 
         return notifications.BuddyPressNotification(self).get_string(
