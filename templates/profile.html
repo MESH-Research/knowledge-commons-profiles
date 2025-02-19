@@ -20,7 +20,7 @@
 			<h4 class="name">{% if profile_info.name %}{{ profile_info.name }}{% else %}Anonymous User{% endif %}</h4>
 			<h4 class="title">{{ profile_info.title }}</h4>
 			<h4 class="affiliation">
-				<a href="/?s={{ profile_info.affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile_info.affiliation }}</a>
+				<a href="/?s={{ profile_info.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile_info.institutional_or_other_affiliation }}</a>
 			</h4>
 			<div class="username">
 				<span class="social-label"><em>Commons</em> username:</span> <a href="" title="Send private message">@{{ profile_info.username }}</a>			</div>

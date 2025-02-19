@@ -1,0 +1,212 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <script type='text/javascript' src='https://hcommons.org/wp-includes/js/jquery/jquery.min.js?ver=3.6.4' id='jquery-core-js'></script>
+    <script type='text/javascript' src='https://hcommons.org/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.0' id='jquery-migrate-js'></script>
+
+    {{ form.media }}
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-tap-highlight" content="no"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="profile" href="http://gmpg.org/xfn/11" />
+    <link rel="pingback" href="https://hcommons.org/xmlrpc.php" />
+    <!-- BuddyPress and bbPress Stylesheets are called in wp_head, if plugins are activated -->
+    <title>{% block title %}{% endblock %} &#8211; Knowledge Commons</title>
+    <link rel='stylesheet' id='redux-google-fonts-boss_options-css' href='https://fonts.googleapis.com/css?family=Pacifico%3A400%7CLato%3A400%7CArimo%3A700%7CSource+Sans+Pro%3A700&#038;subset=latin&#038;ver=1716376831' type='text/css' media='all' />
+    <link rel='stylesheet' id='boss-child-custom-css' href='https://hcommons.org/app/themes/boss-child/css/hc.css?ver=1734986319' type='text/css' media='all' />
+    <link rel='stylesheet' id='bp_event_organiser_css-css' href='https://hcommons.org/app/plugins/bp-event-organiser/assets/css/bp-event-organiser.css?ver=6.2.2' type='text/css' media='all' />
+
+    <script type='text/javascript' id='bp-confirm-js-extra'>
+    /* <![CDATA[ */
+    var BP_Confirm = {"are_you_sure":"Are you sure?"};
+    /* ]]> */
+    </script>
+
+    <script type='text/javascript' id='bp-legacy-js-js-extra'>
+    /* <![CDATA[ */
+    var BP_DTheme = {"accepted":"Accepted","close":"Close","comments":"comments","leave_group_confirm":"Are you sure you want to leave this group?","mark_as_fav":"Favorite","my_favs":"My Favorites","rejected":"Rejected","remove_fav":"Remove Favorite","show_all":"Show all","show_all_comments":"Show all comments for this thread","show_x_comments":"Show all comments (%d)","unsaved_changes":"Your profile has unsaved changes. If you leave the page, the changes will be lost.","view":"View","store_filter_settings":"1"};
+    /* ]]> */
+    </script>
+    <script type='text/javascript' src='//use.typekit.net/bgx6tpq.js' id='typekit-js'></script>
+    <script type='text/javascript' id='typekit-js-after'>
+    try{Typekit.load();}catch(e){};
+    </script>
+
+    <script type='text/javascript' src='https://hcommons.org/app/plugins/hc-member-profiles/js/lib/jquery.dynamicmaxheight.min.js?ver=6.2.2' id='hcmp-jqdmh-js'></script>
+    <script type='text/javascript' src='https://hcommons.org/app/plugins/hc-member-profiles/js/main.js?ver=1737557075' id='hcmp-main-js'></script>
+    <script type='text/javascript' id='boss-child-custom-js-extra'>
+    /* <![CDATA[ */
+    var settings_general_req = {"user":{"data":{"ID":"1300","user_login":"{{ profile_info.username }}","user_pass":"$P$BH1CSPyw6h3Xytkoh5KINJTA82N2Wa1","user_nicename":"{{ profile_info.username }}","user_email":"martin@martineve.com","user_url":"","user_registered":"2013-03-02 14:53:11","user_activation_key":"","user_status":"0","display_name":"{{ profile_info.name}}","spam":"0","deleted":"0"},"ID":1300,"caps":{"bbp_participant":true,"subscriber":true},"cap_key":"wp_1000360_capabilities","roles":["bbp_participant","subscriber"],"allcaps":{"spectate":true,"participate":true,"read_private_forums":true,"publish_topics":true,"edit_topics":true,"publish_replies":true,"edit_replies":true,"assign_topic_tags":true,"read":true,"level_0":true,"bbp_participant":true,"subscriber":true},"filter":null},"nonce":"e498a1182c"};
+    /* ]]> */
+    </script>
+
+    <link rel="icon" href="https://hcommons.org/app/uploads/sites/1000360/2024/05/cropped-kc_logo_80_c-32x32.png" sizes="32x32" />
+    <link rel="icon" href="https://hcommons.org/app/uploads/sites/1000360/2024/05/cropped-kc_logo_80_c-192x192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="https://hcommons.org/app/uploads/sites/1000360/2024/05/cropped-kc_logo_80_c-180x180.png" />
+    <meta name="msapplication-TileImage" content="https://hcommons.org/app/uploads/sites/1000360/2024/05/cropped-kc_logo_80_c-270x270.png" />
+
+    <style type="text/css" id="wp-custom-css">
+        .widget-area .widget.widget_sow-editor {
+            hyphens: initial; word-wrap: normal;
+        }
+
+        #remind-me-container input#rm_username_email {
+            width: 70%;
+            border: 1px solid;
+            border-color: #8F8F8F;
+        }
+
+        .wp-block-buttons {
+            a:hover {
+                color: white;
+            }
+        }
+
+        .wp-block-cc-client-search-page main>article.ccs-row.ccs-top:not(.comment),
+        .wp-block-cc-client-search-page main>article:not(.comment)[role=region][aria-live=polite]{
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body class="bbp-user-page single singular bbpress bbp-no-js xprofile bp-user member-type-hc my-account my-profile profile public buddypress bp-legacy page-template-default page page-id-0 page-parent logged-in admin-bar no-customize-support active-session society-hc single-author is-desktop bp-active left-menu-open elementor-default elementor-kit-36895 no-js" data-logo="1" data-inputs="1" data-rtl="false" data-header="2">
+
+    <!-- BuddyBoss Mobile Init -->
+    <div id="mobile-check"></div><!-- #mobile-check -->
+    <script type="text/JavaScript">
+        (function(){var c=document.body.className;c=c.replace(/no-js/,'js');document.body.className=c;})();
+        $=jQuery.noConflict();
+    </script>
+
+    <div id="scroll-to"></div>
+
+    <header id="masthead" class="site-header" data-infinite="on">
+        <div class="header-wrap">
+            <div class="header-outher">
+                <div class="header-inner">
+                    <div class="left-col">
+                        <div class="table">
+                            <div class="header-links">
+                                <!-- Menu Button -->
+                                <a href="#" class="menu-toggle icon" id="left-menu-toggle" title="Menu" aria-label="Toggle Menu">
+                                    <i class="fa fa-bars" aria-hidden="true"></i>
+                                </a><!--.menu-toggle-->
+                            </div><!--.header-links-->
+
+                            <div class="header-navigation">
+                                <ul>
+                                    <li><p></p></li>
+                                </ul>
+                            </div>
+
+                            <div id="titlebar-search">
+                                <form role="search" method="get" id="searchform" class="searchform" action="https://hcommons.org/search/">
+                                    <div class="search-wrapper">
+                                        <label class="screen-reader-text" for="q">Search for:</label>
+                                        <input type="text" value="" name="q" id="q" placeholder="Search">
+                                        <button type="submit" id="searchsubmit" title="Search" aria-label="Submit search">
+                                            <i class="fa fa-search" aria-hidden="true"></i>
+                                        </button>
+                                        <button id="search-close" aria-label="Close search">
+                                            <i class="fa fa-close" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                                <a href="#" id="search-open" class="header-button" title="Search" aria-label="Open search">
+                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                </a>
+                            </div><!-- #titlebar-search-->
+                        </div>
+                    </div><!--.left-col-->
+                </div><!-- .header-inner -->
+                <!-- BuddyBoss Mobile Init -->
+    <div id="mobile-check"></div><!-- #mobile-check -->
+    <script type="text/JavaScript">
+        (function(){var c=document.body.className;c=c.replace(/no-js/,'js');document.body.className=c;})();
+        $=jQuery.noConflict();
+    </script>
+
+    <div id="scroll-to"></div>
+
+    <header id="masthead" class="site-header" data-infinite="on">
+        <div class="header-wrap">
+            <div class="header-outher">
+                <div class="header-inner">
+                    <div class="left-col">
+                        <div class="table">
+                            <div class="header-links">
+                                <!-- Menu Button -->
+                                <a href="#" class="menu-toggle icon" id="left-menu-toggle" title="Menu" aria-label="Toggle Menu">
+                                    <i class="fa fa-bars" aria-hidden="true"></i>
+                                </a><!--.menu-toggle-->
+                            </div><!--.header-links-->
+
+                            <div class="header-navigation">
+                                <ul>
+                                    <li><p></p></li>
+                                </ul>
+                            </div>
+
+                            <div id="titlebar-search">
+                                <form role="search" method="get" id="searchform" class="searchform" action="https://hcommons.org/search/">
+                                    <div class="search-wrapper">
+                                        <label class="screen-reader-text" for="q">Search for:</label>
+                                        <input type="text" value="" name="q" id="q" placeholder="Search">
+                                        <button type="submit" id="searchsubmit" title="Search" aria-label="Submit search">
+                                            <i class="fa fa-search" aria-hidden="true"></i>
+                                        </button>
+                                        <button id="search-close" aria-label="Close search">
+                                            <i class="fa fa-close" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                                <a href="#" id="search-open" class="header-button" title="Search" aria-label="Open search">
+                                    <i class="fa fa-search" aria-hidden="true"></i>
+                                </a>
+                            </div><!-- #titlebar-search-->
+                        </div>
+                    </div><!--.left-col-->
+
+                    <div class="right-col">
+                        <div class="table">
+                            <!-- Notification -->
+                            {% if request.user.is_authenticated %}
+                                <div class="header-notifications all-notifications">
+                                    <a class="notification-link fa fa-bell" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/" aria-label="Notifications">
+                                        <span id="ab-pending-notifications" class="pending-count alert">{{ notification_count }}</span>
+                                    </a>
+
+                                    {% if notification_count > 0 %}
+                                    <div class="pop">
+                                        {% for notification in short_notifications %}
+                                            {% if notification.2 == False %}
+                                                <a href="{{ notification.1 }}">{{ notification.0 }}</a>
+                                            {% else %}
+                                                {% if notification.1 %}
+                                                    <a href="{% url ""|add:notification.1.0 notification.1.1 %}">{{ notification.0 }}</a>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <!--Account details -->
+                            {% if not request.user.is_authenticated %}
+                                <div class="table-cell">
+                                    <a href="/membership/" class="register screen-reader-shortcut">Register</a>
+                                    <a href="https://hcommons.org/wp-login.php" class="login">Log In</a>
+                                </div>
+                            {% else %}
+                                <div class="header-account-login">
+                                    <a class="user-link" href="https://hcommons.org/members/{{ profile_info.username }}/">
+                                        <span class="name">{% if logged_in_profile %}{{ logged_in_profile.name }}{% endif %}</span>
+                                        <span>
+                                            <img loading="lazy" src="{{ logged_in_profile_image }}" class="avatar user-1300-avatar avatar-100 photo" width="100" height="100" alt="Profile Photo" />
+                                        </span>
+                                    </a>

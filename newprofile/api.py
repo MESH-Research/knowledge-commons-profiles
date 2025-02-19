@@ -114,6 +114,7 @@ class API:
             "publications": self.profile.publications,
             "projects": self.profile.projects,
             "memberships": self.profile.memberships,
+            "institutional_or_other_affiliation": self.profile.institutional_or_other_affiliation,
         }
 
         return self.profile_info
