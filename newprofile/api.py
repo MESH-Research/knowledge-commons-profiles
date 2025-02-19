@@ -45,23 +45,43 @@ class API:
         """
         self.request = request
         self.user = user
-        self._profile = None
         self.create = create
 
         self.use_wordpress = use_wordpress
-        self._wp_user = None
 
+        # these fields are all loaded on first access via the cached_property
+        # decorators below. This means you can init an API without triggering
+        # any expensive calls
+        self._profile = None
+        self._wp_user = None
         self._profile_info = None
         self._mastodon_profile = None
         self.mastodon_username = None
         self.mastodon_server = None
         self._mastodon_posts = None
+        self._works_deposits = None
+        self._works_html = None
 
-        self.works_deposits = WorksDeposits(
-            self.profile_info["username"], "https://works.hcommons.org"
-        )
+    @cached_property
+    def works_html(self):
+        """
+        Get the works HTML
+        """
+        if self._works_html is None:
+            self._works_html = self.works_deposits.display_filter()
 
-        self.works_html = self.works_deposits.display_filter()
+        return self._works_html
+
+    @cached_property
+    def works_deposits(self):
+        """
+        Get the works deposits
+        """
+        if self._works_deposits is None:
+            self._works_deposits = WorksDeposits(
+                self.profile_info["username"], "https://works.hcommons.org"
+            )
+        return self._works_deposits
 
     @cached_property
     def wp_user(self):

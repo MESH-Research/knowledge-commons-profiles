@@ -58,6 +58,11 @@ urlpatterns = (
             views.blog_posts,
             name="blog_posts",
         ),
+        path(
+            "htmx/works_deposits/<str:username>/",
+            views.works_deposits,
+            name="works_deposits",
+        ),
     ]
     + debug_toolbar_urls()
     + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
