@@ -2,7 +2,7 @@
 The main views for the profile app
 """
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
@@ -13,6 +13,40 @@ from django.contrib.auth import logout
 
 from newprofile.forms import ProfileForm
 from newprofile.models import Profile
+
+
+def blog_posts(request, username):
+    """
+    Get blog posts via HTMX
+    """
+    api = API(request, username, use_wordpress=True, create=False)
+
+    # Get the blog posts for this username
+    user_blog_posts = api.get_blog_posts()
+
+    return render(
+        request, "partials/blog_posts.html", {"blog_posts": user_blog_posts}
+    )
+
+
+def mastodon_feed(request, username):
+    """
+    Get a mastodon feed via HTMX
+    """
+    api = API(request, username, use_wordpress=False, create=False)
+
+    profile_info = api.get_profile_info()
+
+    # Get the mastodon posts for this username
+    mastodon_posts = (
+        api.mastodon_posts.latest_posts if profile_info["mastodon"] else []
+    )
+
+    return render(
+        request,
+        "partials/mastodon_feed.html",
+        {"mastodon_posts": mastodon_posts},
+    )
 
 
 def logout_view(request):
@@ -65,10 +99,6 @@ def profile(request, user="", create=False):
         "academic_interests": api.get_academic_interests(),
         "education": api.get_education(),
         "about_user": api.get_about_user(),
-        "blog_posts": api.get_blog_posts(),
-        "mastodon_posts": (
-            api.mastodon_posts.latest_posts if profile_info["mastodon"] else []
-        ),
         "groups": api.get_groups(),
         "works_html": api.works_html,
         "logged_in_profile": my_profile_info,

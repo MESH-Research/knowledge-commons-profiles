@@ -3,6 +3,7 @@ A class of API calls for user details
 """
 
 import hashlib
+from functools import cached_property
 from operator import itemgetter
 from urllib.parse import urlencode
 
@@ -44,51 +45,93 @@ class API:
         """
         self.request = request
         self.user = user
-        try:
-            self.profile = Profile.objects.prefetch_related(
-                "academic_interests", "coverimage_set"
-            ).get(username=user)
-        except Profile.DoesNotExist as exc:
-            if create:
-                self.profile = Profile.objects.create(username=user)
-            else:
-                # if the user exists but the Profile doesn't, then create it
-                try:
-                    user_object = User.objects.get(username=user)
-                    self.profile = Profile.objects.create(
-                        username=user, email=user_object.email
-                    )
-                except User.DoesNotExist as exc:
-                    # raise 404
-                    raise Http404("Profile not found") from exc
+        self._profile = None
+        self.create = create
 
         self.use_wordpress = use_wordpress
+        self._wp_user = None
 
-        if use_wordpress:
-            self.wp_user = WpUser.objects.get(user_login=user)
-        else:
-            self.wp_user = None
-
-        self.profile_info = {}
-
-        self.get_profile_info()
-
-        self.mastodon_profile = self.profile_info["mastodon"]
-
-        if self.mastodon_profile:
-            self.mastodon_username, self.mastodon_server = (
-                self.mastodon_profile[1:].split("@")[0],
-                self.mastodon_profile[1:].split("@")[1],
-            )
-            self.mastodon_posts = mastodon.MastodonFeed(
-                self.mastodon_username, self.mastodon_server
-            )
+        self._profile_info = None
+        self._mastodon_profile = None
+        self.mastodon_username = None
+        self.mastodon_server = None
+        self._mastodon_posts = None
 
         self.works_deposits = WorksDeposits(
             self.profile_info["username"], "https://works.hcommons.org"
         )
 
         self.works_html = self.works_deposits.display_filter()
+
+    @cached_property
+    def wp_user(self):
+        """
+        Get the WordPress user
+        """
+        if self._wp_user is None:
+            self._wp_user = WpUser.objects.get(user_login=self.user)
+        return self._wp_user
+
+    @cached_property
+    def mastodon_posts(self):
+        """
+        Get the mastodon posts
+        """
+        # this triggers the population of all Mastodon fields
+        _ = self.mastodon_profile
+        return self._mastodon_posts
+
+    @cached_property
+    def mastodon_profile(self):
+        """
+        Get the mastodon profile
+        """
+        if self._mastodon_profile is None:
+            self._mastodon_profile = self.profile_info["mastodon"]
+
+            if self._mastodon_profile:
+                self.mastodon_username, self.mastodon_server = (
+                    self._mastodon_profile[1:].split("@")[0],
+                    self._mastodon_profile[1:].split("@")[1],
+                )
+                self._mastodon_posts = mastodon.MastodonFeed(
+                    self.mastodon_username, self.mastodon_server
+                )
+        return self._mastodon_profile
+
+    @cached_property
+    def profile_info(self):
+        """
+        Get the profile info
+        """
+        if self._profile_info is None:
+            self.get_profile_info()
+        return self._profile_info
+
+    @cached_property
+    def profile(self):
+        """
+        Get the profile
+        """
+        if self._profile is None:
+            try:
+                self._profile = Profile.objects.prefetch_related(
+                    "academic_interests", "coverimage_set"
+                ).get(username=self.user)
+            except Profile.DoesNotExist as exc:
+                if self.create:
+                    self._profile = Profile.objects.create(username=user)
+                else:
+                    # if the user exists but the Profile doesn't, then create it
+                    try:
+                        user_object = User.objects.get(username=self.user)
+                        self._profile = Profile.objects.create(
+                            username=self.user, email=user_object.email
+                        )
+                    except User.DoesNotExist as exc:
+                        # raise 404
+                        raise Http404("Profile not found") from exc
+        return self._profile
 
     def get_profile_info(self, create=False):
         """
@@ -99,7 +142,7 @@ class API:
         """
 
         # A dictionary containing profile information
-        self.profile_info = {
+        self._profile_info = {
             "name": self.profile.name,
             "username": self.profile.username,
             "title": self.profile.title,
@@ -117,7 +160,7 @@ class API:
             "institutional_or_other_affiliation": self.profile.institutional_or_other_affiliation,
         }
 
-        return self.profile_info
+        return self._profile_info
 
     def get_academic_interests(self):
         """

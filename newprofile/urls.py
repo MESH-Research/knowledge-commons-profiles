@@ -48,6 +48,16 @@ urlpatterns = (
         path("api-auth/", include("rest_framework.urls")),
         path("logout/", logout_view, name="logout_to_remove"),
         path("tinymce/", include("tinymce.urls")),
+        path(
+            "htmx/mastodon_feed/<str:username>/",
+            views.mastodon_feed,
+            name="mastodon_feed",
+        ),
+        path(
+            "htmx/blog_posts/<str:username>/",
+            views.blog_posts,
+            name="blog_posts",
+        ),
     ]
     + debug_toolbar_urls()
     + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

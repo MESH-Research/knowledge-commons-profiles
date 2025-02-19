@@ -1,0 +1,8 @@
+<!-- templates/partials/mastodon_feed.html -->
+{% if mastodon_posts|length > 0 %}
+  {% for post in mastodon_posts %}
+    <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
+  {% endfor %}
+{% else %}
+  <p class="no-posts">No recent Mastodon posts available.</p>
+{% endif %}
