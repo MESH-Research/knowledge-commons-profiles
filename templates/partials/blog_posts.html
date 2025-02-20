@@ -10,5 +10,8 @@
     {% endfor %}
   </ul>
 {% else %}
+    <script type="text/javascript">
+        $("#blog-posts-container").hide();
+    </script>
   <p class="no-posts">No blog posts available.</p>
 {% endif %}

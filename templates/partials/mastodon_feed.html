@@ -4,5 +4,8 @@
     <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
   {% endfor %}
 {% else %}
+    <script type="text/javascript">
+        $("#mastodon-feed-container").hide();
+    </script>
   <p class="no-posts">No recent Mastodon posts available.</p>
 {% endif %}
