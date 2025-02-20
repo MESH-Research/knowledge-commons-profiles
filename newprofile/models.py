@@ -5,6 +5,29 @@ A set of models for user profiles
 # pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 
 from django.db import models
+from django.template.defaultfilters import linebreaksbr
+from django_bleach.models import BleachField
+from tinymce.widgets import TinyMCE
+
+
+class ProfileBleachField(BleachField):
+    """An override of BleachField to avoid casting SafeString from db
+    Bleachfield automatically casts the default return type (string) into
+    a SafeString, which is okay when using the value for HTML rendering but
+    not when using the value elsewhere (XML encoding)
+    https://github.com/marksweb/django-bleach/blob/504b3784c525886ba1974eb9ecbff89314688491/django_bleach/models.py#L76
+    """
+
+    def from_db_value(self, value, expression, connection):
+        return value
+
+    def pre_save(self, model_instance, *args, **kwargs):
+        data = getattr(model_instance, self.attname)
+        try:
+            return super().pre_save(model_instance, *args, **kwargs)
+        except TypeError:
+            # Gracefully ignore typerrors on BleachField
+            return data
 
 
 class WpPostSubTable(models.Model):
@@ -329,12 +352,12 @@ class Profile(models.Model):
     academic_interests = models.ManyToManyField(
         "AcademicInterest", related_name="profiles"
     )
-    about_user = models.TextField(blank=True, null=True)
-    education = models.TextField(blank=True, null=True)
+    about_user = ProfileBleachField(blank=True, null=True)
+    education = ProfileBleachField(blank=True, null=True)
 
     upcoming_talks = models.TextField(blank=True, null=True)
     projects = models.TextField(blank=True, null=True)
-    publications = models.TextField(blank=True, null=True)
+    publications = ProfileBleachField(blank=True, null=True)
     site = models.TextField(blank=True, null=True)
     institutional_or_other_affiliation = models.TextField(
         blank=True, null=True

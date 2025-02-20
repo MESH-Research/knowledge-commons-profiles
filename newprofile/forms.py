@@ -5,15 +5,32 @@ Forms for the profile app
 from bleach.linkifier import Linker
 from bleach.sanitizer import Cleaner
 from django import forms
+from django.template.defaultfilters import linebreaksbr
+from django.utils.html import linebreaks
+from django_bleach.forms import BleachField
+
 from django_select2.forms import (
     ModelSelect2MultipleWidget,
     ModelSelect2TagWidget,
 )
 from tinymce.widgets import TinyMCE
-
+from bleach import clean
 from newprofile.models import Profile, AcademicInterest
 
 from django_select2 import forms as s2forms
+
+
+class ProfileBleachFormField(BleachField):
+    """
+    A subclass of BleachField that uses the TinyMCE widget
+    """
+
+    widget = TinyMCE
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return self.empty_value
+        return clean(value, **self.bleach_options)
 
 
 class SanitizedTinyMCE(TinyMCE):
@@ -80,6 +97,30 @@ class AcademicInterestsSelect2TagWidget(ModelSelect2TagWidget):
 
 
 class ProfileForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Convert newlines to <br> tags if instance exists
+        if self.instance.pk and self.instance.about_user:
+            self.initial["about_user"] = linebreaks(self.instance.about_user)
+
+        if self.instance.pk and self.instance.education:
+            self.initial["education"] = linebreaks(self.instance.education)
+
+        if self.instance.pk and self.instance.upcoming_talks:
+            self.initial["upcoming_talks"] = linebreaks(
+                self.instance.upcoming_talks
+            )
+
+        if self.instance.pk and self.instance.projects:
+            self.initial["projects"] = linebreaks(self.instance.projects)
+
+        if self.instance.pk and self.instance.publications:
+            print(self.instance.publications)
+            self.initial["publications"] = linebreaks(
+                self.instance.publications
+            )
+            print(self.initial["publications"])
 
     class Meta:
         model = Profile
@@ -148,38 +189,6 @@ class ProfileForm(forms.ModelForm):
             "show_mastodon_feed": forms.CheckboxInput(
                 attrs={"style": "display: inline-block; float:right;"}
             ),
-            "about_user": SanitizedTinyMCE(
-                attrs={
-                    "cols": 80,
-                    "rows": 30,
-                },
-                mce_attrs={
-                    "menubar": True,
-                    "plugins": [
-                        "advlist",
-                        "autolink",
-                        "lists",
-                        "link",
-                        "image",
-                        "charmap",
-                        "preview",
-                        "anchor",
-                        "searchreplace",
-                        "visualblocks",
-                        "fullscreen",
-                        "insertdatetime",
-                        "table",
-                        "code",
-                    ],
-                    "toolbar": """
-                    undo redo | formatselect | bold italic | 
-                    alignleft aligncenter alignright | 
-                    bullist numlist | link image | removeformat | code
-                """,
-                    "width": "100%",
-                },
-            ),
-            "education": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
             "projects": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
             "publications": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
             "memberships": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),
