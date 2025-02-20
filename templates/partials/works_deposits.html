@@ -1,1 +1,5 @@
-{{ works_html | safe }}
+{% if works_html %}
+    {{ works_html | safe }}
+{% else %}
+    <p class="no-posts">No Works deposits yet.</p>
+{% endif %}
