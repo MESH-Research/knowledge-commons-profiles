@@ -2,22 +2,18 @@
 Forms for the profile app
 """
 
+from bleach import clean
 from bleach.linkifier import Linker
 from bleach.sanitizer import Cleaner
 from django import forms
-from django.template.defaultfilters import linebreaksbr
 from django.utils.html import linebreaks
 from django_bleach.forms import BleachField
-
 from django_select2.forms import (
-    ModelSelect2MultipleWidget,
     ModelSelect2TagWidget,
 )
 from tinymce.widgets import TinyMCE
-from bleach import clean
-from newprofile.models import Profile, AcademicInterest
 
-from django_select2 import forms as s2forms
+from newprofile.models import Profile, AcademicInterest
 
 
 class ProfileBleachFormField(BleachField):
@@ -116,11 +112,9 @@ class ProfileForm(forms.ModelForm):
             self.initial["projects"] = linebreaks(self.instance.projects)
 
         if self.instance.pk and self.instance.publications:
-            print(self.instance.publications)
             self.initial["publications"] = linebreaks(
                 self.instance.publications
             )
-            print(self.initial["publications"])
 
     class Meta:
         model = Profile
