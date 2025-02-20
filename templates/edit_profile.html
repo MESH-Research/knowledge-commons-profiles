@@ -130,7 +130,7 @@
 
         </div>
 
-		<div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
+		<div class="academic-interests wordblock"><h4>Academic Interests</h4><ul>
             {{ form.academic_interests }}
 
             </ul></div>		<div class="commons-groups wordblock show-more"><h4>Commons Groups</h4></div>		<div class="recent-commons-activity"><h4>Recent Commons Activity</h4></div>			</div>
@@ -177,15 +177,15 @@
             </div>
 
         </div>
-        
-        <div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><div><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div></div>		
 
-        <div class="publications hideable show-more"><h4 style="width:25%;">Publications</h4>
+        <div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><div><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div></div>
+
+        <div class="publications hideablee"><h4 style="width:25%;">Publications</h4>
             <div id="div_id_publications" class="mb-3" style="margin-top:5px;">
                 <label for="id_publications" class="form-label">Publications</label>
                 {% crispy_field form.publications %}
             </div>
-        </div>		
+        </div>
 
 </div>
 
