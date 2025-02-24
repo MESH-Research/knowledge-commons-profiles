@@ -343,7 +343,6 @@ class API:
 
         # Fall back to Gravatar
         email = self.profile.email
-        # default = "https://www.gravatar.com/avatar/ad42b9f55af0c9b73cd642b3c8b7853b?s=150&r=g&d=identicon"
         size = 150
 
         # Encode the email to lowercase and then to bytes
