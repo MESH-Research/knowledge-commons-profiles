@@ -8,6 +8,7 @@ from operator import itemgetter
 from urllib.parse import urlencode
 
 import phpserialize
+from asyncstdlib.functools import cached_property as cached_async_property
 from django.contrib.auth import (
     get_user_model,
 )
@@ -62,18 +63,23 @@ class API:
         self._works_deposits = None
         self._works_html = None
 
-    @cached_property
-    def works_html(self):
+    @cached_async_property
+    async def works_html(self):
         """
         Get the works HTML
         """
+        if self._works_deposits is None:
+            self._works_deposits = WorksDeposits(
+                self.user, "https://works.hcommons.org"
+            )
+
         if self._works_html is None:
-            self._works_html = self.works_deposits.display_filter()
+            self._works_html = await self._works_deposits.display_filter()
 
         return self._works_html
 
-    @cached_property
-    def works_deposits(self):
+    @cached_async_property
+    async def works_deposits(self):
         """
         Get the works deposits
         """
@@ -198,7 +204,7 @@ class API:
 
     def get_blog_posts(self):
         """
-        Get blog posts from the Wordpress database
+        Get blog posts from the WordPress database
         :return:
         """
         if not self.use_wordpress:
@@ -242,7 +248,8 @@ class API:
                     FROM wp_{num}_posts p
                     LEFT JOIN wp_{num}_options o ON o.option_name = 'blogname'
                     LEFT JOIN wp_blogs b ON b.blog_id = {num}
-                    WHERE p.post_author = {self.wp_user.id} AND p.post_status='publish' AND p.post_type='post'
+                    WHERE p.post_author = {self.wp_user.id} 
+                    AND p.post_status='publish' AND p.post_type='post'
                 """
                 select_statements.append(select_stmt)
 

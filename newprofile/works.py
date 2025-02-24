@@ -3,7 +3,9 @@ Works field type.
 
 """
 
+import aiohttp
 import requests
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.template.loader import render_to_string
 
@@ -19,7 +21,7 @@ class WorksDeposits:
         self.user = user
         self.works_url = works_url
 
-    def display_filter(self):
+    async def display_filter(self):
         """Front-end display of user's works, ordered by date.
 
         :param mixed      field_value: Field value.
@@ -27,10 +29,11 @@ class WorksDeposits:
         :return: mixed
         """
         cache_key = f"hc-member-profiles-xprofile-works-deposits-{self.user}"
-        html = cache.get(cache_key)
+
+        html = await sync_to_async(cache.get)(cache_key)
 
         if html:
-            return html
+            return str(html)
 
         api_endpoint = self.works_url + "/api/records"
         endpoint = (
@@ -44,13 +47,15 @@ class WorksDeposits:
                 "rv:134.0) Gecko/20100101 Firefox/134.0",
             }
 
-            response = requests.get(endpoint, headers=headers)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(endpoint, headers=headers) as response:
+                    if response.status != 200:
+                        response.raise_for_status()
+                    works = await response.json()
+
+        except aiohttp.ClientError as e:
             print(f"Error fetching {endpoint}: {e}")
             return ""
-
-        works = response.json()
 
         if (
             not works
@@ -85,6 +90,7 @@ class WorksDeposits:
             context={"works_links": works_links},
         )
 
-        cache.set(cache_key, html, 1800)
+        # Set cache asynchronously
+        await sync_to_async(cache.set)(cache_key, html, 1800)
 
         return html

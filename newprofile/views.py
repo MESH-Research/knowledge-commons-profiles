@@ -15,14 +15,14 @@ from newprofile.forms import ProfileForm
 from newprofile.models import Profile
 
 
-def works_deposits(request, username):
+async def works_deposits(request, username):
     """
     Get works deposits via HTMX
     """
     api = API(request, username, use_wordpress=False, create=False)
 
     # Get the works deposits for this username
-    user_works_deposits = api.works_html
+    user_works_deposits = await api.works_html
 
     return render(
         request,
