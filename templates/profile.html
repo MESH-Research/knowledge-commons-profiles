@@ -3,289 +3,322 @@
 {% load crispy_forms_tags crispy_forms_field %}
 
 {% block title %}
-    {% if profile_info.name %}
-        Profile for {{ profile_info.name }}
-    {% else %}
-        Profile
-    {% endif %}
+    Profile
 {% endblock %}
 
 {% block content %}
 
-<div id="item-header-cover" class="table">
+    <div id="item-header-cover" class="table">
 
-	<div id="item-header-content">
+        <div id="item-header-content">
 
-		<div id="item-main">
-			<h4 class="name">{% if profile_info.name %}{{ profile_info.name }}{% else %}Anonymous User{% endif %}</h4>
-			<h4 class="title">{{ profile_info.title }}</h4>
-			<h4 class="affiliation">
-				<a href="/?s={{ profile_info.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile_info.institutional_or_other_affiliation }}</a>
-			</h4>
-			<div class="username">
-				<span class="social-label"><em>Commons</em> username:</span> <a href="" title="Send private message">@{{ profile_info.username }}</a>			</div>
-					{% if profile_info.twitter %}
-                    <div class="twitter">
-					<span class="social-label"><em>Twitter</em> handle:</span> <a href="https://twitter.com/{{ profile_info.twitter }}" rel="me">{{ profile_info.twitter }}</a>				</div>
-                    {% endif %}
+            <div id="item-main">
+                <h4 class="name" id="name"></h4>
+                <h4 class="title" id="title"></h4>
+                <h4 class="affiliation" id="affiliation"></h4>
 
-                    {% if profile_info.mastodon %}
-                    <div class="mastodon">
-					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'>{{ profile_info.mastodon }}</a>				</div>
-                    {% endif %}
+                <div class="username">
+                    <span class="social-label"><em>Commons</em> username:</span>
+                    <a href="" title="Send private message">@{{ username }}</a>
+                </div>
 
-                    {% if profile_info.bluesky %}
-                    <div class="bluesky">
-					<span class="social-label"><a href="https://bsky.app/profile/{{ profile_info.bluesky }}" rel="me">{{ profile_info.bluesky }}</a>				</div>
-                    {% endif %}
+                <div class="twitter" id="twitter">
+                </div>
 
-                    {% if profile_info.orcid %}
-                    <div class="orcid">
-					<span class="social-label"><em>ORCID</em> iD:</span> <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me">{{ profile_info.orcid }}</a>
+                <div class="mastodon" id="mastodon">
+                </div>
+
+                <div class="bluesky" id="bluesky">
+                </div>
+
+                <div class="orcid" id="orcid">
+                </div>
+            </div><!-- #item-main -->
+
+            <div id="item-meta">
+                <div class="avatar-wrap">
+                    <div id="item-header-avatar"
+                         hx-get="{% url 'mysql_data' username=username %}"
+                         hx-trigger="load"
+                         hx-indicator="#item-header-avatar"
+                         hx-target="this"
+                         hx-on:htmx:after-swap="initShowBlogMoreButtons('commons-groups', 'commons-groups'); initShowBlogMoreButtons('recent-commons-activity', 'recent-commons-activity'); initShowBlogMoreButtons('commons-sites', 'commons-sites');">
                     </div>
-                    {% endif %}
+                </div>
 
-        		</div><!-- #item-main -->
+                <div class="following-n-members">
+                    <a href="https://hcommons.org/members/{{ username }}/following">
+                        Following <span id="follower-count">{{ follower_count }}</span> members
+                    </a>
+                </div>
 
-
-		<div id="item-meta">
-			<div class="avatar-wrap">
-				<div id="item-header-avatar">
-					<a href="https://hcommons.org/members/{{ profile_info.username }}/">
-						<img loading="lazy" src="{{ profile_image }}" class="avatar user-1300-avatar avatar-150 photo" width="150" height="150" alt="Profile picture of {{ profile_info.name }}" />	</a>
-                        {% for badge in memberships %}
-                            <a class="society-badge-wrap" href="https://{{ badge|lower }}.hcommons.org/members"><span class="society-badge {{ badge|lower }}"></span></a>
-                        {% endfor %}
-				</div><!-- #item-header-avatar -->
-			</div>
-
-			<div class="following-n-members">
-									<a href="https://hcommons.org/members/{{ profile_info.username }}/following">
-									Following <span>{{ follower_count }}</span> members									</a>
-							</div>
-
-			{% if request.user.username == profile_info.username %}
-            <div id="item-buttons">
-								<span class="generic-button" style="display: none;"></span>
-				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div>
-
-
-                    <div id="edit-personal-li"><a id="edit" href="{% url "edit_profile" %}" class=" button">Edit</a></div>
-
-			</div><!-- #item-buttons -->
-            {% endif %}
-
-					</div><!-- #item-meta -->
-
-	</div><!-- #item-header-content -->
-
-</div><!-- #item-header-cover -->
+                {% if request.user.username == username %}
+                    <div id="item-buttons">
+                        <span class="generic-button"
+                              style="display: none;"></span>
+                        <div id="public-personal-li" class="current selected">
+                            <a id="public"
+                               href="https://hcommons.org/members/{{ username }}/profile/">View</a>
+                        </div>
+                        <div id="change-avatar-personal-li"><a
+                                id="change-avatar"
+                                href="https://hcommons.org/members/{{ username }}/profile/change-avatar/">Change
+                            Profile Photo</a></div>
+                        <div id="change-cover-image-personal-li"><a
+                                id="change-cover-image"
+                                href="https://hcommons.org/members/{{ username }}/profile/change-cover-image/">Change
+                            Cover Image</a></div>
 
 
-	</div><!-- #item-header -->
+                        <div id="edit-personal-li"><a id="edit"
+                                                      href="{% url "edit_profile" %}"
+                                                      class=" button">Edit</a>
+                        </div>
+
+                    </div><!-- #item-buttons -->
+                {% endif %}
+
+            </div><!-- #item-meta -->
+
+        </div><!-- #item-header-content -->
+
+    </div><!-- #item-header-cover -->
+
+
+    </div><!-- #item-header -->
 
 
     <div class="full-width">
         <div id="item-main-content">
-                        <div id="item-nav">
-                <div class="item-list-tabs no-ajax" id="object-nav" role="navigation">
+            <div id="item-nav">
+                <div class="item-list-tabs no-ajax" id="object-nav"
+                     role="navigation">
                     <ul id="nav-bar-filter">
 
-                        <li id="xprofile-personal-li"  class="current selected"><a id="user-xprofile" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">Profile</a></li><li id="activity-personal-li" ><a id="user-activity" href="https://hcommons.org/members/{{ profile_info.username }}/activity/">Activity</a></li><li id="blogs-personal-li" ><a id="user-blogs" href="https://hcommons.org/members/{{ profile_info.username }}/blogs/">Sites <span class="count">1</span></a></li><li id="notifications-personal-li" ><a id="user-notifications" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">Notifications <span class="count">9</span></a></li><li id="messages-personal-li" ><a id="user-messages" href="https://hcommons.org/members/{{ profile_info.username }}/messages/">Messages <span class="no-count">0</span></a></li><li id="members-following-personal-li" ><a id="user-members-following" href="https://hcommons.org/members/{{ profile_info.username }}/following/">Following <span class="count">23</span></a></li><li id="members-followers-personal-li" ><a id="user-members-followers" href="https://hcommons.org/members/{{ profile_info.username }}/followers/">Followers <span class="count">49</span></a></li><li id="events-personal-li" ><a id="user-events" href="https://hcommons.org/members/{{ profile_info.username }}/events/">Events</a></li><li id="groups-personal-li" ><a id="user-groups" href="https://hcommons.org/members/{{ profile_info.username }}/groups/">Groups <span class="no-count">0</span></a></li><li id="forums-personal-li" ><a id="user-forums" href="https://hcommons.org/members/{{ profile_info.username }}/forums/">Forums</a></li><li id="docs-personal-li" ><a id="user-docs" href="https://hcommons.org/members/{{ profile_info.username }}/docs/">Docs <span class="count">0</span></a></li><li id="settings-personal-li" ><a id="user-settings" href="https://hcommons.org/members/{{ profile_info.username }}/settings/">Settings</a></li>
+                        <li id="xprofile-personal-li" class="current selected">
+                            <a id="user-xprofile"
+                               href="https://hcommons.org/members/{{ username }}/profile/">Profile</a>
+                        </li>
+                        <li id="activity-personal-li"><a id="user-activity"
+                                                         href="https://hcommons.org/members/{{ username }}/activity/">Activity</a>
+                        </li>
+                        <li id="blogs-personal-li"><a id="user-blogs"
+                                                      href="https://hcommons.org/members/{{ username }}/blogs/">Sites
+                            <span class="count">1</span></a></li>
+                        <li id="notifications-personal-li"><a
+                                id="user-notifications"
+                                href="https://hcommons.org/members/{{ username }}/notifications/">Notifications
+                            <span class="count">9</span></a></li>
+                        <li id="messages-personal-li"><a id="user-messages"
+                                                         href="https://hcommons.org/members/{{ username }}/messages/">Messages
+                            <span class="no-count">0</span></a></li>
+                        <li id="members-following-personal-li"><a
+                                id="user-members-following"
+                                href="https://hcommons.org/members/{{ username }}/following/">Following
+                            <span class="count">23</span></a></li>
+                        <li id="members-followers-personal-li"><a
+                                id="user-members-followers"
+                                href="https://hcommons.org/members/{{ username }}/followers/">Followers
+                            <span class="count">49</span></a></li>
+                        <li id="events-personal-li"><a id="user-events"
+                                                       href="https://hcommons.org/members/{{ username }}/events/">Events</a>
+                        </li>
+                        <li id="groups-personal-li"><a id="user-groups"
+                                                       href="https://hcommons.org/members/{{ username }}/groups/">Groups
+                            <span class="no-count">0</span></a></li>
+                        <li id="forums-personal-li"><a id="user-forums"
+                                                       href="https://hcommons.org/members/{{ username }}/forums/">Forums</a>
+                        </li>
+                        <li id="docs-personal-li"><a id="user-docs"
+                                                     href="https://hcommons.org/members/{{ username }}/docs/">Docs
+                            <span class="count">0</span></a></li>
+                        <li id="settings-personal-li"><a id="user-settings"
+                                                         href="https://hcommons.org/members/{{ username }}/settings/">Settings</a>
+                        </li>
 
                     </ul>
                 </div>
             </div><!-- #item-nav -->
 
             <div id="item-body" role="main">
+                <div id="profile-main" role="main">
+                    <form>
+                        <div class="left">
+                            <div class="academic-interests wordblock"
+                                 id="academic-interests-container"><h4>Academic
+                                Interests</h4>
+                                Loading academic interests...
+                            </div>
 
-<div id="profile-main" role="main">
+                            <div id="commons-groups" class="commons-groups wordblock">
+                                <h4>Commons Groups</h4>
+                                Loading...
+                            </div>
 
+                            <div class="recent-commons-activity wordblock show-more" id="recent-commons-activity">
+                            </div>
 
-<form>
-	<div class="left">
-        <div class="academic-interests wordblock show-more"><h4>Academic Interests</h4><ul>
-            {%  for interest in academic_interests %}
-                <li><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow">{{ interest }}</a></li>
-            {% endfor %}
-            </ul></div>
+                            <div class="commons-sites wordblock" id="commons-sites">
+                            </div>
 
-        {% if groups|length > 0 %}
-            <div class="commons-groups wordblock show-more"><h4>Commons Groups</h4><ul class="group-type-hc">
-            {% for group in groups %}
-                <li><a href="https://hcommons.org/groups/{{ group.group.slug }}/">{{ group.group.name }}</a></li>
-            {% endfor %}
-            </ul></div>
-        {% endif %}
+                        </div>
 
-    {% if activities|length > 0 %}
-        <div class="recent-commons-activity wordblock show-more">
-            <h4>Recent Commons Activity</h4>
-                <ul>
-                    {% for activity in activities %}
-                    {% spaceless %}
-                        <li>{{ activity.action|safe }}</li>
-                    {% endspaceless %}
-                    {% endfor %}
-                </ul>
-        </div>
-        {% endif %}
+                        <div class="right">
+                            <div class="about hideable"><h4>About</h4>
+                                <div class="about-content"
+                                     hx-get="{% url 'profile_info' username=username %}"
+                                     hx-trigger="load"
+                                     hx-indicator="#about-loading"
+                                     hx-target="this"
+                                     hx-on:htmx:after-swap="this.parentElement.classList.add('show-more'); initShowBlogMoreButtons('academic-interests-container', 'academic-interests'); initShowBlogMoreButtons('publications-container', 'publications');">
+                                    <div id="about-loading"
+                                         class="loading-indicator">
+                                        <span class="spinner"></span> Loading
+                                        about...
+                                    </div>
+                                </div>
+                            </div>
 
-        {% if commons_sites|length > 0 %}
-        <div class="commons-sites wordblock show-more">
-            <h4>Commons Sites</h4>
-                <ul>
-                    {% for site in commons_sites %}
-                    <li><a href="{{ site.1 }}">{{ site.0}}</a></li>
-                    {% endfor %}
-                </ul>
-        </div>
-        {% endif %}
-    </div>
+                            <div class="education hideable" id="education"><h4>
+                                Education</h4>Loading education...
+                            </div>
 
-	<div class="right">
-		<div class="about hideable"><h4>About</h4>
-                {% if about_user %}
-                    {{ about_user|safe|linebreaksbr }}
-                {% else %}
-                    This user has not yet completed their profile.
-                {% endif %}
-        </div>
-        {% if education %}
-        <div class="education hideable"><h4>Education</h4>{{ education|safe|linebreaksbr }}</div>
-        {% endif %}
+                            <!-- Initial placeholder with loading state -->
+                            <div id="mastodon-feed-container" class="hideable">
+                                <h4>Mastodon Feed</h4>
+                                <div class="mastodon-feed-content"
+                                     hx-get="{% url 'mastodon_feed' username=username %}"
+                                     hx-trigger="load"
+                                     hx-indicator="#mastodon-loading"
+                                     hx-target="this">
+                                    <div id="mastodon-loading"
+                                         class="loading-indicator">
+                                        <span class="spinner"></span> Loading
+                                        Mastodon posts...
+                                    </div>
+                                </div>
+                            </div>
 
-        <!-- Initial placeholder with loading state -->
-        <div id="mastodon-feed-container" class="hideable">
-          <h4>Mastodon Feed</h4>
-          <div class="mastodon-feed-content" hx-get="{% url 'mastodon_feed' username=profile_info.username %}"
-               hx-trigger="load" hx-indicator="#mastodon-loading" hx-target="this">
-            <div id="mastodon-loading" class="loading-indicator">
-              <span class="spinner"></span> Loading Mastodon posts...
-            </div>
-          </div>
-        </div>
+                            <!-- Initial placeholder with loading state -->
+                            <div id="blog-posts-container" class="hideable">
+                                <h4>Blog Posts</h4>
+                                <div hx-get="{% url 'blog_posts' username=username %}"
+                                     hx-trigger="load"
+                                     hx-swap="innerHTML"
+                                     hx-target="this"
+                                     id="blog-posts-content"
+                                     hx-on:htmx:after-request="this.parentElement.classList.add('show-more'); initShowBlogMoreButtons('blog-posts-container', 'blog-posts');">
+                                    <div class="loading-indicator">
+                                        <span class="spinner"></span> Loading
+                                        blog posts...
+                                    </div>
+                                </div>
+                            </div>
 
-        <!-- Initial placeholder with loading state -->
-        <div id="blog-posts-container" class="hideable">
-          <h4>Blog Posts</h4>
-          <div hx-get="{% url 'blog_posts' username=profile_info.username %}"
-               hx-trigger="load"
-               hx-swap="innerHTML"
-               hx-target="this"
-               id="blog-posts-content"
-               hx-on:htmx:after-request="this.parentElement.classList.add('show-more'); initShowBlogMoreButtons('blog-posts-container', 'blog-posts');">
-            <div class="loading-indicator">
-              <span class="spinner"></span> Loading blog posts...
-            </div>
-          </div>
-        </div>
+                            <script>
+                                function initShowBlogMoreButtons(item_id, second_item_id) {
+                                    $('#' + item_id).each(function () {
+                                        var div = $(this);
+                                        var header = div.find('h4');
+                                        var showMoreButton = $('<button id="show_more_' + item_id + '" class="js-dynamic-show-hide button" title="Show more" data-replace-text="Show less">Show more</button>');
 
-        <script>
-            function initShowBlogMoreButtons(item_id, second_item_id) {
-                $( '#' + item_id ).each(function() {
-                    var div = $( this );
-                    var header = div.find( 'h4' );
-                    var showMoreButton = $( '<button id="show_more_' + item_id + '" class="js-dynamic-show-hide button" title="Show more" data-replace-text="Show less">Show more</button>' );
+                                        header.remove(); // this will be restored after wrapping the remaining contents in div.dynamic-height-wrap
 
-                    header.remove(); // this will be restored after wrapping the remaining contents in div.dynamic-height-wrap
+                                        div
+                                            .addClass('js-dynamic-height')
+                                            .attr('data-maxheight', 250)
+                                            .html(header[0].outerHTML + '<div class="dynamic-height-wrap">' + div.html() + '</div>' + showMoreButton[0].outerHTML);
+                                    });
 
-                    div
-                        .addClass( 'js-dynamic-height' )
-                        .attr( 'data-maxheight', 250 )
-                        .html( header[0].outerHTML + '<div class="dynamic-height-wrap">' + div.html() + '</div>' + showMoreButton[0].outerHTML );
-                });
+                                    $('#' + item_id).dynamicMaxHeight();
 
-                $( '#' + item_id).dynamicMaxHeight();
+                                    // buddypress adds ajax & link-like functionality to buttons.
+                                    // prevent page from reloading when "show more" button pressed.
+                                    $('#show_more_' + item_id).click(function (event) {
+                                        event.preventDefault();
+                                    });
 
-                // buddypress adds ajax & link-like functionality to buttons.
-                // prevent page from reloading when "show more" button pressed.
-                $( '#show_more_' + item_id ).click(function( event ) {
-                    event.preventDefault();
-                });
+                                    // button is also not automatically hid if itemheight < maxheight. fix it
+                                    $.each($('#' + item_id), function () {
+                                        var maxHeight = parseInt($(this).attr('data-maxheight'), 10);
+                                        var itemHeight = parseInt($(this).attr('data-itemheight'), 10);
 
-                // button is also not automatically hid if itemheight < maxheight. fix it
-                $.each( $( '#' + item_id ), function() {
-                    var maxHeight = parseInt( $( this ).attr( 'data-maxheight' ), 10 );
-                    var itemHeight = parseInt( $( this ).attr( 'data-itemheight' ), 10 );
+                                        if (maxHeight > itemHeight) {
+                                            $(this).find('#show_more_' + item_id).hide();
+                                        }
+                                    });
+                                }
+                            </script>
 
-                    if ( maxHeight > itemHeight ) {
-                        $( this ).find( '#show_more_' + item_id ).hide();
-                    }
-                });
-            }
-        </script>
+                            <div class="cv hideable"><h4>CV</h4><a
+                                    href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf"
+                                    target="_blank" rel="nofollow">View
+                                file</a></div>
 
-        <div class="cv hideable"><h4>CV</h4><a href="/app/uploads/sites/1000360/bp-attachment-xprofile/Eve-CV.pdf" target="_blank" rel="nofollow">View file</a></div>
+                            <!-- Initial placeholder with loading state -->
+                            <div id="works-deposits-container"
+                                 class="works-deposits hideable">
+                                <h4>Works Deposits</h4>
+                                <div hx-get="{% url 'works_deposits' username=username %}"
+                                     hx-trigger="load"
+                                     hx-swap="innerHTML"
+                                     hx-target="this"
+                                     id="works-deposit-content"
+                                     hx-on:htmx:after-request="initShowBlogMoreButtons('works-deposits-container', 'works-deposits');">
+                                    <div class="loading-indicator">
+                                        <span class="spinner"></span> Loading
+                                        Works deposits...
+                                    </div>
+                                </div>
+                            </div>
 
-    <!-- Initial placeholder with loading state -->
-        <div id="works-deposits-container" class="works-deposits hideable">
-          <h4>Works Deposits</h4>
-          <div hx-get="{% url 'works_deposits' username=profile_info.username %}"
-               hx-trigger="load"
-               hx-swap="innerHTML"
-               hx-target="this"
-               id="works-deposit-content"
-               hx-on:htmx:after-request="initShowBlogMoreButtons('works-deposits-container', 'works-deposits');">
-            <div class="loading-indicator">
-              <span class="spinner"></span> Loading Works deposits...
-            </div>
-          </div>
-        </div>
-
-        {% if profile_info.publications %}
-            <div class="publications hideable show-more"><h4>Publications</h4>
-                {{ profile_info.publications | safe | linebreaksbr }}
-            </div>
-        {% endif %}
-
-        {% if profile_info.projects %}
-            <div class="projects hideable show-more"><h4>Projects</h4>
-                {{ profile_info.projects | safe | linebreaksbr }}
-            </div>
-        {% endif %}
-
-        {% if profile_info.memberships %}
-            <div class="memberships hideable show-more"><h4>Memberships</h4>
-                {{ profile_info.memberships | safe | linebreaksbr }}
-            </div>
-        {% endif %}
-    </div>
-
-</form>
+                            <div id="publications-container"
+                                 class="publications hideable">
+                                <h4>Publications</h4>
+                                Loading...
+                            </div>
 
 
+                            <div id="projects-container"
+                                 class="projects hideable show-more">
+                                <h4>Projects</h4>
+                                Loading...
+                            </div>
+
+                        </div>
+
+                    </form>
 
 
-</div><!-- .profile -->
+                </div><!-- .profile -->
 
 
             </div><!-- #item-body -->
 
         </div>
         <!-- /.item-main-content -->
-            </div>
+    </div>
 
-</div><!-- #buddypress -->
-</div>
+    </div><!-- #buddypress -->
+    </div>
 
-<footer class="entry-meta">
+    <footer class="entry-meta">
     </footer><!-- .entry-meta -->
 
-																		</article>
+    </article>
 
-				</div><!-- #content -->
+    </div><!-- #content -->
 
-			</div><!-- #primary -->
-
-
-	<!-- Check if BuddyPress is activated -->
-
-		<!-- if there are widgets in the Members: Directory sidebar -->
+    </div><!-- #primary -->
 
 
-		</div><!-- closing div -->
+    <!-- Check if BuddyPress is activated -->
 
-</div><!-- #main .wrapper -->
+    <!-- if there are widgets in the Members: Directory sidebar -->
+
+
+    </div><!-- closing div -->
+
+    </div><!-- #main .wrapper -->
 
 {% endblock content %}

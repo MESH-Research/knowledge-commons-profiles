@@ -1,0 +1,74 @@
+<!-- profile image -->
+<a href="https://hcommons.org/members/{{ username }}/">
+    <img loading="lazy" src="{{ profile_image }}"
+         class="avatar user-1300-avatar avatar-150 photo"
+         width="150" height="150"
+         alt="Profile picture"/>
+</a>
+{% for badge in memberships %}
+    <a class="society-badge-wrap"
+       href="https://{{ badge|lower }}.hcommons.org/members"><span
+            class="society-badge {{ badge|lower }}"></span></a>
+{% endfor %}
+
+<span id="follower-count" hx-swap-oob="true">{{ follower_count }}</span>
+
+{% if groups|length > 0 %}
+    <div id="commons-groups" class="commons-groups wordblock" hx-swap-oob="true">
+        <h4>Commons Groups</h4>
+        <ul class="group-type-hc">
+            {% for group in groups %}
+                <li>
+                    <a href="https://hcommons.org/groups/{{ group.group.slug }}/">{{ group.group.name }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% else %}
+    <div class="commons-groups wordblock" id="commons-groups" hx-swap-oob="true">
+        <script type="text/javascript">
+            $("#commons-groups").hide();
+        </script>
+      <p class="no-posts">No groups info.</p>
+    </div>
+{% endif %}
+
+{% if activities|length > 0 %}
+    <div class="recent-commons-activity wordblock" id="recent-commons-activity" hx-swap-oob="true">
+        <h4>Recent Commons Activity</h4>
+        <ul>
+            {% for activity in activities %}
+                {% spaceless %}
+                    <li>{{ activity.action|safe }}</li>
+                {% endspaceless %}
+            {% endfor %}
+        </ul>
+    </div>
+{% else %}
+    <div class="recent-commons-activity wordblock" id="recent-commons-activity" hx-swap-oob="true">
+        <script type="text/javascript">
+            $("#recent-commons-activity").hide();
+        </script>
+      <p class="no-posts">No activity info.</p>
+    </div>
+{% endif %}
+
+{% if commons_sites|length > 0 %}
+    <div id="commons-sites" class="commons-sites wordblock" hx-swap-oob="true">
+        <h4>Commons Sites</h4>
+        <ul>
+            {% for site in commons_sites %}
+                <li>
+                    <a href="{{ site.1 }}">{{ site.0 }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% else %}
+    <div class="commons-sites wordblock" id="commons-sites" hx-swap-oob="true">
+        <script type="text/javascript">
+            $("#commons-sites").hide();
+        </script>
+      <p class="no-posts">No sites info.</p>
+    </div>
+{% endif %}

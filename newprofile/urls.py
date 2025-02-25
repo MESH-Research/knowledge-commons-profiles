@@ -63,6 +63,16 @@ urlpatterns = (
             views.works_deposits,
             name="works_deposits",
         ),
+        path(
+            "htmx/profile_info/<str:username>/",
+            views.profile_info,
+            name="profile_info",
+        ),
+        path(
+            "htmx/mysql_data/<str:username>/",
+            views.mysql_data,
+            name="mysql_data",
+        ),
     ]
     + debug_toolbar_urls()
     + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

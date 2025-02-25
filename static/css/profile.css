@@ -213,7 +213,6 @@
 .profile #item-main .username a::before,
 .profile #item-main .twitter a::before,
 .profile #item-main .mastodon a::before,
-.profile #item-main .orcid a::before,
 .profile #item-main .facebook a::before,
 .profile #item-main .linkedin a::before,
 .profile #item-main .website a::before {
@@ -249,9 +248,7 @@
   top: 3px;
   width: 14px;
 }
-.profile #item-main .orcid a::before {
-  background-image: url( '/static/img/iD-icon.png' );
-}
+
 .profile #item-main .facebook a::before {
   background-image: url( '/static/FB-f-Logo__blue_29.png' );
 }

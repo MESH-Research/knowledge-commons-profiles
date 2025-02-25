@@ -2,6 +2,7 @@
 The main views for the profile app
 """
 
+import django
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render
 from rest_framework import status
@@ -31,18 +32,90 @@ async def works_deposits(request, username):
     )
 
 
+def mysql_data(request, username):
+    """
+    Get wordpress data via HTMX
+    """
+    api = API(request, username, use_wordpress=True, create=False)
+
+    profile_info = api.get_profile_info()
+
+    if username == request.user.username:
+        api_me = api
+        my_profile_info = profile_info
+    else:
+        # get logged in user profile
+        api_me = (
+            API(
+                request,
+                request.user.username,
+                use_wordpress=True,
+                create=False,
+            )
+            if request.user.is_authenticated
+            else None
+        )
+        my_profile_info = api_me.get_profile_info() if api_me else None
+
+    notifications = api_me.get_short_notifications() if api_me else None
+
+    context = {
+        "username": username,
+        "cover_image": api.get_cover_image(),
+        "profile_image": api.get_profile_photo(),
+        "groups": api.get_groups(),
+        "logged_in_profile": my_profile_info,
+        "memberships": api.get_memberships(),
+        "follower_count": api.follower_count(),
+        "commons_sites": api.get_user_blogs(),
+        "activities": api.get_activity(),
+        "short_notifications": notifications,
+        "notification_count": len(notifications) if notifications else 0,
+        "logged_in_profile_image": (
+            api_me.get_profile_photo() if api_me else None
+        ),
+    }
+
+    return render(
+        request,
+        "partials/mysql_data.html",
+        context=context,
+    )
+
+
+def profile_info(request, username):
+    """
+    Get profile info via HTMX
+    """
+    api = API(request, username, use_wordpress=False, create=False)
+
+    context = {
+        "profile_info": api.get_profile_info(),
+        "academic_interests": api.get_academic_interests(),
+        "education": api.get_education(),
+        "about_user": api.get_about_user(),
+    }
+
+    return render(request, "partials/profile_info.html", context)
+
+
 def blog_posts(request, username):
     """
     Get blog posts via HTMX
     """
-    api = API(request, username, use_wordpress=True, create=False)
+    try:
+        api = API(request, username, use_wordpress=True, create=False)
 
-    # Get the blog posts for this username
-    user_blog_posts = api.get_blog_posts()
+        # Get the blog posts for this username
+        user_blog_posts = api.get_blog_posts()
 
-    return render(
-        request, "partials/blog_posts.html", {"blog_posts": user_blog_posts}
-    )
+        return render(
+            request,
+            "partials/blog_posts.html",
+            {"blog_posts": user_blog_posts},
+        )
+    except django.db.utils.OperationalError:
+        return render(request, "partials/blog_posts.html", {"blog_posts": ""})
 
 
 def mastodon_feed(request, username):
@@ -51,11 +124,9 @@ def mastodon_feed(request, username):
     """
     api = API(request, username, use_wordpress=False, create=False)
 
-    profile_info = api.get_profile_info()
-
     # Get the mastodon posts for this username
     mastodon_posts = (
-        api.mastodon_posts.latest_posts if profile_info["mastodon"] else []
+        api.mastodon_posts.latest_posts if api.profile_info["mastodon"] else []
     )
 
     return render(
@@ -83,9 +154,15 @@ def profile(request, user="", create=False):
 
     This view renders the main page of the site.
     """
-    api = API(request, user, use_wordpress=True, create=create)
-
     # TODO: if "create" then redirect to the profile edit page
+
+    return render(
+        request=request,
+        context={"username": user},
+        template_name="profile.html",
+    )
+
+    api = API(request, user, use_wordpress=True, create=create)
 
     profile_info = api.get_profile_info()
 
