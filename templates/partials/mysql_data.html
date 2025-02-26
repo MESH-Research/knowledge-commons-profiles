@@ -72,3 +72,673 @@
       <p class="no-posts">No sites info.</p>
     </div>
 {% endif %}
+
+{% if notification_count %}
+    <span id="ab-pending-notifications" hx-swap-oob="true" class="pending-count alert">{{ notification_count }}</span>
+
+    {% if notification_count > 0 %}
+        <div id="popoutmenu" class="pop" hx-swap-oob="true">
+            {% for notification in short_notifications %}
+                {% if notification.2 == False %}
+                    <a href="{{ notification.1 }}">{{ notification.0 }}</a>
+                {% else %}
+                    {% if notification.1 %}
+                        <a href="{% url ""|add:notification.1.0 notification.1.1 %}">{{ notification.0 }}</a>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </div><!--.pop-->
+    {% endif %}
+{% else %}
+    <span id="ab-pending-notifications" hx-swap-oob="true" class="pending-count alert">0</span>
+    <div id="popoutmenu" class="pop" hx-swap-oob="true">
+        <script type="text/javascript">
+            $("#popoutmenu").hide();
+        </script>
+    </div>
+{% endif %}
+
+{% if logged_in_user %}
+    <div id="userloggedinheader" class="header-account-login" hx-swap-oob="true">
+        <a class="user-link"  href="https://hcommons.org/members/{{ logged_in_user.username }}/">
+        <span class="name ">{% if logged_in_profile %}
+        {{ logged_in_profile.name }}{% endif %}</span>
+        <span>
+        <img loading="lazy"
+        src="{{ logged_in_profile_image }}"
+        class="avatar user-1300-avatar avatar-100 photo"
+        width="100" height="100"
+        alt="Profile Photo"/>
+        </span>
+    </a>
+
+    <div class="pop">
+        <!-- Dashboard links -->
+
+        <!-- Adminbar -->
+        <div id="adminbar-links"
+             class="bp_components">
+            <div class="unnamed">
+                <div aria-label="Toolbar">
+                    <ul id='wp-admin-bar-top-secondary'
+                        class="ab-top-secondary ab-top-menu">
+                        <li id='wp-admin-bar-my-account'
+                            class="menupop with-avatar active">
+                            <a class='ab-item'
+                               aria-haspopup="true"
+                               href='https://hcommons.org/members/{{ profile_info.username }}/profile/edit/'>
+                                <span class="display-name">{{ profile_info.name }}</span><img
+                                    alt=''
+                                    src='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png'
+                                    srcset='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png 2x'
+                                    class='avatar avatar-26 photo'
+                                    height='26'
+                                    width='26'
+                                    loading='lazy'
+                                    decoding='async'/></a>
+                            <div class="ab-sub-wrapper">
+                                <ul id='wp-admin-bar-user-actions'
+                                    class="ab-submenu">
+                                    <li id='wp-admin-bar-user-info'>
+                                        <a class='ab-item'
+                                           tabindex="-1"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/profile/'>
+                                            <img
+                                                    alt=''
+                                                    src='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png'
+                                                    srcset='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png 2x'
+                                                    class='avatar avatar-64 photo'
+                                                    height='64'
+                                                    width='64'
+                                                    loading='lazy'
+                                                    decoding='async'
+                                            />
+                                            <span class='display-name'>{{ profile_info.name }}</span>
+                                            <span class='username'>{{ profile_info.username }}</span>
+                                        </a>
+                                    </li>
+                                    <li id='wp-admin-bar-logout'>
+                                        <a class='ab-item'
+                                           href='https://hcommons.org/wp-login.php?action=logout&#038;_wpnonce=438527daf3&#038;redirect_to=https%3A%2F%2Fhcommons.org%2Fmembers%2F{{ profile_info.username }}%2Fprofile%2Fedit%2Fgroup%2F1%2F%3Floggedout%3Dtrue'>Log
+                                            Out</a>
+                                    </li>
+                                </ul>
+                                <ul id='wp-admin-bar-my-account-buddypress'
+                                    class="ab-sub-secondary active ab-submenu">
+                                    <li id='wp-admin-bar-my-account-activity'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/activity/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Activity
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-activity-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-activity-personal'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/just-me/'>Personal</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-activity-mentions'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/mentions/'>Mentions</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-activity-following'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/following/'>Following</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-activity-followblogs'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/followblogs/'>Followed
+                                                        Sites</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-activity-favorites'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/favorites/'>Favorites</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-activity-groups'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/groups/'>Groups</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-xprofile'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/profile/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Profile
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-xprofile-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-xprofile-public'
+                                                    class="active">
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/profile/public/'>View</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-xprofile-edit'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/profile/edit/'>Edit</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-xprofile-change-avatar'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/'>Change
+                                                        Profile
+                                                        Photo</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-xprofile-change-cover-image'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/'>Change
+                                                        Cover
+                                                        Image</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-blogs'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/blogs/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Sites
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-blogs-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-blogs-my-sites'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/blogs/my-sites/'>My
+                                                        Sites</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-blogs-following'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/blogs/following/'>Followed
+                                                        Sites</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-blogs-create'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/sites/create/'>Create
+                                                        a
+                                                        Site</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-events'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/events'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Events
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-events-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-events-calendar'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/events/'>Calendar</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-events-new'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/events/new-event/'>New
+                                                        Event</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-messages'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/messages/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Messages
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-messages-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-messages-inbox'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/messages/inbox/'>Inbox</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-messages-starred'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/messages/starred/'>Starred</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-messages-sentbox'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/messages/sentbox/'>Sent</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-messages-compose'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/messages/compose/'>Compose</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-follow'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/following/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Follow
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-follow-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-follow-following'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/following/'>Following</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-bp_docs'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/docs/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Docs
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-bp_docs-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-bp_docs-started'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/docs/started/'>Started
+                                                        By
+                                                        Me</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-bp_docs-edited'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/docs/edited/'>Edited
+                                                        By
+                                                        Me</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-bp_docs-create'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/docs/create/'>Create
+                                                        New
+                                                        Doc</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    <li id='wp-admin-bar-my-account-settings'
+                                        class="menupop">
+                                        <a class='ab-item'
+                                           aria-haspopup="true"
+                                           href='https://hcommons.org/members/{{ profile_info.username }}/settings/'>
+                                            <span class="wp-admin-bar-arrow"
+                                                  aria-hidden="true"></span>Settings
+                                        </a>
+                                        <div class="ab-sub-wrapper">
+                                            <ul id='wp-admin-bar-my-account-settings-default'
+                                                class="ab-submenu">
+                                                <li id='wp-admin-bar-my-account-settings-general'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/settings/general/'>General</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-settings-notifications'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/settings/notifications/'>Email</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-account-settings-data'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/settings/data/'>Export
+                                                        Data</a>
+                                                </li>
+                                                <li id='wp-admin-bar-my-block-list'>
+                                                    <a class='ab-item'
+                                                       href='https://hcommons.org/members/{{ profile_info.username }}/settings/blocked/'>Blocked
+                                                        Members</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                    <ul id='wp-admin-bar-root-default'
+                        class="ab-top-menu">
+                        <li id='wp-admin-bar-hc-societies'
+                            class="menupop">
+                            <div class="ab-item ab-empty-item"
+                                 aria-haspopup="true">
+                                My Societies
+                            </div>
+                            <div class="ab-sub-wrapper">
+                                <ul id='wp-admin-bar-hc-societies-default'
+                                    class="ab-submenu">
+                                    <li id='wp-admin-bar-hc-society-hc'>
+                                        <a class='ab-item'
+                                           href='https://hcommons.org'>HC</a>
+                                    </li>
+
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <ul id='wp-admin-bar-top-secondary'
+                    class="ab-top-secondary ab-top-menu">
+                    <li id='wp-admin-bar-my-account'
+                        class="menupop with-avatar active">
+                        <a class='ab-item'
+                           aria-haspopup="true"
+                           href='https://hcommons.org/members/{{ profile_info.username }}/profile/edit/'>
+                            <span class="display-name">{{ profile_info.name }}</span><img
+                                alt=''
+                                src='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png'
+                                srcset='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png 2x'
+                                class='avatar avatar-26 photo'
+                                height='26'
+                                width='26'
+                                loading='lazy'
+                                decoding='async'/></a>
+                        <div class="ab-sub-wrapper">
+                            <ul id='wp-admin-bar-user-actions'
+                                class="ab-submenu">
+                                <li id='wp-admin-bar-user-info'>
+                                    <a class='ab-item'
+                                       tabindex="-1"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/profile/'><img
+                                            alt=''
+                                            src='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png'
+                                            srcset='https://hcommons.org/app/uploads/avatars/1300/1736156986-bpthumb.png 2x'
+                                            class='avatar avatar-64 photo'
+                                            height='64'
+                                            width='64'
+                                            loading='lazy'
+                                            decoding='async'/><span
+                                            class='display-name'>{{ profile_info.name }}</span><span
+                                            class='username'>{{ profile_info.username }}</span></a>
+                                </li>
+                                <li id='wp-admin-bar-logout'>
+                                    <a class='ab-item'
+                                       href='https://hcommons.org/wp-login.php?action=logout&#038;_wpnonce=438527daf3&#038;redirect_to=https%3A%2F%2Fhcommons.org%2Fmembers%2F{{ profile_info.username }}%2Fprofile%2Fedit%2Fgroup%2F1%2F%3Floggedout%3Dtrue'>Log
+                                        Out</a>
+                                </li>
+                            </ul>
+                            <ul id='wp-admin-bar-my-account-buddypress'
+                                class="ab-sub-secondary active ab-submenu">
+                                <li id='wp-admin-bar-my-account-activity'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/activity/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Activity</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-activity-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-activity-personal'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/activity/just-me/'>Personal</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-activity-mentions'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/activity/mentions/'>Mentions</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-activity-following'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/activity/following/'>Following</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-activity-followblogs'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/activity/followblogs/'>Followed
+                                                    Sites</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-activity-favorites'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/activity/favorites/'>Favorites</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-activity-groups'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/activity/groups/'>Groups</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-xprofile'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/profile/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Profile</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-xprofile-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-xprofile-public'
+                                                class="active">
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/profile/public/'>View</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-xprofile-edit'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/profile/edit/'>Edit</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-xprofile-change-avatar'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/'>Change
+                                                    Profile
+                                                    Photo</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-xprofile-change-cover-image'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/'>Change
+                                                    Cover
+                                                    Image</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-blogs'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/blogs/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Sites</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-blogs-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-blogs-my-sites'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/blogs/my-sites/'>My
+                                                    Sites</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-blogs-following'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/blogs/following/'>Followed
+                                                    Sites</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-blogs-create'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/sites/create/'>Create
+                                                    a
+                                                    Site</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-events'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/events'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Events</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-events-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-events-calendar'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/events/'>Calendar</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-events-new'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/events/new-event/'>New
+                                                    Event</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-messages'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/messages/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Messages</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-messages-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-messages-inbox'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/messages/inbox/'>Inbox</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-messages-starred'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/messages/starred/'>Starred</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-messages-sentbox'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/messages/sentbox/'>Sent</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-messages-compose'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/messages/compose/'>Compose</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-follow'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/following/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Follow</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-follow-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-follow-following'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/following/'>Following</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-bp_docs'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/docs/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Docs</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-bp_docs-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-bp_docs-started'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/docs/started/'>Started
+                                                    By
+                                                    Me</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-bp_docs-edited'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ username }}/docs/edited/'>Edited
+                                                    By
+                                                    Me</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-bp_docs-create'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/docs/create/'>Create
+                                                    New
+                                                    Doc</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li id='wp-admin-bar-my-account-settings'
+                                    class="menupop">
+                                    <a class='ab-item'
+                                       aria-haspopup="true"
+                                       href='https://hcommons.org/members/{{ profile_info.username }}/settings/'><span
+                                            class="wp-admin-bar-arrow"
+                                            aria-hidden="true"></span>Settings</a>
+                                    <div class="ab-sub-wrapper">
+                                        <ul id='wp-admin-bar-my-account-settings-default'
+                                            class="ab-submenu">
+                                            <li id='wp-admin-bar-my-account-settings-general'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/settings/general/'>General</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-settings-notifications'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/settings/notifications/'>Email</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-account-settings-data'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/settings/data/'>Export
+                                                    Data</a>
+                                            </li>
+                                            <li id='wp-admin-bar-my-block-list'>
+                                                <a class='ab-item'
+                                                   href='https://hcommons.org/members/{{ profile_info.username }}/settings/blocked/'>Blocked
+                                                    Members</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+                <ul id='wp-admin-bar-root-default'
+                    class="ab-top-menu">
+                    <li id='wp-admin-bar-hc-societies'
+                        class="menupop">
+                        <div class="ab-item ab-empty-item"
+                             aria-haspopup="true">
+                            My Societies
+                        </div>
+                        <div class="ab-sub-wrapper">
+                            <ul id='wp-admin-bar-hc-societies-default'
+                                class="ab-submenu">
+                                <li id='wp-admin-bar-hc-society-hc'>
+                                    <a class='ab-item'
+                                       href='https://hcommons.org'>HC</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div><!--.unnamed-->
+    </div><!-- adminbar-links-->
+    <span class="logout">
+                    <a href="https://hcommons.org/wp-login.php?action=logout&amp;_wpnonce=438527daf3&redirect_to=https%3A%2F%2Fhcommons.org%2Fmembers%2F{{ profile_info.username }}%2Fprofile%2Fedit%2Fgroup%2F1%2F%3Floggedout%3Dtrue">Logout</a>
+                </span>
+</div><!--.pop-->
+{% else %}
+    <div id="userloggedinheader" class="header-account-login" hx-swap-oob="true">
+        <div class="table-cell">
+            <a href="/membership/"
+               class="register screen-reader-shortcut" style="display: inline-block">Register</a>
+            <a href="https://hcommons.org/wp-login.php"
+               class="login">Log In</a>
+        </div><!--.table-cell-->
+    </div>
+{% endif %}

@@ -55,6 +55,7 @@ def mysql_data(request, username):
             if request.user.is_authenticated
             else None
         )
+
         my_profile_info = api_me.get_profile_info() if api_me else None
 
     notifications = api_me.get_short_notifications() if api_me else None
@@ -65,6 +66,7 @@ def mysql_data(request, username):
         "profile_image": api.get_profile_photo(),
         "groups": api.get_groups(),
         "logged_in_profile": my_profile_info,
+        "logged_in_user": request.user,
         "memberships": api.get_memberships(),
         "follower_count": api.follower_count(),
         "commons_sites": api.get_user_blogs(),
@@ -194,6 +196,7 @@ def profile(request, user="", create=False):
         "about_user": api.get_about_user(),
         "groups": api.get_groups(),
         "works_html": api.works_html,
+        "logged_in_user": request.user,
         "logged_in_profile": my_profile_info,
         "memberships": api.get_memberships(),
         "follower_count": api.follower_count(),
