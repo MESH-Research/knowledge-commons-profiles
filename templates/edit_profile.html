@@ -7,229 +7,352 @@
 {% endblock %}
 
 {% block content %}
-<link rel='stylesheet' id='hcmp-profile-edit-css' href='{% static 'css/edit.css' %}' type='text/css' media='all' />
+    <link rel='stylesheet' id='hcmp-profile-edit-css'
+          href='{% static 'css/edit.css' %}' type='text/css' media='all'/>
 
 
-<form method="post" enctype="multipart/form-data">
-{% csrf_token %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
 
-    <div id="item-header-cover" class="table">
+        <div id="item-header-cover" class="table">
 
-	<div id="item-header-content">
+            <div id="item-header-content">
 
 
-		<div id="item-main">
-			<h4 class="name">{{ profile_info.name }}</h4>
-			<h4 class="title">{{ profile_info.title }}</h4>
-			<h4 class="affiliation">
-				<a href="/?s={{ profile_info.affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile_info.affiliation }}</a>
-			</h4>
-			<div class="username">
-				<span class="social-label"><em>Commons</em> username:</span> <a href="#" title="Your username">{{ request.user.username }}</a>			</div>
-							<div class="twitter">
-                                <span class="social-label"></span> <a href="https://twitter.com/{{ profile_info.twitter }}" rel="me"></a>
+                <div id="item-main">
+                    <h4 class="name">{{ profile_info.name }}</h4>
+                    <h4 class="title">{{ profile_info.title }}</h4>
+                    <h4 class="affiliation">
+                        <a href="/?s={{ profile_info.affiliation }}#038;post_type%5B0%5D=user"
+                           rel="nofollow">{{ profile_info.affiliation }}</a>
+                    </h4>
+                    <div class="username">
+                        <span class="social-label"><em>Commons</em> username:</span>
+                        <a href="#"
+                           title="Your username">{{ request.user.username }}</a>
+                    </div>
+                    <div class="twitter">
+                        <span class="social-label"></span> <a
+                            href="https://twitter.com/{{ profile_info.twitter }}"
+                            rel="me"></a>
 
-                            <div id="div_id_twitter" class="mb-3" style="display:inline-block"><label for="id_twitter" class="form-label" style="width:120px;display:inline-block;"><em>Twitter</em> handle:</label>{% crispy_field form.twitter %}</div>
+                        <div id="div_id_twitter" class="mb-3"
+                             style="display:inline-block"><label
+                                for="id_twitter" class="form-label"
+                                style="width:120px;display:inline-block;"><em>Twitter</em>
+                            handle:</label>{% crispy_field form.twitter %}
+                        </div>
+
+                    </div>
+                    <div class="mastodon">
+                        <span class="social-label">Mastodon handle:</span> <a
+                            href='https://{{ profile_info.mastodon }}'
+                            rel='me'></a>
+                        <div id="div_id_mastodon" class="mb-3"
+                             style="display:inline-block"><label
+                                for="id_mastodon" class="form-label"
+                                style="width:120px;display:inline-block;"><em>Mastodon</em>
+                            handle:</label>{% crispy_field form.mastodon %}
+                        </div>
+
+                    </div>
+
+                    <div class="bluesky">
+                        <span class="social-label"></span> <a
+                            href="https://bsky.app/profile/" rel="me"></a>
+                        <div id="div_id_bluesky" class="mb-3"
+                             style="display:inline-block"><label
+                                for="id_bluesky" class="form-label"
+                                style="width:120px;display:inline-block;"><em>Bluesky</em>
+                            handle: </label>{% crispy_field form.bluesky %}
+                        </div>
+
+                    </div>
+
+                    <div class="orcid">
+                        <span class="social-label"><em>ORCID</em> iD:</span> <a
+                            href="https://orcid.org/{{ profile_info.orcid }}"
+                            rel="me"></a>
+                        <div id="div_id_orcid" class="mb-3"
+                             style="display:inline-block"><label for="id_orcid"
+                                                                 class="form-label"
+                                                                 style="width:120px;display:inline-block;"><em>ORCID</em>
+                            iD:</label>{% crispy_field form.orcid %}</div>
+
+                    </div>
+
+
+                </div><!-- #item-main -->
+
+
+                <div id="item-meta">
+                    <div class="avatar-wrap">
+                        <div id="item-header-avatar">
+                            <a href="https://hcommons.org/members/{{ profile_info.username }}/">
+                                <img loading="lazy"
+                                     src="{{ profile_info.profile_image }}"
+                                     class="avatar user-1300-avatar avatar-150 photo"
+                                     width="150" height="150"
+                                     alt="Profile picture of {{ profile_info.name }}"/>
+                            </a>
+                        </div><!-- #item-header-avatar -->
+                    </div>
+
+
+                    <div id="item-buttons">
+                        <span class="generic-button"
+                              style="display: none;"></span>
+                        <div id="public-personal-li" class="current selected">
+                            <a id="public"
+                               href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a>
+                        </div>
+                        <div id="change-avatar-personal-li"><a
+                                id="change-avatar"
+                                href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change
+                            Profile Photo</a></div>
+                        <div id="change-cover-image-personal-li"><a
+                                id="change-cover-image"
+                                href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change
+                            Cover Image</a></div>
+                    </div><!-- #item-buttons -->
+
+                </div><!-- #item-meta -->
+
+            </div><!-- #item-header-content -->
+
+        </div><!-- #item-header-cover -->
+
+
+        </div><!-- #item-header -->
+
+
+        <div class="full-width">
+            <div id="item-main-content">
+                <div id="item-nav">
+                    <div class="item-list-tabs no-ajax" id="object-nav"
+                         role="navigation">
+                        <ul id="nav-bar-filter">
+
+                            <li id="xprofile-personal-li"
+                                class="current selected"><a id="user-xprofile"
+                                                            href="https://hcommons.org/members/{{ profile_info.username }}/profile/">Profile</a>
+                            </li>
+                            <li id="activity-personal-li"><a id="user-activity"
+                                                             href="https://hcommons.org/members/{{ profile_info.username }}/activity/">Activity</a>
+                            </li>
+                            <li id="blogs-personal-li"><a id="user-blogs"
+                                                          href="https://hcommons.org/members/{{ profile_info.username }}/blogs/">Sites
+                                <span class="count">1</span></a></li>
+                            <li id="notifications-personal-li"><a
+                                    id="user-notifications"
+                                    href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">Notifications
+                                <span class="count">9</span></a></li>
+                            <li id="messages-personal-li"><a id="user-messages"
+                                                             href="https://hcommons.org/members/{{ profile_info.username }}/messages/">Messages
+                                <span class="no-count">0</span></a></li>
+                            <li id="members-followers-personal-li"><a
+                                    id="user-members-followers"
+                                    href="https://hcommons.org/members/{{ profile_info.username }}/followers/">Followers
+                                <span class="count">49</span></a></li>
+                            <li id="events-personal-li"><a id="user-events"
+                                                           href="https://hcommons.org/members/{{ profile_info.username }}/events/">Events</a>
+                            </li>
+                            <li id="groups-personal-li"><a id="user-groups"
+                                                           href="https://hcommons.org/members/{{ profile_info.username }}/groups/">Groups
+                                <span class="no-count">0</span></a></li>
+                            <li id="forums-personal-li"><a id="user-forums"
+                                                           href="https://hcommons.org/members/{{ profile_info.username }}/forums/">Forums</a>
+                            </li>
+                            <li id="docs-personal-li"><a id="user-docs"
+                                                         href="https://hcommons.org/members/{{ profile_info.username }}/docs/">Docs
+                                <span class="count">0</span></a></li>
+                            <li id="settings-personal-li"><a id="user-settings"
+                                                             href="https://hcommons.org/members/{{ profile_info.username }}/settings/">Settings</a>
+                            </li>
+
+                        </ul>
+                    </div>
+                </div><!-- #item-nav -->
+
+                <div id="item-body" role="main">
+
+                    <div id="profile-main" role="main">
+
+
+                        <div style="display:flex">
+
+                            <div class="left">
+
+
+                                <div class="personal-details wordblock show-more">
+                                    <h4>Personal Details</h4>
+
+                                    <div id="div_id_title" class="mb-3">
+                                        <label for="id_title"
+                                               class="form-label">Title: </label>
+                                        {% crispy_field form.title %}
+                                    </div>
+
+                                    <div id="div_id_name" class="mb-3">
+                                        <label for="id_name"
+                                               class="form-label">Name: </label>
+                                        {% crispy_field form.name %}
+                                    </div>
+
+                                    <div id="div_id_affiliation" class="mb-3">
+                                        <label for="id_affiliation"
+                                               class="form-label">Affiliation: </label>
+                                        {% crispy_field form.affiliation %}
+                                    </div>
+
+                                    <div id="div_id_website" class="mb-3">
+                                        <label for="id_website"
+                                               class="form-label">Website: </label>
+                                        {% crispy_field form.website %}
+                                    </div>
+
+
+                                </div>
+
+                                <div class="academic-interests wordblock"><h4>
+                                    Academic Interests</h4>
+                                    <ul>
+                                        {{ form.academic_interests }}
+
+                                    </ul>
+                                </div>
+                                <div class="commons-groups wordblock show-more">
+                                    <h4>Commons Groups</h4></div>
+                                <div class="recent-commons-activity"><h4>Recent
+                                    Commons Activity</h4></div>
+                            </div>
+
+                            <div class="right">
+                                <div class="about hideable"><h4>About</h4>
+
+                                    <div id="div_id_about_user" class="mb-3">
+                                        <label for="id_about_user"
+                                               class="form-label">About
+                                            User</label>
+                                        {% crispy_field form.about_user %}
+                                    </div>
+
+
+                                </div>
+                                <div class="education hideable"><h4>
+                                    Education</h4>
+
+
+                                    <div id="div_id_education" class="mb-3">
+                                        <label for="id_education"
+                                               class="form-label">Education</label>
+                                        {% crispy_field form.education %}
+                                    </div>
+
+                                </div>
+                                <div class="mastodon-feed hideable"><h4>
+                                    Mastodon Feed</h4>
+
+                                    <div><label for="id_show_mastodon_feed"
+                                                class="form-label"
+                                                id="label_show_mastodon_feed"
+                                                style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_mastodon_feed %}
+                                    </div>
+
+                                    {% for post in mastodon_posts %}
+                                        <p>{{ post.content|safe }} <a
+                                                href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }}
+                                            ↗)</a></p>
+                                        <hr/>
+                                    {% endfor %}
+
+                                </div>
+                                <div class="blog-posts hideable show-more"><h4>
+                                    Blog Posts</h4>
+                                    <div><label for="id_show_blog_posts"
+                                                class="form-label"
+                                                id="label_show_blog_posts"
+                                                style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_blog_posts %}
+                                    </div>
+
+                                    <ul>
+                                        {% for post in blog_posts %}
+                                            <li><a href="https://
+                                                    {{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a>
+                                                (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }})
+                                            </li>
+                                        {% endfor %}
+
+
+                                    </ul>
+                                </div>
+                                <div class="cv hideable"><h4>CV</h4>
+                                    <div><label for="id_show_cv"
+                                                class="form-label"
+                                                id="label_show_cv"
+                                                style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_cv %}
+                                    </div>
+
+                                    {% if profile.cv %}
+                                        <a href="{{ profile.cv }}"
+                                           target="_blank" rel="nofollow">View
+                                            current file</a> or upload
+                                        new:{% endif %}
+                                    <div id="div_id_cv_file" class="mb-3"
+                                         style="margin-top:5px;">
+                                        <label for="id_cv_file"
+                                               class="form-label">New CV
+                                            file: </label>
+                                        {% crispy_field form.cv_file %}
+                                    </div>
+
+                                </div>
+
+                                <div class="works-deposits hideable show-more">
+                                    <h4 style="width:25%;">KCWorks</h4>
+                                    <div><label for="id_show_works"
+                                                class="form-label"
+                                                id="label_show_works"
+                                                style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}
+                                    </div>
+                                </div>
+
+                                <div class="publications hideablee"><h4
+                                        style="width:25%;">Publications</h4>
+                                    <div id="div_id_publications" class="mb-3"
+                                         style="margin-top:5px;">
+                                        <label for="id_publications"
+                                               class="form-label">Publications</label>
+                                        {% crispy_field form.publications %}
+                                    </div>
+                                </div>
 
                             </div>
-										<div class="mastodon">
-					<span class="social-label">Mastodon handle:</span> <a href='https://{{ profile_info.mastodon }}' rel='me'></a>
-                                            <div id="div_id_mastodon" class="mb-3" style="display:inline-block"><label for="id_mastodon" class="form-label" style="width:120px;display:inline-block;"><em>Mastodon</em> handle:</label>{% crispy_field form.mastodon %}</div>
 
-                                        </div>
 
-                                        <div class="bluesky">
-                                            <span class="social-label"></span> <a href="https://bsky.app/profile/" rel="me"></a>
-                                        <div id="div_id_bluesky" class="mb-3" style="display:inline-block"><label for="id_bluesky" class="form-label" style="width:120px;display:inline-block;"><em>Bluesky</em> handle: </label>{% crispy_field form.bluesky %}</div>
+                        </div>
 
-                                        </div>
+                        <div class="edit-action-bar">
+                            <div class="generic-button">
+                                <input type="submit" value="Back to View Mode"
+                                       id="cancel">
+                                <input type="submit"
+                                       name="profile-group-edit-submit"
+                                       id="profile-group-edit-submit"
+                                       value="Save Changes">
+                            </div>
+                        </div>
 
-										<div class="orcid">
-					<span class="social-label"><em>ORCID</em> iD:</span> <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me"></a>
-                                        <div id="div_id_orcid" class="mb-3" style="display:inline-block"><label for="id_orcid" class="form-label" style="width:120px;display:inline-block;"><em>ORCID</em> iD:</label>{% crispy_field form.orcid %}</div>
 
-                                        </div>
+                    </div><!-- .profile -->
 
 
+                </div><!-- #item-body -->
 
+            </div><!-- /.item-main-content -->
 
-																	</div><!-- #item-main -->
+        </div> <!-- full-width-->
 
+    </form>
 
-		<div id="item-meta">
-			<div class="avatar-wrap">
-				<div id="item-header-avatar">
-					<a href="https://hcommons.org/members/{{ profile_info.username }}/">
-						<img loading="lazy" src="{{ profile_info.profile_image }}" class="avatar user-1300-avatar avatar-150 photo" width="150" height="150" alt="Profile picture of {{ profile_info.name }}" />					</a>
-				</div><!-- #item-header-avatar -->
-			</div>
-
-
-
-			<div id="item-buttons">
-								<span class="generic-button" style="display: none;"></span>
-				<div id="public-personal-li" class="current selected"><a id="public" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">View</a></div><div id="change-avatar-personal-li"><a id="change-avatar" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-avatar/">Change Profile Photo</a></div><div id="change-cover-image-personal-li"><a id="change-cover-image" href="https://hcommons.org/members/{{ profile_info.username }}/profile/change-cover-image/">Change Cover Image</a></div>
-			</div><!-- #item-buttons -->
-
-					</div><!-- #item-meta -->
-
-	</div><!-- #item-header-content -->
-
-</div><!-- #item-header-cover -->
-
-
-	</div><!-- #item-header -->
-
-
-    <div class="full-width">
-        <div id="item-main-content">
-                        <div id="item-nav">
-                <div class="item-list-tabs no-ajax" id="object-nav" role="navigation">
-                    <ul id="nav-bar-filter">
-
-                        <li id="xprofile-personal-li"  class="current selected"><a id="user-xprofile" href="https://hcommons.org/members/{{ profile_info.username }}/profile/">Profile</a></li><li id="activity-personal-li" ><a id="user-activity" href="https://hcommons.org/members/{{ profile_info.username }}/activity/">Activity</a></li><li id="blogs-personal-li" ><a id="user-blogs" href="https://hcommons.org/members/{{ profile_info.username }}/blogs/">Sites <span class="count">1</span></a></li><li id="notifications-personal-li" ><a id="user-notifications" href="https://hcommons.org/members/{{ profile_info.username }}/notifications/">Notifications <span class="count">9</span></a></li><li id="messages-personal-li" ><a id="user-messages" href="https://hcommons.org/members/{{ profile_info.username }}/messages/">Messages <span class="no-count">0</span></a></li><li id="members-followers-personal-li" ><a id="user-members-followers" href="https://hcommons.org/members/{{ profile_info.username }}/followers/">Followers <span class="count">49</span></a></li><li id="events-personal-li" ><a id="user-events" href="https://hcommons.org/members/{{ profile_info.username }}/events/">Events</a></li><li id="groups-personal-li" ><a id="user-groups" href="https://hcommons.org/members/{{ profile_info.username }}/groups/">Groups <span class="no-count">0</span></a></li><li id="forums-personal-li" ><a id="user-forums" href="https://hcommons.org/members/{{ profile_info.username }}/forums/">Forums</a></li><li id="docs-personal-li" ><a id="user-docs" href="https://hcommons.org/members/{{ profile_info.username }}/docs/">Docs <span class="count">0</span></a></li><li id="settings-personal-li" ><a id="user-settings" href="https://hcommons.org/members/{{ profile_info.username }}/settings/">Settings</a></li>
-
-                    </ul>
-                </div>
-            </div><!-- #item-nav -->
-
-            <div id="item-body" role="main">
-
-<div id="profile-main" role="main">
-
-
-
-<div style="display:flex">
-
-	<div class="left">
-
-
-        <div class="personal-details wordblock show-more">
-            <h4>Personal Details</h4>
-
-            <div id="div_id_title" class="mb-3">
-                <label for="id_title" class="form-label">Title: </label>
-                {% crispy_field form.title %}
-            </div>
-
-            <div id="div_id_name" class="mb-3">
-                <label for="id_name" class="form-label">Name: </label>
-                {% crispy_field form.name %}
-            </div>
-
-            <div id="div_id_affiliation" class="mb-3">
-                <label for="id_affiliation" class="form-label">Affiliation: </label>
-                {% crispy_field form.affiliation %}
-            </div>
-
-            <div id="div_id_website" class="mb-3">
-                <label for="id_website" class="form-label">Website: </label>
-                {% crispy_field form.website %}
-            </div>
-
-
-        </div>
-
-		<div class="academic-interests wordblock"><h4>Academic Interests</h4><ul>
-            {{ form.academic_interests }}
-
-            </ul></div>		<div class="commons-groups wordblock show-more"><h4>Commons Groups</h4></div>		<div class="recent-commons-activity"><h4>Recent Commons Activity</h4></div>			</div>
-
-	<div class="right">
-		<div class="about hideable"><h4>About</h4>
-
-            <div id="div_id_about_user" class="mb-3">
-                    <label for="id_about_user" class="form-label">About User</label>
-                    {% crispy_field form.about_user %}
-                </div>
-
-
-        </div>		<div class="education hideable"><h4>Education</h4>
-
-
-    <div id="div_id_education" class="mb-3">
-                    <label for="id_education" class="form-label">Education</label>
-                    {% crispy_field form.education %}
-                </div>
-
-    </div>		<div class="mastodon-feed hideable"><h4>Mastodon Feed</h4>
-
-        <div><label for="id_show_mastodon_feed" class="form-label" id="label_show_mastodon_feed" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_mastodon_feed %}</div>
-
-        {% for post in mastodon_posts %}
-            <p>{{ post.content|safe }} <a href="{{ post.url }}">({{ post.created_at|date:"Y-m-d" }} ↗)</a></p><hr/>
-        {% endfor %}
-
-        </div>		<div class="blog-posts hideable show-more"><h4>Blog Posts</h4><div><label for="id_show_blog_posts" class="form-label" id="label_show_blog_posts" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_blog_posts %}</div>
-
-        <ul>
-            {% for post in blog_posts %}
-            <li><a href="https://{{ post.blogdomain }}{{ post.blogpath }}{{ post.post_date|date:'Y' }}/{{ post.post_date|date:'m' }}/{{ post.post_date|date:'d' }}/{{ post.post_name }}/">{{ post.post_title }}</a> (<i>{{ post.blogname }}</i>, {{ post.post_date|date:'Y-m-d' }}) </li>
-        {% endfor %}
-
-
-			</ul></div>		<div class="cv hideable"><h4>CV</h4> <div><label for="id_show_cv" class="form-label" id="label_show_cv" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_cv %}</div>
-
-        {% if profile.cv %}<a href="{{ profile.cv }}" target="_blank" rel="nofollow">View current file</a> or upload new:{% endif %}
-                <div id="div_id_cv_file" class="mb-3" style="margin-top:5px;">
-                <label for="id_cv_file" class="form-label">New CV file: </label>
-                {% crispy_field form.cv_file %}
-            </div>
-
-        </div>
-
-        <div class="works-deposits hideable show-more"><h4 style="width:25%;">KCWorks</h4><div><label for="id_show_works" class="form-label" id="label_show_works" style="display: inline-block">&nbsp;&nbsp;Show</label>{% crispy_field form.show_works %}</div></div>
-
-        <div class="publications hideablee"><h4 style="width:25%;">Publications</h4>
-            <div id="div_id_publications" class="mb-3" style="margin-top:5px;">
-                <label for="id_publications" class="form-label">Publications</label>
-                {% crispy_field form.publications %}
-            </div>
-        </div>
-
-</div>
-
-
-</div>
-
-<div class="edit-action-bar">
-    <div class="generic-button">
-        <input type="submit" value="Back to View Mode" id="cancel">
-        <input type="submit" name="profile-group-edit-submit" id="profile-group-edit-submit" value="Save Changes">
-    </div>
-</div>
-
-
-</div><!-- .profile -->
-
-
-            </div><!-- #item-body -->
-
-        </div>
-        <!-- /.item-main-content -->
-            </div>
-
-</div><!-- #buddypress -->
-</div>
-
-<footer class="entry-meta">
-    </footer><!-- .entry-meta -->
-
-																		</article>
-
-				</div><!-- #content -->
-
-			</div><!-- #primary -->
-
-
-	<!-- Check if BuddyPress is activated -->
-
-		<!-- if there are widgets in the Members: Directory sidebar -->
-
-
-		</div><!-- closing div -->
-
-</div><!-- #main .wrapper -->
-
-</form>
 {% endblock content %}
