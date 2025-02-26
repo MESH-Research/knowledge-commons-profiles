@@ -320,6 +320,9 @@ class API:
         Return the path to the user's cover image
         :return: a cover image
         """
+
+        # TODO: this needs to fall-back to WordPress if we don't have a local
+        #  image
         cover = self.profile.coverimage_set.first()
         if cover:
             return cover.file_path
