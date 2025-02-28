@@ -36,53 +36,71 @@ def mysql_data(request, username):
     """
     Get wordpress data via HTMX
     """
-    api = API(request, username, use_wordpress=True, create=False)
+    try:
+        api = API(request, username, use_wordpress=True, create=False)
 
-    profile_info = api.get_profile_info()
+        profile_info = api.get_profile_info()
 
-    if username == request.user.username:
-        api_me = api
-        my_profile_info = profile_info
-    else:
-        # get logged in user profile
-        api_me = (
-            API(
-                request,
-                request.user.username,
-                use_wordpress=True,
-                create=False,
+        if username == request.user.username:
+            api_me = api
+            my_profile_info = profile_info
+        else:
+            # get logged in user profile
+            api_me = (
+                API(
+                    request,
+                    request.user.username,
+                    use_wordpress=True,
+                    create=False,
+                )
+                if request.user.is_authenticated
+                else None
             )
-            if request.user.is_authenticated
-            else None
+
+            my_profile_info = api_me.get_profile_info() if api_me else None
+
+        notifications = api_me.get_short_notifications() if api_me else None
+
+        context = {
+            "username": username,
+            "cover_image": api.get_cover_image(),
+            "profile_image": api.get_profile_photo(),
+            "groups": api.get_groups(),
+            "logged_in_profile": my_profile_info,
+            "logged_in_user": request.user,
+            "memberships": api.get_memberships(),
+            "follower_count": api.follower_count(),
+            "commons_sites": api.get_user_blogs(),
+            "activities": api.get_activity(),
+            "short_notifications": notifications,
+            "notification_count": len(notifications) if notifications else 0,
+            "logged_in_profile_image": (
+                api_me.get_profile_photo() if api_me else None
+            ),
+        }
+
+        return render(
+            request,
+            "partials/mysql_data.html",
+            context=context,
         )
-
-        my_profile_info = api_me.get_profile_info() if api_me else None
-
-    notifications = api_me.get_short_notifications() if api_me else None
-
-    context = {
-        "username": username,
-        "cover_image": api.get_cover_image(),
-        "profile_image": api.get_profile_photo(),
-        "groups": api.get_groups(),
-        "logged_in_profile": my_profile_info,
-        "logged_in_user": request.user,
-        "memberships": api.get_memberships(),
-        "follower_count": api.follower_count(),
-        "commons_sites": api.get_user_blogs(),
-        "activities": api.get_activity(),
-        "short_notifications": notifications,
-        "notification_count": len(notifications) if notifications else 0,
-        "logged_in_profile_image": (
-            api_me.get_profile_photo() if api_me else None
-        ),
-    }
-
-    return render(
-        request,
-        "partials/mysql_data.html",
-        context=context,
-    )
+    except django.db.utils.OperationalError:
+        context = {
+            "username": None,
+            "cover_image": None,
+            "profile_image": None,
+            "groups": None,
+            "logged_in_profile": None,
+            "logged_in_user": None,
+            "memberships": None,
+            "follower_count": None,
+            "commons_sites": None,
+            "activities": None,
+            "short_notifications": None,
+            "notification_count": 0,
+            "logged_in_profile_image": None,
+        }
+        return render(request, "partials/mysql_data.html", {})
 
 
 def profile_info(request, username):

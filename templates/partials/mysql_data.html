@@ -1,15 +1,22 @@
-<!-- profile image -->
-<a href="https://hcommons.org/members/{{ username }}/">
-    <img loading="lazy" src="{{ profile_image }}"
-         class="avatar user-1300-avatar avatar-150 photo"
-         width="150" height="150"
-         alt="Profile picture"/>
-</a>
-{% for badge in memberships %}
-    <a class="society-badge-wrap"
-       href="https://{{ badge|lower }}.hcommons.org/members"><span
-            class="society-badge {{ badge|lower }}"></span></a>
-{% endfor %}
+{% if username %}
+    <!-- profile image -->
+    <a href="https://hcommons.org/members/{{ username }}/">
+        <img loading="lazy" src="{{ profile_image }}"
+             class="avatar user-1300-avatar avatar-150 photo"
+             width="150" height="150"
+             alt="Profile picture"/>
+    </a>
+    {% for badge in memberships %}
+        <a class="society-badge-wrap"
+           href="https://{{ badge|lower }}.hcommons.org/members"><span
+                class="society-badge {{ badge|lower }}"></span></a>
+    {% endfor %}
+    <img loading="lazy" src=""
+             class="avatar user-1300-avatar avatar-150 photo"
+             width="150" height="150"
+             alt="Profile picture"/>
+    {% else %}
+{% endif %}
 
 <span id="follower-count" hx-swap-oob="true">{{ follower_count }}</span>
 
@@ -744,7 +751,6 @@
 {% endif %}
 
 <div class="holder" hx-swap-oob="true"
-id="header-cover-image"
-style="background-image:url(
-     {% if cover_image %}{{ cover_image }}{% else %}https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg{% endif %})">
+    id="header-cover-image"
+    style="background-image:url({% if cover_image %}{{ cover_image }}{% else %}https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg{% endif %})">
 </div>

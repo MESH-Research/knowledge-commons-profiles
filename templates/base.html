@@ -5,10 +5,10 @@
 <head>
     <!-- jquery -->
     <script type='text/javascript'
-            src='https://hcommons.org/wp-includes/js/jquery/jquery.min.js?ver=3.6.4'
+            src='{% static "js/jquery-3.7.1.min.js.js" %}'
             id='jquery-core-js'></script>
     <script type='text/javascript'
-            src='https://hcommons.org/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.0'
+            src='{% static "js/jquery-migrate-3.5.2.min.js" %}'
             id='jquery-migrate-js'></script>
 
     {{ form.media }}
@@ -32,10 +32,7 @@
     <link rel='dns-prefetch' href='//maxcdn.bootstrapcdn.com'/>
     <link rel='dns-prefetch' href='//fonts.googleapis.com'/>
 
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-
-    <script type="text/javascript" id="buddyboss-main-override-js-extra">
+    <script type='text/javascript' id='buddyboss-main-override-js-extra'>
         /* <![CDATA[ */
         var translation = {
             "only_mobile": "",
@@ -57,6 +54,9 @@
         };
         /* ]]> */
     </script>
+
+    <!-- HTMX -->
+    <script src="{% static "js/htmx-1.9.12.min.js.js" %}"></script>
 
     <style type="text/css">
         #wpadminbar #wp-admin-bar-my-networks > .ab-item:first-child:before {
@@ -615,16 +615,17 @@ $ = jQuery.noConflict();
                                     <span id="ab-pending-notifications"
                                           class="pending-count alert"></span>
                                 </a>
-                                    <div id="popoutmenu" class="pop">
-                                    </div><!--.pop-->
+                                <div id="popoutmenu" class="pop">
+                                </div><!--.pop-->
                             </div><!--.header-notifications-->
                         {% endif %}
 
                         <!--Account details -->
 
-                            <div id="userloggedinheader" class="header-account-login">
+                        <div id="userloggedinheader"
+                             class="header-account-login">
 
-                            </div><!--.header-account-login-->
+                        </div><!--.header-account-login-->
 
                     </div><!--.table-->
                 </div><!--.right-col-->
