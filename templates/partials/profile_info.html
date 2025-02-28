@@ -29,7 +29,7 @@
 {% endif %}
 
 {% if profile_info.mastodon %}
-    <div id="mastodon" hx-swap-oob="true"><img style="width:14px;" src="https://hcommons.org/app/plugins/hc-member-profiles/assets/img/mastodon.png" alt="mastodon"/> <a href='https://{{ profile_info.mastodon }}' rel='me'>{{ profile_info.mastodon }}</a></div>
+    <div id="mastodon" hx-swap-oob="true"><img style="width:14px;" src="https://hcommons.org/app/plugins/hc-member-profiles/assets/img/mastodon.png" alt="mastodon"/> <a href='https://{{ profile_info.mastodon_server }}/@{{ profile_info.mastodon_username }}' rel='me'>{{ profile_info.mastodon }}</a></div>
 {% endif %}
 
 {% if profile_info.bluesky %}

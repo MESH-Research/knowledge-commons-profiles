@@ -125,6 +125,21 @@ class API:
                 )
         return self._mastodon_profile
 
+    @property
+    def mastodon_user_and_server(self):
+        """
+        Get the mastodon profile
+        """
+        if self.profile.mastodon:
+            self.mastodon_username, self.mastodon_server = (
+                self.profile.mastodon[1:].split("@")[0],
+                self.profile.mastodon[1:].split("@")[1],
+            )
+
+            return self.mastodon_username, self.mastodon_server
+        else:
+            return None, None
+
     @cached_property
     def profile_info(self):
         """
@@ -167,6 +182,8 @@ class API:
             A dictionary containing profile information.
         """
 
+        m_user, m_server = self.mastodon_user_and_server
+
         # A dictionary containing profile information
         self._profile_info = {
             "name": self.profile.name,
@@ -178,6 +195,8 @@ class API:
             "email": self.profile.email,
             "orcid": self.profile.orcid,
             "mastodon": self.profile.mastodon,
+            "mastodon_username": m_user,
+            "mastodon_server": m_server,
             "profile_image": self.profile.profile_image,
             "works_username": self.profile.works_username,
             "publications": self.profile.publications,
