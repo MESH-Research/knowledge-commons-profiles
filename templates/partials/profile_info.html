@@ -60,7 +60,7 @@
 
 
 {% if profile_info.publications %}
-    <div id="publications-container" class="publications hideable" hx-swap-oob="true"><h4>Publications</h4>
+    <div id="publications-container" class="publications hideable show-more js-dynamic-height" hx-swap-oob="true"><h4>Publications</h4>
         {{ profile_info.publications | safe | linebreaksbr }}
     </div>
     {% else %}
