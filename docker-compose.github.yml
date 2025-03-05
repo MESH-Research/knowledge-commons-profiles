@@ -1,5 +1,5 @@
 volumes:
-  knowledge_commons_profiles_local_postgres_data_backups: {}
+  knowledge_commons_profiles_github_postgres_data_backups: {}
 
 
 services:
@@ -15,7 +15,7 @@ services:
       - .:/app:z
     env_file:
       - ./.envs/.github/.django
-      - ./.envs/.local/.postgres
+      - ./.envs/.github/.postgres
     ports:
       - '8000:8000'
     command: /start
