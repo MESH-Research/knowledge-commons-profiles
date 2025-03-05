@@ -6,7 +6,10 @@ from unittest import mock
 
 # pylint: disable=too-few-public-methods, import-error
 from django.test import TestCase
-from newprofile.wordpress_router import ReadWriteRouter
+
+from knowledge_commons_profiles.newprofile.wordpress_router import (
+    ReadWriteRouter,
+)
 
 
 class ReadWriteRouterTests(TestCase):

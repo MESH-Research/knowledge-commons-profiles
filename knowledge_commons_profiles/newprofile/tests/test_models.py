@@ -7,26 +7,27 @@ from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from newprofile.models import AcademicInterest
-from newprofile.models import CoverImage
-from newprofile.models import Profile
-from newprofile.models import ProfileImage
-from newprofile.models import WpBlog
-from newprofile.models import WpBpActivity
-from newprofile.models import WpBpActivityMeta
-from newprofile.models import WpBpFollow
-from newprofile.models import WpBpGroup
-from newprofile.models import WpBpGroupMember
-from newprofile.models import WpBpNotification
-from newprofile.models import WpBpUserBlogMeta
-from newprofile.models import WpPost
-from newprofile.models import WpPostSubTable
-from newprofile.models import WpProfileData
-from newprofile.models import WpProfileFields
-from newprofile.models import WpTermRelationships
-from newprofile.models import WpTermTaxonomy
-from newprofile.models import WpUser
-from newprofile.models import WpUserMeta
+
+from knowledge_commons_profiles.newprofile.models import AcademicInterest
+from knowledge_commons_profiles.newprofile.models import CoverImage
+from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import ProfileImage
+from knowledge_commons_profiles.newprofile.models import WpBlog
+from knowledge_commons_profiles.newprofile.models import WpBpActivity
+from knowledge_commons_profiles.newprofile.models import WpBpActivityMeta
+from knowledge_commons_profiles.newprofile.models import WpBpFollow
+from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.newprofile.models import WpBpGroupMember
+from knowledge_commons_profiles.newprofile.models import WpBpNotification
+from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
+from knowledge_commons_profiles.newprofile.models import WpPost
+from knowledge_commons_profiles.newprofile.models import WpPostSubTable
+from knowledge_commons_profiles.newprofile.models import WpProfileData
+from knowledge_commons_profiles.newprofile.models import WpProfileFields
+from knowledge_commons_profiles.newprofile.models import WpTermRelationships
+from knowledge_commons_profiles.newprofile.models import WpTermTaxonomy
+from knowledge_commons_profiles.newprofile.models import WpUser
+from knowledge_commons_profiles.newprofile.models import WpUserMeta
 
 
 class WpModelsMetaTests(TestCase):

@@ -9,7 +9,8 @@ from unittest.mock import patch
 
 from debug_toolbar.panels import Panel
 from django.test import override_settings
-from newprofile.debug import QueryTimingPanel
+
+from knowledge_commons_profiles.newprofile.debug import QueryTimingPanel
 
 
 class QueryTimingPanelTestCase(TestCase):
