@@ -12,3 +12,4 @@ SAML2_SSO_ACS_URL=http://localhost/sso/acs/
 DJANGO_DEBUG=True
 WORDPRESS_DATABASE_URL=mysql://todo:todo@mysql:3306/database_name
 DATABASE_URL="postgres://bQKTlJuHOdWNSyQjwVpMGQQjydnqMSEE:PbHi5FVc8hhpe8uY5mMEu496UL7V5UuEpXdlVeavUGyofwMXvqXwargpKAuresI7@postgres:5432/knowledge_commons_profiles"
+DJANGO_SETTINGS_MODULE=config.settings.local
