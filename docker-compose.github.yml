@@ -1,4 +1,5 @@
 volumes:
+  knowledge_commons_profiles_github_postgres_data: {}
   knowledge_commons_profiles_github_postgres_data_backups: {}
 
 
