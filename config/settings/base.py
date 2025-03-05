@@ -88,7 +88,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    "newprofile.apps.NewProfileConfig",
+    "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
