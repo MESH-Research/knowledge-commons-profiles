@@ -1,0 +1,8 @@
+{% if works_html %}
+  {{ works_html | safe }}
+{% else %}
+  <script type="text/javascript">
+    $("#works-deposits-container").hide();
+  </script>
+  <p class="no-posts">No Works deposits yet.</p>
+{% endif %}

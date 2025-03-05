@@ -1,0 +1,30 @@
+python-slugify==8.0.4  # https://github.com/un33k/python-slugify
+Pillow==11.1.0  # https://github.com/python-pillow/Pillow
+rcssmin==1.1.2  # https://github.com/ndparker/rcssmin
+argon2-cffi==23.1.0  # https://github.com/hynek/argon2_cffi
+redis==5.2.1  # https://github.com/redis/redis-py
+hiredis==3.1.0  # https://github.com/redis/hiredis-py
+
+# Django
+# ------------------------------------------------------------------------------
+django==5.0.12  # pyup: < 5.1  # https://www.djangoproject.com/
+django-environ==0.12.0  # https://github.com/joke2k/django-environ
+django-model-utils==5.0.0  # https://github.com/jazzband/django-model-utils
+django-crispy-forms==2.3  # https://github.com/django-crispy-forms/django-crispy-forms
+crispy-bootstrap5==2024.10  # https://github.com/django-crispy-forms/crispy-bootstrap5
+django-compressor==4.5.1  # https://github.com/django-compressor/django-compressor
+django-redis==5.4.0  # https://github.com/jazzband/django-redis
+
+# App
+# ------------------------------------------------------------------------------
+djangorestframework==3.15.2  #
+grafana-django-saml2-auth==3.18.2
+django-tinymce==3.7.1
+django-select2==8.2.3
+django-bleach==3.1.0
+phpserialize==1.3
+asyncstdlib==3.13.0
+lxml==5.3.0
+aiohttp==3.11.12
+mysqlclient==2.1.1
+black==25.1.0
