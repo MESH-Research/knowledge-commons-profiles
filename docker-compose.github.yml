@@ -1,0 +1,33 @@
+volumes:
+  knowledge_commons_profiles_local_postgres_data_backups: {}
+
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: ./compose/github/django/Dockerfile
+    image: knowledge_commons_profiles_github_django
+    container_name: knowledge_commons_profiles_github_django
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/.github/.django
+      - ./.envs/.local/.postgres
+    ports:
+      - '8000:8000'
+    command: /start
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: knowledge_commons_profiles_github_postgres
+    container_name: knowledge_commons_profiles_github_postgres
+    volumes:
+      - knowledge_commons_profiles_github_postgres_data:/var/lib/postgresql/data
+      - knowledge_commons_profiles_github_postgres_data_backups:/backups
+    env_file:
+      - ./.envs/.github/.postgres

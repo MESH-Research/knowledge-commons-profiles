@@ -328,3 +328,5 @@ knowledge_commons_profiles/media/
 .ipython/
 .env
 .envs/*
+!.envs/.github
+!.envs/.github/*
