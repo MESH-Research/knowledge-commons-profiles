@@ -14,18 +14,19 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
-from newprofile import mastodon
-from newprofile.models import Profile
-from newprofile.models import WpBlog
-from newprofile.models import WpBpActivity
-from newprofile.models import WpBpFollow
-from newprofile.models import WpBpGroupMember
-from newprofile.models import WpBpNotification
-from newprofile.models import WpBpUserBlogMeta
-from newprofile.models import WpPostSubTable
-from newprofile.models import WpUser
-from newprofile.models import WpUserMeta
-from newprofile.works import WorksDeposits
+
+from knowledge_commons_profiles.newprofile import mastodon
+from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import WpBlog
+from knowledge_commons_profiles.newprofile.models import WpBpActivity
+from knowledge_commons_profiles.newprofile.models import WpBpFollow
+from knowledge_commons_profiles.newprofile.models import WpBpGroupMember
+from knowledge_commons_profiles.newprofile.models import WpBpNotification
+from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
+from knowledge_commons_profiles.newprofile.models import WpPostSubTable
+from knowledge_commons_profiles.newprofile.models import WpUser
+from knowledge_commons_profiles.newprofile.models import WpUserMeta
+from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 User = get_user_model()
 
@@ -252,6 +253,8 @@ class API:
         # check that these are all integers to avoid SQL injection possibility
         valid_blog_ids = [bid for bid in blog_ids if str(bid).isdigit()]
 
+        counter = 0
+
         for num in valid_blog_ids:
             if f"wp_{num}_posts" in row:
                 select_stmt = f"""
@@ -278,6 +281,10 @@ class API:
                 """  # noqa: S608
                 select_statements.append(select_stmt)
 
+                counter += 1
+
+        param_list = [self.wp_user.id] * counter
+
         # Combine all SELECT statements with UNION ALL
         final_query = "\nUNION ALL\n".join(select_statements)
 
@@ -295,7 +302,7 @@ class API:
         results = []
 
         results.extend(
-            list(WpPostSubTable.objects.raw(final_query, [self.wp_user.id]))
+            list(WpPostSubTable.objects.raw(final_query, param_list))
         )
 
         cache.set(
@@ -469,12 +476,12 @@ class API:
             WHERE um.user_id = %s
             AND b.public = 1
             AND b.site_id = 2 # restrict to HC
-            AND um.meta_value LIKE '%administrator%'
+            AND um.meta_value LIKE '%%administrator%%'
             GROUP BY b.domain
         """
 
         with connections["wordpress_dev"].cursor() as cursor:
-            cursor.execute(initial_sql, self.wp_user.id)
+            cursor.execute(initial_sql, [str(self.wp_user.id)])
             rows = cursor.fetchall()
 
         results = []

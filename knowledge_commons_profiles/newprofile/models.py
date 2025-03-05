@@ -43,7 +43,7 @@ class WpPostSubTable(models.Model):
 
     id = models.BigAutoField(primary_key=True, db_column="ID")
     post_author = models.ForeignKey(
-        "WpUser",
+        "newprofile.WpUser",
         on_delete=models.CASCADE,
         db_column="post_author",
     )
@@ -102,6 +102,7 @@ class WpPostSubTable(models.Model):
         Metadata for the WpPost model
         """
 
+        app_label = "newprofile"
         managed = False
         db_table = "wp_posts"
 
@@ -128,7 +129,7 @@ class WpPost(models.Model):
 
     id = models.BigAutoField(primary_key=True, db_column="ID")
     post_author = models.ForeignKey(
-        "WpUser",
+        "newprofile.WpUser",
         on_delete=models.CASCADE,
         db_column="post_author",
     )
@@ -184,6 +185,7 @@ class WpPost(models.Model):
         Metadata for the WpPost model
         """
 
+        app_label = "newprofile"
         db_table = "wp_posts"
         managed = False
         indexes = [

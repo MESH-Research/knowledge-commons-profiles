@@ -6,12 +6,13 @@ import django
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from newprofile.api import API
-from newprofile.forms import ProfileForm
-from newprofile.models import Profile
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from knowledge_commons_profiles.newprofile.api import API
+from knowledge_commons_profiles.newprofile.forms import ProfileForm
+from knowledge_commons_profiles.newprofile.models import Profile
 
 
 async def works_deposits(request, username):

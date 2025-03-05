@@ -9,9 +9,10 @@ from django import forms
 from django.utils.html import linebreaks
 from django_bleach.forms import BleachField
 from django_select2.forms import ModelSelect2TagWidget
-from newprofile.models import AcademicInterest
-from newprofile.models import Profile
 from tinymce.widgets import TinyMCE
+
+from knowledge_commons_profiles.newprofile.models import AcademicInterest
+from knowledge_commons_profiles.newprofile.models import Profile
 
 
 class ProfileBleachFormField(BleachField):

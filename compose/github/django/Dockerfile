@@ -37,7 +37,7 @@ ENV BUILD_ENV=${BUILD_ENVIRONMENT}
 
 WORKDIR ${APP_HOME}
 
-ENV PYTHONPATH="${PYTHONPATH}:/app"
+ENV PYTHONPATH="${PYTHONPATH}:${APP_HOME}"
 
 # devcontainer dependencies and utils
 RUN apt-get update && apt-get install --no-install-recommends -y \
