@@ -47,8 +47,8 @@ jobs:
       - name: Build the docs
         run: docker compose -f docker-compose.docsgithub.yml build docs
 
-      #- name: Check DB Migrations
-      #  run: docker compose -f docker-compose.github.yml run --rm django python manage.py makemigrations --check
+      - name: Check DB Migrations
+        run: docker compose -f docker-compose.github.yml run --rm django python manage.py makemigrations --check
 
       - name: Run DB Migrations
         run: docker compose -f docker-compose.github.yml run --rm django python manage.py migrate

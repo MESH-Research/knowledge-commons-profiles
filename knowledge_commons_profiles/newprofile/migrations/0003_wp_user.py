@@ -9,43 +9,4 @@ class Migration(migrations.Migration):
         ("newprofile", "0002_profile_memberships"),
     ]
 
-    operations = [
-        migrations.CreateModel(
-            name="Wp_User",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        db_column="ID", primary_key=True, serialize=False
-                    ),
-                ),
-                (
-                    "user_login",
-                    models.CharField(default="", max_length=60, unique=True),
-                ),
-                ("user_pass", models.CharField(default="", max_length=255)),
-                (
-                    "user_nicename",
-                    models.CharField(db_index=True, default="", max_length=50),
-                ),
-                (
-                    "user_email",
-                    models.CharField(db_index=True, default="", max_length=100),
-                ),
-                ("user_url", models.CharField(default="", max_length=100)),
-                (
-                    "user_registered",
-                    models.DateTimeField(db_index=True, default="0000-00-00 00:00:00"),
-                ),
-                ("user_activation_key", models.CharField(default="", max_length=255)),
-                ("user_status", models.IntegerField(default=0)),
-                ("display_name", models.CharField(default="", max_length=250)),
-                ("spam", models.SmallIntegerField(default=0)),
-                ("deleted", models.SmallIntegerField(default=0)),
-            ],
-            options={
-                "db_table": "wp_users",
-                "indexes": [models.Index(fields=["user_login"], name="user_login_key")],
-            },
-        ),
-    ]
+    operations = []
