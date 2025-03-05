@@ -1,8 +1,0 @@
-.works-deposits div, .cv div, .blog-posts div, .mastodon-feed div {
-  float: right;
-  margin-top: -2.5rem;
-}
-
-#label_show_works, #label_show_cv, #label_show_blog_posts, #label_show_mastodon_feed {
-  float:right;
-}
