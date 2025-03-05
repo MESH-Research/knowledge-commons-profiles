@@ -1,0 +1,13 @@
+# General
+# ------------------------------------------------------------------------------
+USE_DOCKER=yes
+IPYTHONDIR=/app/.ipython
+REDIS_SERVER=redis://todo:6379
+SAML2_METADATA_LOCAL_FILE_PATH=/home/martin/Documents/Programming/MESH/newprofile/keys/metadata.xml
+SAML2_PRIVATE_KEY_FILE=/home/martin/Documents/Programming/MESH/newprofile/keys/private.key
+SAML2_CERT_FILE=/home/martin/Documents/Programming/MESH/newprofile/keys/public.crt
+SAML2_DEBUG=True
+SAML2_ASSERTION_URL=http://localhost
+SAML2_SSO_ACS_URL=http://localhost/sso/acs/
+DJANGO_DEBUG=True
+WORDPRESS_DATABASE_URL=mysql://todo:todo@mysql:3306/database_name
