@@ -14,8 +14,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # psycopg dependencies
   libpq-dev \
   # mysql dependencies
-  libmysqlclient-dev \
-  mysql-client
+  libmariadb-dev \
+  libmariadb-dev-compat \
+  pkg-config
 
 
 # Requirements are installed here to ensure they will be cached.
@@ -53,6 +54,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat plkg-config
 
 # All absolute dir copies ignore workdir instruction. All relative dir copies are wrt to the workdir instruction
 # copy python dependency wheels from python-build-stage

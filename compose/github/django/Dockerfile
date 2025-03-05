@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   libpq-dev \
   # mysql dependencies
   libmariadb-dev \
-  libmariadb-dev-compat
+  libmariadb-dev-compat \
+  pkg-config
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements .

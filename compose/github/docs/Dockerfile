@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   build-essential \
   # psycopg dependencies
   libpq-dev \
+  # mysql dependencies
+  libmariadb-dev \
+  libmariadb-dev-compat \
+  pkg-config \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
@@ -44,6 +48,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # texlive-fonts-recommended \
   # texlive-latex-extra \
   # latexmk \
+  libmariadb-dev \
+  libmariadb-dev-compat \
+  pkg-config \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
@@ -55,7 +62,7 @@ COPY --from=python-build-stage /usr/src/app/wheels /wheels
 RUN pip install --no-cache /wheels/* \
   && rm -rf /wheels
 
-COPY ./compose/local/docs/start /start-docs
+COPY ./compose/github/docs/start /start-docs
 RUN sed -i 's/\r$//g' /start-docs
 RUN chmod +x /start-docs
 

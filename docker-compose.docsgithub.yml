@@ -1,10 +1,10 @@
 services:
   docs:
-    image: knowledge_commons_profiles_local_docs
-    container_name: knowledge_commons_profiles_local_docs
+    image: knowledge_commons_profiles_github_docs
+    container_name: knowledge_commons_profiles_github_docs
     build:
       context: .
-      dockerfile: ./compose/local/docs/Dockerfile
+      dockerfile: ./compose/github/docs/Dockerfile
     env_file:
       - ./.envs/.github/.django
     volumes:

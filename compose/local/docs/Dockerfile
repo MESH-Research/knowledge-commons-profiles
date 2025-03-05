@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   build-essential \
   # psycopg dependencies
   libpq-dev \
+  # mysql dependencies
+  libmariadb-dev \
+  libmariadb-dev-compat \
+  pkg-config \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
@@ -44,6 +48,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # texlive-fonts-recommended \
   # texlive-latex-extra \
   # latexmk \
+  libmariadb-dev \
+  libmariadb-dev-compat \
+  pkg-config \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
