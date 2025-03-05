@@ -33,4 +33,4 @@ class ReadWriteRouter:
         """
         Controls if a model should be allowed to migrate on the given database.
         """
-        return not model_name.lower().startswith("wp")
+        return not model_name.lower().startswith("wp") if model_name else True
