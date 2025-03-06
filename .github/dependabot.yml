@@ -47,3 +47,9 @@ updates:
     # Every weekday
     schedule:
       interval: 'daily'
+
+  - ignore:
+    - dependency-name: "rcssmin:*"
+      # Ignore versions of rcsmmin that are equal to or greater than 1.0.0
+      # this is because django-compressor depends upon it
+      versions: [ ">=1.1.2" ]
