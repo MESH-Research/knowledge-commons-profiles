@@ -530,7 +530,7 @@
                   <div id="footer-links">
                     <div id="footer-icons">
                       <ul class="social-icons">
-                        <li>
+                        <!-- djlint:off --><li>
                           <a class="link-mastodon"
                              title="mastodon"
                              href="https://hcommons.social/"
@@ -568,7 +568,7 @@
                           <a class="link-email"
                              title="email"
                              href="mailto:hello@hcommons.org"
-                             target="_blank"><span></span></a>
+                             target="_blank"><span></span></a><!-- djlint:on -->
                         </li>
                       </ul>
                     </div>
@@ -602,7 +602,8 @@
         <!-- #item-header-avatar -->
         <div id="item-header-content">
           <h2 class="user-nicename">
-            @{{ username }}h2>
+            @{{ username }}
+          </h2>
           </div>
           <!-- #item-header-content -->
           <div id="item-buttons" class="profile"></div>
