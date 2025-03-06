@@ -14,10 +14,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="coverimage",
-            name="user",
-        ),
         migrations.AddField(
             model_name="coverimage",
             name="profile",
