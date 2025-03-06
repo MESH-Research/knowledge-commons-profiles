@@ -19,16 +19,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <!-- BuddyPress and bbPress Stylesheets are called in wp_head, if plugins are activated -->
     <title>
-      {% block title %}{% endblock %}
-    &#8211; Knowledge Commons</title>
+      {% block title %}
+      {% endblock title %}
+    – Knowledge Commons</title>
     <!-- robots meta and dns-prefetches -->
-    <meta name='robots' content='max-image-preview:large' />
-    <link rel='dns-prefetch' href='//hcommons.org' />
-    <link rel='dns-prefetch' href='//cdnjs.cloudflare.com' />
-    <link rel='dns-prefetch' href='//use.typekit.net' />
-    <link rel='dns-prefetch' href='//maxcdn.bootstrapcdn.com' />
-    <link rel='dns-prefetch' href='//fonts.googleapis.com' />
-    <script type='text/javascript' id='buddyboss-main-override-js-extra'>
+    <meta name="robots" content="max-image-preview:large" />
+    <link rel="dns-prefetch" href=""//hcommons.org" />
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="//use.typekit.net" />
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com" />
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <script type="text/javascript" id="buddyboss-main-override-js-extra">
       /* <![CDATA[ */
       var translation = {
         "only_mobile": "",
@@ -52,91 +53,86 @@
     </script>
     <!-- HTMX -->
     <script src="{% static "js/htmx-1.9.12.min.js" %}"></script>
-    <link rel='stylesheet'
-          id='swa-css-css'
-          href='https://hcommons.org/app/plugins/buddypress-sitewide-activity-widget/assets/swa.css?ver=6.2.2'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='humanities-commons-css'
-          href='https://hcommons.org/app/plugins/humanities-commons/assets/css/main.css?ver=6.2.2'
-          type='text/css'
-          media='all' />
-    <!--<link rel='stylesheet'
-      id='mla_academic_interests_select2_css-css'
-      href='https://hcommons.org/app/plugins/mla-academic-interests/assets/css/select2_init.css?ver=120415-1'
-      type='text/css'
-      media='all' />-->
-    <link rel='stylesheet'
-          id='fontawesome-css'
-          href='//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css?ver=4.4.0'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='boss-main-global-css'
-          href='https://hcommons.org/app/themes/boss/css/main-global.css?ver=2.2.2'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='boss-main-desktop-css'
-          href='https://hcommons.org/app/themes/boss/css/main-desktop.css?ver=2.2.2'
-          type='text/css'
-          media='screen and (min-width: 481px)' />
-    <link rel='stylesheet'
-          id='boss-main-mobile-css'
+    <link rel="stylesheet"
+          id="swa-css-css"
+          href="https://hcommons.org/app/plugins/buddypress-sitewide-activity-widget/assets/swa.css?ver=6.2.2"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="humanities-commons-css"
+          href="https://hcommons.org/app/plugins/humanities-commons/assets/css/main.css?ver=6.2.2"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="fontawesome-css"
+          href="//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css?ver=4.4.0"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="boss-main-global-css"
+          href="https://hcommons.org/app/themes/boss/css/main-global.css?ver=2.2.2"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="boss-main-desktop-css"
+          href="https://hcommons.org/app/themes/boss/css/main-desktop.css?ver=2.2.2"
+          type="text/css"
+          media="screen and (min-width: 481px)" />
+    <link rel="stylesheet"
+          id="boss-main-mobile-css"
           href='https://hcommons.org/app/themes/boss/css/main-mobile.css?ver=2.2.2'
-          type='text/css'
-          media='screen and (max-width: 480px)' />
-    <link rel='stylesheet'
-          id='header-style-2-css'
-          href='https://hcommons.org/app/themes/boss/css/header-style-2.css?ver=2.2.2'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='hcmp-profile-css'
-          href='{% static 'css/profile.css' %}'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='hcmp-boss-css'
-          href='https://hcommons.org/app/plugins/hc-member-profiles/css/boss.css?ver=1734984749'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='hc-styles-css'
-          href='https://hcommons.org/app/plugins/hc-styles/css/badges.css?ver=6.2.2'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='redux-google-fonts-boss_options-css'
-          href='https://fonts.googleapis.com/css?family=Pacifico%3A400%7CLato%3A400%7CArimo%3A700%7CSource+Sans+Pro%3A700&#038;subset=latin&#038;ver=1716376831'
-          type='text/css'
-          media='all' />
-    <link rel='stylesheet'
-          id='boss-child-custom-css'
-          href='https://hcommons.org/app/themes/boss-child/css/hc.css?ver=1734986319'
-          type='text/css'
-          media='all' />
+          type="text/css"
+          media="screen and (max-width: 480px)" />
+    <link rel="stylesheet"
+          id="header-style-2-css"
+          href="https://hcommons.org/app/themes/boss/css/header-style-2.css?ver=2.2.2"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="hcmp-profile-css"
+          href="{% static "css/profile.css" %}"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="hcmp-boss-css"
+          href="https://hcommons.org/app/plugins/hc-member-profiles/css/boss.css?ver=1734984749"
+          type="text/css"
+          media="all" />
+    <link rel="stylesheet"
+          id="hc-styles-css"
+          href="https://hcommons.org/app/plugins/hc-styles/css/badges.css?ver=6.2.2"
+          type="text/css"
+          media="all" />
+    <!-- djlint:off --><link rel="stylesheet"
+              id="redux-google-fonts-boss_options-css"
+              href="https://fonts.googleapis.com/css?family=Pacifico%3A400%7CLato%3A400%7CArimo%3A700%7CSource+Sans+Pro%3A700&#038;subset=latin&#038;ver=1716376831"
+              type="text/css"
+    media="all" /><!-- djlint:on -->
+    <link rel="stylesheet"
+          id="boss-child-custom-css"
+          href="https://hcommons.org/app/themes/boss-child/css/hc.css?ver=1734986319"
+          type="text/css"
+          media="all" />
     <!-- load typekit: OK to offsite this -->
-    <script type='text/javascript'
-            src='//use.typekit.net/bgx6tpq.js'
-            id='typekit-js'></script>
-    <script type='text/javascript' id='typekit-js-after'>
+    <script type="text/javascript"
+            src="//use.typekit.net/bgx6tpq.js"
+            id="typekit-js"></script>
+    <script type="text/javascript" id="typekit-js-after">
       try {
         Typekit.load();
       } catch (e) {}
     </script>
     <!-- hcommons and BuddyPress scripts -->
-    <script type='text/javascript'
-            src='{% static "js/jquery.dynamicmaxheight.min.js" %}'
-            id='hcmp-jqdmh-js'></script>
+    <script type="text/javascript"
+            src="{% static "js/jquery.dynamicmaxheight.min.js" %}"
+            id="hcmp-jqdmh-js"></script>
     <!-- initialize accordion menu -->
-    <script type='text/javascript'
-            src='{% static "js/buddyboss.js" %}'
-            id='buddyboss-main-override-js'></script>
+    <script type="text/javascript"
+            src="{% static "js/buddyboss.js" %}"
+            id="buddyboss-main-override-js"></script>
     <!-- meta tags -->
     <meta name="generator" content="KC Profiles" />
-    <link rel='canonical' href='https://hcommons.org/members/{{ username }}/' />
+    <link rel="canonical" href="https://hcommons.org/members/{{ username }}/" />
     <link rel="icon"
           href="{% static "img/cropped-kc_logo_80_c-32x32.png" %}"
           sizes="32x32" />
@@ -167,14 +163,6 @@
                   <a href="#" class="menu-toggle icon" id="left-menu-toggle" title="Menu">
                     <i class="fa fa-bars"></i>
                   </a><!--.menu-toggle-->
-                </div>
-                <!--.header-links-->
-                <div class="header-navigation">
-                  <ul>
-                    <li>
-                      <p></p>
-                    </li>
-                  </ul>
                 </div>
                 <!-- .header-navigation -->
                 <div id="titlebar-search">
@@ -321,12 +309,12 @@
                 </li>
                 <li id="menu-item-107"
                     class="menu-item menu-item-type-custom menu-item-object-custom menu-item-107">
-                  <a href="https://support.hcommons.org" class="fa-question">Help &#038; Support</a>
+                  <a href="https://support.hcommons.org" class="fa-question">Help &amp; Support</a>
                 </li>
                 <li id="menu-item-33266"
                     class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-33266">
                   <a href="https://hcommons.org/societies/" class="fa-university">KC Organizations</a>
-                  <div class='sub-menu-wrap'>
+                  <div class="sub-menu-wrap">
                     <ul class="sub-menu">
                       <li id="menu-item-60354"
                           class="menu-item menu-item-type-custom menu-item-object-custom menu-item-60354">
@@ -354,163 +342,164 @@
                       </li>
                     </ul>
                   </div>
-                  <!-- .sub-menu-wrap -->
-                  <li id="menu-item-751"
-                      class="menu-item menu-item-type-custom menu-item-object-custom menu-item-751">
-                    <a href="https://sustaining.hcommons.org" class="fa-info-circle">About the Commons</a>
-                  </li>
-                  <li id="menu-item-9696"
-                      class="menu-item menu-item-type-custom menu-item-object-custom menu-item-9696">
-                    <a href="https://team.hcommons.org" class="fa-pencil-square-o">Team Blog</a>
-                  </li>
-                </ul>
-              </div>
-              <!-- #nav-menu -->
-              <a href="https://hcommons.org/wp-login.php?action=logout&amp;_wpnonce=438527daf3&redirect_to=https%3A%2F%2Fhcommons.org%2Fmembers%2F{{ profile_info.username }}%2Fprofile%2Fedit%2Fgroup%2F1%2F%3Floggedout%3Dtrue"
-                 class="logout-link screen-reader-shortcut">Logout</a>
+                </li>
+                <!-- .sub-menu-wrap -->
+                <li id="menu-item-751"
+                    class="menu-item menu-item-type-custom menu-item-object-custom menu-item-751">
+                  <a href="https://sustaining.hcommons.org" class="fa-info-circle">About the Commons</a>
+                </li>
+                <li id="menu-item-9696"
+                    class="menu-item menu-item-type-custom menu-item-object-custom menu-item-9696">
+                  <a href="https://team.hcommons.org" class="fa-pencil-square-o">Team Blog</a>
+                </li>
+              </ul>
             </div>
-            <!--.scroll-area-->
+            <!-- #nav-menu -->
+            <a href="https://hcommons.org/wp-login.php?action=logout&amp;_wpnonce=438527daf3&redirect_to=https%3A%2F%2Fhcommons.org%2Fmembers%2F{{ profile_info.username }}%2Fprofile%2Fedit%2Fgroup%2F1%2F%3Floggedout%3Dtrue"
+               class="logout-link screen-reader-shortcut">Logout</a>
           </div>
-          <!--left-panel-inner-->
+          <!--.scroll-area-->
         </div>
-        <!--left-panel-->
-        <!-- Left Mobile Menu -->
-        <div id="mobile-menu" class="menu-panel">
-          <div id="mobile-menu-inner" data-titlebar="none">
-            <div id="nav-menu" class="menu-hcommons-menu-container">
-              <ul id="menu-hcommons-menu-1" class="menu">
-                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-50">
-                  <a href="https://hcommons.org/activity/" class="fa-comments">News Feed</a>
-                </li>
-                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-51 current_page_item">
-                  <a href="https://hcommons.org/members/" class="fa-users">Members</a>
-                </li>
-                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-46">
-                  <a href="https://hcommons.org/groups/" class="fa-cubes">Groups</a>
-                </li>
-                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-47">
-                  <a href="https://hcommons.org/sites/" class="fa-wordpress">Sites</a>
-                </li>
-                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-90679">
-                  <a href="https://works.hcommons.org" class="fa-cogs">Works</a>
-                </li>
-                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-107">
-                  <a href="https://support.hcommons.org" class="fa-question">Help &#038; Support</a>
-                </li>
-                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-33266">
-                  <a href="https://hcommons.org/societies/" class="fa-university">KC Organizations</a>
-                  <div class='sub-menu-wrap'>
-                    <ul class="sub-menu">
-                      <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-60354">
-                        <a href="https://arlisna.hcommons.org/">ARLIS/NA</a>
-                      </li>
-                      <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-34339">
-                        <a href="https://up.hcommons.org">AUPresses</a>
-                      </li>
-                      <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-62778">
-                        <a href="https://hastac.hcommons.org/">HASTAC</a>
-                      </li>
-                      <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-55">
-                        <a href="https://mla.hcommons.org">MLA</a>
-                      </li>
-                      <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-34341">
-                        <a href="https://commons.msu.edu">MSU</a>
-                      </li>
-                      <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-34340">
-                        <a href="https://sah.hcommons.org">SAH</a>
-                      </li>
-                    </ul>
-                  </div>
-                  <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-751">
-                    <a href="https://sustaining.hcommons.org" class="fa-info-circle">About the Commons</a>
-                  </li>
-                  <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-9696">
-                    <a href="https://team.hcommons.org" class="fa-pencil-square-o">Team Blog</a>
-                  </li>
-                </ul>
-              </div>
-              <!--#nav-menu-->
-            </div>
-            <!--#mobile-menu-inner-->
-          </div>
-          <!-- #mobile-menu -->
-          <div id="right-panel">
-            <div id="right-panel-inner">
-              <div id="main-wrap">
-                <!-- Wrap for Mobile content -->
-                <div id="inner-wrap">
-                  <!-- Inner Wrap for Mobile content -->
-                  <div id="page" class="hfeed site">
-                    <div id="main" class="wrapper">
-                      <!-- if widgets are loaded for any BuddyPress component, display the BuddyPress sidebar -->
-                      <div class="page-full-width network-profile my-profile">
-                        <!-- BuddyPress template content -->
-                        <div id="primary" class="site-content">
-                          <div id="content" role="main">
-                            <article>
-                              <div class="entry-buddypress-content">
-                                <div id="buddypress">
-                                  <div id="item-header" role="complementary">
-                                    <div class="bb-cover-photo"
-                                         data-obj="user"
-                                         data-objid="1300"
-                                         data-nonce="0c2240af81">
-                                      <div class="holder" id="header-cover-image"></div>
-                                    </div>
-                                    {% block delegated_header %}
-                                    {% endblock delegated_header %}
-                                  </div>
-                                    {% block content %}
-                                    {% endblock content %}
-                                  </div>
-                                  <!-- #buddypress -->
-                                </div>
-                                <footer class="entry-meta">
-                                </footer>
-                                <!-- .entry-meta -->
-                              </article>
-                            </div>
-                            <!-- #content -->
-                          </div>
-                          <!-- #primary -->
-                        </div>
-                        <!-- closing div -->
-                      </div>
-                      <!-- #main .wrapper -->
-                    </div>
-                    <!-- #page -- the content should escape to here -->
-                  </div>
-                  <!-- #inner-wrap -->
+        <!--left-panel-inner-->
+      </div>
+      <!--left-panel-->
+      <!-- Left Mobile Menu -->
+      <div id="mobile-menu" class="menu-panel">
+        <div id="mobile-menu-inner" data-titlebar="none">
+          <div id="nav-menu" class="menu-hcommons-menu-container">
+            <ul id="menu-hcommons-menu-1" class="menu">
+              <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-50">
+                <a href="https://hcommons.org/activity/" class="fa-comments">News Feed</a>
+              </li>
+              <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-51 current_page_item">
+                <a href="https://hcommons.org/members/" class="fa-users">Members</a>
+              </li>
+              <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-46">
+                <a href="https://hcommons.org/groups/" class="fa-cubes">Groups</a>
+              </li>
+              <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-47">
+                <a href="https://hcommons.org/sites/" class="fa-wordpress">Sites</a>
+              </li>
+              <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-90679">
+                <a href="https://works.hcommons.org" class="fa-cogs">Works</a>
+              </li>
+              <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-107">
+                <a href="https://support.hcommons.org" class="fa-question">Help &amp; Support</a>
+              </li>
+              <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-33266">
+                <a href="https://hcommons.org/societies/" class="fa-university">KC Organizations</a>
+                <div class='sub-menu-wrap'>
+                  <ul class="sub-menu">
+                    <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-60354">
+                      <a href="https://arlisna.hcommons.org/">ARLIS/NA</a>
+                    </li>
+                    <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-34339">
+                      <a href="https://up.hcommons.org">AUPresses</a>
+                    </li>
+                    <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-62778">
+                      <a href="https://hastac.hcommons.org/">HASTAC</a>
+                    </li>
+                    <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-55">
+                      <a href="https://mla.hcommons.org">MLA</a>
+                    </li>
+                    <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-34341">
+                      <a href="https://commons.msu.edu">MSU</a>
+                    </li>
+                    <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-34340">
+                      <a href="https://sah.hcommons.org">SAH</a>
+                    </li>
+                  </ul>
                 </div>
-                <!-- #main-wrap (Wrap For Mobile) -->
-                <footer id="colophon" role="contentinfo">
-                  <div class="footer-inner-bottom">
-                    <div class="footer-inner">
-                      <div class="footer-credits footer-credits-single">
-                        <span style="font-family: proxima-nova, Helvetica, sans-serif;
-                                     font-size: 10px;
-                                     text-align: center;
-                                     text-transform: uppercase"><em>KNOWLEDGE COMMONS</em>. </span><span style="color: #eeeeeee;
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-751">
+                  <a href="https://sustaining.hcommons.org" class="fa-info-circle">About the Commons</a>
+                </li>
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-9696">
+                  <a href="https://team.hcommons.org" class="fa-pencil-square-o">Team Blog</a>
+                </li>
+              </ul>
+            </div>
+            <!--#nav-menu-->
+          </div>
+          <!--#mobile-menu-inner-->
+        </div>
+        <!-- #mobile-menu -->
+        <div id="right-panel">
+          <div id="right-panel-inner">
+            <div id="main-wrap">
+              <!-- Wrap for Mobile content -->
+              <div id="inner-wrap">
+                <!-- Inner Wrap for Mobile content -->
+                <div id="page" class="hfeed site">
+                  <div id="main" class="wrapper">
+                    <!-- if widgets are loaded for any BuddyPress component, display the BuddyPress sidebar -->
+                    <div class="page-full-width network-profile my-profile">
+                      <!-- BuddyPress template content -->
+                      <div id="primary" class="site-content">
+                        <div id="content" role="main">
+                          <article>
+                            <div class="entry-buddypress-content">
+                              <div id="buddypress">
+                                <div id="item-header" role="complementary">
+                                  <div class="bb-cover-photo"
+                                       data-obj="user"
+                                       data-objid="1300"
+                                       data-nonce="0c2240af81">
+                                    <div class="holder" id="header-cover-image"></div>
+                                  </div>
+                                  {% block delegated_header %}
+                                  {% endblock delegated_header %}
+                                </div>
+                                {% block content %}
+                                {% endblock content %}
+                              </div>
+                              <!-- #buddypress -->
+                            </div>
+                            <footer class="entry-meta">
+                            </footer>
+                            <!-- .entry-meta -->
+                          </article>
+                        </div>
+                        <!-- #content -->
+                      </div>
+                      <!-- #primary -->
+                    </div>
+                    <!-- closing div -->
+                  </div>
+                  <!-- #main .wrapper -->
+                </div>
+                <!-- #page -- the content should escape to here -->
+              </div>
+              <!-- #inner-wrap -->
+            </div>
+            <!-- #main-wrap (Wrap For Mobile) -->
+            <footer id="colophon" role="contentinfo">
+              <div class="footer-inner-bottom">
+                <div class="footer-inner">
+                  <div class="footer-credits footer-credits-single">
+                    <span style="font-family: proxima-nova, Helvetica, sans-serif;
+                                 font-size: 10px;
+                                 text-align: center;
+                                 text-transform: uppercase"><em>KNOWLEDGE COMMONS</em>. </span><span style="color: #eeeeeee;
              font-family: proxima-nova, Helvetica, sans-serif;
              font-size: 10px;
              text-align: center;
              text-transform: uppercase">BASED ON <a href="http://commonsinabox.org/">COMMONS IN A BOX</a>.</span>
-                        <br style="box-sizing: border-box;
-                                   color: #ffffff;
-                                   font-family: proxima-nova, Helvetica, sans-serif;
-                                   font-size: 10px;
-                                   text-align: center;
-                                   text-transform: uppercase" />
-                        <a style="box-sizing: border-box;
-                                  text-decoration: none;
-                                  color: #aaaaaa;
-                                  transition: color 0.1s linear;
-                                  font-family: proxima-nova, Helvetica, sans-serif;
-                                  font-size: 10px;
-                                  text-align: center;
-                                  text-transform: uppercase"
-                           href="https://about.hcommons.org/terms-of-service/">TERMS
-                          OF SERVICE</a><span style="color: #ffffff;
+                    <br style="box-sizing: border-box;
+                               color: #ffffff;
+                               font-family: proxima-nova, Helvetica, sans-serif;
+                               font-size: 10px;
+                               text-align: center;
+                               text-transform: uppercase" />
+                    <a style="box-sizing: border-box;
+                              text-decoration: none;
+                              color: #aaaaaa;
+                              transition: color 0.1s linear;
+                              font-family: proxima-nova, Helvetica, sans-serif;
+                              font-size: 10px;
+                              text-align: center;
+                              text-transform: uppercase"
+                       href="https://about.hcommons.org/terms-of-service/">TERMS
+                      OF SERVICE</a><span style="color: #ffffff;
              font-family: proxima-nova, Helvetica, sans-serif;
              font-size: 10px;
              text-align: center;
@@ -523,7 +512,7 @@
           text-align: center;
           text-transform: uppercase"
    href="https://sustaining.hcommons.org/policies/privacy/">PRIVACY
-                          POLICY</a><span style="color: #ffffff;
+                      POLICY</a><span style="color: #ffffff;
              font-family: proxima-nova, Helvetica, sans-serif;
              font-size: 10px;
              text-align: center;
@@ -536,96 +525,96 @@
           text-align: center;
           text-transform: uppercase"
    href="https://sustaining.hcommons.org/policies/guidelines/">GUIDELINES
-                        FOR PARTICIPATION</a>
-                      </div>
-                      <div id="footer-links">
-                        <div id="footer-icons">
-                          <ul class="social-icons">
-                            <li>
-                              <a class="link-mastodon"
-                                 title="mastodon"
-                                 href="https://hcommons.social/"
-                                 target="_blank"><span>
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     class="icon icon-tabler icon-tabler-brand-mastodon"
-                                     style="vertical-align:middle"
-                                     width="24"
-                                     height="24"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="2"
-                                     stroke="#575757"
-                                     fill="none"
-                                     stroke-linecap="round"
-                                     stroke-linejoin="round">
-                                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                  <path d="M18.648 15.254c-1.816 1.763 -6.648 1.626 -6.648 1.626a18.262 18.262 0 0 1 -3.288 -.256c1.127 1.985 4.12 2.81 8.982 2.475c-1.945 2.013 -13.598 5.257 -13.668 -7.636l-.026 -1.154c0 -3.036 .023 -4.115 1.352 -5.633c1.671 -1.91 6.648 -1.666 6.648 -1.666s4.977 -.243 6.648 1.667c1.329 1.518 1.352 2.597 1.352 5.633s-.456 4.074 -1.352 4.944z" />
-                                  <path d="M12 11.204v-2.926c0 -1.258 -.895 -2.278 -2 -2.278s-2 1.02 -2 2.278v4.722m4 -4.722c0 -1.258 .895 -2.278 2 -2.278s2 1.02 2 2.278v4.722" />
-                                </svg>
-                              </span></a>
-                            </li>
-                            <li>
-                              <a class="link-facebook"
-                                 title="facebook"
-                                 href="https://www.facebook.com/humanitiescommons/"
-                                 target="_blank"><span></span></a>
-                            </li>
-                            <li>
-                              <a class="link-twitter"
-                                 title="twitter"
-                                 href="http://twitter.com/humcommons"
-                                 target="_blank"><span></span></a>
-                            </li>
-                            <li>
-                              <a class="link-email"
-                                 title="email"
-                                 href="mailto:hello@hcommons.org"
-                                 target="_blank"><span></span></a>
-                            </li>
-                          </ul>
-                        </div>
-                        <!-- #footer-icons -->
-                        <a href="#scroll-to" class="to-top fa fa-angle-up scroll"></a>
-                      </div>
-                      <!-- #footer-links -->
-                    </div>
-                    <!-- .footer-inner -->
+                    FOR PARTICIPATION</a>
                   </div>
-                  <!-- .footer-inner-bottom -->
-                </footer>
-                <!-- #colophon -->
+                  <div id="footer-links">
+                    <div id="footer-icons">
+                      <ul class="social-icons">
+                        <li>
+                          <a class="link-mastodon"
+                             title="mastodon"
+                             href="https://hcommons.social/"
+                             target="_blank"><span>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="icon icon-tabler icon-tabler-brand-mastodon"
+                                 style="vertical-align:middle"
+                                 width="24"
+                                 height="24"
+                                 viewBox="0 0 24 24"
+                                 stroke-width="2"
+                                 stroke="#575757"
+                                 fill="none"
+                                 stroke-linecap="round"
+                                 stroke-linejoin="round">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                              <path d="M18.648 15.254c-1.816 1.763 -6.648 1.626 -6.648 1.626a18.262 18.262 0 0 1 -3.288 -.256c1.127 1.985 4.12 2.81 8.982 2.475c-1.945 2.013 -13.598 5.257 -13.668 -7.636l-.026 -1.154c0 -3.036 .023 -4.115 1.352 -5.633c1.671 -1.91 6.648 -1.666 6.648 -1.666s4.977 -.243 6.648 1.667c1.329 1.518 1.352 2.597 1.352 5.633s-.456 4.074 -1.352 4.944z" />
+                              <path d="M12 11.204v-2.926c0 -1.258 -.895 -2.278 -2 -2.278s-2 1.02 -2 2.278v4.722m4 -4.722c0 -1.258 .895 -2.278 2 -2.278s2 1.02 2 2.278v4.722" />
+                            </svg>
+                          </span></a>
+                        </li>
+                        <li>
+                          <a class="link-facebook"
+                             title="facebook"
+                             href="https://www.facebook.com/humanitiescommons/"
+                             target="_blank"><span></span></a>
+                        </li>
+                        <li>
+                          <a class="link-twitter"
+                             title="twitter"
+                             href="http://twitter.com/humcommons"
+                             target="_blank"><span></span></a>
+                        </li>
+                        <li>
+                          <a class="link-email"
+                             title="email"
+                             href="mailto:hello@hcommons.org"
+                             target="_blank"><span></span></a>
+                        </li>
+                      </ul>
+                    </div>
+                    <!-- #footer-icons -->
+                    <a href="#scroll-to" class="to-top fa fa-angle-up scroll"></a>
+                  </div>
+                  <!-- #footer-links -->
+                </div>
+                <!-- .footer-inner -->
               </div>
-              <!-- #right-panel-inner -->
-            </div>
-            <!-- #right-panel -->
+              <!-- .footer-inner-bottom -->
+            </footer>
+            <!-- #colophon -->
           </div>
-          <!-- #panels -->
-          <div class="buddyboss-bp-legacy item-header">
-            <div id="item-header-avatar">
-              <a href="https://hcommons.org/members/{{ username }}/">
-                <img loading="lazy"
-                     src="{{ profile_info.profile_image }}"
-                     class="avatar user-1300-avatar avatar-150 photo"
-                     width="150"
-                     height="150"
-                     alt="Profile picture of {{ profile_info.name }}" />
-              </a>
-            </div>
-            <!-- #item-header-avatar -->
-            <div id="item-header-content">
-              <h2 class="user-nicename">
-                @{{ username }}h2>
-              </div>
-              <!-- #item-header-content -->
-              <div id="item-buttons" class="profile"></div>
-              <!-- #item-buttons -->
-            </div>
-            <!--buddyboss-bp-legacy-->
-            <script type='text/javascript'
-                    src='{% static "js/jquery.cookie.js" %}'
-                    id='cookie-js'></script>
-            <script type='text/javascript'
-                    src='{% static "js/imagesloaded.pkgd.js" %}'
-                    id='imagesLoaded-js'></script>
-            <div id="sitewide-notice" class="admin-bar-on"></div>
-          </body>
-        </html>
+          <!-- #right-panel-inner -->
+        </div>
+        <!-- #right-panel -->
+      </div>
+      <!-- #panels -->
+      <div class="buddyboss-bp-legacy item-header">
+        <div id="item-header-avatar">
+          <a href="https://hcommons.org/members/{{ username }}/">
+            <img loading="lazy"
+                 src="{{ profile_info.profile_image }}"
+                 class="avatar user-1300-avatar avatar-150 photo"
+                 width="150"
+                 height="150"
+                 alt="Profile picture of {{ profile_info.name }}" />
+          </a>
+        </div>
+        <!-- #item-header-avatar -->
+        <div id="item-header-content">
+          <h2 class="user-nicename">
+            @{{ username }}h2>
+          </div>
+          <!-- #item-header-content -->
+          <div id="item-buttons" class="profile"></div>
+          <!-- #item-buttons -->
+        </div>
+        <!--buddyboss-bp-legacy-->
+        <script type='text/javascript'
+                src='{% static "js/jquery.cookie.js" %}'
+                id='cookie-js'></script>
+        <script type='text/javascript'
+                src='{% static "js/imagesloaded.pkgd.js" %}'
+                id='imagesLoaded-js'></script>
+        <div id="sitewide-notice" class="admin-bar-on"></div>
+      </body>
+    </html>
