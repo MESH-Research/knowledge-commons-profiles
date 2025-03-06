@@ -2,9 +2,9 @@
 A system for handling/understanding BuddyPress notifications
 """
 
-from newprofile.models import WpBpGroup
-from newprofile.models import WpBpNotification
-from newprofile.models import WpUser
+from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.newprofile.models import WpBpNotification
+from knowledge_commons_profiles.newprofile.models import WpUser
 
 
 class BuddyPressNotification:
@@ -54,7 +54,7 @@ class BuddyPressNotification:
             update_reply -- possibly (but rarely) used
         """
 
-        from newprofile.api import API
+        from knowledge_commons_profiles.newprofile.api import API
 
         api_me = API(
             self.request,
