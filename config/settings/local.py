@@ -83,7 +83,7 @@ DEBUG_TOOLBAR_PANELS = [
     "debug_toolbar.panels.signals.SignalsPanel",
     "debug_toolbar.panels.logging.LoggingPanel",
     "debug_toolbar.panels.redirects.RedirectsPanel",
-    "newprofile.debug.QueryTimingPanel",
+    "knowledge_commons_profiles.newprofile.debug.QueryTimingPanel",
 ]
 
 # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
