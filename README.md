@@ -10,6 +10,9 @@ The profiles system for Knowledge Commons
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 ![Last Commit](https://img.shields.io/github/last-commit/MESH-Research/knowledge-commons-profiles)
 
+![tests](https://img.shields.io/endpoint?style=flat-square&url=https://gist.githubusercontent.com/MESH-Research/0ed9af78da10972471ef6bf61524ba5e/raw/knowledge-commons-profiles-lcov-coverage.json)
+![coverage](https://img.shields.io/endpoint?style=flat-square&url=https://gist.githubusercontent.com/MESH-Research/0ed9af78da10972471ef6bf61524ba5e/raw/knowledge-commons-profiles-lcov-tests.json)
+
 License: [MIT](LICENSE)
 
 **This project is a work in progress and not complete.**

@@ -54,7 +54,13 @@ jobs:
         run: docker compose -f docker-compose.github.yml run --rm django python manage.py migrate
 
       - name: Run Django Tests
-        run: docker compose -f docker-compose.github.yml run django python manage.py test
+        run: docker compose -f docker-compose.github.yml django coverage run manage.py test
+
+      - name: Create coverage stats
+        uses: gaelgirodon/ci-badges-action@v1
+        with:
+          gist-id: 0ed9af78da10972471ef6bf61524ba5e
+          token: ${{ secrets.GIST_TOKEN }}
 
       - name: Tear down the Stack
         run: docker compose -f docker-compose.github.yml down
