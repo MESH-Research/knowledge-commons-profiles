@@ -2,6 +2,8 @@
 Test suite for models
 """
 
+import importlib
+
 # pylint: disable=protected-access, no-member, import-error
 from unittest import mock
 
@@ -30,8 +32,8 @@ from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.models import WpUserMeta
 
 
-class WpModelsMetaTests(TestCase):
-    """Test meta configurations for WordPress models"""
+class ModelsMetaTests(TestCase):
+    """Test meta configurations for models"""
 
     def test_wp_models_managed_false(self):
         """Test that all WordPress models have managed=False"""
@@ -59,6 +61,49 @@ class WpModelsMetaTests(TestCase):
                 model._meta.managed,
                 f"WordPress model {model.__name__} should have managed=False",
             )
+
+    def test_models_have_str_method(self):
+        """
+        Test that all models have a __str__ method
+        :return: None
+        """
+        wp_models = [
+            WpPost,
+            WpBlog,
+            WpProfileData,
+            WpProfileFields,
+            WpUser,
+            WpBpGroupMember,
+            WpBpGroup,
+            WpUserMeta,
+            WpTermTaxonomy,
+            WpTermRelationships,
+            WpBpFollow,
+            WpBpUserBlogMeta,
+            WpBpActivity,
+            WpBpActivityMeta,
+            WpBpNotification,
+            WpPostSubTable,
+            CoverImage,
+            ProfileImage,
+            Profile,
+            AcademicInterest,
+        ]
+
+        for model in wp_models:
+            self.assertTrue(
+                hasattr(model, "__str__"),
+                f"WordPress model {model.__name__} should have a "
+                f"__str__ method",
+            )
+
+            module = importlib.import_module(
+                "knowledge_commons_profiles.newprofile.tests.model_factories"
+            )
+            mod_class = getattr(module, f"{model.__name__}Factory")
+
+            mod_object = mod_class()
+            _ = str(mod_object)
 
     def test_wp_models_db_table(self):
         """Test that WordPress models have correct db_table values"""

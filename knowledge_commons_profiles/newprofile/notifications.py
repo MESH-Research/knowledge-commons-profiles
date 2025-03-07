@@ -23,7 +23,10 @@ class BuddyPressNotification:
         """
         Get a string representation of the notification
         """
-        return self.get_string()[0]
+
+        result = self.get_string()
+
+        return result[0] if result else ""
 
     def get_string(self, username="", short=False):  # noqa: PLR0911
         """

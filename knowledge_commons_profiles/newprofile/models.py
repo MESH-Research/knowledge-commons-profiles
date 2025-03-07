@@ -17,15 +17,16 @@ class ProfileBleachField(BleachField):
     """
 
     def from_db_value(self, value, expression, connection):
+        """
+        Create from DB
+        """
         return value
 
     def pre_save(self, model_instance, *args, **kwargs):
-        data = getattr(model_instance, self.attname)
-        try:
-            return super().pre_save(model_instance, *args, **kwargs)
-        except TypeError:
-            # Gracefully ignore typerrors on BleachField
-            return data
+        """
+        Filter the model
+        """
+        return super().pre_save(model_instance, *args, **kwargs)
 
 
 class WpPostSubTable(models.Model):
