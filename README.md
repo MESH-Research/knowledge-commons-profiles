@@ -8,9 +8,7 @@ The profiles system for Knowledge Commons
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-![Last Commit](https://img.shields.io/github/last-commit/MESH-Research/knowledge-commons-profiles)
-
-![coverage](https://img.shields.io/endpoint?style=flat-square&url=https://gist.githubusercontent.com/MartinPaulEve/0ed9af78da10972471ef6bf61524ba5e/raw/ad8a4db0ce3a3fccaecb0a3f874df82dd0d54045/knowledge-commons-profiles-lcov-coverage.json)
+![Last Commit](https://img.shields.io/github/last-commit/MESH-Research/knowledge-commons-profiles) ![coverage](https://img.shields.io/endpoint?style=flat-square&url=https://gist.githubusercontent.com/MartinPaulEve/0ed9af78da10972471ef6bf61524ba5e/raw/ad8a4db0ce3a3fccaecb0a3f874df82dd0d54045/knowledge-commons-profiles-lcov-coverage.json)
 
 License: [MIT](LICENSE)
 
