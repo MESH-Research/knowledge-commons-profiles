@@ -355,3 +355,50 @@
 #div_id_cv_file {
   float: none !important;
 }
+
+.footer-box {
+  box-sizing: border-box;
+  text-decoration: none;
+  color: #aaaaaa !important;
+  transition: color 0.1s linear;
+  font-family: proxima-nova, Helvetica, sans-serif;
+  font-size: 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.footer-bullet {
+  color: #ffffff !important;
+  font-family: proxima-nova, Helvetica, sans-serif;
+  font-size: 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.footer-br {
+  box-sizing: border-box;
+  color: #ffffff !important;
+  font-family: proxima-nova, Helvetica, sans-serif;
+  font-size: 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.footer-based-on {
+  color: #eeeeeee !important;
+  font-family: proxima-nova, Helvetica, sans-serif;
+  font-size: 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.footer-kc {
+  font-family: proxima-nova, Helvetica, sans-serif;
+  font-size: 10px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.register {
+  display: inline-block;
+}

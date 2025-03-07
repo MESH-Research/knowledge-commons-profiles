@@ -1,3 +1,5 @@
+{% load static %}
+
 {% if about_user %}
   {{ about_user|safe|linebreaksbr }}
 {% else %}
@@ -23,7 +25,7 @@
   <ul>
     {% for interest in academic_interests %}
       <li>
-        <a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow">{{ interest }}</a>
+        <!-- djlint:off --><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow">{{ interest }}</a><!-- djlint:on -->
       </li>
     {% endfor %}
   </ul>
@@ -31,7 +33,7 @@
 {% if profile_info.twitter %}
   <div id="twitter" hx-swap-oob="true">
     <img style="width:14px"
-         src="/static/img/Twitter_Logo_Blue.png"
+         src="{% static "img/Twitter_Logo_Blue.png" %}"
          alt="Twitter" />
     <a href="https://twitter.com/{{ profile_info.twitter }}" rel="me">@{{ profile_info.twitter }}</a>
   </div>
@@ -39,7 +41,7 @@
 {% if profile_info.mastodon %}
   <div id="mastodon" hx-swap-oob="true">
     <img style="width:14px"
-         src="https://hcommons.org/app/plugins/hc-member-profiles/assets/img/mastodon.png"
+         src="{% static "img/mastodon.png" %}"
          alt="mastodon" />
     <a href='https://{{ profile_info.mastodon_server }}/@{{ profile_info.mastodon_username }}'
        rel='me'>{{ profile_info.mastodon }}</a>
@@ -47,7 +49,9 @@
 {% endif %}
 {% if profile_info.bluesky %}
   <div id="bluesky" hx-swap-oob="true">
-    <img style="width: 14px;" src="/static/img/bluesky.png" alt="Bluesky" />
+    <img style="width: 14px"
+         src="{% static "/static/img/bluesky.png" %}"
+         alt="Bluesky" />
     <a href="https://bsky.app/profile/{{ profile_info.bluesky }}" rel="me">{{ profile_info.bluesky }}</a>
   </div>
 {% endif %}
@@ -64,14 +68,14 @@
 {% if profile_info.title %}<h4 class="title" id="title" hx-swap-oob="true">{{ profile_info.title }}</h4>{% endif %}
 {% if profile_info.institutional_or_other_affiliation %}
   <h4 class="affiliation" id="affiliation" hx-swap-oob="true">
-    <a href="/?s={{ profile_info.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user"
-       rel="nofollow">{{ profile_info.institutional_or_other_affiliation }}</a>
+    <!-- djlint:off --><a href="/?s={{ profile_info.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user"
+    rel="nofollow">{{ profile_info.institutional_or_other_affiliation }}</a><!-- djlint:on -->
   </h4>
 {% endif %}
 {% if profile_info.orcid %}
   <div class="orcid" id="orcid" hx-swap-oob="true">
-    <img style="width: 14px"
-         src="https://hcommons.org/app/plugins/hc-member-profiles/assets/img/iD-icon.png"
+    <img
+         src="{% static "img/iD-icon.png" %}"
          alt="ORCID" />
     <a href="https://orcid.org/{{ profile_info.orcid }}" rel="me">{{ profile_info.orcid }}</a>
   </div>
