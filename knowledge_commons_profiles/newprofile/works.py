@@ -9,6 +9,8 @@ from django.core.cache import cache
 from django.template.loader import render_to_string
 from starlette.status import HTTP_200_OK
 
+from knowledge_commons_profiles import newprofile
+
 
 class WorksDeposits:
     """Works field type."""
@@ -30,7 +32,9 @@ class WorksDeposits:
         """
         cache_key = f"hc-member-profiles-xprofile-works-deposits-{self.user}"
 
-        html = await sync_to_async(cache.get)(cache_key)
+        html = await sync_to_async(cache.get)(
+            cache_key, version=newprofile.__version__
+        )
 
         if html:
             return str(html)
@@ -49,7 +53,7 @@ class WorksDeposits:
 
             async with (
                 aiohttp.ClientSession() as session,
-                session.get(endpoint, headers=headers) as response,
+                await session.get(endpoint, headers=headers) as response,
             ):
                 if response.status != HTTP_200_OK:
                     response.raise_for_status()
@@ -92,6 +96,8 @@ class WorksDeposits:
         )
 
         # Set cache asynchronously
-        await sync_to_async(cache.set)(cache_key, html, 1800)
+        await sync_to_async(cache.set)(
+            cache_key, html, 1800, version=newprofile.__version__
+        )
 
         return html
