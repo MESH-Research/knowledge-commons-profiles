@@ -54,7 +54,7 @@ jobs:
         run: docker compose -f docker-compose.github.yml run --rm django python manage.py migrate
 
       - name: Run Django Tests
-        run: docker compose -f docker-compose.github.yml django coverage run manage.py test
+        run: docker compose -f docker-compose.github.yml run --rm django coverage run manage.py test
 
       - name: Create coverage stats
         uses: gaelgirodon/ci-badges-action@v1
