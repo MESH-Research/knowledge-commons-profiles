@@ -398,3 +398,7 @@
   text-align: center;
   text-transform: uppercase;
 }
+
+.register {
+  display: inline-block;
+}
