@@ -43,7 +43,7 @@ class WpPostSubTable(models.Model):
 
     id = models.BigAutoField(primary_key=True, db_column="ID")
     post_author = models.ForeignKey(
-        "newprofile.WpUser",
+        "WpUser",
         on_delete=models.CASCADE,
         db_column="post_author",
     )
@@ -129,7 +129,7 @@ class WpPost(models.Model):
 
     id = models.BigAutoField(primary_key=True, db_column="ID")
     post_author = models.ForeignKey(
-        "newprofile.WpUser",
+        "WpUser",
         on_delete=models.CASCADE,
         db_column="post_author",
     )
@@ -881,7 +881,7 @@ class WpBpNotification(models.Model):
         Return a human-readable representation of the WpBpNotification model
         """
         # pylint: disable=import-outside-toplevel
-        from newprofile import notifications
+        from knowledge_commons_profiles.newprofile import notifications
 
         return str(notifications.BuddyPressNotification(self))
 
@@ -890,7 +890,7 @@ class WpBpNotification(models.Model):
         Get a string representation of the notification without aggregation
         """
         # pylint: disable=import-outside-toplevel
-        from newprofile import notifications
+        from knowledge_commons_profiles.newprofile import notifications
 
         return notifications.BuddyPressNotification(self).get_string(
             username=username,
@@ -901,7 +901,7 @@ class WpBpNotification(models.Model):
         Get a short string representation of the notification for the dropdown
         """
         # pylint: disable=import-outside-toplevel
-        from newprofile import notifications
+        from knowledge_commons_profiles.newprofile import notifications
 
         return notifications.BuddyPressNotification(self).get_string(
             short=True,

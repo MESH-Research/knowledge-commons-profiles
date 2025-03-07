@@ -7,7 +7,6 @@ from functools import cached_property
 from operator import itemgetter
 from urllib.parse import urlencode
 
-import newprofile
 import phpserialize
 from asyncstdlib.functools import cached_property as cached_async_property
 from django.contrib.auth import get_user_model
@@ -15,6 +14,7 @@ from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
 
+from knowledge_commons_profiles import newprofile
 from knowledge_commons_profiles.newprofile import mastodon
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog

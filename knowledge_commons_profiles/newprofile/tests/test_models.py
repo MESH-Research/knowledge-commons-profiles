@@ -244,7 +244,9 @@ class WpBpGroupTests(TestCase):
 class WpBpNotificationTests(TestCase):
     """Test suite for the WpBpNotification model"""
 
-    @mock.patch("newprofile.notifications.BuddyPressNotification")
+    @mock.patch(
+        "knowledge_commons_profiles.newprofile.notifications.BuddyPressNotification"
+    )
     def test_notification_string_methods(self, mock_bp_notification):
         """Test notification string representation methods"""
         # Set up the mock

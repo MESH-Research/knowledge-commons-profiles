@@ -7,10 +7,11 @@ Fetches Mastodon feed latest and handles caching
 import logging
 from datetime import datetime
 
-import newprofile
 import requests
 from django.core.cache import cache
 from lxml import etree
+
+from knowledge_commons_profiles import newprofile
 
 logger = logging.getLogger(__name__)
 

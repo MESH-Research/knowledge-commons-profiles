@@ -53,7 +53,9 @@ DATABASES = {
     "wordpress_dev": env.db("WORDPRESS_DATABASE_URL"),
 }
 
-DATABASE_ROUTERS = ["newprofile.wordpress_router.ReadWriteRouter"]
+DATABASE_ROUTERS = [
+    "knowledge_commons_profiles.newprofile.wordpress_router.ReadWriteRouter"
+]
 
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
