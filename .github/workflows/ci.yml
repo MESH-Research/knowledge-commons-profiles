@@ -56,6 +56,9 @@ jobs:
       - name: Run Django Tests
         run: docker compose -f docker-compose.github.yml run --rm django coverage run manage.py test
 
+      - name: Generate lcov
+        run: docker compose -f docker-compose.github.yml run --rm django coverage lcov
+
       - name: Create coverage stats
         uses: gaelgirodon/ci-badges-action@v1
         with:
