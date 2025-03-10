@@ -499,3 +499,196 @@ class MastodonPostsPropertyTests(django.test.TestCase):
             self.assertEqual(self.model_instance.mastodon_posts, "TEST")
 
             mock_last_transaction.assert_called_once()
+
+
+class MastodonProfileParsingTests(django.test.TestCase):
+    """Tests focused on the parsing logic in the mastodon_profile property."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        # Create the model instance
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Reset instance variables
+        self.model_instance._mastodon_profile = None
+        self.model_instance.mastodon_username = None
+        self.model_instance.mastodon_server = None
+        self.model_instance._mastodon_posts = None
+
+        # Create a mock for the MastodonFeed class
+        self.mastodon_feed_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.mastodon.MastodonFeed"
+        )
+        self.mock_mastodon_feed = self.mastodon_feed_patcher.start()
+
+        # Create a mock MastodonFeed instance
+        self.mock_feed_instance = mock.MagicMock()
+        self.mock_mastodon_feed.return_value = self.mock_feed_instance
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.mastodon_feed_patcher.stop()
+
+    def test_standard_mastodon_handle_parsing(self):
+        """Test parsing of a standard Mastodon handle (@username@server.com)."""
+        # Set up profile_info with a standard Mastodon handle
+        self.model_instance._profile_info = {
+            "mastodon": "@testuser@mastodon.social"
+        }
+
+        # Call the property
+        result = self.model_instance.mastodon_profile
+
+        # Assert the profile is returned correctly
+        self.assertEqual(result, "@testuser@mastodon.social")
+
+        # Assert username and server are parsed correctly
+        self.assertEqual(self.model_instance.mastodon_username, "testuser")
+        self.assertEqual(
+            self.model_instance.mastodon_server, "mastodon.social"
+        )
+
+        # Assert MastodonFeed was initialized with correct parameters
+        self.mock_mastodon_feed.assert_called_once_with(
+            "testuser", "mastodon.social"
+        )
+
+    def test_complex_server_domain_parsing(self):
+        """Test parsing with complex server domains (subdomain, multiple
+        dots)."""
+        # Set up profile_info with a complex server domain
+        self.model_instance._profile_info = {
+            "mastodon": "@user@social.example.co.uk"
+        }
+
+        # Call the property
+        _ = self.model_instance.mastodon_profile
+
+        # Assert username and server are parsed correctly
+        self.assertEqual(self.model_instance.mastodon_username, "user")
+        self.assertEqual(
+            self.model_instance.mastodon_server, "social.example.co.uk"
+        )
+
+        # Assert MastodonFeed was initialized with correct parameters
+        self.mock_mastodon_feed.assert_called_once_with(
+            "user", "social.example.co.uk"
+        )
+
+    def test_username_with_dots_and_underscores(self):
+        """Test parsing with username containing dots and underscores."""
+        # Set up profile_info with username containing dots and underscores
+        self.model_instance._profile_info = {
+            "mastodon": "@user.name_123@mastodon.social"
+        }
+
+        # Call the property
+        _ = self.model_instance.mastodon_profile
+
+        # Assert username and server are parsed correctly
+        self.assertEqual(
+            self.model_instance.mastodon_username, "user.name_123"
+        )
+        self.assertEqual(
+            self.model_instance.mastodon_server, "mastodon.social"
+        )
+
+    def test_empty_mastodon_profile(self):
+        """Test behavior when mastodon profile is empty."""
+        # Set up profile_info with empty mastodon field
+        self.model_instance._profile_info = {"mastodon": ""}
+
+        # Call the property
+        result = self.model_instance.mastodon_profile
+
+        # Assert the empty profile is returned
+        self.assertEqual(result, "")
+
+        # Assert MastodonFeed was not initialized
+        self.mock_mastodon_feed.assert_not_called()
+
+        # Assert username and server remain None
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
+
+    def test_none_mastodon_profile(self):
+        """Test behavior when mastodon profile is None."""
+        # Set up profile_info with None mastodon field
+        self.model_instance._profile_info = {"mastodon": None}
+
+        # Call the property
+        result = self.model_instance.mastodon_profile
+
+        # Assert None is returned
+        self.assertIsNone(result)
+
+        # Assert MastodonFeed was not initialized
+        self.mock_mastodon_feed.assert_not_called()
+
+        # Assert username and server remain None
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
+
+    def test_invalid_format_no_at_symbol(self):
+        """Test behavior with an invalid format (missing @ symbol)."""
+        # Set up profile_info with invalid format (no @ symbol)
+        self.model_instance._profile_info = {
+            "mastodon": "testuser.mastodon.social"
+        }
+
+        # Call the property and expect an exception
+        with self.assertRaises(IndexError):
+            _ = self.model_instance.mastodon_profile
+
+    def test_invalid_format_too_many_at_symbols(self):
+        """Test behavior with an invalid format (too many @ symbols)."""
+        # Set up profile_info with invalid format (too many @ symbols)
+        self.model_instance._profile_info = {
+            "mastodon": "@test@user@mastodon.social"
+        }
+
+        # Call the property
+        _ = self.model_instance.mastodon_profile
+
+        # Due to the split behavior, it will get the first part after @
+        self.assertEqual(self.model_instance.mastodon_username, "test")
+
+        # And the server will have extra parts
+        self.assertEqual(self.model_instance.mastodon_server, "user")
+
+    def test_missing_mastodon_key_in_profile_info(self):
+        """Test behavior when 'mastodon' key is missing from profile_info."""
+        # Set up profile_info without 'mastodon' key
+        self.model_instance._profile_info = {"email": "test@example.com"}
+
+        # Call the property and expect KeyError
+        with self.assertRaises(KeyError):
+            _ = self.model_instance.mastodon_profile
+
+    def test_format_without_leading_at(self):
+        """Test behavior when the mastodon handle doesn't have a leading @."""
+        # Set up profile_info with handle without leading @
+        self.model_instance._profile_info = {
+            "mastodon": "testuser@mastodon.social"
+        }
+
+        # Call the property
+        _ = self.model_instance.mastodon_profile
+
+        # Due to the [1:] slice, it will miss the first character
+        self.assertEqual(self.model_instance.mastodon_username, "estuser")
+        self.assertEqual(
+            self.model_instance.mastodon_server, "mastodon.social"
+        )
