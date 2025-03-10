@@ -7,6 +7,7 @@ in the knowledge_commons_profiles application.
 from typing import Any
 
 import factory
+from django.contrib.auth.models import User
 
 from knowledge_commons_profiles.newprofile import models
 
@@ -286,3 +287,37 @@ class AcademicInterestFactory(factory.Factory):
         """Factory configuration."""
 
         model = models.AcademicInterest
+
+
+class WpUserFactory(factory.Factory):
+    """Factory for creating WpUser model instances.
+
+    This factory generates test instances of the WpUser model
+    for use in unit and integration tests.
+    """
+
+    user_login = ("integration_test_user",)
+    user_pass = ("hashed_password",)
+    user_email = ("integration@example.com",)
+
+    class Meta:
+        """Factory configuration."""
+
+        model = models.WpUser
+
+
+class UserFactory(factory.Factory):
+    """Factory for creating User model instances.
+
+    This factory generates test instances of the User model
+    for use in unit and integration tests.
+    """
+
+    username = "testuser"
+    email = "test@example.com"
+    password = "testpass"
+
+    class Meta:
+        """Factory configuration."""
+
+        model = User
