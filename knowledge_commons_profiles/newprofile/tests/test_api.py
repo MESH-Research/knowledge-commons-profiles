@@ -533,6 +533,17 @@ class MastodonProfileParsingTests(django.test.TestCase):
         )
         self.mock_mastodon_feed = self.mastodon_feed_patcher.start()
 
+        self.user_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.User.objects.get"
+        )
+        self.mock_user_patcher = self.user_patcher.start()
+        self.mock_user_patcher.return_value = self.user
+
+        self.profile_creator_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.Profile.objects.create"
+        )
+        self.mock_user_creator_patcher = self.profile_creator_patcher.start()
+
         # Create a mock MastodonFeed instance
         self.mock_feed_instance = mock.MagicMock()
         self.mock_mastodon_feed.return_value = self.mock_feed_instance
@@ -540,6 +551,8 @@ class MastodonProfileParsingTests(django.test.TestCase):
     def tearDown(self):
         """Clean up after the tests."""
         self.mastodon_feed_patcher.stop()
+        self.user_patcher.stop()
+        self.profile_creator_patcher.stop()
 
     def test_standard_mastodon_handle_parsing(self):
         """Test parsing of a standard Mastodon handle (@username@server.com)."""
@@ -648,9 +661,10 @@ class MastodonProfileParsingTests(django.test.TestCase):
             "mastodon": "testuser.mastodon.social"
         }
 
-        # Call the property and expect an exception
-        with self.assertRaises(IndexError):
-            _ = self.model_instance.mastodon_profile
+        _ = self.model_instance.mastodon_profile
+
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
 
     def test_invalid_format_too_many_at_symbols(self):
         """Test behavior with an invalid format (too many @ symbols)."""
@@ -662,11 +676,8 @@ class MastodonProfileParsingTests(django.test.TestCase):
         # Call the property
         _ = self.model_instance.mastodon_profile
 
-        # Due to the split behavior, it will get the first part after @
-        self.assertEqual(self.model_instance.mastodon_username, "test")
-
-        # And the server will have extra parts
-        self.assertEqual(self.model_instance.mastodon_server, "user")
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
 
     def test_missing_mastodon_key_in_profile_info(self):
         """Test behavior when 'mastodon' key is missing from profile_info."""
@@ -688,10 +699,8 @@ class MastodonProfileParsingTests(django.test.TestCase):
         _ = self.model_instance.mastodon_profile
 
         # Due to the [1:] slice, it will miss the first character
-        self.assertEqual(self.model_instance.mastodon_username, "estuser")
-        self.assertEqual(
-            self.model_instance.mastodon_server, "mastodon.social"
-        )
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
 
 
 class MastodonUserAndServerTests(django.test.TestCase):
@@ -816,9 +825,10 @@ class MastodonUserAndServerTests(django.test.TestCase):
         # Set up profile with invalid format (no @ symbol)
         self.mock_profile.mastodon = "testuser.mastodon.social"
 
-        # Call the property and expect an exception
-        with self.assertRaises(IndexError):
-            _ = self.model_instance.mastodon_user_and_server
+        _ = self.model_instance.mastodon_user_and_server
+
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
 
     def test_invalid_format_too_many_at_symbols(self):
         """Test behavior with an invalid format (too many @ symbols)."""
@@ -829,10 +839,10 @@ class MastodonUserAndServerTests(django.test.TestCase):
         username, server = self.model_instance.mastodon_user_and_server
 
         # Due to the split behavior, it will get the first part after @
-        self.assertEqual(username, "test")
+        self.assertIsNone(username)
 
         # And the server will have extra parts
-        self.assertEqual(server, "user")
+        self.assertIsNone(server)
 
     def test_format_without_leading_at(self):
         """Test behavior when the mastodon handle doesn't have a leading @."""
@@ -842,9 +852,8 @@ class MastodonUserAndServerTests(django.test.TestCase):
         # Call the property
         username, server = self.model_instance.mastodon_user_and_server
 
-        # Due to the [1:] slice, it will miss the first character
-        self.assertEqual(username, "estuser")
-        self.assertEqual(server, "mastodon.social")
+        self.assertIsNone(username)
+        self.assertIsNone(server)
 
     def test_missing_profile_attribute(self):
         """Test behavior when the profile attribute is missing."""

@@ -3,6 +3,7 @@ A class of API calls for user details
 """
 
 import hashlib
+import logging
 from functools import cached_property
 from operator import itemgetter
 from urllib.parse import urlencode
@@ -29,6 +30,8 @@ from knowledge_commons_profiles.newprofile.models import WpUserMeta
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 User = get_user_model()
+
+MASTODON_AT_SIGNS = 2
 
 
 class API:
@@ -115,8 +118,9 @@ class API:
 
             if self._mastodon_profile:
                 self.mastodon_username, self.mastodon_server = (
-                    self._mastodon_profile[1:].split("@")[0],
-                    self._mastodon_profile[1:].split("@")[1],
+                    self._get_mastodon_user_and_server(
+                        mastodon_field=self._mastodon_profile
+                    )
                 )
                 self._mastodon_posts = mastodon.MastodonFeed(
                     self.mastodon_username,
@@ -129,10 +133,38 @@ class API:
         """
         Get the mastodon profile
         """
-        if self.profile.mastodon:
+        return self._get_mastodon_user_and_server()
+
+    def _get_mastodon_user_and_server(self, mastodon_field=None):
+        """
+        Get the mastodon profile
+        """
+        mastodon_field = (
+            mastodon_field if mastodon_field else self.profile.mastodon
+        )
+
+        # test if it's a string
+        if not isinstance(mastodon_field, str):
+            logging.log(
+                logging.INFO,
+                "Unable to parse %s as a Mastodon profile",
+                self.profile.mastodon,
+            )
+            return None, None
+
+        # if the number of @ signs is not 2, we have a problem
+        if mastodon_field.count("@") != MASTODON_AT_SIGNS:
+            logging.log(
+                logging.INFO,
+                "%s is not a valid Mastodon profile",
+                self.profile.mastodon,
+            )
+            return None, None
+
+        if mastodon_field:
             self.mastodon_username, self.mastodon_server = (
-                self.profile.mastodon[1:].split("@")[0],
-                self.profile.mastodon[1:].split("@")[1],
+                mastodon_field[1:].split("@")[0],
+                mastodon_field[1:].split("@")[1],
             )
 
             return self.mastodon_username, self.mastodon_server
@@ -162,7 +194,8 @@ class API:
                 if self.create:
                     self._profile = Profile.objects.create(username=self.user)
                 else:
-                    # if the user exists but the Profile doesn't, then create it
+                    # if the user exists but the Profile doesn't, then create
+                    # it
                     try:
                         user_object = User.objects.get(username=self.user)
                         self._profile = Profile.objects.create(
