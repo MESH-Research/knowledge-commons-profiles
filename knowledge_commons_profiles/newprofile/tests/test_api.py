@@ -903,3 +903,81 @@ class MastodonUserAndServerTests(django.test.TestCase):
         username, server = self.model_instance.mastodon_user_and_server
         self.assertIsNone(username)
         self.assertIsNone(server)
+
+
+class ProfileInfoPropertyTests(django.test.TestCase):
+    """Tests for the profile_info property."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Create a patch for the get_profile_info method
+        self.get_profile_info_patcher = mock.patch.object(
+            self.model_instance, "get_profile_info"
+        )
+        self.mock_get_profile_info = self.get_profile_info_patcher.start()
+
+        # Define a sample profile info that would be set by get_profile_info
+        self.sample_profile_info = {
+            "username": "test_user",
+            "email": "test@example.com",
+            "name": "Test User",
+        }
+
+        # Configure the mock to set _profile_info when called
+        def side_effect():
+            self.model_instance._profile_info = self.sample_profile_info
+
+        self.mock_get_profile_info.side_effect = side_effect
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.get_profile_info_patcher.stop()
+
+    def test_profile_info_uncached(self):
+        """Test that profile_info calls get_profile_info when
+        _profile_info is None."""
+        # Ensure _profile_info is None
+        self.model_instance._profile_info = None
+
+        # Call the property
+        result = self.model_instance.profile_info
+
+        # Assert get_profile_info was called
+        self.mock_get_profile_info.assert_called_once()
+
+        # Assert the result is what was set by our mocked get_profile_info
+        self.assertEqual(result, self.sample_profile_info)
+
+    def test_profile_info_cached(self):
+        """Test that profile_info returns cached value without calling
+        get_profile_info."""
+        # Set a pre-existing _profile_info
+        cached_profile_info = {
+            "username": "cached_user",
+            "email": "cached@example.com",
+            "name": "Cached User",
+        }
+        self.model_instance._profile_info = cached_profile_info
+
+        # Call the property
+        result = self.model_instance.profile_info
+
+        # Assert get_profile_info was NOT called
+        self.mock_get_profile_info.assert_not_called()
+
+        # Assert the result is the cached value
+        self.assertEqual(result, cached_profile_info)
