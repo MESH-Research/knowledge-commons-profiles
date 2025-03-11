@@ -731,8 +731,31 @@ class MastodonUserAndServerTests(django.test.TestCase):
         self.model_instance.mastodon_username = None
         self.model_instance.mastodon_server = None
 
+    def test_empty_string_mastodon_field(self):
+        """Test that an empty string triggers the final return None, None."""
+        # Call the method with an empty string that has the correct number of
+        # @ signs. This will pass the string validation and @ count
+        # validation, but fail at the final if statement.
+        # Creating a string with 2 @ signs but is still "falsy" in the
+        # final if condition
+        mastodon_field = "@@"  # This has 2 @ signs but will evaluate as
+        # falsy in the context
+
+        # Call the method
+        username, server = self.model_instance._get_mastodon_user_and_server(
+            mastodon_field
+        )
+
+        # Assert the final return line was hit (both values are None)
+        self.assertIsNone(username)
+        self.assertIsNone(server)
+
+        # Verify instance variables weren't set
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
+
     def test_standard_mastodon_handle(self):
-        """Test parsing of a standard Mastodon handle (@username@server.com)."""
+        """Test parsing of a standard Mastodon handle (@username@server.com)"""
         # Set up profile with a standard Mastodon handle
         self.mock_profile.mastodon = "@testuser@mastodon.social"
 

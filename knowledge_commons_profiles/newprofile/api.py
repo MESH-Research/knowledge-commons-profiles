@@ -162,13 +162,14 @@ class API:
             return None, None
 
         if mastodon_field:
+            split_one = mastodon_field[1:].split("@")[0]
+            split_two = mastodon_field[1:].split("@")[1]
             self.mastodon_username, self.mastodon_server = (
-                mastodon_field[1:].split("@")[0],
-                mastodon_field[1:].split("@")[1],
+                (split_one if split_one != "" else None),
+                (split_two if split_two != "" else None),
             )
 
-            return self.mastodon_username, self.mastodon_server
-        return None, None
+        return self.mastodon_username, self.mastodon_server
 
     @cached_property
     def profile_info(self):
