@@ -6,6 +6,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
+from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.tests.model_factories import (
+    ProfileFactory,
+)
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
     UserFactory,
 )
@@ -981,3 +985,87 @@ class ProfileInfoPropertyTests(django.test.TestCase):
 
         # Assert the result is the cached value
         self.assertEqual(result, cached_profile_info)
+
+
+class ProfilePropertyTests(django.test.TestCase):
+    """Tests for the profile property."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        # Create the model instance
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+        self.model_instance.user = "test_user"
+        self.model_instance._profile = None
+        self.model_instance.create = True
+
+        # Patch Profile.objects.prefetch_related to return a mock query manager
+        self.prefetch_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.Profile.objects."
+            "prefetch_related"
+        )
+        self.mock_prefetch = self.prefetch_patcher.start()
+
+        # Configure the mock query manager to raise DoesNotExist when get()
+        # is called
+        self.mock_query_manager = mock.MagicMock()
+        self.mock_prefetch.return_value = self.mock_query_manager
+
+        self.mock_query_manager.get.return_value = self.mock_query_manager
+        self.mock_query_manager.get.side_effect = Profile.DoesNotExist
+
+        # Patch Profile.objects.create to use our factory
+        self.create_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.Profile.objects.create"
+        )
+        self.mock_create = self.create_patcher.start()
+
+        # Make create return a ProfileFactory instance
+        self.mock_create.return_value = lambda **kwargs: ProfileFactory(
+            **kwargs
+        )
+
+        # Patch User.objects.get to avoid it being called
+        self.user_get_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.User.objects.get"
+        )
+        self.mock_user_get = self.user_get_patcher.start()
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.prefetch_patcher.stop()
+        self.create_patcher.stop()
+        self.user_get_patcher.stop()
+
+    def test_profile_creation_with_create_flag(self):
+        """Test profile creation when profile doesn't exist and create
+        flag is True."""
+        # Call the property
+        profile = self.model_instance.profile
+
+        # Verify that prefetch_related().get() was called with the
+        # correct username
+        self.mock_query_manager.get.assert_called_once_with(
+            username="test_user"
+        )
+
+        # Verify that User.objects.get was NOT called
+        self.mock_user_get.assert_not_called()
+
+        # Verify that Profile.objects.create was called with just the username
+        self.mock_create.assert_called_once_with(username="test_user")
+
+        # Verify the profile was set on the model instance
+        self.assertIsNotNone(self.model_instance._profile)
+        self.assertEqual(self.model_instance._profile, profile)
