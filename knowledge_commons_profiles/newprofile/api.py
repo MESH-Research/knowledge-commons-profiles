@@ -31,7 +31,8 @@ from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 User = get_user_model()
 
-MASTODON_AT_SIGNS = 2
+MASTODON_MIN_SIGNS = 1
+MASTODON_MAX_SIGNS = 2
 
 
 class API:
@@ -153,7 +154,8 @@ class API:
             return None, None
 
         # if the number of @ signs is not 2, we have a problem
-        if mastodon_field.count("@") != MASTODON_AT_SIGNS:
+        at_count = mastodon_field.count("@")
+        if at_count < MASTODON_MIN_SIGNS or at_count > MASTODON_MAX_SIGNS:
             logging.log(
                 logging.INFO,
                 "%s is not a valid Mastodon profile",
@@ -162,8 +164,16 @@ class API:
             return None, None
 
         if mastodon_field:
-            split_one = mastodon_field[1:].split("@")[0]
-            split_two = mastodon_field[1:].split("@")[1]
+            if at_count == MASTODON_MAX_SIGNS:
+                # 2 @ signs
+                split_mastodon = mastodon_field[1:].split("@")
+            else:
+                # 1 @ sign
+                split_mastodon = mastodon_field.split("@")
+
+            split_one = split_mastodon[0]
+            split_two = split_mastodon[1]
+
             self.mastodon_username, self.mastodon_server = (
                 (split_one if split_one != "" else None),
                 (split_two if split_two != "" else None),

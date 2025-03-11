@@ -699,8 +699,10 @@ class MastodonProfileParsingTests(django.test.TestCase):
         _ = self.model_instance.mastodon_profile
 
         # Due to the [1:] slice, it will miss the first character
-        self.assertIsNone(self.model_instance.mastodon_username)
-        self.assertIsNone(self.model_instance.mastodon_server)
+        self.assertEqual(self.model_instance.mastodon_username, "testuser")
+        self.assertEqual(
+            self.model_instance.mastodon_server, "mastodon.social"
+        )
 
 
 class MastodonUserAndServerTests(django.test.TestCase):
@@ -875,8 +877,8 @@ class MastodonUserAndServerTests(django.test.TestCase):
         # Call the property
         username, server = self.model_instance.mastodon_user_and_server
 
-        self.assertIsNone(username)
-        self.assertIsNone(server)
+        self.assertEqual(username, "testuser")
+        self.assertEqual(server, "mastodon.social")
 
     def test_missing_profile_attribute(self):
         """Test behavior when the profile attribute is missing."""
