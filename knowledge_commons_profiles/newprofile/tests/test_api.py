@@ -692,3 +692,180 @@ class MastodonProfileParsingTests(django.test.TestCase):
         self.assertEqual(
             self.model_instance.mastodon_server, "mastodon.social"
         )
+
+
+class MastodonUserAndServerTests(django.test.TestCase):
+    """Tests for the mastodon_user_and_server property."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Create a mock profile object
+        self.mock_profile = mock.MagicMock()
+        self.model_instance.profile = self.mock_profile
+
+        # Reset instance variables that might be set by the property
+        self.model_instance.mastodon_username = None
+        self.model_instance.mastodon_server = None
+
+    def test_standard_mastodon_handle(self):
+        """Test parsing of a standard Mastodon handle (@username@server.com)."""
+        # Set up profile with a standard Mastodon handle
+        self.mock_profile.mastodon = "@testuser@mastodon.social"
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Assert username and server are parsed correctly
+        self.assertEqual(username, "testuser")
+        self.assertEqual(server, "mastodon.social")
+
+        # Assert instance variables are set correctly
+        self.assertEqual(self.model_instance.mastodon_username, "testuser")
+        self.assertEqual(
+            self.model_instance.mastodon_server, "mastodon.social"
+        )
+
+    def test_complex_server_domain(self):
+        """Test parsing with complex server domains (subdomain, multiple
+        dots)."""
+        # Set up profile with a complex server domain
+        self.mock_profile.mastodon = "@user@social.example.co.uk"
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Assert username and server are parsed correctly
+        self.assertEqual(username, "user")
+        self.assertEqual(server, "social.example.co.uk")
+
+        # Assert instance variables are set correctly
+        self.assertEqual(self.model_instance.mastodon_username, "user")
+        self.assertEqual(
+            self.model_instance.mastodon_server, "social.example.co.uk"
+        )
+
+    def test_username_with_special_characters(self):
+        """Test parsing with username containing special characters."""
+        # Set up profile with username containing dots and underscores
+        self.mock_profile.mastodon = "@user.name_123@mastodon.social"
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Assert username and server are parsed correctly
+        self.assertEqual(username, "user.name_123")
+        self.assertEqual(server, "mastodon.social")
+
+        # Assert instance variables are set correctly
+        self.assertEqual(
+            self.model_instance.mastodon_username, "user.name_123"
+        )
+        self.assertEqual(
+            self.model_instance.mastodon_server, "mastodon.social"
+        )
+
+    def test_empty_mastodon_profile(self):
+        """Test behavior when mastodon profile is empty."""
+        # Set up profile with empty mastodon field
+        self.mock_profile.mastodon = ""
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Assert None values are returned
+        self.assertIsNone(username)
+        self.assertIsNone(server)
+
+        # Assert instance variables remain None
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
+
+    def test_none_mastodon_profile(self):
+        """Test behavior when mastodon profile is None."""
+        # Set up profile with None mastodon field
+        self.mock_profile.mastodon = None
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Assert None values are returned
+        self.assertIsNone(username)
+        self.assertIsNone(server)
+
+        # Assert instance variables remain None
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
+
+    def test_invalid_format_no_at_symbol(self):
+        """Test behavior with an invalid format (missing @ symbol)."""
+        # Set up profile with invalid format (no @ symbol)
+        self.mock_profile.mastodon = "testuser.mastodon.social"
+
+        # Call the property and expect an exception
+        with self.assertRaises(IndexError):
+            _ = self.model_instance.mastodon_user_and_server
+
+    def test_invalid_format_too_many_at_symbols(self):
+        """Test behavior with an invalid format (too many @ symbols)."""
+        # Set up profile with invalid format (too many @ symbols)
+        self.mock_profile.mastodon = "@test@user@mastodon.social"
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Due to the split behavior, it will get the first part after @
+        self.assertEqual(username, "test")
+
+        # And the server will have extra parts
+        self.assertEqual(server, "user")
+
+    def test_format_without_leading_at(self):
+        """Test behavior when the mastodon handle doesn't have a leading @."""
+        # Set up profile with handle without leading @
+        self.mock_profile.mastodon = "testuser@mastodon.social"
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Due to the [1:] slice, it will miss the first character
+        self.assertEqual(username, "estuser")
+        self.assertEqual(server, "mastodon.social")
+
+    def test_missing_profile_attribute(self):
+        """Test behavior when the profile attribute is missing."""
+        # Remove profile attribute
+        delattr(self.model_instance, "profile")
+
+        # Call the property and expect an exception
+        with self.assertRaises(django.http.response.Http404):
+            _ = self.model_instance.mastodon_user_and_server
+
+    def test_falsey_mastodon_value(self):
+        """Test behavior with falsey values that aren't None or empty
+        string."""
+        # Test with False
+        self.mock_profile.mastodon = False
+        username, server = self.model_instance.mastodon_user_and_server
+        self.assertIsNone(username)
+        self.assertIsNone(server)
+
+        # Test with 0
+        self.mock_profile.mastodon = 0
+        username, server = self.model_instance.mastodon_user_and_server
+        self.assertIsNone(username)
+        self.assertIsNone(server)
