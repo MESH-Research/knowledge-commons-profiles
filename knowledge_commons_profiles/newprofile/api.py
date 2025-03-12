@@ -329,6 +329,15 @@ class API:
 
         counter = 0
 
+        if len(valid_blog_ids) == 0:
+            cache.set(
+                cache_key,
+                [],
+                timeout=600,
+                version=newprofile.__version__,
+            )
+            return []
+
         for num in valid_blog_ids:
             if f"wp_{num}_posts" in row:
                 select_stmt = f"""

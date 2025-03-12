@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
+from knowledge_commons_profiles import newprofile
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
     ProfileFactory,
@@ -1205,3 +1206,280 @@ class GetProfileInfoTests(django.test.TestCase):
         )  # Original value
         self.assertIsNone(result["mastodon_username"])
         self.assertIsNone(result["mastodon_server"])
+
+
+class GetBlogPostsTests(django.test.TestCase):
+    """Tests for the get_blog_posts method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Set the required attributes
+        self.model_instance.use_wordpress = True
+        self.model_instance.user = "test_user"
+
+        # Create a mock wp_user
+        self.mock_wp_user = mock.MagicMock()
+        self.mock_wp_user.id = 42
+        self.model_instance.wp_user = self.mock_wp_user
+
+        # Mock cache.get and cache.set
+        self.cache_get_patcher = mock.patch("django.core.cache.cache.get")
+        self.mock_cache_get = self.cache_get_patcher.start()
+        self.mock_cache_get.return_value = None  # Default to cache miss
+
+        self.cache_set_patcher = mock.patch("django.core.cache.cache.set")
+        self.mock_cache_set = self.cache_set_patcher.start()
+
+        # Mock database cursor
+        self.cursor_mock = mock.MagicMock()
+        self.connection_mock = mock.MagicMock()
+        self.connection_mock.cursor.return_value.__enter__.return_value = (
+            self.cursor_mock
+        )
+
+        self.connections_patcher = mock.patch.dict(
+            "django.db.connections", {"wordpress_dev": self.connection_mock}
+        )
+
+        self.mock_connections = self.connections_patcher.start()
+
+        # Mock WpBlog.objects.values_list
+        self.wpblog_values_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpBlog.objects."
+            "values_list"
+        )
+        self.mock_wpblog_values = self.wpblog_values_patcher.start()
+
+        # Mock WpPostSubTable.objects.raw
+        self.wppost_raw_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpPostSubTable."
+            "objects.raw"
+        )
+        self.mock_wppost_raw = self.wppost_raw_patcher.start()
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.cache_get_patcher.stop()
+        self.cache_set_patcher.stop()
+        self.connections_patcher.stop()
+        self.wpblog_values_patcher.stop()
+        self.wppost_raw_patcher.stop()
+
+    def test_use_wordpress_false(self):
+        """Test that an empty list is returned when use_wordpress is False."""
+        self.model_instance.use_wordpress = False
+
+        result = self.model_instance.get_blog_posts()
+
+        self.assertEqual(result, [])
+        self.mock_cache_get.assert_not_called()
+        self.cursor_mock.execute.assert_not_called()
+
+    def test_cached_response(self):
+        """Test that cached response is returned when available."""
+        # Set up mock to return a cached response
+        cached_posts = [mock.MagicMock(), mock.MagicMock()]
+        self.mock_cache_get.return_value = cached_posts
+
+        result = self.model_instance.get_blog_posts()
+
+        # Check cache was queried with correct key
+        self.mock_cache_get.assert_called_once_with(
+            f"blog_post_list-{self.model_instance.user}",
+            version=newprofile.__version__,
+        )
+
+        # Check result is the cached response
+        self.assertEqual(result, cached_posts)
+
+        # Check no database queries were made
+        self.cursor_mock.execute.assert_not_called()
+        self.mock_wpblog_values.assert_not_called()
+        self.mock_wppost_raw.assert_not_called()
+
+    def test_sql_generation_no_blogs(self):
+        """Test SQL generation when no blogs are found."""
+        # Set up mocks to return no blogs
+        self.cursor_mock.fetchall.return_value = []
+        self.mock_wpblog_values.return_value = []
+
+        result = self.model_instance.get_blog_posts()
+
+        # Check correct SQL was executed
+        self.cursor_mock.execute.assert_called_once_with("SHOW TABLES;")
+
+        # Check WpBlog.objects.values_list was called correctly
+        self.mock_wpblog_values.assert_called_once_with("blog_id", flat=True)
+
+        # Check WpPostSubTable.objects.raw was not called (no valid blogs)
+        self.mock_wppost_raw.assert_not_called()
+
+        # Check result is empty
+        self.assertEqual(result, [])
+
+        # Check cache was set with empty result
+        self.mock_cache_set.assert_called_once_with(
+            f"blog_post_list-{self.model_instance.user}",
+            [],
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+    def test_sql_generation_with_blogs(self):
+        """Test SQL generation with valid blogs."""
+        # Set up mocks to return table list
+        table_list = [
+            ("wp_1_posts",),
+            ("wp_1_options",),
+            ("wp_2_posts",),
+            ("wp_2_options",),
+            ("wp_3_posts",),
+            ("wp_3_options",),
+            ("wp_blogs",),
+            ("wp_other_table",),
+        ]
+        self.cursor_mock.fetchall.return_value = table_list
+
+        # Set up mock to return blog IDs
+        blog_ids = [1, 2, 3, 4]  # Note: 4 doesn't have matching tables
+        self.mock_wpblog_values.return_value = blog_ids
+
+        # Set up mock for raw query result
+        mock_posts = [mock.MagicMock(), mock.MagicMock()]
+        self.mock_wppost_raw.return_value = mock_posts
+
+        result = self.model_instance.get_blog_posts()
+
+        # Verify SHOW TABLES was executed
+        self.cursor_mock.execute.assert_called_once_with("SHOW TABLES;")
+
+        # Check raw query was called with correct SQL and parameters
+        sql_arg = self.mock_wppost_raw.call_args[0][0]
+        params_arg = self.mock_wppost_raw.call_args[0][1]
+
+        # Check SQL contains expected parts
+        self.assertIn("WITH unified_posts AS", sql_arg)
+        self.assertIn("UNION ALL", sql_arg)
+
+        # Check number of blog IDs that should be in query (3 valid blogs)
+        self.assertEqual(
+            sql_arg.count("blog_id") / 2, 3  # it's specified twice in the SQL
+        )  # One per SELECT statement
+
+        # Check number of parameters matches number of valid blogs
+        self.assertEqual(len(params_arg), 3)
+        self.assertEqual(
+            params_arg, [42, 42, 42]
+        )  # wp_user.id repeated for each blog
+
+        # Check result is from raw query
+        self.assertEqual(result, mock_posts)
+
+        # Check cache was set with result
+        self.mock_cache_set.assert_called_once_with(
+            f"blog_post_list-{self.model_instance.user}",
+            mock_posts,
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+    def test_sql_injection_prevention(self):
+        """Test that non-digit blog IDs are filtered out to prevent SQL
+        injection."""
+        # Set up mocks
+        table_list = [("wp_1_posts",), ("wp_1_options",), ("wp_blogs",)]
+        self.cursor_mock.fetchall.return_value = table_list
+
+        # Include a malicious blog ID
+        blog_ids = [1, "2; DROP TABLE users; --"]
+        self.mock_wpblog_values.return_value = blog_ids
+
+        # Set up mock for raw query result
+        mock_posts = [mock.MagicMock()]
+        self.mock_wppost_raw.return_value = mock_posts
+
+        self.model_instance.get_blog_posts()
+
+        # Check raw query was called
+        sql_arg = self.mock_wppost_raw.call_args[0][0]
+        params_arg = self.mock_wppost_raw.call_args[0][1]
+
+        # Only the valid blog ID should be included
+        self.assertEqual(sql_arg.count("wp_1_posts"), 1)
+        self.assertEqual(sql_arg.count("wp_2; DROP TABLE users; --"), 0)
+
+        # Only one parameter should be passed (for the one valid blog)
+        self.assertEqual(len(params_arg), 1)
+        self.assertEqual(params_arg, [42])
+
+    def test_collation_specifications(self):
+        """Test that proper collation specifications are included in the
+        SQL."""
+        # Set up mocks
+        table_list = [("wp_1_posts",), ("wp_1_options",), ("wp_blogs",)]
+        self.cursor_mock.fetchall.return_value = table_list
+
+        blog_ids = [1, 2]
+        self.mock_wpblog_values.return_value = blog_ids
+
+        self.model_instance.get_blog_posts()
+
+        # Check SQL includes collation specifications
+        sql_arg = self.mock_wppost_raw.call_args[0][0]
+
+        # Check for collation on text fields
+        self.assertIn("post_title COLLATE utf8mb4_unicode_ci", sql_arg)
+        self.assertIn("post_status COLLATE utf8mb4_unicode_ci", sql_arg)
+        self.assertIn("post_name COLLATE utf8mb4_unicode_ci", sql_arg)
+        self.assertIn("post_type COLLATE utf8mb4_unicode_ci", sql_arg)
+        self.assertIn("option_value COLLATE utf8mb4_unicode_ci", sql_arg)
+        self.assertIn("domain COLLATE utf8mb4_unicode_ci", sql_arg)
+        self.assertIn("path COLLATE utf8mb4_unicode_ci", sql_arg)
+
+    def test_limit_and_ordering(self):
+        """Test that SQL includes proper ORDER BY and LIMIT clauses."""
+        # Set up mocks
+        table_list = [("wp_1_posts",), ("wp_1_options",), ("wp_blogs",)]
+        self.cursor_mock.fetchall.return_value = table_list
+
+        blog_ids = [1]
+        self.mock_wpblog_values.return_value = blog_ids
+
+        self.model_instance.get_blog_posts()
+
+        # Check SQL includes ORDER BY and LIMIT
+        sql_arg = self.mock_wppost_raw.call_args[0][0]
+
+        self.assertIn("ORDER BY post_date DESC", sql_arg)
+        self.assertIn("LIMIT 25", sql_arg)
+
+    def test_post_status_and_type_filtering(self):
+        """Test that SQL properly filters by post_status and post_type."""
+        # Set up mocks
+        table_list = [("wp_1_posts",), ("wp_1_options",), ("wp_blogs",)]
+        self.cursor_mock.fetchall.return_value = table_list
+
+        blog_ids = [1]
+        self.mock_wpblog_values.return_value = blog_ids
+
+        self.model_instance.get_blog_posts()
+
+        # Check SQL includes proper filtering
+        sql_arg = self.mock_wppost_raw.call_args[0][0]
+
+        self.assertIn("p.post_status='publish'", sql_arg)
+        self.assertIn("p.post_type='post'", sql_arg)
