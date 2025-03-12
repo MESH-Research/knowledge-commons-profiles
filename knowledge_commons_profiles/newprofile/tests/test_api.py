@@ -778,6 +778,22 @@ class MastodonUserAndServerTests(django.test.TestCase):
             self.model_instance.mastodon_server, "mastodon.social"
         )
 
+    def test_standard_mastodon_handle_with_bad_domain(self):
+        """Test parsing of a standard Mastodon handle with a bad domain"""
+        # Set up profile with a standard Mastodon handle
+        self.mock_profile.mastodon = "@testuser@HAHAHA-THIS-IS-NOT_A_DOMAIN"
+
+        # Call the property
+        username, server = self.model_instance.mastodon_user_and_server
+
+        # Assert username and server are parsed correctly
+        self.assertIsNone(username)
+        self.assertIsNone(server)
+
+        # Assert instance variables are set correctly
+        self.assertIsNone(self.model_instance.mastodon_username)
+        self.assertIsNone(self.model_instance.mastodon_server)
+
     def test_complex_server_domain(self):
         """Test parsing with complex server domains (subdomain, multiple
         dots)."""

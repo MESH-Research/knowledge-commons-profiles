@@ -4,6 +4,7 @@ A class of API calls for user details
 
 import hashlib
 import logging
+import re
 from functools import cached_property
 from operator import itemgetter
 from urllib.parse import urlencode
@@ -33,6 +34,12 @@ User = get_user_model()
 
 MASTODON_MIN_SIGNS = 1
 MASTODON_MAX_SIGNS = 2
+
+DOMAIN_PATTERN = (
+    r"^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?"
+    r"([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+)
+DOMAIN_REGEX = re.compile(DOMAIN_PATTERN, re.IGNORECASE)
 
 
 class API:
@@ -164,6 +171,7 @@ class API:
             return None, None
 
         if mastodon_field:
+            # select whether to slice off the first character ("@")
             if at_count == MASTODON_MAX_SIGNS:
                 # 2 @ signs
                 split_mastodon = mastodon_field[1:].split("@")
@@ -177,6 +185,25 @@ class API:
             self.mastodon_username, self.mastodon_server = (
                 (split_one if split_one != "" else None),
                 (split_two if split_two != "" else None),
+            )
+
+            # now verify that the server is a domain name
+            is_domain = bool(
+                DOMAIN_REGEX.match(
+                    self.mastodon_server if self.mastodon_server else ""
+                )
+            )
+
+            if not is_domain:
+                logging.log(
+                    logging.INFO,
+                    "%s is not a valid domain in Mastodon parsing",
+                    self.mastodon_server,
+                )
+
+            self.mastodon_username, self.mastodon_server = (
+                (self.mastodon_username if is_domain else None),
+                (self.mastodon_server if is_domain else None),
             )
 
         return self.mastodon_username, self.mastodon_server
