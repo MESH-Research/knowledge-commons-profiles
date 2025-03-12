@@ -147,6 +147,9 @@ class API:
         """
         Get the mastodon profile
         """
+        if self.mastodon_username and self.mastodon_server:
+            return self.mastodon_username, self.mastodon_server
+
         mastodon_field = (
             mastodon_field if mastodon_field else self.profile.mastodon
         )
@@ -247,7 +250,7 @@ class API:
                         raise Http404(error_message) from exc
         return self._profile
 
-    def get_profile_info(self, create=False):
+    def get_profile_info(self):
         """
         Returns a dictionary containing profile information about the user.
 

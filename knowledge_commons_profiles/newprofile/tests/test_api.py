@@ -1085,3 +1085,123 @@ class ProfilePropertyTests(django.test.TestCase):
         # Verify the profile was set on the model instance
         self.assertIsNotNone(self.model_instance._profile)
         self.assertEqual(self.model_instance._profile, profile)
+
+
+class GetProfileInfoTests(django.test.TestCase):
+    """Tests for the get_profile_info method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Create a mock profile with all the required attributes
+        self.mock_profile = mock.MagicMock()
+        self.mock_profile.name = "Test User"
+        self.mock_profile.username = "testuser"
+        self.mock_profile.title = "Professor"
+        self.mock_profile.affiliation = "Test University"
+        self.mock_profile.twitter = "@testuser"
+        self.mock_profile.github = "testuser"
+        self.mock_profile.email = "test@example.com"
+        self.mock_profile.orcid = "0000-0000-0000-0000"
+        self.mock_profile.mastodon = "@testuser@mastodon.social"
+        self.mock_profile.profile_image = "https://example.com/profile.jpg"
+        self.mock_profile.works_username = "works_testuser"
+        self.mock_profile.publications = "<p>Sample publication</p>"
+        self.mock_profile.projects = "Sample project"
+        self.mock_profile.memberships = "Sample membership"
+        self.mock_profile.institutional_or_other_affiliation = (
+            "Test Institution"
+        )
+
+        # Assign the mock profile to the model instance
+        self.model_instance.profile = self.mock_profile
+
+        # Mock the mastodon_user_and_server property
+        mastodon_patcher = mock.patch.object(
+            self.model_instance.__class__,
+            "mastodon_user_and_server",
+            new_callable=mock.PropertyMock,
+        )
+        self.mock_mastodon = mastodon_patcher.start()
+        self.mock_mastodon.return_value = ("testuser", "mastodon.social")
+        self.addCleanup(mastodon_patcher.stop)
+
+        # Reset _profile_info to None
+        self.model_instance._profile_info = None
+
+    def test_get_profile_info_standard_case(self):
+        """Test that get_profile_info returns the correct profile
+        information."""
+        # Call the method
+        result = self.model_instance.get_profile_info()
+
+        # Assert that the mastodon_user_and_server property was accessed
+        self.mock_mastodon.assert_called_once()
+
+        # Assert that the result contains the expected fields with correct
+        # values
+        self.helper_check_profile_info(result)
+
+        # Assert that _profile_info was set on the model instance
+        self.assertEqual(self.model_instance._profile_info, result)
+
+    def helper_check_profile_info(self, result):
+        self.assertEqual(result["name"], "Test User")
+        self.assertEqual(result["username"], "testuser")
+        self.assertEqual(result["title"], "Professor")
+        self.assertEqual(result["affiliation"], "Test University")
+        self.assertEqual(result["twitter"], "@testuser")
+        self.assertEqual(result["github"], "testuser")
+        self.assertEqual(result["email"], "test@example.com")
+        self.assertEqual(result["orcid"], "0000-0000-0000-0000")
+        self.assertEqual(result["mastodon"], "@testuser@mastodon.social")
+        self.assertEqual(result["mastodon_username"], "testuser")
+        self.assertEqual(result["mastodon_server"], "mastodon.social")
+        self.assertEqual(
+            result["profile_image"], "https://example.com/profile.jpg"
+        )
+        self.assertEqual(result["works_username"], "works_testuser")
+        self.assertEqual(result["publications"], "<p>Sample publication</p>")
+        self.assertEqual(result["projects"], "Sample project")
+        self.assertEqual(result["memberships"], "Sample membership")
+        self.assertEqual(
+            result["institutional_or_other_affiliation"], "Test Institution"
+        )
+
+    def test_get_profile_info_with_missing_profile_attributes(self):
+        """Test that get_profile_info handles missing profile attributes."""
+        # Remove some attributes from the profile
+        delattr(self.mock_profile, "title")
+        delattr(self.mock_profile, "orcid")
+
+        # Call the method and expect AttributeError
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_profile_info()
+
+    def test_get_profile_info_with_null_mastodon_data(self):
+        """Test that get_profile_info handles null mastodon user and server."""
+        # Configure the mock to return None, None
+        self.mock_mastodon.return_value = (None, None)
+
+        # Call the method
+        result = self.model_instance.get_profile_info()
+
+        # Assert that the mastodon fields have the expected values
+        self.assertEqual(
+            result["mastodon"], "@testuser@mastodon.social"
+        )  # Original value
+        self.assertIsNone(result["mastodon_username"])
+        self.assertIsNone(result["mastodon_server"])
