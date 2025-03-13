@@ -1483,3 +1483,96 @@ class GetBlogPostsTests(django.test.TestCase):
 
         self.assertIn("p.post_status='publish'", sql_arg)
         self.assertIn("p.post_type='post'", sql_arg)
+
+
+class GetAboutUserTests(django.test.TestCase):
+    """Tests for the get_about_user method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Create a mock for the profile property
+        self.profile_patcher = mock.patch.object(
+            self.model_instance.__class__,
+            "profile",
+            new_callable=mock.PropertyMock,
+        )
+        self.mock_profile = self.profile_patcher.start()
+
+        # Create a mock profile object that will be returned by the property
+        self.profile_obj = mock.MagicMock()
+        self.mock_profile.return_value = self.profile_obj
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.profile_patcher.stop()
+
+    def test_get_about_user_standard_case(self):
+        """Test that get_about_user returns the profile's about_user
+        attribute."""
+        # Set up mock profile with about_user attribute
+        expected_about_user = "This is information about the test user."
+        self.profile_obj.about_user = expected_about_user
+
+        # Call the method
+        result = self.model_instance.get_about_user()
+
+        # Assert that profile property was accessed
+        self.mock_profile.assert_called_once()
+
+        # Assert the result matches the profile's about_user
+        self.assertEqual(result, expected_about_user)
+
+    def test_get_about_user_empty_string(self):
+        """Test that get_about_user handles empty about_user string."""
+        # Set up mock profile with empty about_user
+        self.profile_obj.about_user = ""
+
+        # Call the method
+        result = self.model_instance.get_about_user()
+
+        # Assert that profile property was accessed
+        self.mock_profile.assert_called_once()
+
+        # Assert the result is an empty string
+        self.assertEqual(result, "")
+
+    def test_get_about_user_none_value(self):
+        """Test that get_about_user handles None value."""
+        # Set up mock profile with None about_user
+        self.profile_obj.about_user = None
+
+        # Call the method
+        result = self.model_instance.get_about_user()
+
+        # Assert that profile property was accessed
+        self.mock_profile.assert_called_once()
+
+        # Assert the result is None
+        self.assertIsNone(result)
+
+    def test_get_about_user_missing_attribute(self):
+        """Test that get_about_user raises AttributeError when about_user
+        is missing."""
+        # Set up mock profile without about_user attribute
+        del self.profile_obj.about_user
+
+        # Call the method and expect AttributeError
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_about_user()
+
+        # Assert that profile property was accessed
+        self.mock_profile.assert_called_once()
