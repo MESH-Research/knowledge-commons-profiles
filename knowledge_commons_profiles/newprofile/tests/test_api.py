@@ -1669,3 +1669,112 @@ class GetEducationTests(django.test.TestCase):
 
         # Assert that profile property was accessed
         self.mock_profile.assert_called_once()
+
+
+class GetGroupsTests(django.test.TestCase):
+    """Tests for the get_groups method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Create a mock for wp_user with an ID
+        self.model_instance.wp_user = mock.MagicMock()
+        self.model_instance.wp_user.id = 42
+
+        # Mock WpBpGroupMember.objects.filter
+        self.filter_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api."
+            "WpBpGroupMember.objects.filter"
+        )
+        self.mock_filter = self.filter_patcher.start()
+
+        # Set up mock chain for the QuerySet methods
+        self.mock_queryset = mock.MagicMock()
+        self.mock_filter.return_value = self.mock_queryset
+
+        # Mock for prefetch_related
+        self.mock_prefetch = mock.MagicMock()
+        self.mock_queryset.prefetch_related.return_value = self.mock_prefetch
+
+        # Mock for order_by
+        self.mock_order_by = mock.MagicMock()
+        self.mock_prefetch.order_by.return_value = self.mock_order_by
+
+        # Sample groups that will be returned by the query
+        self.sample_groups = [
+            mock.MagicMock(name="Group A"),
+            mock.MagicMock(name="Group B"),
+        ]
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.filter_patcher.stop()
+
+    def test_get_groups_standard_case(self):
+        """Test that get_groups returns the properly filtered and
+        ordered groups."""
+        # Set up the mock to return our sample groups
+        self.mock_order_by.__iter__.return_value = self.sample_groups
+
+        # Call the method
+        result = self.model_instance.get_groups()
+
+        # Assert that filter was called with the correct parameters
+        self.mock_filter.assert_called_once_with(
+            user_id=42,  # The ID of wp_user
+            is_confirmed=True,
+            group__status="public",
+        )
+
+        # Assert that prefetch_related was called with "group"
+        self.mock_queryset.prefetch_related.assert_called_once_with("group")
+
+        # Assert that order_by was called with "group__name"
+        self.mock_prefetch.order_by.assert_called_once_with("group__name")
+
+        # Assert the result is the expected list of groups
+        self.assertEqual(result, self.mock_order_by)
+        self.assertEqual(list(result), self.sample_groups)
+
+    def test_get_groups_empty_result(self):
+        """Test that get_groups handles empty results correctly."""
+        # Set up the mock to return an empty list
+        self.mock_order_by.__iter__.return_value = []
+
+        # Call the method
+        result = self.model_instance.get_groups()
+
+        # Assert that the method chain was called correctly
+        self.mock_filter.assert_called_once()
+        self.mock_queryset.prefetch_related.assert_called_once()
+        self.mock_prefetch.order_by.assert_called_once()
+
+        # Assert the result is an empty list
+        self.assertEqual(list(result), [])
+
+    def test_get_groups_none_wp_user(self):
+        """Test that get_groups raises AttributeError when wp_user is
+        None."""
+        # Set wp_user to None
+        self.model_instance.wp_user = None
+
+        # Call the method and expect AttributeError
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_groups()
+
+        # Assert that filter was not called
+        self.mock_filter.assert_not_called()
