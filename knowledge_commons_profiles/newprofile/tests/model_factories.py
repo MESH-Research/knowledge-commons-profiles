@@ -396,8 +396,6 @@ class ProfileFactory(factory.django.DjangoModelFactory):
             create: Whether to create the model instance
             extracted: Optional file content to use
         """
-        if not create:
-            return None
 
         return "cvs/test_cv.pdf"
 
