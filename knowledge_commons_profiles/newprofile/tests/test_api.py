@@ -45,17 +45,7 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
     def setUp(self):
         """Set up test data and mocks."""
         # Create a test user
-        self.user = UserFactory(
-            username="testuser", email="test@example.com", password="testpass"
-        )
-
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Initialize instance variables to None as they would be in the
         # real class
@@ -161,19 +151,7 @@ class WorksHtmlIntegrationTests(django.test.TransactionTestCase):
         )
 
         # Create a real user
-        user = UserFactory(
-            username="integrationuser",
-            email="integration@example.com",
-            password="integrationpass",
-        )
-
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        # Create a real model instance
-        model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=user
-        )
+        model_instance, user = set_up_api_instance()
 
         # Call the property
         result = await model_instance.works_html
@@ -198,17 +176,7 @@ class WorksDepositsPropertyTests(django.test.TransactionTestCase):
             "email": "test@example.com",
         }
 
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser", email="test@example.com", password="testpass"
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
         self.model_instance._profile_info = self.profile_info
 
         # Set _works_deposits to None as it would be in the real class
@@ -306,18 +274,7 @@ class WorksDepositsPropertyIntegrationTests(django.test.TransactionTestCase):
 
     def setUp(self):
         """Set up test data for integration tests."""
-        # Create a model instance with real profile_info
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser", email="test@example.com", password="testpass"
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
         self.model_instance._profile_info = {"username": "integration_user"}
         self.model_instance._works_deposits = None
 
@@ -352,17 +309,7 @@ class WpUserPropertyTests(django.test.TestCase):
     def setUp(self):
         """Set up test data and mocks."""
         # Create the model instance
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser", email="test@example.com", password="testpass"
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
         self.model_instance.user = "test_wordpress_user"
 
         # Set _wp_user to None as it would be in the real class
@@ -506,21 +453,7 @@ class MastodonPostsPropertyTests(django.test.TestCase):
         ) as mock_last_transaction:
             mock_last_transaction.return_value = None
 
-            rf = RequestFactory()
-            get_request = rf.get("/user/kfitz")
-
-            self.user = UserFactory(
-                username="testuser",
-                email="test@example.com",
-                password="testpass",
-            )
-
-            # Create the model instance
-            self.model_instance = (
-                knowledge_commons_profiles.newprofile.api.API(
-                    request=get_request, user=self.user
-                )
-            )
+            self.model_instance, self.user = set_up_api_instance()
 
             self.model_instance._mastodon_posts = "TEST"
 
@@ -534,20 +467,7 @@ class MastodonProfileParsingTests(django.test.TestCase):
 
     def setUp(self):
         """Set up test data and mocks."""
-        # Create the model instance
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Reset instance variables
         self.model_instance._mastodon_profile = None
@@ -739,19 +659,7 @@ class MastodonUserAndServerTests(django.test.TestCase):
     def setUp(self):
         """Set up test data and mocks."""
 
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Create a mock profile object
         self.mock_profile = mock.MagicMock()
@@ -953,20 +861,7 @@ class ProfileInfoPropertyTests(django.test.TestCase):
     """Tests for the profile_info property."""
 
     def setUp(self):
-        """Set up test data and mocks."""
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Create a patch for the get_profile_info method
         self.get_profile_info_patcher = mock.patch.object(
@@ -1032,20 +927,7 @@ class ProfilePropertyTests(django.test.TestCase):
 
     def setUp(self):
         """Set up test data and mocks."""
-        # Create the model instance
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
         self.model_instance.user = "test_user"
         self.model_instance._profile = None
         self.model_instance.create = True
@@ -1116,19 +998,7 @@ class GetProfileInfoTests(django.test.TestCase):
 
     def setUp(self):
         """Set up test data and mocks."""
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Create a mock profile with all the required attributes
         self.mock_profile = mock.MagicMock()
@@ -1236,19 +1106,7 @@ class GetBlogPostsTests(django.test.TestCase):
 
     def setUp(self):
         """Set up test data and mocks."""
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Set the required attributes
         self.model_instance.use_wordpress = True
@@ -1513,19 +1371,7 @@ class GetAboutUserTests(django.test.TestCase):
 
     def setUp(self):
         """Set up test data and mocks."""
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Create a mock for the profile property
         self.profile_patcher = mock.patch.object(
@@ -1606,19 +1452,7 @@ class GetEducationTests(django.test.TestCase):
 
     def setUp(self):
         """Set up test data and mocks."""
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Create a mock for the profile property
         self.profile_patcher = mock.patch.object(
@@ -1700,19 +1534,7 @@ class GetGroupsTests(django.test.TestCase):
     def setUp(self):
         """Set up test data and mocks."""
 
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Create a mock for wp_user with an ID
         self.model_instance.wp_user = mock.MagicMock()
@@ -1809,19 +1631,7 @@ class GetCoverImageTests(django.test.TestCase):
     def setUp(self):
         """Set up test data and mocks."""
 
-        rf = RequestFactory()
-        get_request = rf.get("/user/kfitz")
-
-        self.user = UserFactory(
-            username="testuser",
-            email="test@example.com",
-            password="testpass",
-        )
-
-        # Create the model instance
-        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
-            request=get_request, user=self.user
-        )
+        self.model_instance, self.user = set_up_api_instance()
 
         # Mock the profile property
         self.profile_patcher = mock.patch.object(
