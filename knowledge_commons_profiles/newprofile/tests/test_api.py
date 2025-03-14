@@ -2106,3 +2106,68 @@ class GetMembershipsTests(django.test.TestCase):
 
         # Assert the result is an empty list
         self.assertEqual(result, [])
+
+
+class FollowerCountTests(django.test.TestCase):
+    """Tests for the follower_count method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Create a mock wp_user
+        self.model_instance.wp_user = mock.MagicMock()
+        self.model_instance.wp_user.id = 42
+
+        # Mock WpBpFollow.objects.filter
+        self.filter_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpBpFollow.objects."
+            "filter"
+        )
+        self.mock_filter = self.filter_patcher.start()
+
+        # Set up mock for filter().count()
+        self.mock_queryset = mock.MagicMock()
+        self.mock_filter.return_value = self.mock_queryset
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.filter_patcher.stop()
+
+    def test_follower_count_standard_case(self):
+        """Test that follower_count returns the correct count."""
+        # Set up mock to return a count of 5 followers
+        self.mock_queryset.count.return_value = 5
+
+        # Call the method
+        result = self.model_instance.follower_count()
+
+        # Assert that filter was called with correct parameters
+        self.mock_filter.assert_called_once_with(
+            follower=self.model_instance.wp_user
+        )
+
+        # Assert that count was called
+        self.mock_queryset.count.assert_called_once()
+
+        # Assert the result is the expected count
+        self.assertEqual(result, 5)
+
+    def test_follower_count_zero_followers(self):
+        """Test that follower_count returns 0 when there are no followers."""
+        # Set up mock to return a count of 0 followers
+        self.mock_queryset.count.return_value = 0
+
+        # Call the method
+        result = self.model_instance.follower_count()
+
+        # Assert that filter was called with correct parameters
+        self.mock_filter.assert_called_once_with(
+            follower=self.model_instance.wp_user
+        )
+
+        # Assert that count was called
+        self.mock_queryset.count.assert_called_once()
+
+        # Assert the result is 0
+        self.assertEqual(result, 0)
