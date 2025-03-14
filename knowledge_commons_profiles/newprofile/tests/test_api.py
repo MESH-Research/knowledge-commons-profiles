@@ -1927,3 +1927,182 @@ class GetProfilePhotoTests(django.test.TestCase):
         # Call the method and expect AttributeError
         with self.assertRaises(AttributeError):
             self.model_instance.get_profile_photo()
+
+
+class GetMembershipsTests(django.test.TestCase):
+    """Tests for the get_memberships method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Create a mock wp_user with ID
+        self.model_instance.wp_user = mock.MagicMock()
+        self.model_instance.wp_user.id = 42
+
+        # Mock WpUserMeta.objects.filter
+        self.filter_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpUserMeta.objects."
+            "filter"
+        )
+        self.mock_filter = self.filter_patcher.start()
+
+        # Set up mock for filter().first()
+        self.mock_queryset = mock.MagicMock()
+        self.mock_filter.return_value = self.mock_queryset
+        self.mock_user_meta = mock.MagicMock()
+        self.mock_queryset.first.return_value = self.mock_user_meta
+
+        # Mock phpserialize.unserialize
+        self.phpserialize_patcher = mock.patch("phpserialize.unserialize")
+        self.mock_phpserialize = self.phpserialize_patcher.start()
+
+        # Mock cache
+        self.cache_get_patcher = mock.patch("django.core.cache.cache.get")
+        self.mock_cache_get = self.cache_get_patcher.start()
+        self.mock_cache_get.return_value = None  # Default to cache miss
+
+        self.cache_set_patcher = mock.patch("django.core.cache.cache.set")
+        self.mock_cache_set = self.cache_set_patcher.start()
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.filter_patcher.stop()
+        self.phpserialize_patcher.stop()
+        self.cache_get_patcher.stop()
+        self.cache_set_patcher.stop()
+
+    def test_get_memberships_cached_response(self):
+        """Test when cached response is available."""
+        # Set up mock to return cached memberships
+        cached_memberships = ["HASTAC", "MLA"]
+        self.mock_cache_get.return_value = cached_memberships
+
+        # Call the method
+        result = self.model_instance.get_memberships()
+
+        # Assert that cache.get was called with the correct key
+        self.mock_cache_get.assert_called_once_with(
+            f"user_memberships-{self.model_instance.user}",
+            version=newprofile.__version__,
+        )
+
+        # Assert that WpUserMeta.objects.filter was not called (early return)
+        self.mock_filter.assert_not_called()
+
+        # Assert the result is the cached memberships
+        self.assertEqual(result, cached_memberships)
+
+    def test_get_memberships_standard_case(self):
+        """Test successful extraction of memberships from metadata."""
+        # Set up mock for WpUserMeta
+        self.mock_user_meta.meta_value = "serialized_data"
+
+        # Configure phpserialize to simulate double serialization
+        serialized_inner = b"inner_serialized_data"
+        self.mock_phpserialize.side_effect = [
+            serialized_inner,  # First unserialize call
+            {  # Second unserialize call
+                b"item1": b"CO:COU:HASTAC:members:active",
+                b"item2": b"CO:COU:MLA:members:active",
+                b"item3": b"CO:COU:HC:members:active",
+                # Should be filtered out
+                b"item4": b"OTHER:FORMAT:members:active",
+                # Should be filtered out
+            },
+        ]
+
+        # Call the method
+        result = self.model_instance.get_memberships()
+
+        # Assert that WpUserMeta.objects.filter was called with correct params
+        self.mock_filter.assert_called_once_with(
+            meta_key="shib_ismemberof",
+            user=self.model_instance.wp_user,
+        )
+
+        # Assert that phpserialize.unserialize was called twice
+        self.assertEqual(self.mock_phpserialize.call_count, 2)
+
+        # Assert that cache.set was called with correct params
+        expected_memberships = ["HASTAC", "MLA"]
+        self.mock_cache_set.assert_called_once_with(
+            f"user_memberships-{self.model_instance.user}",
+            expected_memberships,
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+        # Assert the result is the sorted list of valid memberships
+        self.assertEqual(result, ["HASTAC", "MLA"])
+
+    def test_get_memberships_no_metadata(self):
+        """Test when no metadata is found."""
+        # Set up mock to return no metadata
+        self.mock_queryset.first.return_value = None
+
+        # Call the method
+        result = self.model_instance.get_memberships()
+
+        # Assert that phpserialize.unserialize was not called
+        self.mock_phpserialize.assert_not_called()
+
+        # Assert that cache.set was not called
+        self.mock_cache_set.assert_not_called()
+
+        # Assert the result is an empty list
+        self.assertEqual(result, [])
+
+    def test_get_memberships_unserialize_exception(self):
+        """Test handling of exception during unserialization."""
+        # Set up mock for WpUserMeta
+        self.mock_user_meta.meta_value = "invalid_serialized_data"
+
+        # Configure phpserialize to raise an exception
+        self.mock_phpserialize.side_effect = Exception(
+            "Invalid serialized data"
+        )
+
+        # Call the method
+        result = self.model_instance.get_memberships()
+
+        # Assert that phpserialize.unserialize was called once
+        self.mock_phpserialize.assert_called_once()
+
+        # Assert that cache.set was not called
+        self.mock_cache_set.assert_not_called()
+
+        # Assert the result is an empty list
+        self.assertEqual(result, [])
+
+    def test_get_memberships_no_active_memberships(self):
+        """Test when there are no active memberships in the expected
+        format."""
+        # Set up mock for WpUserMeta
+        self.mock_user_meta.meta_value = "serialized_data"
+
+        # Configure phpserialize to return no valid memberships
+        serialized_inner = b"inner_serialized_data"
+        self.mock_phpserialize.side_effect = [
+            serialized_inner,  # First unserialize call
+            {  # Second unserialize call - no valid memberships
+                b"item1": b"OTHER:FORMAT:active",
+                b"item2": b"CO:COU:HC:members:active",
+                # Should be filtered out
+                b"item3": b"CO:COU:TEST:not:active",  # Wrong format
+            },
+        ]
+
+        # Call the method
+        result = self.model_instance.get_memberships()
+
+        # Assert that cache.set was called with an empty list
+        self.mock_cache_set.assert_called_once_with(
+            f"user_memberships-{self.model_instance.user}",
+            [],
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+        # Assert the result is an empty list
+        self.assertEqual(result, [])
