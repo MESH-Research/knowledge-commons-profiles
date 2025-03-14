@@ -2370,3 +2370,214 @@ class GetUserBlogsTests(django.test.TestCase):
 
         # Assert that cache.set was not called
         self.mock_cache_set.assert_not_called()
+
+
+class GetActivityTests(django.test.TestCase):
+    """Tests for the get_activity method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Create a mock wp_user with ID
+        self.model_instance.wp_user = mock.MagicMock()
+        self.model_instance.wp_user.id = 42
+
+        # Mock cache
+        self.cache_get_patcher = mock.patch("django.core.cache.cache.get")
+        self.mock_cache_get = self.cache_get_patcher.start()
+        self.mock_cache_get.return_value = None  # Default to cache miss
+
+        self.cache_set_patcher = mock.patch("django.core.cache.cache.set")
+        self.mock_cache_set = self.cache_set_patcher.start()
+
+        # Mock WpBpActivity.objects.prefetch_related
+        self.prefetch_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpBpActivity."
+            "objects.prefetch_related"
+        )
+        self.mock_prefetch = self.prefetch_patcher.start()
+
+        # Set up mock chain for the QuerySet methods
+        self.mock_queryset = mock.MagicMock()
+        self.mock_prefetch.return_value = self.mock_queryset
+        self.mock_filter = mock.MagicMock()
+        self.mock_queryset.filter.return_value = self.mock_filter
+        self.mock_order_by = mock.MagicMock()
+        self.mock_filter.order_by.return_value = self.mock_order_by
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.cache_get_patcher.stop()
+        self.cache_set_patcher.stop()
+        self.prefetch_patcher.stop()
+
+    def test_get_activity_cached_response(self):
+        """Test when cached response is available."""
+        # Set up mock to return cached activities
+        cached_activities = [mock.MagicMock() for _ in range(3)]
+        self.mock_cache_get.return_value = cached_activities
+
+        # Call the method
+        result = self.model_instance.get_activity()
+
+        # Assert that cache.get was called with the correct key
+        self.mock_cache_get.assert_called_once_with(
+            f"user_activities_list-{self.model_instance.user}",
+            version=newprofile.__version__,
+        )
+
+        # Assert that WpBpActivity.objects was not accessed
+        self.mock_prefetch.assert_not_called()
+
+        # Assert the result is the cached activities
+        self.assertEqual(result, cached_activities)
+
+    def test_get_activity_standard_case(self):
+        """Test standard case with multiple activities of different types."""
+        # Create mock activities with different types
+        mock_activities = []
+        for i, activity_type in enumerate(
+            [
+                "new_blog_post",
+                "new_blog_post",
+                "joined_group",
+                "new_member",
+                "updated_profile",
+            ]
+        ):
+            activity = mock.MagicMock()
+            activity.type = activity_type
+            activity.date_recorded = (
+                f"2022-01-{10 - i}"  # Newer to older dates
+            )
+            mock_activities.append(activity)
+
+        # Set up slicing to return first 100 activities
+        self.mock_order_by.__getitem__.return_value = mock_activities
+
+        # Call the method
+        result = self.model_instance.get_activity()
+
+        # Assert that prefetch_related was called with "meta"
+        self.mock_prefetch.assert_called_once_with("meta")
+
+        # Assert that filter was called with correct parameters
+        self.mock_queryset.filter.assert_called_once_with(
+            user_id=self.model_instance.wp_user.id,
+            hide_sitewide=False,
+            meta__meta_key="society_id",
+            meta__meta_value="hc",
+        )
+
+        # Assert that order_by was called with "-date_recorded"
+        self.mock_filter.order_by.assert_called_once_with("-date_recorded")
+
+        # Assert that slicing was requested
+        self.mock_order_by.__getitem__.assert_called_once_with(
+            slice(None, 100)
+        )
+
+        # Assert the result contains only the first appearance of each
+        # activity type. We should have 4 distinct activity types in the
+        # first 5 items
+        expected_types = [
+            "new_blog_post",
+            "joined_group",
+            "new_member",
+            "updated_profile",
+        ]
+        result_types = [activity.type for activity in result]
+        self.assertEqual(result_types, expected_types)
+
+        # Assert that we only got max 5 activities
+        self.assertEqual(len(result), 4)
+
+        # Assert that cache.set was called with the correct parameters
+        self.mock_cache_set.assert_called_once_with(
+            f"user_activities_list-{self.model_instance.user}",
+            result,
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+    def test_get_activity_more_than_five_distinct_types(self):
+        """Test when there are more than five distinct activity types."""
+        # Create mock activities with 7 different types
+        mock_activities = []
+        activity_types = [
+            "type1",
+            "type2",
+            "type3",
+            "type4",
+            "type5",
+            "type6",
+            "type7",
+        ]
+        for i, activity_type in enumerate(activity_types):
+            activity = mock.MagicMock()
+            activity.type = activity_type
+            activity.date_recorded = f"2022-01-{10 - i}"
+            mock_activities.append(activity)
+
+        # Set up slicing to return activities
+        self.mock_order_by.__getitem__.return_value = mock_activities
+
+        # Call the method
+        result = self.model_instance.get_activity()
+
+        # Assert we got exactly 5 results due to the limit
+        self.assertEqual(len(result), 5)
+
+        # Assert the result contains only the first 5 distinct types
+        expected_types = activity_types[:5]
+        result_types = [activity.type for activity in result]
+        self.assertEqual(result_types, expected_types)
+
+    def test_get_activity_no_activities(self):
+        """Test when the user has no activities."""
+        # Set up slicing to return an empty list
+        self.mock_order_by.__getitem__.return_value = []
+
+        # Call the method
+        result = self.model_instance.get_activity()
+
+        # Assert that filter was called
+        self.mock_queryset.filter.assert_called_once()
+
+        # Assert the result is an empty list
+        self.assertEqual(result, [])
+
+        # Assert that cache.set was called with an empty list
+        self.mock_cache_set.assert_called_once_with(
+            f"user_activities_list-{self.model_instance.user}",
+            [],
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+    def test_get_activity_fewer_than_five_distinct_types(self):
+        """Test when there are fewer than five distinct activity types."""
+        # Create mock activities with 3 different types
+        mock_activities = []
+        for i, activity_type in enumerate(
+            ["type1", "type1", "type2", "type2", "type3"]
+        ):
+            activity = mock.MagicMock()
+            activity.type = activity_type
+            activity.date_recorded = f"2022-01-{10 - i}"
+            mock_activities.append(activity)
+
+        # Set up slicing to return activities
+        self.mock_order_by.__getitem__.return_value = mock_activities
+
+        # Call the method
+        result = self.model_instance.get_activity()
+
+        # Assert we got 3 results
+        self.assertEqual(len(result), 3)
+
+        # Assert the result contains only the distinct types
+        expected_types = ["type1", "type2", "type3"]
+        result_types = [activity.type for activity in result]
+        self.assertEqual(result_types, expected_types)
