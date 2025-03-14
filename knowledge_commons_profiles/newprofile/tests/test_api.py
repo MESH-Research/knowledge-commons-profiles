@@ -1,5 +1,7 @@
 import asyncio
+import hashlib
 from unittest import mock
+from urllib.parse import urlencode
 
 import django.test
 from django.core.exceptions import ObjectDoesNotExist
@@ -14,6 +16,27 @@ from knowledge_commons_profiles.newprofile.tests.model_factories import (
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
     UserFactory,
 )
+
+
+def set_up_api_instance():
+    """
+    Fixture to create a model instance with a profile
+    :return:
+    """
+    rf = RequestFactory()
+    get_request = rf.get("/user/kfitz")
+    user = UserFactory(
+        username="testuser",
+        email="test@example.com",
+        password="testpass",
+    )
+    # Create the model instance
+    return (
+        knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=user
+        ),
+        user,
+    )
 
 
 class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
@@ -1961,3 +1984,136 @@ class GetCoverImageTests(django.test.TestCase):
 
         # Assert the KeyError is for the attachment key
         self.assertEqual(context.exception.args[0], b"attachment")
+
+
+class GetProfilePhotoTests(django.test.TestCase):
+    """Tests for the get_profile_photo method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Mock the profile property
+        self.profile_patcher = mock.patch.object(
+            self.model_instance.__class__,
+            "profile",
+            new_callable=mock.PropertyMock,
+        )
+        self.mock_profile = self.profile_patcher.start()
+
+        # Create a mock profile object
+        self.profile_obj = mock.MagicMock()
+        self.mock_profile.return_value = self.profile_obj
+
+        # Set the email on the profile
+        self.profile_obj.email = "test@example.com"
+
+        # Mock the profileimage_set
+        self.mock_profileimage_set = mock.MagicMock()
+        self.profile_obj.profileimage_set = self.mock_profileimage_set
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.profile_patcher.stop()
+
+    def test_get_profile_photo_with_local_image(self):
+        """Test when the user has a local profile image."""
+        # Set up mock profile image
+        mock_profile_image = mock.MagicMock()
+        mock_profile_image.full = "/path/to/local/profile.jpg"
+        self.mock_profileimage_set.first.return_value = mock_profile_image
+
+        # Call the method
+        result = self.model_instance.get_profile_photo()
+
+        # Assert that profileimage_set.first() was called
+        self.mock_profileimage_set.first.assert_called_once()
+
+        # Assert the result is the local file path
+        self.assertEqual(result, "/path/to/local/profile.jpg")
+
+    def test_get_profile_photo_with_gravatar_fallback(self):
+        """Test when the user has no local profile image and falls back
+        to Gravatar."""
+        # Set up mock to return no local profile image
+        self.mock_profileimage_set.first.return_value = None
+
+        # Set email for gravatar generation
+        email = "test@example.com"
+        size = 150
+
+        # Manually calculate the expected gravatar URL
+        email_encoded = email.lower().encode("utf-8")
+        email_hash = hashlib.sha256(email_encoded).hexdigest()
+        query_params = urlencode({"s": str(size)})
+        expected_url = (
+            f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
+        )
+
+        # Call the method
+        result = self.model_instance.get_profile_photo()
+
+        # Assert that profileimage_set.first() was called
+        self.mock_profileimage_set.first.assert_called_once()
+
+        # Assert the result is the expected Gravatar URL
+        self.assertEqual(result, expected_url)
+
+    def test_get_profile_photo_email_case_insensitivity(self):
+        """Test that the email is properly lowercased for Gravatar."""
+        # Set up mock to return no local profile image
+        self.mock_profileimage_set.first.return_value = None
+
+        # Set mixed-case email for gravatar generation
+        self.profile_obj.email = "Test@Example.COM"
+        size = 150
+
+        # Manually calculate the expected gravatar URL with lowercase email
+        email_encoded = b"test@example.com"
+        email_hash = hashlib.sha256(email_encoded).hexdigest()
+        query_params = urlencode({"s": str(size)})
+        expected_url = (
+            f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
+        )
+
+        # Call the method
+        result = self.model_instance.get_profile_photo()
+
+        # Assert the result is the expected Gravatar URL (using lowercase
+        # email)
+        self.assertEqual(result, expected_url)
+
+    def test_get_profile_photo_no_email(self):
+        """Test behavior when the profile has no email."""
+        # Set up mock to return no local profile image
+        self.mock_profileimage_set.first.return_value = None
+
+        # Set empty email
+        self.profile_obj.email = ""
+        size = 150
+
+        # Manually calculate the expected gravatar URL with empty email
+        email_encoded = b""
+        email_hash = hashlib.sha256(email_encoded).hexdigest()
+        query_params = urlencode({"s": str(size)})
+        expected_url = (
+            f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
+        )
+
+        # Call the method
+        result = self.model_instance.get_profile_photo()
+
+        # Assert the result is the expected Gravatar URL (using empty email)
+        self.assertEqual(result, expected_url)
+
+    def test_get_profile_photo_missing_email_attribute(self):
+        """Test behavior when the profile has no email attribute."""
+        # Set up mock to return no local profile image
+        self.mock_profileimage_set.first.return_value = None
+
+        # Remove email attribute
+        delattr(self.profile_obj, "email")
+
+        # Call the method and expect AttributeError
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_profile_photo()
