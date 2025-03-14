@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+from operator import itemgetter
 from unittest import mock
 from urllib.parse import urlencode
 
@@ -2171,3 +2172,201 @@ class FollowerCountTests(django.test.TestCase):
 
         # Assert the result is 0
         self.assertEqual(result, 0)
+
+
+class GetUserBlogsTests(django.test.TestCase):
+    """Tests for the get_user_blogs method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Create a mock wp_user with ID
+        self.model_instance.wp_user = mock.MagicMock()
+        self.model_instance.wp_user.id = 42
+
+        # Mock cache
+        self.cache_get_patcher = mock.patch("django.core.cache.cache.get")
+        self.mock_cache_get = self.cache_get_patcher.start()
+        self.mock_cache_get.return_value = None  # Default to cache miss
+
+        self.cache_set_patcher = mock.patch("django.core.cache.cache.set")
+        self.mock_cache_set = self.cache_set_patcher.start()
+
+        # Mock database cursor
+        self.cursor_mock = mock.MagicMock()
+        self.connection_mock = mock.MagicMock()
+        self.connection_mock.cursor.return_value.__enter__.return_value = (
+            self.cursor_mock
+        )
+
+        self.connections_patcher = mock.patch.dict(
+            "django.db.connections", {"wordpress_dev": self.connection_mock}
+        )
+        self.mock_connections = self.connections_patcher.start()
+
+        # Mock WpBpUserBlogMeta.objects.select_related
+        self.select_related_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpBpUserBlogMeta."
+            "objects.select_related"
+        )
+        self.mock_select_related = self.select_related_patcher.start()
+
+        # Set up mock chain for the QuerySet methods
+        self.mock_queryset = mock.MagicMock()
+        self.mock_select_related.return_value = self.mock_queryset
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.cache_get_patcher.stop()
+        self.cache_set_patcher.stop()
+        self.connections_patcher.stop()
+        self.select_related_patcher.stop()
+
+    def test_get_user_blogs_cached_response(self):
+        """Test when cached response is available."""
+        # Set up mock to return cached blogs
+        cached_blogs = [
+            ("Blog 1", "blog1.example.com"),
+            ("Blog 2", "blog2.example.com"),
+        ]
+        self.mock_cache_get.return_value = cached_blogs
+
+        # Call the method
+        result = self.model_instance.get_user_blogs()
+
+        # Assert that cache.get was called with the correct key
+        self.mock_cache_get.assert_called_once_with(
+            f"user_blog_post_list-{self.model_instance.user}",
+            version=newprofile.__version__,
+        )
+
+        # Assert that the database cursor was not accessed
+        self.connection_mock.cursor.assert_not_called()
+
+        # Assert the result is the cached blogs
+        self.assertEqual(result, cached_blogs)
+
+    def test_get_user_blogs_sql_execution(self):
+        """Test the SQL execution and result processing."""
+        # Set up mock for database cursor to return blog rows
+        blog_rows = [
+            (101, "blog1.example.com", "user@example.com", 1),
+            (102, "blog2.example.com", "user@example.com", 1),
+        ]
+        self.cursor_mock.fetchall.return_value = blog_rows
+
+        # Set up mocks for WpBpUserBlogMeta
+        blog_meta_1 = mock.MagicMock()
+        blog_meta_1.meta_value = "First Blog"
+        blog_meta_1.blog.domain = "blog1.example.com"
+
+        blog_meta_2 = mock.MagicMock()
+        blog_meta_2.meta_value = "Another Blog"
+        blog_meta_2.blog.domain = "blog2.example.com"
+
+        # Configure get() to return different blog meta objects
+        self.mock_queryset.get.side_effect = [blog_meta_1, blog_meta_2]
+
+        # Call the method
+        result = self.model_instance.get_user_blogs()
+
+        # Assert that the cursor executed SQL with the correct params
+        expected_param = [str(self.model_instance.wp_user.id)]
+        self.cursor_mock.execute.assert_called_once()
+
+        actual_params = self.cursor_mock.execute.call_args[0][1]
+
+        # Assert params match
+        self.assertEqual(actual_params, expected_param)
+
+        # Assert that WpBpUserBlogMeta.objects.select_related was
+        # called correctly
+        self.mock_select_related.assert_called_with("blog")
+
+        # Assert that get() was called for each blog
+        get_calls = [
+            mock.call(blog_id=101, meta_key="name"),
+            mock.call(blog_id=102, meta_key="name"),
+        ]
+        self.mock_queryset.get.assert_has_calls(get_calls)
+
+        # Assert that cache.set was called with the correct parameters
+        expected_results = [
+            ("First Blog", "blog1.example.com"),
+            ("Another Blog", "blog2.example.com"),
+        ]
+        # Results are sorted by blog name in the method
+        expected_sorted_results = sorted(expected_results, key=itemgetter(0))
+        self.mock_cache_set.assert_called_once_with(
+            f"user_blog_post_list-{self.model_instance.user}",
+            expected_results,
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+        # Assert the result is sorted by blog name
+        self.assertEqual(result, expected_sorted_results)
+
+    def test_get_user_blogs_no_blogs(self):
+        """Test behavior when the user has no blogs."""
+        # Set up mock for database cursor to return no rows
+        self.cursor_mock.fetchall.return_value = []
+
+        # Call the method
+        result = self.model_instance.get_user_blogs()
+
+        # Assert that the cursor executed SQL
+        self.cursor_mock.execute.assert_called_once()
+
+        # Assert that WpBpUserBlogMeta.objects.select_related was not called
+        self.mock_select_related.assert_not_called()
+
+        # Assert that cache.set was called with an empty list
+        self.mock_cache_set.assert_called_once_with(
+            f"user_blog_post_list-{self.model_instance.user}",
+            [],
+            timeout=600,
+            version=newprofile.__version__,
+        )
+
+        # Assert the result is an empty list
+        self.assertEqual(result, [])
+
+    def test_get_user_blogs_db_error_handling(self):
+        """Test error handling when the database query fails."""
+        # Set up mock for database cursor to raise an exception
+        self.cursor_mock.execute.side_effect = Exception("Database error")
+
+        # Call the method and expect the exception to be propagated
+        with self.assertRaises(Exception) as context:
+            self.model_instance.get_user_blogs()
+
+        # Assert the exception message
+        self.assertEqual(str(context.exception), "Database error")
+
+        # Assert that cache.set was not called
+        self.mock_cache_set.assert_not_called()
+
+    def test_get_user_blogs_blog_meta_not_found(self):
+        """Test error handling when blog metadata is not found."""
+        # Set up mock for database cursor to return a blog row
+        blog_rows = [(101, "blog1.example.com", "user@example.com", 1)]
+        self.cursor_mock.fetchall.return_value = blog_rows
+
+        # Set up mock for WpBpUserBlogMeta to raise DoesNotExist
+        from django.core.exceptions import ObjectDoesNotExist
+
+        self.mock_queryset.get.side_effect = ObjectDoesNotExist(
+            "Blog metadata not found"
+        )
+
+        # Call the method and expect the exception to be propagated
+        with self.assertRaises(ObjectDoesNotExist) as context:
+            self.model_instance.get_user_blogs()
+
+        # Assert the exception message
+        self.assertEqual(str(context.exception), "Blog metadata not found")
+
+        # Assert that cache.set was not called
+        self.mock_cache_set.assert_not_called()
