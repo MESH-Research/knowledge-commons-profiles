@@ -1778,3 +1778,186 @@ class GetGroupsTests(django.test.TestCase):
 
         # Assert that filter was not called
         self.mock_filter.assert_not_called()
+
+
+class GetCoverImageTests(django.test.TestCase):
+    """Tests for the get_cover_image method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+
+        rf = RequestFactory()
+        get_request = rf.get("/user/kfitz")
+
+        self.user = UserFactory(
+            username="testuser",
+            email="test@example.com",
+            password="testpass",
+        )
+
+        # Create the model instance
+        self.model_instance = knowledge_commons_profiles.newprofile.api.API(
+            request=get_request, user=self.user
+        )
+
+        # Mock the profile property
+        self.profile_patcher = mock.patch.object(
+            self.model_instance.__class__,
+            "profile",
+            new_callable=mock.PropertyMock,
+        )
+        self.mock_profile = self.profile_patcher.start()
+
+        # Create a mock profile object
+        self.profile_obj = mock.MagicMock()
+        self.mock_profile.return_value = self.profile_obj
+
+        # Mock the coverimage_set
+        self.mock_coverimage_set = mock.MagicMock()
+        self.profile_obj.coverimage_set = self.mock_coverimage_set
+
+        # Mock WpUserMeta.objects.filter
+        self.filter_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpUserMeta.objects."
+            "filter"
+        )
+        self.mock_filter = self.filter_patcher.start()
+
+        # Set up mock for filter().first()
+        self.mock_queryset = mock.MagicMock()
+        self.mock_filter.return_value = self.mock_queryset
+        self.mock_user_meta = mock.MagicMock()
+        self.mock_queryset.first.return_value = self.mock_user_meta
+
+        # Mock phpserialize.unserialize
+        self.phpserialize_patcher = mock.patch("phpserialize.unserialize")
+        self.mock_phpserialize = self.phpserialize_patcher.start()
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.profile_patcher.stop()
+        self.filter_patcher.stop()
+        self.phpserialize_patcher.stop()
+
+    def test_get_cover_image_with_local_image(self):
+        """Test when the user has a local cover image."""
+        # Set up mock cover image
+        mock_cover = mock.MagicMock()
+        mock_cover.file_path = "/path/to/local/cover.jpg"
+        self.mock_coverimage_set.first.return_value = mock_cover
+
+        # Call the method
+        result = self.model_instance.get_cover_image()
+
+        # Assert that coverimage_set.first() was called
+        self.mock_coverimage_set.first.assert_called_once()
+
+        # Assert that WpUserMeta.objects.filter was not called (early return)
+        self.mock_filter.assert_not_called()
+
+        # Assert the result is the local file path
+        self.assertEqual(result, "/path/to/local/cover.jpg")
+
+        # Assert that phpserialize.unserialize was not called
+        self.mock_phpserialize.assert_not_called()
+
+    def test_get_cover_image_with_wordpress_image(self):
+        """Test when the user has a WordPress cover image but no local
+        image."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock for WordPress metadata
+        self.mock_user_meta.meta_value = "serialized_php_data"
+
+        # Set up phpserialize mock
+        wp_image_path = "/wp-content/uploads/cover.jpg"
+        self.mock_phpserialize.return_value = {
+            b"attachment": wp_image_path.encode()
+        }
+
+        # Call the method
+        result = self.model_instance.get_cover_image()
+
+        # Assert that coverimage_set.first() was called
+        self.mock_coverimage_set.first.assert_called_once()
+
+        # Assert that WpUserMeta.objects.filter was called with correct params
+        self.mock_filter.assert_called_once_with(meta_key="_bb_cover_photo")
+        self.mock_queryset.first.assert_called_once()
+
+        # Assert that phpserialize.unserialize was called with correct args
+        self.mock_phpserialize.assert_called_once_with(b"serialized_php_data")
+
+        # Assert the result is the WordPress image path
+        self.assertEqual(result, wp_image_path)
+
+    def test_get_cover_image_no_local_or_wordpress_image(self):
+        """Test when no cover image is found in either location."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock to return no WordPress metadata
+        self.mock_queryset.first.return_value = None
+
+        # Call the method and expect AttributeError (trying to access
+        # meta_value on None)
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_cover_image()
+
+        # Assert that coverimage_set.first() was called
+        self.mock_coverimage_set.first.assert_called_once()
+
+        # Assert that WpUserMeta.objects.filter was called
+        self.mock_filter.assert_called_once()
+
+        # Assert that phpserialize.unserialize was not called
+        self.mock_phpserialize.assert_not_called()
+
+    def test_get_cover_image_with_invalid_serialized_data(self):
+        """Test handling of invalid PHP serialized data."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock for WordPress metadata
+        self.mock_user_meta.meta_value = "invalid_serialized_data"
+
+        # Set up phpserialize mock to raise an exception
+        self.mock_phpserialize.side_effect = Exception(
+            "Invalid serialized data"
+        )
+
+        # Call the method and expect the exception to be propagated
+        with self.assertRaises(Exception) as context:
+            self.model_instance.get_cover_image()
+
+        # Assert the exception message
+        self.assertEqual(str(context.exception), "Invalid serialized data")
+
+        # Assert that coverimage_set.first() was called
+        self.mock_coverimage_set.first.assert_called_once()
+
+        # Assert that WpUserMeta.objects.filter was called
+        self.mock_filter.assert_called_once()
+
+        # Assert that phpserialize.unserialize was called
+        self.mock_phpserialize.assert_called_once()
+
+    def test_get_cover_image_missing_attachment_key(self):
+        """Test handling when 'attachment' key is missing in unserialized
+        data."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock for WordPress metadata
+        self.mock_user_meta.meta_value = "serialized_php_data"
+
+        # Set up phpserialize mock to return dict without 'attachment' key
+        self.mock_phpserialize.return_value = {b"some_other_key": b"value"}
+
+        # Call the method and expect KeyError
+        with self.assertRaises(KeyError) as context:
+            self.model_instance.get_cover_image()
+
+        # Assert the KeyError is for the attachment key
+        self.assertEqual(context.exception.args[0], b"attachment")
