@@ -2581,3 +2581,235 @@ class GetActivityTests(django.test.TestCase):
         expected_types = ["type1", "type2", "type3"]
         result_types = [activity.type for activity in result]
         self.assertEqual(result_types, expected_types)
+
+
+class GetShortNotificationsTests(django.test.TestCase):
+    """Tests for the get_short_notifications method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Set use_wordpress attribute
+        self.model_instance.use_wordpress = True
+
+        # Create a mock wp_user
+        self.model_instance.wp_user = mock.MagicMock()
+        self.model_instance.wp_user.id = 42
+        self.model_instance.wp_user.user_login = "testuser"
+
+        # Mock WpBpNotification.objects.filter
+        self.filter_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.api.WpBpNotification."
+            "objects.filter"
+        )
+        self.mock_filter = self.filter_patcher.start()
+
+        # Mock notifications
+        self.mock_notifications = []
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.filter_patcher.stop()
+
+    def test_use_wordpress_false(self):
+        """Test that an empty list is returned when use_wordpress is False."""
+        self.model_instance.use_wordpress = False
+
+        result = self.model_instance.get_short_notifications()
+
+        self.assertEqual(result, [])
+        self.mock_filter.assert_not_called()
+
+    def test_no_notifications(self):
+        """Test when there are no notifications."""
+        # Set up mock to return empty list
+        self.mock_filter.return_value = []
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert that filter was called with correct parameters
+        self.mock_filter.assert_called_once_with(
+            user_id=self.model_instance.wp_user.id,
+            is_new=True,
+        )
+
+        # Assert result is empty list
+        self.assertEqual(result, [])
+
+    def test_single_regular_notification(self):
+        """Test with a single non-follow notification."""
+        # Create mock notification
+        notification = mock.MagicMock()
+        notification.component_action = "new_message"
+        notification.get_string.return_value = "You have a new message"
+
+        # Set up filter to return our notification
+        self.mock_filter.return_value = [notification]
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert get_string was called with correct username
+        notification.get_string.assert_called_once_with(username="testuser")
+
+        # Assert notification.get_short_string was not called
+        notification.get_short_string.assert_not_called()
+
+        # Assert result contains the notification string
+        self.assertEqual(result, ["You have a new message"])
+
+    def test_single_follow_notification(self):
+        """Test with a single follow notification."""
+        # Create mock notification
+        notification = mock.MagicMock()
+        notification.component_action = "new_follow"
+        notification.get_short_string.return_value = "You have a new follower"
+
+        # Set up filter to return our notification
+        self.mock_filter.return_value = [notification]
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert get_short_string was called with correct username
+        notification.get_short_string.assert_called_once_with(
+            username="testuser"
+        )
+
+        # Assert notification.get_string was not called
+        notification.get_string.assert_not_called()
+
+        # Assert result contains the notification string
+        self.assertEqual(result, ["You have a new follower"])
+
+    def test_multiple_follow_notifications(self):
+        """Test with multiple follow notifications (should only show one)."""
+        # Create mock notifications
+        notification1 = mock.MagicMock()
+        notification1.component_action = "new_follow"
+        notification1.get_short_string.return_value = (
+            "You have 3 new followers"
+        )
+
+        notification2 = mock.MagicMock()
+        notification2.component_action = "new_follow"
+
+        # Set up filter to return our notifications
+        self.mock_filter.return_value = [notification1, notification2]
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert get_short_string was called only once
+        notification1.get_short_string.assert_called_once_with(
+            username="testuser"
+        )
+        notification2.get_short_string.assert_not_called()
+
+        # Assert result contains only one notification
+        self.assertEqual(result, ["You have 3 new followers"])
+
+    def test_mixed_notifications(self):
+        """Test with a mix of follow and regular notifications."""
+        # Create mock notifications
+        notification1 = mock.MagicMock()
+        notification1.component_action = "new_follow"
+        notification1.get_short_string.return_value = (
+            "You have 2 new followers"
+        )
+
+        notification2 = mock.MagicMock()
+        notification2.component_action = "new_message"
+        notification2.get_string.return_value = "You have a new message"
+
+        notification3 = mock.MagicMock()
+        notification3.component_action = "new_follow"  # Should be skipped
+
+        notification4 = mock.MagicMock()
+        notification4.component_action = "group_invite"
+        notification4.get_string.return_value = "You were invited to a group"
+
+        # Set up filter to return our notifications
+        self.mock_filter.return_value = [
+            notification1,
+            notification2,
+            notification3,
+            notification4,
+        ]
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert correct methods were called
+        notification1.get_short_string.assert_called_once()
+        notification2.get_string.assert_called_once()
+        # Second follow should be skipped
+        notification3.get_short_string.assert_not_called()
+        notification3.get_string.assert_not_called()
+        notification4.get_string.assert_called_once()
+
+        # Assert result contains expected notifications
+        self.assertEqual(
+            result,
+            [
+                "You have 2 new followers",
+                "You have a new message",
+                "You were invited to a group",
+            ],
+        )
+
+    def test_limit_enforcement(self):
+        """Test that only the first 5 notifications are processed."""
+        # Create 7 mock notifications (more than the limit)
+        notifications = []
+        for i in range(7):
+            notification = mock.MagicMock()
+            notification.component_action = f"action_{i}"
+            notification.get_string.return_value = f"Notification {i}"
+            notifications.append(notification)
+
+        # Set up filter to return our notifications
+        self.mock_filter.return_value = notifications
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert only first 5 notifications were processed
+        for i in range(5):
+            notifications[i].get_string.assert_called_once()
+
+        # Assert notifications beyond the limit were not processed
+        for i in range(5, 7):
+            notifications[i].get_string.assert_not_called()
+
+        # Assert result contains only 5 notifications
+        self.assertEqual(len(result), 5)
+        self.assertEqual(result, [f"Notification {i}" for i in range(5)])
+
+    def test_null_notification_results(self):
+        """Test handling of None results from get_string/get_short_string."""
+        # Create mock notifications with some returning None
+        notification1 = mock.MagicMock()
+        notification1.component_action = "new_follow"
+        notification1.get_short_string.return_value = None  # Returns None
+
+        notification2 = mock.MagicMock()
+        notification2.component_action = "new_message"
+        notification2.get_string.return_value = "You have a new message"
+
+        notification3 = mock.MagicMock()
+        notification3.component_action = "group_invite"
+        notification3.get_string.return_value = None  # Returns None
+
+        # Set up filter to return our notifications
+        self.mock_filter.return_value = [
+            notification1,
+            notification2,
+            notification3,
+        ]
+
+        result = self.model_instance.get_short_notifications()
+
+        # Assert only non-None results are included
+        self.assertEqual(result, ["You have a new message"])
+
+        # Assert all methods were called
+        notification1.get_short_string.assert_called_once()
+        notification2.get_string.assert_called_once()
+        notification3.get_string.assert_called_once()
