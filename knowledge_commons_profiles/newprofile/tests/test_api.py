@@ -670,6 +670,26 @@ class MastodonUserAndServerTests(django.test.TestCase):
         self.model_instance.mastodon_username = None
         self.model_instance.mastodon_server = None
 
+    def test_first_branch_with_existing_username_and_server(self):
+        """Test that when username and server are already set, they are
+        returned immediately."""
+
+        self.model_instance.mastodon_username = "testuser"
+        self.model_instance.mastodon_server = "mastodon.social"
+
+        # Call the method
+        username, server = self.model_instance._get_mastodon_user_and_server()
+
+        # Assert the result matches the pre-set values
+        self.assertEqual(username, "testuser")
+        self.assertEqual(server, "mastodon.social")
+
+        # Assert that profile property was NOT accessed
+        self.mock_profile.assert_not_called()
+
+        self.model_instance.mastodon_username = None
+        self.model_instance.mastodon_server = None
+
     def test_empty_string_mastodon_field(self):
         """Test that an empty string triggers the final return None, None."""
         # Call the method with an empty string that has the correct number of
@@ -2813,3 +2833,96 @@ class GetShortNotificationsTests(django.test.TestCase):
         notification1.get_short_string.assert_called_once()
         notification2.get_string.assert_called_once()
         notification3.get_string.assert_called_once()
+
+
+class GetAcademicInterestsTests(django.test.TestCase):
+    """Tests for the get_academic_interests method."""
+
+    def setUp(self):
+        """Set up test data and mocks."""
+        self.model_instance, self.user = set_up_api_instance()
+
+        # Mock the profile property
+        self.profile_patcher = mock.patch.object(
+            self.model_instance.__class__,
+            "profile",
+            new_callable=mock.PropertyMock,
+        )
+        self.mock_profile = self.profile_patcher.start()
+
+        # Create a mock profile object
+        self.profile_obj = mock.MagicMock()
+        self.mock_profile.return_value = self.profile_obj
+
+        # Create a mock for academic_interests manager
+        self.mock_academic_interests = mock.MagicMock()
+        self.profile_obj.academic_interests = self.mock_academic_interests
+
+        # Create a mock for the 'all' method
+        self.mock_all = mock.MagicMock()
+        self.mock_academic_interests.all.return_value = self.mock_all
+
+    def tearDown(self):
+        """Clean up after the tests."""
+        self.profile_patcher.stop()
+
+    def test_get_academic_interests_standard_case(self):
+        """Test that get_academic_interests returns the profile's academic
+        interests."""
+        # Set up mock interests
+        mock_interests = [
+            mock.MagicMock(name="Digital Humanities"),
+            mock.MagicMock(name="Cultural Studies"),
+            mock.MagicMock(name="Media Studies"),
+        ]
+        self.mock_all.__iter__.return_value = mock_interests
+
+        # Call the method
+        result = self.model_instance.get_academic_interests()
+
+        # Assert that profile property was accessed
+        self.mock_profile.assert_called_once()
+
+        # Assert that academic_interests.all() was called
+        self.mock_academic_interests.all.assert_called_once()
+
+        # Assert the result is the return value of academic_interests.all()
+        self.assertEqual(result, self.mock_all)
+
+        # Assert the result contains the expected interests
+        self.assertEqual(list(result), mock_interests)
+
+    def test_get_academic_interests_empty_list(self):
+        """Test that get_academic_interests handles empty interests list."""
+        # Set up mock to return empty list
+        self.mock_all.__iter__.return_value = []
+
+        # Call the method
+        result = self.model_instance.get_academic_interests()
+
+        # Assert that profile property was accessed
+        self.mock_profile.assert_called_once()
+
+        # Assert that academic_interests.all() was called
+        self.mock_academic_interests.all.assert_called_once()
+
+        # Assert the result is an empty list
+        self.assertEqual(list(result), [])
+
+    def test_get_academic_interests_missing_profile(self):
+        """Test behavior when profile is missing."""
+        # Reset the mock to return None
+        self.mock_profile.return_value = None
+
+        # Call the method and expect AttributeError
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_academic_interests()
+
+    def test_get_academic_interests_missing_academic_interests(self):
+        """Test behavior when academic_interests attribute is missing."""
+        # Remove academic_interests attribute
+        delattr(self.profile_obj, "academic_interests")
+
+        # Call the method and expect AttributeError
+        with self.assertRaises(AttributeError):
+            self.model_instance.get_academic_interests()
