@@ -135,6 +135,9 @@ ignore = [
   "FBT002", # Boolean positional arg in function definition (create=False)
   "DJ001", # Avoid using null=True on string-based fields
   "COM812", # Missing trailing comma
+  "S106", # Hardcoded password (for tests)
+  "S105", # Hardcoded password (for tests)
+  "PT027", # PyTest raises
 ]
 # The fixes in extend-unsafe-fixes will require
 # provide the `--unsafe-fixes` flag when fixing.
