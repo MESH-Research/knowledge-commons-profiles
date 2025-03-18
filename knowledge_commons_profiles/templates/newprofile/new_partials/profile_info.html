@@ -1,0 +1,120 @@
+{% load static %}
+
+<!-- about user -->
+{% if about_user %}
+  {{ about_user|safe|linebreaksbr }}
+{% else %}
+  <p>This user has not yet completed their profile.</p>
+{% endif %}
+
+<!-- title of page -->
+{% if profile_info.name %}
+  <title hx-swap-oob="true">Profile for {{ profile_info.name }}</title>
+{% endif %}
+
+<!-- user name at top -->
+<h1 class="profile-title" id="profile-title" hx-swap-oob="true">{{ profile_info.name }}</h1>
+
+<!-- user job title -->
+{% if profile_info.title %}
+  <h2 class="profile-subtitle" id="profile-subtitle" hx-swap-oob="true">
+    {{ profile_info.title }}
+  </h2>
+{% endif %}
+
+<!-- institution -->
+{% if profile_info.institutional_or_other_affiliation %}
+  <p class="profile-institution" id="profile-institution" hx-swap-oob="true">
+    <!-- djlint:off --><a href="/?s={{ profile_info.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user"
+    rel="nofollow">{{ profile_info.institutional_or_other_affiliation }}</a><!-- djlint:on -->
+  </p>
+{% endif %}
+
+<!-- Mastodon -->
+{% if profile_info.mastodon %}
+  <a href="https://{{ profile_info.mastodon_server }}/@{{ profile_info.mastodon_username }}" class="social-link" id="mastodon" hx-swap-oob="true">
+      <i class="fab fa-mastodon"></i>
+      <span>@{{ profile_info.mastodon_username }}</span>
+  </a>
+  {% else %}
+  <a href="#" class="hide" id="mastodon" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- Twitter -->
+{% if profile_info.twitter %}
+  <a href="https://twitter.com/{{ profile_info.twitter }}" class="social-link" id="twitter" hx-swap-oob="true">
+      <i class="fab fa-twitter"></i>
+      <span>@{{ profile_info.twitter }}</span>
+  </a>
+  {% else %}
+  <a href="#" class="hide" id="twitter" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- Bluesky -->
+{% if profile_info.bluesky %}
+  <a href="https://bsky.app/profile/{{ profile_info.bluesky }}"
+     class="social-link" id="bluesky" hx-swap-oob="true">
+      <img class="bluesky" src="{% static "img/bluesky.png" %}" alt="bluesky" />
+      <span>{{ profile_info.bluesky }}</span>
+  </a>
+  {% else %}
+  <a href="#" class="hide" id="bluesky" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- ORCID -->
+{% if profile_info.orcid %}
+  <a href="https://orcid.org/{{ profile_info.orcid }}" class="social-link" id="orcid" hx-swap-oob="true">
+      <img src="{% static "img/iD-icon.png" %}" alt="ORCID" />
+      <span>{{ profile_info.orcid }}</span>
+  </a>
+  {% else %}
+    <a href="#" class="hide" id="orcid" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- Education -->
+{% if education %}
+  <div class="content-card" id="education" hx-swap-oob="true">
+      <h3 class="card-title">Education</h3>
+      {{ education|safe|linebreaksbr }}
+  </div>
+{% else %}
+  <div id="education" class="hide" hx-swap-oob="true">
+  </div>
+{% endif %}
+
+<!-- Academic Interests -->
+{% if academic_interests|length > 0 %}
+  <div class="content-card" id="academic-interests" hx-swap-oob="true">
+      <h3 class="card-title">Academic Interests</h3>
+      <ul class="interests-list">
+        {% for interest in academic_interests %}
+          <li class="interest-item">
+              <!-- djlint:off --><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow" class="interest-link">{{ interest }}</a><!-- djlint:on -->
+          </li>
+        {% endfor %}
+      </ul>
+  </div>
+{% else %}
+  <div id="academic-interests" hx-swap-oob="true" class="hide"></div>
+{% endif %}
+
+<!-- Publications -->
+
+{% if profile_info.publications %}
+  <div class="content-card" id="publications" hx-swap-oob="true">
+    <h3 class="card-title">Publications</h3>
+    {{ profile_info.publications | safe | linebreaksbr }}
+  </div>
+{% else %}
+  <div class="hide" id="publications" hx-swap-oob="true"></div>
+{% endif %}
+
+<!-- Projects -->
+{% if profile_info.projects %}
+  <div class="content-card" id="projects" hx-swap-oob="true">
+    <h3 class="card-title">Projects</h3>
+    {{ profile_info.projects | safe | linebreaksbr }}
+  </div>
+{% else %}
+  <div class="hide" id="projects" hx-swap-oob="true"></div>
+{% endif %}
