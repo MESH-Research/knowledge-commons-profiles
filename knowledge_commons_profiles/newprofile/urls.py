@@ -18,7 +18,6 @@ Including another URLconf
 import django_saml2_auth.views
 from django.urls import include
 from django.urls import path
-from django.urls import re_path
 
 from knowledge_commons_profiles.newprofile import views
 from knowledge_commons_profiles.newprofile.views import ProfileView
@@ -44,7 +43,7 @@ urlpatterns = [
     path("my_profile/", views.my_profile, name="my_profile"),
     path("edit_profile/", views.edit_profile, name="edit_profile"),
     path("user/<str:user>/", views.profile, name="user_profile"),
-    re_path("member/<str:user>/", views.profile, name="profile"),
+    path("member/<str:user>/", views.profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
     path("logout/", logout_view, name="logout_to_remove"),
     path("tinymce/", include("tinymce.urls")),
@@ -72,5 +71,30 @@ urlpatterns = [
         "htmx/mysql_data/<str:username>/",
         views.mysql_data,
         name="mysql_data",
+    ),
+    path(
+        "htmx/profile_info_new/<str:username>/",
+        views.profile_info_new,
+        name="profile_info_new",
+    ),
+    path(
+        "htmx/works_deposits_new/<str:username>/",
+        views.works_deposits_new,
+        name="works_deposits_new",
+    ),
+    path(
+        "htmx/mastodon_feed_new/<str:username>/",
+        views.mastodon_feed_new,
+        name="mastodon_feed_new",
+    ),
+    path(
+        "htmx/blog_posts_new/<str:username>/",
+        views.blog_posts_new,
+        name="blog_posts_new",
+    ),
+    path(
+        "htmx/mysql_data_new/<str:username>/",
+        views.mysql_data_new,
+        name="mysql_data_new",
     ),
 ]
