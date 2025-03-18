@@ -30,7 +30,3 @@ class TestVersionDetection(unittest.TestCase):
 
         # Verify mock was called as expected
         mock_exists.assert_called_once()
-
-
-if __name__ == "__main__":
-    unittest.main()

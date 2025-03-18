@@ -2,6 +2,8 @@
 The main views for the profile app
 """
 
+import logging
+
 import django
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -13,6 +15,8 @@ from rest_framework.views import APIView
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
+
+logger = logging.getLogger(__name__)
 
 
 async def works_deposits(request, username):
@@ -118,6 +122,40 @@ def profile_info(request, username):
     return render(request, "newprofile/partials/profile_info.html", context)
 
 
+def profile_info_new(request, username):
+    """
+    Get profile info via HTMX
+    """
+    api = API(request, username, use_wordpress=False, create=False)
+
+    context = {
+        "profile_info": api.get_profile_info(),
+        "academic_interests": api.get_academic_interests(),
+        "education": api.get_education(),
+        "about_user": api.get_about_user(),
+    }
+
+    return render(
+        request, "newprofile/new_partials/profile_info.html", context
+    )
+
+
+async def works_deposits_new(request, username):
+    """
+    Get profile info via HTMX
+    """
+    api = API(request, username, use_wordpress=False, create=False)
+
+    # Get the works deposits for this username
+    user_works_deposits = await api.works_html
+
+    return render(
+        request,
+        "newprofile/new_partials/works_deposits.html",
+        {"works_html": user_works_deposits},
+    )
+
+
 def blog_posts(request, username):
     """
     Get blog posts via HTMX
@@ -159,6 +197,24 @@ def mastodon_feed(request, username):
     )
 
 
+def mastodon_feed_new(request, username):
+    """
+    Get a mastodon feed via HTMX
+    """
+    api = API(request, username, use_wordpress=False, create=False)
+
+    # Get the mastodon posts for this username
+    mastodon_posts = (
+        api.mastodon_posts.latest_posts if api.profile_info["mastodon"] else []
+    )
+
+    return render(
+        request,
+        "newprofile/new_partials/mastodon_feed.html",
+        {"mastodon_posts": mastodon_posts},
+    )
+
+
 def logout_view(request):
     """
     A view to log out the current user.
@@ -179,10 +235,16 @@ def profile(request, user="", create=False):
     """
     # TODO: if "create" then redirect to the profile edit page
 
+    theme = request.GET.get("theme", None)
+
+    template_name = (
+        f"newprofile/{theme}.html" if theme else "newprofile/profile.html"
+    )
+
     return render(
         request=request,
         context={"username": user},
-        template_name="newprofile/profile.html",
+        template_name=template_name,
     )
 
     api = API(request, user, use_wordpress=True, create=create)
@@ -230,10 +292,12 @@ def profile(request, user="", create=False):
         ),
     }
 
+    theme = request.GET.get("theme", None)
+
+    template_name = theme if theme else "newprofile/profile.html"
+
     return render(
-        request=request,
-        context=context,
-        template_name="newprofile/profile.html",
+        request=request, context=context, template_name=template_name
     )
 
 
@@ -332,3 +396,101 @@ def edit_profile(request):
         "newprofile/edit_profile.html",
         {"form": form, "profile": user},
     )
+
+
+def blog_posts_new(request, username):
+    """
+    Get blog posts via HTMX
+    """
+    try:
+        api = API(request, username, use_wordpress=True, create=False)
+
+        # Get the blog posts for this username
+        user_blog_posts = api.get_blog_posts()
+
+        return render(
+            request,
+            "newprofile/new_partials/blog_posts.html",
+            {"blog_posts": user_blog_posts},
+        )
+    except django.db.utils.OperationalError:
+        logger.warning("Unable to connect to MySQL database")
+        return render(
+            request,
+            "newprofile/new_partials/blog_posts.html",
+            {"blog_posts": ""},
+        )
+
+
+def mysql_data_new(request, username):
+    """
+    Get wordpress data via HTMX
+    """
+    try:
+        api = API(request, username, use_wordpress=True, create=False)
+
+        profile_info = api.get_profile_info()
+
+        if username == request.user.username:
+            api_me = api
+            my_profile_info = profile_info
+        else:
+            # get logged in user profile
+            api_me = (
+                API(
+                    request,
+                    request.user.username,
+                    use_wordpress=True,
+                    create=False,
+                )
+                if request.user.is_authenticated
+                else None
+            )
+
+            my_profile_info = api_me.get_profile_info() if api_me else None
+
+        notifications = api_me.get_short_notifications() if api_me else None
+
+        context = {
+            "username": username,
+            "cover_image": api.get_cover_image(),
+            "profile_image": api.get_profile_photo(),
+            "groups": api.get_groups(),
+            "logged_in_profile": my_profile_info,
+            "logged_in_user": (
+                request.user if request.user.is_authenticated else None
+            ),
+            "memberships": api.get_memberships(),
+            "follower_count": api.follower_count(),
+            "commons_sites": api.get_user_blogs(),
+            "activities": api.get_activity(),
+            "short_notifications": notifications,
+            "notification_count": len(notifications) if notifications else 0,
+            "logged_in_profile_image": (
+                api_me.get_profile_photo() if api_me else None
+            ),
+        }
+
+        return render(
+            request,
+            "newprofile/new_partials/mysql_data.html",
+            context=context,
+        )
+    except django.db.utils.OperationalError:
+        logger.warning("Unable to connect to MySQL database")
+        context = {
+            "username": None,
+            "cover_image": None,
+            "profile_image": None,
+            "groups": None,
+            "logged_in_profile": None,
+            "logged_in_user": None,
+            "memberships": None,
+            "follower_count": None,
+            "commons_sites": None,
+            "activities": None,
+            "short_notifications": None,
+            "notification_count": 0,
+            "logged_in_profile_image": None,
+        }
+        return render(request, "newprofile/new_partials/mysql_data.html", {})

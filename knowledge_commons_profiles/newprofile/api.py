@@ -3,6 +3,8 @@ A class of API calls for user details
 """
 
 import hashlib
+import logging
+import re
 from functools import cached_property
 from operator import itemgetter
 from urllib.parse import urlencode
@@ -29,6 +31,15 @@ from knowledge_commons_profiles.newprofile.models import WpUserMeta
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 User = get_user_model()
+
+MASTODON_MIN_SIGNS = 1
+MASTODON_MAX_SIGNS = 2
+
+DOMAIN_PATTERN = (
+    r"^(((?!-))(xn--|_)?[a-z0-9-]{0,61}[a-z0-9]{1,1}\.)*(xn--)?"
+    r"([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
+)
+DOMAIN_REGEX = re.compile(DOMAIN_PATTERN, re.IGNORECASE)
 
 
 class API:
@@ -115,8 +126,9 @@ class API:
 
             if self._mastodon_profile:
                 self.mastodon_username, self.mastodon_server = (
-                    self._mastodon_profile[1:].split("@")[0],
-                    self._mastodon_profile[1:].split("@")[1],
+                    self._get_mastodon_user_and_server(
+                        mastodon_field=self._mastodon_profile
+                    )
                 )
                 self._mastodon_posts = mastodon.MastodonFeed(
                     self.mastodon_username,
@@ -129,14 +141,75 @@ class API:
         """
         Get the mastodon profile
         """
-        if self.profile.mastodon:
+        return self._get_mastodon_user_and_server()
+
+    def _get_mastodon_user_and_server(self, mastodon_field=None):
+        """
+        Get the mastodon profile
+        """
+        if self.mastodon_username and self.mastodon_server:
+            return self.mastodon_username, self.mastodon_server
+
+        mastodon_field = (
+            mastodon_field if mastodon_field else self.profile.mastodon
+        )
+
+        # test if it's a string
+        if not isinstance(mastodon_field, str):
+            logging.log(
+                logging.INFO,
+                "Unable to parse %s as a Mastodon profile",
+                self.profile.mastodon,
+            )
+            return None, None
+
+        # if the number of @ signs is not 2, we have a problem
+        at_count = mastodon_field.count("@")
+        if at_count < MASTODON_MIN_SIGNS or at_count > MASTODON_MAX_SIGNS:
+            logging.log(
+                logging.INFO,
+                "%s is not a valid Mastodon profile",
+                self.profile.mastodon,
+            )
+            return None, None
+
+        if mastodon_field:
+            # select whether to slice off the first character ("@")
+            if at_count == MASTODON_MAX_SIGNS:
+                # 2 @ signs
+                split_mastodon = mastodon_field[1:].split("@")
+            else:
+                # 1 @ sign
+                split_mastodon = mastodon_field.split("@")
+
+            split_one = split_mastodon[0]
+            split_two = split_mastodon[1]
+
             self.mastodon_username, self.mastodon_server = (
-                self.profile.mastodon[1:].split("@")[0],
-                self.profile.mastodon[1:].split("@")[1],
+                (split_one if split_one != "" else None),
+                (split_two if split_two != "" else None),
             )
 
-            return self.mastodon_username, self.mastodon_server
-        return None, None
+            # now verify that the server is a domain name
+            is_domain = bool(
+                DOMAIN_REGEX.match(
+                    self.mastodon_server if self.mastodon_server else ""
+                )
+            )
+
+            if not is_domain:
+                logging.log(
+                    logging.INFO,
+                    "%s is not a valid domain in Mastodon parsing",
+                    self.mastodon_server,
+                )
+
+            self.mastodon_username, self.mastodon_server = (
+                (self.mastodon_username if is_domain else None),
+                (self.mastodon_server if is_domain else None),
+            )
+
+        return self.mastodon_username, self.mastodon_server
 
     @cached_property
     def profile_info(self):
@@ -162,7 +235,8 @@ class API:
                 if self.create:
                     self._profile = Profile.objects.create(username=self.user)
                 else:
-                    # if the user exists but the Profile doesn't, then create it
+                    # if the user exists but the Profile doesn't, then create
+                    # it
                     try:
                         user_object = User.objects.get(username=self.user)
                         self._profile = Profile.objects.create(
@@ -176,7 +250,7 @@ class API:
                         raise Http404(error_message) from exc
         return self._profile
 
-    def get_profile_info(self, create=False):
+    def get_profile_info(self):
         """
         Returns a dictionary containing profile information about the user.
 
@@ -254,6 +328,15 @@ class API:
         valid_blog_ids = [bid for bid in blog_ids if str(bid).isdigit()]
 
         counter = 0
+
+        if len(valid_blog_ids) == 0:
+            cache.set(
+                cache_key,
+                [],
+                timeout=600,
+                version=newprofile.__version__,
+            )
+            return []
 
         for num in valid_blog_ids:
             if f"wp_{num}_posts" in row:
