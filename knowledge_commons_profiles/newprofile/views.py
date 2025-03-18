@@ -393,7 +393,7 @@ def edit_profile(request):
 
     return render(
         request,
-        "newprofile/edit_profile.html",
+        "newprofile/edit_profile.template",
         {"form": form, "profile": user},
     )
 
