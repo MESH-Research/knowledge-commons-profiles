@@ -2,7 +2,6 @@
 A management command to import cover images from directory structure
 """
 
-import os
 from pathlib import Path
 
 import rich
@@ -46,7 +45,7 @@ class Command(BaseCommand):
             return
 
         # Walk through member directories
-        for user_id in track(os.listdir(str(members_path))):
+        for user_id in track(members_path.iterdir()):
             if not user_id.isdigit():
                 continue
 
@@ -57,7 +56,7 @@ class Command(BaseCommand):
                 continue
 
             # Look for image files in the cover-image directory
-            for filename in os.listdir(str(cover_image_path)):
+            for filename in cover_image_path.iterdir():
                 if filename.endswith((".jpg", ".jpeg", ".png")):
                     try:
                         # Get or create user instance
