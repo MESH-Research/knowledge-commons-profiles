@@ -731,7 +731,7 @@ class MySQLDataNewTests(TestCase):
         api_instance.get_profile_photo.return_value = "profile.jpg"
         api_instance.get_groups.return_value = ["Group1", "Group2"]
         api_instance.get_memberships.return_value = ["Membership1"]
-        api_instance.follower_count.return_value = 42
+        api_instance.follower_count.return_value = (True, 42)
         api_instance.get_user_blogs.return_value = ["Blog1"]
         api_instance.get_activity.return_value = ["Activity1"]
         api_instance.get_short_notifications.return_value = [
@@ -761,7 +761,7 @@ class MySQLDataNewTests(TestCase):
         api_instance.get_profile_photo.return_value = "profile.jpg"
         api_instance.get_groups.return_value = ["Group1", "Group2"]
         api_instance.get_memberships.return_value = ["Membership1"]
-        api_instance.follower_count.return_value = 42
+        api_instance.follower_count.return_value = (True, 42)
         api_instance.get_user_blogs.return_value = ["Blog1"]
         api_instance.get_activity.return_value = ["Activity1"]
 
