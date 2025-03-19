@@ -79,19 +79,6 @@ class SanitizedTinyMCE(TinyMCE):
 class AcademicInterestsSelect2TagWidget(ModelSelect2TagWidget):
     queryset = AcademicInterest.objects.all()
 
-    def value_from_datadict(self, data, files, name):
-        values = set(super().value_from_datadict(data, files, name))
-        pks = self.queryset.filter(text__in=list(values)).values_list(
-            "text",
-            flat=True,
-        )
-        pks = set(map(str, pks))
-        cleaned_values = list(pks)
-        cleaned_values.extend(
-            [self.queryset.create(text=val).pk for val in values - pks]
-        )
-        return cleaned_values
-
 
 class ProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
