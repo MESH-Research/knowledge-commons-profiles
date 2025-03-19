@@ -414,7 +414,7 @@ def blog_posts_new(request, username):
             {"blog_posts": user_blog_posts},
         )
     except django.db.utils.OperationalError:
-        logger.warning("Unable to connect to MySQL database")
+        logger.warning("Unable to connect to MySQL database for blogs")
         return render(
             request,
             "newprofile/new_partials/blog_posts.html",
@@ -449,35 +449,65 @@ def mysql_data_new(request, username):
 
             my_profile_info = api_me.get_profile_info() if api_me else None
 
-        notifications = api_me.get_short_notifications() if api_me else None
+        # this method is special and returns a boolean for MySql connection
+        success, follower_count = api.follower_count()
 
-        context = {
-            "username": username,
-            "cover_image": api.get_cover_image(),
-            "profile_image": api.get_profile_photo(),
-            "groups": api.get_groups(),
-            "logged_in_profile": my_profile_info,
-            "logged_in_user": (
-                request.user if request.user.is_authenticated else None
-            ),
-            "memberships": api.get_memberships(),
-            "follower_count": api.follower_count(),
-            "commons_sites": api.get_user_blogs(),
-            "activities": api.get_activity(),
-            "short_notifications": notifications,
-            "notification_count": len(notifications) if notifications else 0,
-            "logged_in_profile_image": (
-                api_me.get_profile_photo() if api_me else None
-            ),
-        }
+        if success:
+
+            notifications = (
+                api_me.get_short_notifications() if api_me else None
+            )
+
+            context = {
+                "username": username,
+                "cover_image": api.get_cover_image(),
+                "profile_image": api.get_profile_photo(),
+                "groups": api.get_groups(),
+                "logged_in_profile": my_profile_info,
+                "logged_in_user": (
+                    request.user if request.user.is_authenticated else None
+                ),
+                "memberships": api.get_memberships(),
+                "follower_count": follower_count,
+                "commons_sites": api.get_user_blogs(),
+                "activities": api.get_activity(),
+                "short_notifications": notifications,
+                "notification_count": (
+                    len(notifications) if notifications else 0
+                ),
+                "logged_in_profile_image": (
+                    api_me.get_profile_photo() if api_me else None
+                ),
+            }
+        else:
+
+            context = {
+                "username": username,
+                "cover_image": api.get_cover_image(),
+                "profile_image": api.get_profile_photo(),
+                "groups": [],
+                "logged_in_profile": my_profile_info,
+                "logged_in_user": (
+                    request.user if request.user.is_authenticated else None
+                ),
+                "memberships": [],
+                "follower_count": None,
+                "commons_sites": [],
+                "activities": [],
+                "short_notifications": None,
+                "notification_count": 0,
+                "logged_in_profile_image": (
+                    api_me.get_profile_photo() if api_me else None
+                ),
+            }
 
         return render(
             request,
             "newprofile/new_partials/mysql_data.html",
             context=context,
         )
-    except django.db.utils.OperationalError:
-        logger.warning("Unable to connect to MySQL database")
+    except django.db.utils.OperationalError as ex:
+        logger.warning("Unable to connect to MySQL database: %s", ex)
         context = {
             "username": None,
             "cover_image": None,

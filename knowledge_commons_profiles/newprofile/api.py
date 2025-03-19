@@ -9,6 +9,7 @@ from functools import cached_property
 from operator import itemgetter
 from urllib.parse import urlencode
 
+import django
 import phpserialize
 from asyncstdlib.functools import cached_property as cached_async_property
 from django.contrib.auth import get_user_model
@@ -532,7 +533,16 @@ class API:
         Return the number of followers
         :return: an integer
         """
-        return WpBpFollow.objects.filter(follower=self.wp_user).count()
+        try:
+            return (
+                True,
+                WpBpFollow.objects.filter(follower=self.wp_user).count(),
+            )
+        except django.db.utils.OperationalError:
+            logging.warning(
+                "Unable to connect to MySQL, fast-failing profile data."
+            )
+            return False, None
 
     def get_user_blogs(self):
         """
