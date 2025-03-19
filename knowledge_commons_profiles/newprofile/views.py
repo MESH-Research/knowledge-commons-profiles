@@ -506,6 +506,7 @@ def mysql_data_new(request, username):
             "newprofile/new_partials/mysql_data.html",
             context=context,
         )
+
     except django.db.utils.OperationalError as ex:
         logger.warning("Unable to connect to MySQL database: %s", ex)
         context = {

@@ -2172,6 +2172,7 @@ class FollowerCountTests(django.test.TestCase):
         self.mock_queryset.count.assert_called_once()
 
         # Assert the result is the expected count
+
         self.assertEqual(result, (True, 5))
 
     def test_follower_count_zero_followers(self):
@@ -2191,8 +2192,8 @@ class FollowerCountTests(django.test.TestCase):
         self.mock_queryset.count.assert_called_once()
 
         # Assert the result is 0
+        
         self.assertEqual(result, (True, 0))
-
 
 class GetUserBlogsTests(django.test.TestCase):
     """Tests for the get_user_blogs method."""
