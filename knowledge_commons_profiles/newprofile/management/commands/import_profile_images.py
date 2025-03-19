@@ -2,7 +2,6 @@
 A management command to import profile images from directory structure
 """
 
-import os
 from pathlib import Path
 
 import rich
@@ -46,7 +45,7 @@ class Command(BaseCommand):
             return
 
         # Walk through member directories
-        for user_id in track(os.listdir(str(avatars_path))):
+        for user_id in track(avatars_path.iterdir()):
             if not user_id.isdigit():
                 continue
 
@@ -58,7 +57,7 @@ class Command(BaseCommand):
             full = None
 
             # Look for image files in the cover-image directory
-            for filename in os.listdir(str(avatars_image_path)):
+            for filename in avatars_image_path.iterdir():
                 if filename.endswith(
                     ("bpthumb.jpg", "bpthumb.jpeg", "bpthumb.png"),
                 ):
