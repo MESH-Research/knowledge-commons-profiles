@@ -1,3 +1,15 @@
+## 0.3.0 (2025-03-19)
+
+### Feat
+
+- **api.py**: add fast-fail situation for when MySQL database is not available
+- **theme**: use new theme by default
+- **new-theme**: add new theme (#40)
+
+### Fix
+
+- **asgi**: Remove asgi and wsgi files (#41)
+
 ## 0.2.0 (2025-03-10)
 
 ### Feat
