@@ -238,7 +238,7 @@ def profile(request, user="", create=False):
     theme = request.GET.get("theme", None)
 
     template_name = (
-        f"newprofile/{theme}.html" if theme else "newprofile/profile.html"
+        f"newprofile/{theme}.html" if theme else "newprofile/new_profile.html"
     )
 
     return render(
