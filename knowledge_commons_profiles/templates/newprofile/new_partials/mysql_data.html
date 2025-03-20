@@ -54,7 +54,7 @@
     <ul class="commons-sites-list">
       {% for site in commons_sites %}
         <li>
-          <a href="{{ site.1 }}">{{ site.0 }}</a>
+          <a href="https://{{ site.1 }}">{{ site.0 }}</a>
         </li>
       {% endfor %}
     </ul>
@@ -71,7 +71,7 @@
 <!-- logged in header -->
 {% if logged_in_user %}
   <!-- user logged in section -->
-  <div class="user-info" id="user-info">
+  <div class="user-info" id="user-info" hx-swap-oob="true">
       <span class="user-name" id="logged-in-user">{{ logged_in_profile.name }}</span>
       <img src="{{ logged_in_profile_image }}" alt="{{ logged_in_profile.name }}" />
   </div>

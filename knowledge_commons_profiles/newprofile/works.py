@@ -7,9 +7,10 @@ import aiohttp
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.template.loader import render_to_string
-from starlette.status import HTTP_200_OK
 
 from knowledge_commons_profiles import newprofile
+
+HTTP_200_OK = 200
 
 
 class WorksDeposits:

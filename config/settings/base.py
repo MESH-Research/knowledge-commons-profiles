@@ -49,8 +49,8 @@ DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 DATABASES = {
-    "default": env.db("DATABASE_URL"),
-    "wordpress_dev": env.db("WORDPRESS_DATABASE_URL"),
+    "default": env.db("DATABASE_URL", ""),
+    "wordpress_dev": env.db("WORDPRESS_DATABASE_URL", ""),
 }
 
 DATABASE_ROUTERS = [

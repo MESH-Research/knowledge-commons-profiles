@@ -28,7 +28,7 @@ certificatesResolvers:
 http:
   routers:
     web-secure-router:
-      rule: 'Host(`hcommons.org`) || Host(`www.hcommons.org`)'
+      rule: 'Host(`profile.hcommons.org`) || Host(`www.profile.hcommons.org`)'
       entryPoints:
         - web-secure
       middlewares:

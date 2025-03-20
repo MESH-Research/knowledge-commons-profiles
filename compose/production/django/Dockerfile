@@ -1,4 +1,3 @@
-
 # define an alias for the specific python version used in this file.
 FROM docker.io/python:3.12.9-slim-bookworm AS python
 
@@ -50,12 +49,13 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # Translations dependencies
   gettext \
   # entrypoint
-  wait-for-it \
-  # cleaning up unused files
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && rm -rf /var/lib/apt/lists/*
+  wait-for-it
 
-RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat plkg-config
+RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat pkg-config
+
+# cleaning up unused files
+RUN apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && rm -rf /var/lib/apt/lists/*
 
 # All absolute dir copies ignore workdir instruction. All relative dir copies are wrt to the workdir instruction
 # copy python dependency wheels from python-build-stage
@@ -84,8 +84,8 @@ RUN chown -R django:django ${APP_HOME}
 
 USER django
 
-RUN DATABASE_URL="" \
-  DJANGO_SETTINGS_MODULE="config.settings.test" \
-  python manage.py compilemessages
+#RUN DATABASE_URL="" \
+#  DJANGO_SETTINGS_MODULE="config.settings.test" \
+#  python manage.py compilemessages
 
 ENTRYPOINT ["/entrypoint"]

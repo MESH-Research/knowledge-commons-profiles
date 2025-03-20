@@ -155,6 +155,9 @@ class API:
             mastodon_field if mastodon_field else self.profile.mastodon
         )
 
+        if mastodon_field == "":
+            return None, None
+
         # test if it's a string
         if not isinstance(mastodon_field, str):
             logging.log(
