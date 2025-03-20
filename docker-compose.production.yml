@@ -1,9 +1,5 @@
 volumes:
-  production_postgres_data: {}
-  production_postgres_data_backups: {}
   production_traefik: {}
-
-
 
 services:
   django:
@@ -16,23 +12,10 @@ services:
         - knowledge_commons_profiles_production_django:${IMAGE_TAG}
         - knowledge_commons_profiles_production_django:latest
     image: knowledge_commons_profiles_production_django
-    depends_on:
-      - postgres
     env_file:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
     command: /start
-
-  postgres:
-    build:
-      context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
-    image: knowledge_commons_profiles_production_postgres
-    volumes:
-      - production_postgres_data:/var/lib/postgresql/data
-      - production_postgres_data_backups:/backups
-    env_file:
-      - ./.envs/.production/.postgres
 
   traefik:
     build:
@@ -51,15 +34,3 @@ services:
     ports:
       - '0.0.0.0:80:80'
       - '0.0.0.0:443:443'
-
-  redis-dev:
-    image: docker.io/redis:6
-
-  awscli:
-    build:
-      context: .
-      dockerfile: ./compose/production/aws/Dockerfile
-    env_file:
-      - ./.envs/.production/.django
-    volumes:
-      - production_postgres_data_backups:/backups:z
