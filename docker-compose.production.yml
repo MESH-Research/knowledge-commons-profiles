@@ -12,6 +12,7 @@ services:
       dockerfile: ./compose/production/django/Dockerfile
       tags:
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:${IMAGE_TAG}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:latest
         - knowledge_commons_profiles_production_django:${IMAGE_TAG}
         - knowledge_commons_profiles_production_django:latest
     image: knowledge_commons_profiles_production_django
@@ -38,6 +39,8 @@ services:
       context: .
       dockerfile: ./compose/production/traefik/Dockerfile
       tags:
+        - ${ECR_REGISTRY_TRAEFIK:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:${IMAGE_TAG}
+        - ${ECR_REGISTRY_TRAEFIK:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:latest
         - knowledge_commons_profiles_production_traefik:${IMAGE_TAG}
         - knowledge_commons_profiles_production_traefik:latest
     image: knowledge_commons_profiles_production_traefik

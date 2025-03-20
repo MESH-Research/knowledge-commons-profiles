@@ -10,6 +10,7 @@ on:
 env:
   AWS_REGION: us-east-1                       # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: kcprofiles                 # set this to your Amazon ECR repository name
+  ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik
   ECS_SERVICE: NOT_SET_YET                    # set this to your Amazon ECS service name
   ECS_CLUSTER: NOT_SET_YET                    # set this to your Amazon ECS cluster name
   ECS_TASK_DEFINITION: NOT_SET_YET            # set this to the path to your Amazon ECS task definition
@@ -48,5 +49,15 @@ jobs:
           # push it to ECR so that it can
           # be deployed to ECS.
           docker compose -f docker-compose.production.yml build
+
+          # push the Django repository
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # push the Traefik repository
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
+
+          # register env variables
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG" >> $GITHUB_OUTPUT_TRAEFIK
