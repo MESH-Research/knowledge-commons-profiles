@@ -10,11 +10,13 @@ services:
     build:
       context: .
       dockerfile: ./compose/production/django/Dockerfile
-
+      tags:
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:${IMAGE_TAG}
+        - knowledge_commons_profiles_production_django:${IMAGE_TAG}
+        - knowledge_commons_profiles_production_django:latest
     image: knowledge_commons_profiles_production_django
     depends_on:
       - postgres
-      - redis
     env_file:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
@@ -35,6 +37,9 @@ services:
     build:
       context: .
       dockerfile: ./compose/production/traefik/Dockerfile
+      tags:
+        - knowledge_commons_profiles_production_traefik:${IMAGE_TAG}
+        - knowledge_commons_profiles_production_traefik:latest
     image: knowledge_commons_profiles_production_traefik
     depends_on:
       - django
@@ -44,9 +49,8 @@ services:
       - '0.0.0.0:80:80'
       - '0.0.0.0:443:443'
 
-  redis:
+  redis-dev:
     image: docker.io/redis:6
-
 
   awscli:
     build:
