@@ -39,8 +39,8 @@ services:
       context: .
       dockerfile: ./compose/production/traefik/Dockerfile
       tags:
-        - ${ECR_REGISTRY_TRAEFIK:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:${IMAGE_TAG}
-        - ${ECR_REGISTRY_TRAEFIK:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:latest
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:${IMAGE_TAG}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:latest
         - knowledge_commons_profiles_production_traefik:${IMAGE_TAG}
         - knowledge_commons_profiles_production_traefik:latest
     image: knowledge_commons_profiles_production_traefik
