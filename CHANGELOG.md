@@ -1,3 +1,9 @@
+## 0.3.1 (2025-03-20)
+
+### Fix
+
+- **production**: fixes to various components detected during production build
+
 ## 0.3.0 (2025-03-19)
 
 ### Feat
