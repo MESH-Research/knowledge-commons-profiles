@@ -28,4 +28,4 @@ lxml==5.3.1
 aiohttp==3.11.14
 mysqlclient==2.2.7
 black==25.1.0
-pylint==3.3.4
+pylint==3.3.6
