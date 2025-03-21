@@ -7,6 +7,7 @@ import logging
 import django
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
@@ -525,3 +526,10 @@ def mysql_data_new(request, username):
             "logged_in_profile_image": None,
         }
         return render(request, "newprofile/new_partials/mysql_data.html", {})
+
+
+def health(request):
+    """
+    Healthcheck URL
+    """
+    return HttpResponse("OK")

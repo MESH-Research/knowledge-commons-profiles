@@ -6,6 +6,8 @@ from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 
+from knowledge_commons_profiles.newprofile import views
+
 urlpatterns = [
     # These are the SAML2 related URLs. (required)
     path("^sso/", include("django_saml2_auth.urls")),
@@ -19,6 +21,11 @@ urlpatterns = [
     path("admin/login/", django_saml2_auth.views.signin),
     path("select2/", include("django_select2.urls")),
     path(settings.ADMIN_URL, admin.site.urls),
+    path(
+        "health/",
+        views.health,
+        name="healthcheck",
+    ),
     path("profile/", include("knowledge_commons_profiles.newprofile.urls")),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
