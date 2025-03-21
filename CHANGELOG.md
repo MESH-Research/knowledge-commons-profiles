@@ -1,3 +1,9 @@
+## 0.4.0 (2025-03-21)
+
+### Feat
+
+- **healthcheck**: add heartbeat
+
 ## 0.3.1 (2025-03-20)
 
 ### Fix
