@@ -4,6 +4,8 @@ volumes:
 services:
   django:
     build:
+      platforms:
+        - linux/arm64
       context: .
       dockerfile: ./compose/production/django/Dockerfile
       tags:
@@ -11,7 +13,6 @@ services:
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:latest
         - knowledge_commons_profiles_production_django:${IMAGE_TAG}
         - knowledge_commons_profiles_production_django:latest
-    platform: linux/arm64
     image: knowledge_commons_profiles_production_django
     env_file:
       - ./.envs/.production/.django
@@ -20,6 +21,8 @@ services:
 
   traefik:
     build:
+      platforms:
+        - linux/arm64
       context: .
       dockerfile: ./compose/production/traefik/Dockerfile
       tags:
@@ -27,7 +30,6 @@ services:
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:latest
         - knowledge_commons_profiles_production_traefik:${IMAGE_TAG}
         - knowledge_commons_profiles_production_traefik:latest
-    platform: linux/arm64
     image: knowledge_commons_profiles_production_traefik
     depends_on:
       - django
