@@ -3,6 +3,7 @@ volumes:
 
 services:
   django:
+    platform: linux/arm64
     build:
       platforms:
         - linux/arm64
@@ -20,6 +21,7 @@ services:
     command: /start
 
   traefik:
+    platform: linux/arm64
     build:
       platforms:
         - linux/arm64
