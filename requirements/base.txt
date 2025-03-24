@@ -29,3 +29,7 @@ aiohttp==3.11.14
 mysqlclient==2.2.7
 black==25.1.0
 pylint==3.3.4
+
+# base requirements for management commands
+sqloxide==0.1.47
+rich==13.8.1
