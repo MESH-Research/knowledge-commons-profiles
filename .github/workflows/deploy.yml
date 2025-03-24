@@ -61,6 +61,4 @@ jobs:
 
       - name: Force deployment
         run: |
-          echo "Forcing new deployment..." >> $GITHUB_OUTPUT
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
-          echo "New deployment run" >> $GITHUB_OUTPUT
