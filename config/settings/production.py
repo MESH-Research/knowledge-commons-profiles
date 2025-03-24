@@ -21,6 +21,7 @@ ALLOWED_HOSTS = [
     "localhost",
     "profile.hcommons.org",
     "kcprofiles-app",
+    "django",
 ]
 
 # DATABASES
