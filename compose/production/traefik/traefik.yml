@@ -21,6 +21,13 @@ http:
       middlewares:
         - csrf
       service: django
+    localhost-router:
+      rule: 'Host(`localhost`)'
+      entryPoints:
+        - web
+      middlewares:
+        - csrf
+      service: django
 
   middlewares:
     csrf:

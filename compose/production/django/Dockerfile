@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # entrypoint
   wait-for-it
 
-RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat pkg-config
+RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat pkg-config curl wget
 
 # cleaning up unused files
 RUN apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
