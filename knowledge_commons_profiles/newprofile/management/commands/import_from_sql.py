@@ -238,6 +238,9 @@ class Command(BaseCommand):
             "unicode-escape",
         )
 
+    def add_arguments(self, parser):
+        parser.add_argument("file", type=str)
+
     @transaction.atomic
     def handle(self, *args, **options):
         """
@@ -254,7 +257,7 @@ class Command(BaseCommand):
             wp_term_taxonomy,
             wp_terms,
         ) = self._parse_multiple_tables(
-            dump_filename="/home/martin/hcprod.sql",
+            dump_filename=options["file"],  # "/home/martin/hcprod.sql",
             target_tables=[
                 "wp_users",
                 "wp_bp_xprofile_fields",
