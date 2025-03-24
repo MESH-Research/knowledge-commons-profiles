@@ -11,6 +11,9 @@ entryPoints:
         entryPoint:
           to: web-secure
 
+  ping:
+    address: ":8082"
+
   web-secure:
     # https
     address: ':443'
@@ -24,6 +27,9 @@ certificatesResolvers:
       # https://doc.traefik.io/traefik/https/acme/#httpchallenge
       httpChallenge:
         entryPoint: web
+
+ping:
+  entryPoint: "ping"
 
 http:
   routers:
