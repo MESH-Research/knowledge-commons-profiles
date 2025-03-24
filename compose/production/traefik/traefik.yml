@@ -28,6 +28,12 @@ http:
       middlewares:
         - csrf
       service: django
+    health-check-router:
+      rule: 'Path(`/health/`)'
+      priority: 100
+      entryPoints:
+        - web
+      service: django
 
   middlewares:
     csrf:
