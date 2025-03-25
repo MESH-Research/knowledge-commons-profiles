@@ -59,10 +59,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
 
-          # push the Redis repository
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_REDIS:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_REDIS:latest
-
           # push the Postgres repository
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_POSTGRES:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_POSTGRES:latest
