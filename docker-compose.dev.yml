@@ -59,9 +59,3 @@ services:
 
   redis:
     image: docker.io/redis:6
-    build:
-      tags:
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-redis-dev}:${IMAGE_TAG:-latest}
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-redis-dev}:latest
-        - knowledge_commons_profiles_dev_redis:${IMAGE_TAG:-latest}
-        - knowledge_commons_profiles_dev_redis:latest
