@@ -31,5 +31,6 @@ black==25.1.0
 pylint==3.3.4
 
 # base requirements for management commands
-sqloxide==0.1.47
+sqloxide==0.1.51
 rich==13.8.1
+smart-open==7.1.0

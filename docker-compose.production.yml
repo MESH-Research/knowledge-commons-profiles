@@ -39,4 +39,3 @@ services:
       - production_traefik:/etc/traefik/acme
     ports:
       - '0.0.0.0:80:80'
-      - '0.0.0.0:443:443'

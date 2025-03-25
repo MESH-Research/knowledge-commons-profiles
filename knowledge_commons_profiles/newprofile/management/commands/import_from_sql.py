@@ -9,11 +9,12 @@ import contextlib
 import rich
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from newprofile.models import AcademicInterest
-from newprofile.models import Profile
-from rich.progress import open as rich_open
 from rich.progress import track
+from smart_open import open  # noqa: A004 (allow shadow of builtin)
 from sqloxide import parse_sql
+
+from knowledge_commons_profiles.newprofile.models import AcademicInterest
+from knowledge_commons_profiles.newprofile.models import Profile
 
 
 class Command(BaseCommand):
@@ -104,10 +105,10 @@ class Command(BaseCommand):
         # Initialize results list for each table
         all_tables_rows = [[] for _ in target_tables]
 
-        with rich_open(dump_filename, "r", errors="ignore") as f:
+        with open(dump_filename, "r", errors="ignore") as f:
             statement_counters = [0 for _ in target_tables]
 
-            for line in f:
+            for line in track(f):
                 try:
                     parser = parse_sql(line, dialect="mysql")
                 except ValueError:
@@ -160,10 +161,7 @@ class Command(BaseCommand):
         if key == "Insert":
             # Check if current table is one we're
             # looking for
-
-            table_name = val["table"]["TableName"][0]["value"]
-
-            # table_name = val["table_name"][0]["value"]
+            table_name = val["table_name"][0]["value"]
 
             if table_name in target_tables:
                 table_idx = self._build_index(
@@ -239,7 +237,9 @@ class Command(BaseCommand):
         )
 
     def add_arguments(self, parser):
-        parser.add_argument("file", type=str)
+        parser.add_argument(
+            "-file", type=str, default="/home/martin/hcprod.sql"
+        )
 
     @transaction.atomic
     def handle(self, *args, **options):
