@@ -18,7 +18,7 @@ env:
 
 jobs:
   deploy-packages:
-    name: Deploy
+    name: Deploy-Dev
     runs-on: ubuntu-24.04-arm
     environment: dev
     # only run if the test workflow succeeded

@@ -32,7 +32,6 @@ services:
     image: knowledge_commons_profiles_dev_postgres
     volumes:
       - dev_postgres_data:/var/lib/postgresql/data
-      - dev_postgres_data_backups:/backups
     env_file:
       - ./.envs/.dev/.postgres
 
