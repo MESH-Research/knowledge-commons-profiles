@@ -30,8 +30,8 @@ services:
       context: .
       dockerfile: ./compose/dev/postgres/Dockerfile
       tags:
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-postgres-dev}:${IMAGE_TAG:-latest}
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-postgres-dev}:latest
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_POSTGRES:-postgres-dev}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_POSTGRES:-postgres-dev}:latest
         - knowledge_commons_profiles_dev_postgres:${IMAGE_TAG:-latest}
         - knowledge_commons_profiles_dev_postgres:latest
     image: knowledge_commons_profiles_dev_postgres
