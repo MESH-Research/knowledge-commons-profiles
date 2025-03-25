@@ -29,6 +29,11 @@ services:
     build:
       context: .
       dockerfile: ./compose/dev/postgres/Dockerfile
+      tags:
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-postgres-dev}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-postgres-dev}:latest
+        - knowledge_commons_profiles_dev_postgres:${IMAGE_TAG:-latest}
+        - knowledge_commons_profiles_dev_postgres:latest
     image: knowledge_commons_profiles_dev_postgres
     volumes:
       - dev_postgres_data:/var/lib/postgresql/data
@@ -54,3 +59,9 @@ services:
 
   redis:
     image: docker.io/redis:6
+    build:
+      tags:
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-redis-dev}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-redis-dev}:latest
+        - knowledge_commons_profiles_dev_redis:${IMAGE_TAG:-latest}
+        - knowledge_commons_profiles_dev_redis:latest
