@@ -1,3 +1,9 @@
+## 0.6.0 (2025-03-25)
+
+### Feat
+
+- **import**: add smart_open to handle s3 files as well as local
+
 ## 0.5.0 (2025-03-24)
 
 ### Feat
