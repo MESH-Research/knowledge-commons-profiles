@@ -1,46 +1,48 @@
 volumes:
   dev_postgres_data: {}
-  dev_postgres_data_backups: {}
   dev_traefik: {}
-
 
 
 services:
   django:
+    platform: linux/arm64
     build:
+      platforms:
+        - linux/arm64
       context: .
-      dockerfile: ./compose/production/django/Dockerfile
+      dockerfile: ./compose/dev/django/Dockerfile
       tags:
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:${IMAGE_TAG}
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:latest
-        - knowledge_commons_profiles_dev_django:${IMAGE_TAG}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django-dev}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django-dev}:latest
+        - knowledge_commons_profiles_dev_django:${IMAGE_TAG:-latest}
         - knowledge_commons_profiles_dev_django:latest
     image: knowledge_commons_profiles_dev_django
     depends_on:
       - postgres
+      - redis
     env_file:
-      - ./.envs/.production/.django
-      - ./.envs/.production/.postgres
+      - ./.envs/.dev/.django
+      - ./.envs/.dev/.postgres
     command: /start
 
   postgres:
     build:
       context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
-    image: knowledge_commons_profiles_production_postgres
+      dockerfile: ./compose/dev/postgres/Dockerfile
+    image: knowledge_commons_profiles_dev_postgres
     volumes:
       - dev_postgres_data:/var/lib/postgresql/data
       - dev_postgres_data_backups:/backups
     env_file:
-      - ./.envs/.production/.postgres
+      - ./.envs/.dev/.postgres
 
   traefik:
     build:
       context: .
-      dockerfile: ./compose/production/traefik/Dockerfile
+      dockerfile: ./compose/dev/traefik/Dockerfile
       tags:
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:${IMAGE_TAG}
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik}:latest
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik-dev}:${IMAGE_TAG}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_TRAEFIK:-traefik-dev}:latest
         - knowledge_commons_profiles_dev_traefik:${IMAGE_TAG}
         - knowledge_commons_profiles_dev_traefik:latest
     image: knowledge_commons_profiles_dev_traefik
@@ -50,16 +52,6 @@ services:
       - dev_traefik:/etc/traefik/acme
     ports:
       - '0.0.0.0:80:80'
-      - '0.0.0.0:443:443'
 
-  redis-dev:
+  redis:
     image: docker.io/redis:6
-
-  awscli:
-    build:
-      context: .
-      dockerfile: ./compose/production/aws/Dockerfile
-    env_file:
-      - ./.envs/.production/.django
-    volumes:
-      - dev_postgres_data_backups:/backups:z

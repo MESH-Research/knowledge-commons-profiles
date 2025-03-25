@@ -1,0 +1,55 @@
+log:
+  level: INFO
+
+entryPoints:
+  web:
+    # http
+    address: ':80'
+
+  ping:
+    address: ":8082"
+
+ping:
+  entryPoint: "ping"
+
+http:
+  routers:
+    web-router:
+      rule: 'Host(`profile.hcommons-dev.org`) || Host(`www.profile.hcommons-dev.org`)'
+      entryPoints:
+        - web
+      middlewares:
+        - csrf
+      service: django
+    localhost-router:
+      rule: 'Host(`localhost`)'
+      entryPoints:
+        - web
+      middlewares:
+        - csrf
+      service: django
+    health-check-router:
+      rule: 'Path(`/health/`)'
+      priority: 100
+      entryPoints:
+        - web
+      service: django
+
+  middlewares:
+    csrf:
+      # https://doc.traefik.io/traefik/master/middlewares/http/headers/#hostsproxyheaders
+      # https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+      headers:
+        hostsProxyHeaders: ['X-CSRFToken']
+
+  services:
+    django:
+      loadBalancer:
+        servers:
+          - url: http://django:5000
+
+providers:
+  # https://doc.traefik.io/traefik/master/providers/file/
+  file:
+    filename: /etc/traefik/traefik.yml
+    watch: true
