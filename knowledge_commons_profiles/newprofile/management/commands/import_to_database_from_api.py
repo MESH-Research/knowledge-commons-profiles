@@ -3,9 +3,10 @@ A management command to import data from the API into the Profile model
 """
 
 from django.core.management.base import BaseCommand
-from newprofile.api import API
-from newprofile.models import AcademicInterest
-from newprofile.models import Profile
+
+from knowledge_commons_profiles.newprofile.api import API
+from knowledge_commons_profiles.newprofile.models import AcademicInterest
+from knowledge_commons_profiles.newprofile.models import Profile
 
 
 class Command(BaseCommand):

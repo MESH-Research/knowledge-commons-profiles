@@ -7,13 +7,12 @@ Welcome to knowledge-commons-profiles's documentation!
 ======================================================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :hidden:
+    :titlesonly:
 
-   howto
-   pycharm/configuration
-   users
-
+    user_guide/index
+    api
+    changelog
 
 
 Indices and tables
@@ -22,3 +21,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+

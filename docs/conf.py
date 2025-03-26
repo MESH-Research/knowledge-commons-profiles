@@ -5,11 +5,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-
 import os
 import pathlib
 import sys
@@ -22,6 +20,11 @@ if os.getenv("READTHEDOCS", default="False") == "True":
     os.environ["USE_DOCKER"] = "no"
 else:
     sys.path.insert(0, str(pathlib.Path("/app").resolve()))
+
+sys.path.insert(0, str(pathlib.Path("/app").resolve()))
+sys.path.insert(
+    0, str(pathlib.Path("/app/knowledge_commons_profiles").resolve())
+)
 os.environ["DATABASE_URL"] = "sqlite:///readthedocs.db"
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 django.setup()
@@ -41,10 +44,13 @@ author = "Martin Paul Eve"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx.ext.autosummary",
 ]
 
+autosummary_generate = True
+
 # Add any paths that contain templates here, relative to this directory.
-# templates_path = ["_templates"]
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -56,7 +62,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

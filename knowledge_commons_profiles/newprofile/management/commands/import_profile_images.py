@@ -6,10 +6,11 @@ from pathlib import Path
 
 import rich
 from django.core.management.base import BaseCommand
-from newprofile.models import Profile
-from newprofile.models import ProfileImage
-from newprofile.models import WpUser
 from rich.progress import track
+
+from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import ProfileImage
+from knowledge_commons_profiles.newprofile.models import WpUser
 
 
 class Command(BaseCommand):
