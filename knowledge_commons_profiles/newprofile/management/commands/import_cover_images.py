@@ -36,28 +36,31 @@ class Command(BaseCommand):
         :return:
         """
         base_path = options["base_dir"]
-        members_path = Path(base_path / "members")
+        members_path = Path(base_path) / "members"
 
         # Ensure the members directory exists
         if not Path.exists(members_path):
-            self.stdout.write(
-                self.style.ERROR(f"Directory not found: {members_path!s}"),
-            )
+            rich.print(f"Directory not found: {members_path!s}")
             return
 
         # Walk through member directories
-        for user_id in track(members_path.iterdir()):
+        for user_id_full in track(members_path.iterdir()):
+            user_id = user_id_full.stem
+
             if not user_id.isdigit():
+                rich.print(f"Skipping {user_id!s} (not a number)")
                 continue
 
-            cover_image_path = Path(
-                members_path / user_id / "cover-image",
-            )
+            cover_image_path = Path(members_path) / user_id / "cover-image"
+
             if not Path.exists(cover_image_path):
+                rich.print(f"Skipping {cover_image_path!s}")
                 continue
 
             # Look for image files in the cover-image directory
-            for filename in cover_image_path.iterdir():
+            for filename_full in cover_image_path.iterdir():
+                filename = filename_full.name
+
                 if filename.endswith((".jpg", ".jpeg", ".png")):
                     try:
                         # Get or create user instance
@@ -75,11 +78,17 @@ class Command(BaseCommand):
 
                         if not profile_object:
                             rich.print(
-                                f"Profile for {user_id} not found, skipping",
+                                f"Profile for {user_id!s} not found, "
+                                f"skipping",
                             )
                             continue
 
-                        final_filename = f"https://hcommons.org/app/uploads/buddypress/members/{user_id}/cover-image/{filename}"
+                        final_filename = (
+                            f"https://hcommons.org/app/"
+                            f"uploads/buddypress/"
+                            f"members/{user_id!s}/"
+                            f"cover-image/{filename}"
+                        )
 
                         cover_image, created = (
                             CoverImage.objects.update_or_create(
@@ -93,7 +102,7 @@ class Command(BaseCommand):
 
                         status = "Created" if created else "Updated"
                         rich.print(
-                            f"{status} cover image for user {user_id}: "
+                            f"{status} cover image for user {user_id!s}: "
                             f"{filename}",
                         )
 

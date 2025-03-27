@@ -30,6 +30,26 @@ This project provides API endpoints and HTML templated responses to retrieve det
 
 Moved to [settings](https://cookiecutter-django.readthedocs.io/en/latest/1-getting-started/settings.html).
 
+## Initial Setup
+
+There are a number of initial setup operations that need to be performed to get initial profile data into the system from the main WordPress application.
+
+First, use the management command import_from_sql with the -file option to import a MySQL dump of the main HCommons/KCommons WordPress database:
+
+    $ python manage.py import_from_sql -file /path/to/hcommons.sql
+
+alternatively, you can provide an S3 URL:
+
+    $ python manage.py import_from_sql -file s3://bucket/path/to/hcommons.sql
+
+Second, you need to import the cover images. These are found inside the "knowledge-commons-wordpress/site/web/app/uploads/buddypress/members" directory. You need a minimum structure, on disk, of "buddypress/members" for this to work. The command is:
+
+    $ python manage.py import_cover_images /path/to/buddypress/
+
+Third, you need to import profile images. These are found inside the "knowledge-commons-wordpress/site/web/app/uploads/avatars" directory. You need a minimum structure, on disk, of "uploads/avatars" for this to work. The command is:
+
+    $ python manage.py import_profile_images /path/to/uploads
+
 ## Basic Commands
 
 ### Setting Up Your Users
