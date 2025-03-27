@@ -1,3 +1,9 @@
+## 0.6.2 (2025-03-27)
+
+### Fix
+
+- **import_profile_images**: fixes for pathlib.Path version of script
+
 ## 0.6.1 (2025-03-27)
 
 ### Fix
