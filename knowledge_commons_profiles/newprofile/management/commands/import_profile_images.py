@@ -36,7 +36,7 @@ class Command(BaseCommand):
         :return:
         """
         base_path = options["base_dir"]
-        avatars_path = Path(base_path / "avatars")
+        avatars_path = Path(base_path) / "avatars"
 
         # Ensure the members directory exists
         if not Path.exists(avatars_path):
@@ -50,7 +50,7 @@ class Command(BaseCommand):
             if not user_id.isdigit():
                 continue
 
-            avatars_image_path = Path(avatars_path / user_id)
+            avatars_image_path = Path(avatars_path) / user_id
             if not Path.exists(avatars_image_path):
                 continue
 
