@@ -1,3 +1,9 @@
+## 0.6.3 (2025-03-27)
+
+### Fix
+
+- **import_cover_images**: fixes to cover image import to allow for pathlib.path support
+
 ## 0.6.2 (2025-03-27)
 
 ### Fix
