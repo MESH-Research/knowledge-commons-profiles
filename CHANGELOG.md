@@ -1,3 +1,9 @@
+## 0.6.1 (2025-03-27)
+
+### Fix
+
+- **import_profile_images**: fix bad path construction
+
 ## 0.6.0 (2025-03-25)
 
 ### Feat
