@@ -40,18 +40,21 @@ class Command(BaseCommand):
 
         # Ensure the members directory exists
         if not Path.exists(avatars_path):
-            self.stdout.write(
-                self.style.ERROR(f"Directory not found: {avatars_path!s}"),
-            )
+            rich.print(f"Directory not found: {avatars_path!s}")
             return
 
         # Walk through member directories
-        for user_id in track(avatars_path.iterdir()):
-            if not user_id.isdigit():
+        for user_id_full in track(avatars_path.iterdir()):
+            # get the last folder part here (e.g. /a/b/c -> c)
+            user_id = user_id_full.stem
+
+            if not str(user_id).isdigit():
+                rich.print(f"Skipping {user_id!s} (not a number)")
                 continue
 
             avatars_image_path = Path(avatars_path) / user_id
-            if not Path.exists(avatars_image_path):
+            if not avatars_image_path.exists():
+                rich.print(f"Skipping {avatars_image_path!s}")
                 continue
 
             thumb = None
@@ -59,17 +62,20 @@ class Command(BaseCommand):
 
             # Look for image files in the cover-image directory
             for filename in avatars_image_path.iterdir():
-                if filename.endswith(
+                filename_plain = filename.name
+
+                if str(filename_plain).endswith(
                     ("bpthumb.jpg", "bpthumb.jpeg", "bpthumb.png"),
                 ):
-                    thumb = filename
+                    thumb = filename_plain
 
-                if filename.endswith(
+                if str(filename_plain).endswith(
                     ("bpfull.jpg", "bpfull.jpeg", "bpfull.png"),
                 ):
-                    full = filename
+                    full = filename_plain
 
             if not thumb and not full:
+                rich.print(f"No image files found: {avatars_image_path!s}")
                 continue
 
             try:
@@ -91,8 +97,14 @@ class Command(BaseCommand):
                     rich.print(f"Profile for {user_id} not found, skipping")
                     continue
 
-                final_full_filename = f"https://hcommons.org/app/uploads/avatars/{user_id}/{full}"
-                final_thumb_filename = f"https://hcommons.org/app/uploads/avatars/{user_id}/{thumb}"
+                final_full_filename = (
+                    f"https://hcommons.org/app/uploads"
+                    f"/avatars/{user_id}/{full}"
+                )
+                final_thumb_filename = (
+                    f"https://hcommons.org/app/uploads"
+                    f"/avatars/{user_id}/{thumb}"
+                )
 
                 profile_image, created = ProfileImage.objects.update_or_create(
                     profile=profile_object,
@@ -104,7 +116,8 @@ class Command(BaseCommand):
 
                 status = "Created" if created else "Updated"
                 rich.print(
-                    f"{status} profile image for user {user_id}: {filename}",
+                    f"{status} profile image for user {user_id}: "
+                    f"{filename_plain}",
                 )
 
                 rich.print(profile_image)
