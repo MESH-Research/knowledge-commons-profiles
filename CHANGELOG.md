@@ -1,3 +1,15 @@
+## 0.7.0 (2025-03-28)
+
+### Feat
+
+- **errors**: add better formatted 404, 403, and 500 error handling
+- **profile**: delete old theme, rework tests, add new htmx endpoints
+- **profile**: change font to atkinson hyperlegible throughout for accessibility (#62)
+
+### Fix
+
+- **sql_import**: fix for latest sqloxide layout
+
 ## 0.6.3 (2025-03-27)
 
 ### Fix
