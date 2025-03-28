@@ -19,7 +19,7 @@
   <div class="row">
     <!-- Profile Info -->
     <div
-      class="col-12 col-lg-{% if request.user.is_authenticated %}8{% else %}12{% endif %}">
+      class="col-12 col-lg-{% if logged_in_user_is_profile %}8{% else %}12{% endif %}">
       <div class="profile-info-card">
         <div class="profile-image-container"
           hx-get="{% url 'profile_image' username=username %}"
