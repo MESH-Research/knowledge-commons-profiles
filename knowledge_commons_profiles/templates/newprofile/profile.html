@@ -60,7 +60,7 @@
     </div>
 
     <!-- Profile Stats -->
-    {% if request.user.is_authenticated %}
+    {% if logged_in_user_is_profile %}
       <div class="col-12 col-lg-4">
         <div class="profile-stats-card">
           <h3 class="stat-header" id="following"></h3>
