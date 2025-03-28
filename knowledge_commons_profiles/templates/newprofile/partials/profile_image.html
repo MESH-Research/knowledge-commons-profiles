@@ -1,0 +1,8 @@
+{% if username %}
+  <!-- profile image -->
+  <a href="{% url 'profile' username %}/">
+    <img src="{{ profile_image }}"
+         alt="Profile image"
+         class="profile-image" />
+  </a>
+{% endif %}

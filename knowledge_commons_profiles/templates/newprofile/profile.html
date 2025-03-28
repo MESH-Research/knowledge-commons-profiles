@@ -1,260 +1,133 @@
-<!DOCTYPE html>
 {% extends "base.html" %}
+{% load static %}
 
-{% load crispy_forms_tags crispy_forms_field %}
+{% block content %}
+<div class="container">
 
-{% block title %}
-  Profile
-{% endblock title %}
-{% block delegated_header %}
-  <div id="item-header-cover" class="table">
-    <div id="item-header-content">
-      <div id="item-main">
-        <h4 class="name" id="name"></h4>
-        <h4 class="title" id="title"></h4>
-        <h4 class="affiliation" id="affiliation"></h4>
-        <div class="username">
-          <span class="social-label"><em>Commons</em> username:</span>
-          <a href="" title="Send private message">@{{ username }}</a>
+  <!-- Profile Banner and Info -->
+  <div class="row">
+    <!--djlint:off -->
+    <div class="profile-banner col-12 col-lg-12"
+         style="background-image: url('https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg');"
+         id="profile-banner"
+         hx-get="{% url 'cover_image' username=username %}"
+         hx-trigger="load"
+         hx-target="this"></div>
+    <!--djlint:on -->
+  </div>
+
+  <div class="row">
+    <!-- Profile Info -->
+    <div
+      class="col-12 col-lg-{% if request.user.is_authenticated %}8{% else %}12{% endif %}">
+      <div class="profile-info-card">
+        <div class="profile-image-container"
+          hx-get="{% url 'profile_image' username=username %}"
+          hx-trigger="load"
+          hx-target="this">
         </div>
-        <div class="twitter" id="twitter"></div>
-        <div class="mastodon" id="mastodon"></div>
-        <div class="bluesky" id="bluesky"></div>
-        <div class="orcid" id="orcid"></div>
-      </div>
-      <!-- #item-main -->
-      <div id="item-meta">
-        <div class="avatar-wrap">
-          <div id="item-header-avatar"
-               hx-get="{% url 'mysql_data' username=username %}"
-               hx-trigger="load"
-               hx-indicator="#item-header-avatar"
-               hx-target="this"
-               hx-on:htmx:after-swap="initShowBlogMoreButtons('commons-groups', 'commons-groups'); initShowBlogMoreButtons('recent-commons-activity', 'recent-commons-activity'); initShowBlogMoreButtons('commons-sites', 'commons-sites');">
-          </div>
-        </div>
-        <div class="following-n-members">
-          <a href="https://hcommons.org/members/{{ username }}/following">
-            Following <span id="follower-count">{{ follower_count }}</span> members
+        <h1 class="profile-title" id="profile-title" hx-swap-oob="true"></h1>
+        <h2 class="profile-subtitle" id="profile-subtitle"></h2>
+        <p class="profile-institution" id="profile-institution"></p>
+
+        <div class="profile-social">
+          <a href="#" class="social-link" id="mastodon">
+            <i class="fab fa-mastodon"></i>
+          </a>
+          <a href="#" class="social-link" id="twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+          <a href="#" class="social-link" id="bluesky">
+            <img class="bluesky" src="{% static "img/bluesky.png" %}"
+                 alt="bluseky"/>
+          </a>
+          <a href="{% url "profile" user=username %}" class="social-link"
+             id="kc">
+            <i class="fas fa-at"></i>
+            <span>{{ username }}</span>
+          </a>
+          <a href="#" class="social-link" id="orcid">
+            <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
           </a>
         </div>
-      </div>
-      <!-- #item-meta -->
-    </div>
-    <!-- #item-header-content -->
-  </div>
-  <!-- #item-header-cover -->
-{% endblock delegated_header %}
-{% block content %}
-  <!-- #item-header -->
-  <div class="full-width">
-    <div id="item-main-content">
-      <div id="item-nav">
-        <div class="item-list-tabs no-ajax" id="object-nav" role="navigation">
-          <ul id="nav-bar-filter">
-            <li id="xprofile-personal-li" class="current selected">
-              <a id="user-xprofile"
-                 href="https://hcommons.org/members/{{ username }}/profile/">Profile</a>
-            </li>
-            <li id="activity-personal-li">
-              <a id="user-activity"
-                 href="https://hcommons.org/members/{{ username }}/activity/">Activity</a>
-            </li>
-            <li id="blogs-personal-li">
-              <a id="user-blogs"
-                 href="https://hcommons.org/members/{{ username }}/blogs/">Sites
-                <span class="count">1</span></a>
-            </li>
-            <li id="notifications-personal-li">
-              <a id="user-notifications"
-                 href="https://hcommons.org/members/{{ username }}/notifications/">Notifications
-                <span class="count">9</span></a>
-            </li>
-            <li id="messages-personal-li">
-              <a id="user-messages"
-                 href="https://hcommons.org/members/{{ username }}/messages/">Messages
-                <span class="no-count">0</span></a>
-            </li>
-            <li id="members-following-personal-li">
-              <a id="user-members-following"
-                 href="https://hcommons.org/members/{{ username }}/following/">Following
-                <span class="count">23</span></a>
-            </li>
-            <li id="members-followers-personal-li">
-              <a id="user-members-followers"
-                 href="https://hcommons.org/members/{{ username }}/followers/">Followers
-                <span class="count">49</span></a>
-            </li>
-            <li id="events-personal-li">
-              <a id="user-events"
-                 href="https://hcommons.org/members/{{ username }}/events/">Events</a>
-            </li>
-            <li id="groups-personal-li">
-              <a id="user-groups"
-                 href="https://hcommons.org/members/{{ username }}/groups/">Groups
-                <span class="no-count">0</span></a>
-            </li>
-            <li id="forums-personal-li">
-              <a id="user-forums"
-                 href="https://hcommons.org/members/{{ username }}/forums/">Forums</a>
-            </li>
-            <li id="docs-personal-li">
-              <a id="user-docs"
-                 href="https://hcommons.org/members/{{ username }}/docs/">Docs
-                <span class="count">0</span></a>
-            </li>
-            <li id="settings-personal-li">
-              <a id="user-settings"
-                 href="https://hcommons.org/members/{{ username }}/settings/">Settings</a>
-            </li>
-          </ul>
+
+        <div class="membership-badges" id="membership-badges"
+             hx-get="{% url 'mysql_data' username=username %}"
+             hx-trigger="load"
+             hx-target="this">
         </div>
       </div>
-      <!-- #item-nav -->
-      <div id="item-body" role="main">
-        <div id="profile-main" role="main">
-          <form>
-            <div class="left">
-              <div class="academic-interests wordblock"
-                   id="academic-interests-container">
-                <h4>
-                  Academic
-                  Interests
-                </h4>
-                Loading academic interests...
-              </div>
-              <div id="commons-groups" class="commons-groups wordblock">
-                <h4>Commons Groups</h4>
-                Loading...
-              </div>
-              <div class="recent-commons-activity wordblock show-more"
-                   id="recent-commons-activity">
-                <h4>Recent Commons Activity</h4>
-                Loading...
-              </div>
-              <div class="commons-sites wordblock" id="commons-sites">
-                <h4>Commons Sites</h4>
-                Loading...
-              </div>
-            </div>
-            <div class="right">
-              <div class="about hideable">
-                <h4>About</h4>
-                <div class="about-content"
-                     hx-get="{% url 'profile_info' username=username %}"
-                     hx-trigger="load"
-                     hx-indicator="#about-loading"
-                     hx-target="this"
-                     hx-on:htmx:after-swap="this.parentElement.classList.add('show-more'); initShowBlogMoreButtons('academic-interests-container', 'academic-interests'); initShowBlogMoreButtons('publications-container', 'publications');">
-                  <div id="about-loading" class="loading-indicator">
-                    <span class="spinner"></span> Loading
-                    about...
-                  </div>
-                </div>
-              </div>
-              <div class="education hideable" id="education">
-                <h4>Education</h4>
-                Loading education...
-              </div>
-              <!-- Initial placeholder with loading state -->
-              <div id="mastodon-feed-container" class="hideable">
-                <h4>Mastodon Feed</h4>
-                <div class="mastodon-feed-content"
-                     hx-get="{% url 'mastodon_feed' username=username %}"
-                     hx-trigger="load"
-                     hx-indicator="#mastodon-loading"
-                     hx-target="this">
-                  <div id="mastodon-loading" class="loading-indicator">
-                    <span class="spinner"></span> Loading
-                    Mastodon posts...
-                  </div>
-                </div>
-              </div>
-              <!-- Initial placeholder with loading state -->
-              <div id="blog-posts-container" class="hideable">
-                <h4>Blog Posts</h4>
-                <div hx-get="{% url 'blog_posts' username=username %}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML"
-                     hx-target="this"
-                     id="blog-posts-content"
-                     hx-on:htmx:after-request="this.parentElement.classList.add('show-more'); initShowBlogMoreButtons('blog-posts-container', 'blog-posts');">
-                  <div class="loading-indicator">
-                    <span class="spinner"></span> Loading
-                    blog posts...
-                  </div>
-                </div>
-              </div>
-              <script>
-                function initShowBlogMoreButtons(item_id, second_item_id) {
-                  $('#' + item_id).each(function() {
-                    var div = $(this);
-                    var header = div.find('h4');
-                    var showMoreButton = $('<button id="show_more_' + item_id + '" class="js-dynamic-show-hide button" title="Show more" data-replace-text="Show less">Show more</button>');
-
-                    header.remove(); // this will be restored after wrapping the remaining contents in div.dynamic-height-wrap
-
-                    div
-                      .addClass('js-dynamic-height')
-                      .attr('data-maxheight', 250)
-                      .html(header[0].outerHTML + '<div class="dynamic-height-wrap">' + div.html() + '</div>' + showMoreButton[0].outerHTML);
-                  });
-
-                  $('#' + item_id).dynamicMaxHeight();
-
-                  // buddypress adds ajax & link-like functionality to buttons.
-                  // prevent page from reloading when "show more" button pressed.
-                  $('#show_more_' + item_id).click(function(event) {
-                    event.preventDefault();
-                  });
-
-                  // button is also not automatically hid if itemheight < maxheight. fix it
-                  $.each($('#' + item_id), function() {
-                    var maxHeight = parseInt($(this).attr('data-maxheight'), 10);
-                    var itemHeight = parseInt($(this).attr('data-itemheight'), 10);
-
-                    if (maxHeight > itemHeight) {
-                      $(this).find('#show_more_' + item_id).hide();
-                    }
-                  });
-                }
-              </script>
-              <div class="cv hideable">
-                <h4>CV</h4>
-                <a href="https://TODO.cv/" target="_blank" rel="nofollow">View
-                file</a>
-              </div>
-              <!-- Initial placeholder with loading state -->
-              <div id="works-deposits-container" class="works-deposits hideable">
-                <h4>Works Deposits</h4>
-                <div hx-get="{% url 'works_deposits' username=username %}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML"
-                     hx-target="this"
-                     id="works-deposit-content"
-                     hx-on:htmx:after-request="initShowBlogMoreButtons('works-deposits-container', 'works-deposits');">
-                  <div class="loading-indicator">
-                    <span class="spinner"></span> Loading
-                    Works deposits...
-                  </div>
-                </div>
-              </div>
-              <div id="publications-container" class="publications hideable">
-                <h4>Publications</h4>
-                Loading...
-              </div>
-              <div id="projects-container" class="projects hideable show-more">
-                <h4>Projects</h4>
-                Loading...
-              </div>
-            </div>
-          </form>
-        </div>
-        <!-- .profile-main -->
-      </div>
-      <!-- #item-body -->
     </div>
-    <!-- /.item-main-content -->
+
+    <!-- Profile Stats -->
+    {% if request.user.is_authenticated %}
+      <div class="col-12 col-lg-4">
+        <div class="profile-stats-card">
+          <h3 class="stat-header" id="following"></h3>
+          <div class="profile-actions">
+            <a href="{% url "edit_profile" %}"
+               class="action-btn primary">Edit</a>
+            <a href="#" class="action-btn">Change Profile Photo</a>
+            <a href="#" class="action-btn">Change Cover Image</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
   </div>
-  <!-- full-width -->
+
+  <!-- Main Content Grid -->
+  <div class="row">
+    <!-- Left Column - About -->
+    <div class="col-12 col-lg-8">
+      <div class="content-card" id="about_user">
+        <h3 class="card-title">About</h3>
+        <div class="about-text"
+             hx-get="{% url 'profile_info' username=username %}"
+             hx-trigger="load"
+             hx-target="this">
+        </div>
+      </div>
+
+      <!-- Education -->
+      <div class="content-card" id="education"></div>
+
+      <!-- Works Deposits -->
+      <div class="content-card" id="works"
+           hx-get="{% url 'works_deposits' username=username %}"
+           hx-trigger="load"
+           hx-target="this"></div>
+
+      <!-- Publications -->
+      <div class="content-card" id="publications"></div>
+
+      <!-- Projects -->
+      <div class="content-card" id="projects"></div>
+
+      <!-- Blog Posts -->
+      <div class="content-card" id="blog-posts"
+           hx-get="{% url 'blog_posts' username=username %}"
+           hx-trigger="load"
+           hx-target="this"></div>
+
+      <!-- Mastodon Feed -->
+      <div class="content-card" id="mastodon-feed"
+           hx-get="{% url 'mastodon_feed' username=username %}"
+           hx-trigger="load"
+           hx-target="this"></div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-12 col-lg-4">
+      <div class="content-card" id="academic-interests"></div>
+
+      <div class="content-card" id="commons-groups"></div>
+
+      <div class="content-card" id="commons-activity"></div>
+
+      <div class="content-card" id="commons-sites"></div>
+    </div>
+  </div>
+</div>
+
 {% endblock content %}
