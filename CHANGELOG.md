@@ -1,3 +1,10 @@
+## 0.8.0 (2025-03-28)
+
+### Feat
+
+- **profile**: add favicon
+- **middleware**: wordpress login/logout improvements
+
 ## 0.7.0 (2025-03-28)
 
 ### Feat
