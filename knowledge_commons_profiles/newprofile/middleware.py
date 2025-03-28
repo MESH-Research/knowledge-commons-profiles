@@ -9,6 +9,7 @@ from urllib.parse import unquote
 import phpserialize
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login
+from django.contrib.auth import logout
 from django.db import connections
 
 User = get_user_model()
@@ -43,6 +44,22 @@ class WordPressAuthMiddleware:
                 if user:
                     # If the authentication is successful, log the user in
                     login(request, user)
+                    request.session["wordpress_logged_in"] = True
+        # if the user is already authenticated, re-check their WordPress
+        # session if they were logged in by WordPress
+        elif request.session.get("wordpress_logged_in", False):
+            wordpress_cookie = self.get_wordpress_cookie(request)
+
+            if not wordpress_cookie:
+                # If the cookie is not present, log the user out
+                logout(request)
+                return self.get_response(request)
+
+            user = self.authenticate_wordpress_session(wordpress_cookie)
+            if not user:
+                # If the auth is not successful, log the user out
+                logout(request)
+                return self.get_response(request)
 
         # Return the response
         return self.get_response(request)
