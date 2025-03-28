@@ -545,11 +545,13 @@ class ProfileViewTest(TestCase):
             username="testuser",
             email="test@example.com",
             password="password123",
+            is_superuser=True,
         )
         self.other_user = User.objects.create_user(
             username="otheruser",
             email="other@example.com",
             password="password123",
+            is_superuser=True,
         )
         self.client = Client()
 
