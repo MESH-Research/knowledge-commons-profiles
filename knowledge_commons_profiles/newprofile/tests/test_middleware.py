@@ -68,12 +68,19 @@ class WordPressAuthMiddlewareTests(TestCase):
         )
         self.mock_login = self.login_patcher.start()
 
+        # Mock logout
+        self.logout_patcher = mock.patch(
+            "knowledge_commons_profiles.newprofile.middleware.logout"
+        )
+        self.mock_logout = self.logout_patcher.start()
+
     def tearDown(self):
         """Clean up after the tests."""
         self.connections_patcher.stop()
         self.phpserialize_patcher.stop()
         self.get_or_create_patcher.stop()
         self.login_patcher.stop()
+        self.logout_patcher.stop()
 
     def test_call_no_cookie(self):
         """Test middleware call when no WordPress cookie is present."""
@@ -100,7 +107,11 @@ class WordPressAuthMiddlewareTests(TestCase):
         request = self.factory.get("/")
         request.user = mock.MagicMock()
         request.user.is_authenticated = True
-        request.COOKIES = {"wordpress_logged_in_123": "cookie_value"}
+
+        middleware = SessionMiddleware(lambda x: None)
+        middleware.process_request(request)
+
+        request.session["wordpress_logged_in_123"] = "cookie_value"
 
         # Call middleware
         response = self.middleware(request)
@@ -483,3 +494,171 @@ class WordPressAuthMiddlewareTests(TestCase):
 
             # Assert the response is the expected one
             self.assertEqual(response, "response")
+
+    def test_call_authenticated_without_cookie(self):
+        """Test middleware logs out authenticated users when WordPress
+        cookie is missing."""
+        # Create request with authenticated user but no WordPress cookie
+        request = self.factory.get("/")
+        request.user = self.test_user
+
+        request.user._is_authenticated = True
+        self.assertTrue(request.user.is_authenticated)
+
+        # Setup session to indicate user was logged in via WordPress
+        middleware = SessionMiddleware(get_response=self.get_response_mock)
+        middleware.process_request(request)
+        request.session["wordpress_logged_in"] = True
+        request.session.save()
+
+        # Call middleware
+        response = self.middleware(request)
+
+        # Assert logout was called
+        self.mock_login.assert_not_called()  # Login shouldn't be called
+        self.mock_logout.assert_called_once_with(
+            request
+        )  # Logout should be called
+
+        # Assert get_response was called with the request
+        self.get_response_mock.assert_called_once_with(request)
+
+        # Assert the response is the expected one
+        self.assertEqual(response, "response")
+
+    def test_call_authenticated_with_invalid_cookie(self):
+        """Test middleware logs out authenticated users when WordPress
+        cookie is invalid."""
+        # Create request with authenticated user and WordPress cookie
+        request = self.factory.get("/")
+        request.user = self.test_user
+
+        request.user._is_authenticated = True
+        self.assertTrue(request.user.is_authenticated)
+
+        request.COOKIES = {"wordpress_logged_in_123": "invalid_cookie_value"}
+
+        # Setup session to indicate user was logged in via WordPress
+        middleware = SessionMiddleware(get_response=self.get_response_mock)
+        middleware.process_request(request)
+        request.session["wordpress_logged_in"] = True
+        request.session.save()
+
+        # Mock authenticate_wordpress_session to return None (invalid cookie)
+        with mock.patch.object(
+            self.middleware, "authenticate_wordpress_session"
+        ) as mock_auth:
+            mock_auth.return_value = None
+
+            # Call middleware
+            response = self.middleware(request)
+
+            # Assert authenticate_wordpress_session was called with cookie
+            # value
+            mock_auth.assert_called_once_with("invalid_cookie_value")
+
+            # Assert logout was called
+            self.mock_logout.assert_called_once_with(request)
+
+            # Assert get_response was called with the request
+            self.get_response_mock.assert_called_once_with(request)
+
+            # Assert the response is the expected one
+            self.assertEqual(response, "response")
+
+    def test_call_authenticated_with_expired_cookie(self):
+        """Test middleware logs out authenticated users when WordPress
+        session is expired."""
+        # Set up test data for an expired cookie
+        username = "wp_testuser"
+        # Set expiration to one hour ago
+        expiration = str(
+            int(
+                (
+                    datetime.datetime.now(tz=datetime.UTC)
+                    - datetime.timedelta(hours=1)
+                ).timestamp()
+            )
+        )
+        token = "expired_token"
+        hmac = "hmac_value"
+        cookie_value = f"{username}|{expiration}|{token}|{hmac}"
+
+        # Create request with authenticated user and expired WordPress cookie
+        request = self.factory.get("/")
+        request.user = self.test_user
+
+        request.user._is_authenticated = True
+        self.assertTrue(request.user.is_authenticated)
+
+        request.COOKIES = {"wordpress_logged_in_123": cookie_value}
+
+        # Setup session to indicate user was logged in via WordPress
+        middleware = SessionMiddleware(get_response=self.get_response_mock)
+        middleware.process_request(request)
+        request.session["wordpress_logged_in"] = True
+        request.session.save()
+
+        # Mock authenticate_wordpress_session with actual implementation calling
+        with mock.patch.object(
+            self.middleware, "get_wordpress_values"
+        ) as mock_get_values:
+            mock_get_values.return_value = (
+                42,
+                "test@example.com",
+                "hashed_password",
+            )
+
+            # Create an expired session
+            token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+            with mock.patch.object(
+                self.middleware, "get_meta_value"
+            ) as mock_get_meta:
+                session_data = {
+                    token_hash.encode(): {
+                        b"expiration": int(expiration),
+                        b"login": b"timestamp",
+                        b"data": b"session_data",
+                    }
+                }
+                mock_get_meta.return_value = session_data
+
+                # Call middleware
+                response = self.middleware(request)
+
+                # Assert logout was called
+                self.mock_logout.assert_called_once_with(request)
+
+                # Assert get_response was called with the request
+                self.get_response_mock.assert_called_once_with(request)
+
+                # Assert the response is the expected one
+                self.assertEqual(response, "response")
+
+    def test_call_authenticated_user_not_from_wordpress(self):
+        """Test middleware doesn't log out users who weren't authenticated
+        via WordPress."""
+        # Create request with authenticated user but not from WordPress
+        request = self.factory.get("/")
+        request.user = self.test_user
+
+        request.user._is_authenticated = True
+        self.assertTrue(request.user.is_authenticated)
+
+        # Setup session with no wordpress_logged_in flag
+        middleware = SessionMiddleware(get_response=self.get_response_mock)
+        middleware.process_request(request)
+        request.session.save()
+
+        # Call middleware
+        response = self.middleware(request)
+
+        # Assert logout was not called
+        self.mock_logout.assert_not_called()
+
+        # Assert get_response was called with the request
+        self.get_response_mock.assert_called_once_with(request)
+
+        # Assert the response is the expected one
+        self.assertEqual(response, "response")
