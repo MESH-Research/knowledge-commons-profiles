@@ -20,93 +20,6 @@ from knowledge_commons_profiles.newprofile.models import Profile
 logger = logging.getLogger(__name__)
 
 
-async def works_deposits(request, username):
-    """
-    Get works deposits via HTMX
-    """
-    api = API(request, username, use_wordpress=False, create=False)
-
-    # Get the works deposits for this username
-    user_works_deposits = await api.works_html
-
-    return render(
-        request,
-        "newprofile/partials/works_deposits.html",
-        {"works_html": user_works_deposits},
-    )
-
-
-def mysql_data(request, username):
-    """
-    Get wordpress data via HTMX
-    """
-    try:
-        api = API(request, username, use_wordpress=True, create=False)
-
-        profile_info = api.get_profile_info()
-
-        if username == request.user.username:
-            api_me = api
-            my_profile_info = profile_info
-        else:
-            # get logged in user profile
-            api_me = (
-                API(
-                    request,
-                    request.user.username,
-                    use_wordpress=True,
-                    create=False,
-                )
-                if request.user.is_authenticated
-                else None
-            )
-
-            my_profile_info = api_me.get_profile_info() if api_me else None
-
-        notifications = api_me.get_short_notifications() if api_me else None
-
-        context = {
-            "username": username,
-            "cover_image": api.get_cover_image(),
-            "profile_image": api.get_profile_photo(),
-            "groups": api.get_groups(),
-            "logged_in_profile": my_profile_info,
-            "logged_in_user": request.user,
-            "memberships": api.get_memberships(),
-            "follower_count": api.follower_count(),
-            "commons_sites": api.get_user_blogs(),
-            "activities": api.get_activity(),
-            "short_notifications": notifications,
-            "notification_count": len(notifications) if notifications else 0,
-            "logged_in_profile_image": (
-                api_me.get_profile_photo() if api_me else None
-            ),
-        }
-
-        return render(
-            request,
-            "newprofile/partials/mysql_data.html",
-            context=context,
-        )
-    except django.db.utils.OperationalError:
-        context = {
-            "username": None,
-            "cover_image": None,
-            "profile_image": None,
-            "groups": None,
-            "logged_in_profile": None,
-            "logged_in_user": None,
-            "memberships": None,
-            "follower_count": None,
-            "commons_sites": None,
-            "activities": None,
-            "short_notifications": None,
-            "notification_count": 0,
-            "logged_in_profile_image": None,
-        }
-        return render(request, "newprofile/partials/mysql_data.html", {})
-
-
 def profile_info(request, username):
     """
     Get profile info via HTMX
@@ -123,25 +36,7 @@ def profile_info(request, username):
     return render(request, "newprofile/partials/profile_info.html", context)
 
 
-def profile_info_new(request, username):
-    """
-    Get profile info via HTMX
-    """
-    api = API(request, username, use_wordpress=False, create=False)
-
-    context = {
-        "profile_info": api.get_profile_info(),
-        "academic_interests": api.get_academic_interests(),
-        "education": api.get_education(),
-        "about_user": api.get_about_user(),
-    }
-
-    return render(
-        request, "newprofile/new_partials/profile_info.html", context
-    )
-
-
-async def works_deposits_new(request, username):
+async def works_deposits(request, username):
     """
     Get profile info via HTMX
     """
@@ -152,32 +47,9 @@ async def works_deposits_new(request, username):
 
     return render(
         request,
-        "newprofile/new_partials/works_deposits.html",
+        "newprofile/partials/works_deposits.html",
         {"works_html": user_works_deposits},
     )
-
-
-def blog_posts(request, username):
-    """
-    Get blog posts via HTMX
-    """
-    try:
-        api = API(request, username, use_wordpress=True, create=False)
-
-        # Get the blog posts for this username
-        user_blog_posts = api.get_blog_posts()
-
-        return render(
-            request,
-            "newprofile/partials/blog_posts.html",
-            {"blog_posts": user_blog_posts},
-        )
-    except django.db.utils.OperationalError:
-        return render(
-            request,
-            "newprofile/partials/blog_posts.html",
-            {"blog_posts": ""},
-        )
 
 
 def mastodon_feed(request, username):
@@ -194,24 +66,6 @@ def mastodon_feed(request, username):
     return render(
         request,
         "newprofile/partials/mastodon_feed.html",
-        {"mastodon_posts": mastodon_posts},
-    )
-
-
-def mastodon_feed_new(request, username):
-    """
-    Get a mastodon feed via HTMX
-    """
-    api = API(request, username, use_wordpress=False, create=False)
-
-    # Get the mastodon posts for this username
-    mastodon_posts = (
-        api.mastodon_posts.latest_posts if api.profile_info["mastodon"] else []
-    )
-
-    return render(
-        request,
-        "newprofile/new_partials/mastodon_feed.html",
         {"mastodon_posts": mastodon_posts},
     )
 
@@ -236,69 +90,18 @@ def profile(request, user="", create=False):
     """
     # TODO: if "create" then redirect to the profile edit page
 
-    theme = request.GET.get("theme", None)
+    # the logged-in user is the same as the requested profile they are
+    # viewing. This means we should show the edit navigation
 
-    template_name = (
-        f"newprofile/{theme}.html" if theme else "newprofile/new_profile.html"
-    )
+    logged_in_user_is_profile = request.user.username == user
 
     return render(
         request=request,
-        context={"username": user},
-        template_name=template_name,
-    )
-
-    api = API(request, user, use_wordpress=True, create=create)
-
-    profile_info = api.get_profile_info()
-
-    if user == request.user.username:
-        api_me = api
-        my_profile_info = profile_info
-    else:
-        # get logged in user profile
-        api_me = (
-            API(
-                request,
-                request.user.username,
-                use_wordpress=True,
-                create=False,
-            )
-            if request.user.is_authenticated
-            else None
-        )
-        my_profile_info = api_me.get_profile_info() if api_me else None
-
-    notifications = api_me.get_short_notifications() if api_me else None
-
-    context = {
-        "profile_info": profile_info,
-        "cover_image": api.get_cover_image(),
-        "profile_image": api.get_profile_photo(),
-        "academic_interests": api.get_academic_interests(),
-        "education": api.get_education(),
-        "about_user": api.get_about_user(),
-        "groups": api.get_groups(),
-        "works_html": api.works_html,
-        "logged_in_user": request.user,
-        "logged_in_profile": my_profile_info,
-        "memberships": api.get_memberships(),
-        "follower_count": api.follower_count(),
-        "commons_sites": api.get_user_blogs(),
-        "activities": api.get_activity(),
-        "short_notifications": notifications,
-        "notification_count": len(notifications) if notifications else 0,
-        "logged_in_profile_image": (
-            api_me.get_profile_photo() if api_me else None
-        ),
-    }
-
-    theme = request.GET.get("theme", None)
-
-    template_name = theme if theme else "newprofile/profile.html"
-
-    return render(
-        request=request, context=context, template_name=template_name
+        context={
+            "username": user,
+            "logged_in_user_is_profile": logged_in_user_is_profile,
+        },
+        template_name="newprofile/profile.html",
     )
 
 
@@ -345,15 +148,15 @@ class ProfileView(APIView):
 
         api = API(request, user, use_wordpress=True)
 
-        profile_info = api.get_profile_info()
+        profile_info_obj = api.get_profile_info()
 
         context = {
-            "profile_info": profile_info,
+            "profile_info": profile_info_obj,
             "education": api.get_education(),
             "about_user": api.get_about_user(),
             "mastodon_posts": (
                 api.mastodon_posts.latest_posts
-                if profile_info["mastodon"]
+                if profile_info_obj["mastodon"]
                 else []
             ),
             # "groups": api.get_groups(),
@@ -399,7 +202,7 @@ def edit_profile(request):
     )
 
 
-def blog_posts_new(request, username):
+def blog_posts(request, username):
     """
     Get blog posts via HTMX
     """
@@ -411,30 +214,43 @@ def blog_posts_new(request, username):
 
         return render(
             request,
-            "newprofile/new_partials/blog_posts.html",
+            "newprofile/partials/blog_posts.html",
             {"blog_posts": user_blog_posts},
         )
     except django.db.utils.OperationalError:
         logger.warning("Unable to connect to MySQL database for blogs")
         return render(
             request,
-            "newprofile/new_partials/blog_posts.html",
+            "newprofile/partials/blog_posts.html",
             {"blog_posts": ""},
         )
 
 
-def mysql_data_new(request, username):
+def cover_image(request, username):
     """
-    Get wordpress data via HTMX
+    Load the cover image via HTMX
+    """
+    api = API(request, username, use_wordpress=True, create=False)
+
+    return render(
+        request,
+        "newprofile/partials/cover_image.html",
+        {"cover_image": api.get_cover_image()},
+    )
+
+
+def mysql_data(request, username):
+    """
+    Get WordPress data via HTMX
     """
     try:
         api = API(request, username, use_wordpress=True, create=False)
 
-        profile_info = api.get_profile_info()
+        profile_info_obj = api.get_profile_info()
 
         if username == request.user.username:
             api_me = api
-            my_profile_info = profile_info
+            my_profile_info = profile_info_obj
         else:
             # get logged in user profile
             api_me = (
@@ -461,7 +277,6 @@ def mysql_data_new(request, username):
 
             context = {
                 "username": username,
-                "cover_image": api.get_cover_image(),
                 "profile_image": api.get_profile_photo(),
                 "groups": api.get_groups(),
                 "logged_in_profile": my_profile_info,
@@ -485,7 +300,6 @@ def mysql_data_new(request, username):
             context = {
                 "username": username,
                 "cover_image": api.get_cover_image(),
-                "profile_image": api.get_profile_photo(),
                 "groups": [],
                 "logged_in_profile": my_profile_info,
                 "logged_in_user": (
@@ -504,7 +318,7 @@ def mysql_data_new(request, username):
 
         return render(
             request,
-            "newprofile/new_partials/mysql_data.html",
+            "newprofile/partials/mysql_data.html",
             context=context,
         )
 
@@ -525,7 +339,23 @@ def mysql_data_new(request, username):
             "notification_count": 0,
             "logged_in_profile_image": None,
         }
-        return render(request, "newprofile/new_partials/mysql_data.html", {})
+        return render(request, "newprofile/partials/mysql_data.html", {})
+
+
+def profile_image(request, username):
+    """
+    Load the profile image
+    """
+    api = API(request, username, use_wordpress=True, create=False)
+
+    return render(
+        request,
+        "newprofile/partials/profile_image.html",
+        {
+            "profile_image": api.get_profile_photo(),
+            "username": username,
+        },
+    )
 
 
 def health(request):

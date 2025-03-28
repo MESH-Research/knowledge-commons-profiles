@@ -1,4 +1,5 @@
 {% if blog_posts|length > 0 %}
+  <h3 class="card-title">Blog Posts</h3>
   <ul>
     {% for post in blog_posts %}
       <li>
@@ -10,8 +11,5 @@
     {% endfor %}
   </ul>
 {% else %}
-  <script type="text/javascript">
-    $("#blog-posts-container").hide();
-  </script>
-  <p class="no-posts">No blog posts available.</p>
+  <div class="hide" id="blog-posts" hx-swap-oob="true"></div>
 {% endif %}

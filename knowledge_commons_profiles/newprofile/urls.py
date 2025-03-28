@@ -61,28 +61,13 @@ urlpatterns = [
         name="mysql_data",
     ),
     path(
-        "htmx/profile_info_new/<str:username>/",
-        views.profile_info_new,
-        name="profile_info_new",
+        "htmx/cover_image/<str:username>/",
+        views.cover_image,
+        name="cover_image",
     ),
     path(
-        "htmx/works_deposits_new/<str:username>/",
-        views.works_deposits_new,
-        name="works_deposits_new",
-    ),
-    path(
-        "htmx/mastodon_feed_new/<str:username>/",
-        views.mastodon_feed_new,
-        name="mastodon_feed_new",
-    ),
-    path(
-        "htmx/blog_posts_new/<str:username>/",
-        views.blog_posts_new,
-        name="blog_posts_new",
-    ),
-    path(
-        "htmx/mysql_data_new/<str:username>/",
-        views.mysql_data_new,
-        name="mysql_data_new",
+        "htmx/profile_image/<str:username>/",
+        views.profile_image,
+        name="profile_image",
     ),
 ]
