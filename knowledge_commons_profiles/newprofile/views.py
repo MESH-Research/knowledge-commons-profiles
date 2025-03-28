@@ -90,9 +90,17 @@ def profile(request, user="", create=False):
     """
     # TODO: if "create" then redirect to the profile edit page
 
+    # the logged-in user is the same as the requested profile they are
+    # viewing. This means we should show the edit navigation
+
+    logged_in_user_is_profile = request.user.username == user
+
     return render(
         request=request,
-        context={"username": user},
+        context={
+            "username": user,
+            "logged_in_user_is_profile": logged_in_user_is_profile,
+        },
         template_name="newprofile/profile.html",
     )
 
@@ -233,7 +241,7 @@ def cover_image(request, username):
 
 def mysql_data(request, username):
     """
-    Get wordpress data via HTMX
+    Get WordPress data via HTMX
     """
     try:
         api = API(request, username, use_wordpress=True, create=False)

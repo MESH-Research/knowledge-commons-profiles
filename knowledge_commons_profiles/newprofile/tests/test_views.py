@@ -532,3 +532,93 @@ class MySQLDataTests(TestCase):
 
         # Assert empty context was returned
         self.assertEqual(response.status_code, 200)
+
+
+class ProfileViewTest(TestCase):
+    """
+    Test the profile view
+    """
+
+    def setUp(self):
+        # Create test users
+        self.test_user = User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="password123",
+        )
+        self.other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="password123",
+        )
+        self.client = Client()
+
+    def test_own_profile_shows_edit_options(self):
+        """Test that a user viewing their own profile sees edit options"""
+        # Log in as test_user
+        self.client.login(username="testuser", password="password123")
+
+        # Access test_user's profile
+        response = self.client.get(
+            reverse("profile", kwargs={"user": "testuser"})
+        )
+
+        # Check that the response has status code 200 (OK)
+        self.assertEqual(response.status_code, 200)
+
+        # Check that logged_in_user_is_profile is True in the context
+        self.assertTrue(response.context["logged_in_user_is_profile"])
+
+        # Check that the edit profile link is in the response
+        self.assertContains(response, "Edit")
+        self.assertContains(response, "Change Profile Photo")
+        self.assertContains(response, "Change Cover Image")
+
+    def test_other_profile_hides_edit_options(self):
+        """Test that a user viewing someone else's profile doesn't see
+        edit options"""
+        # Log in as test_user
+        self.client.login(username="testuser", password="password123")
+
+        # Access other_user's profile
+        response = self.client.get(
+            reverse("profile", kwargs={"user": "otheruser"})
+        )
+
+        # Check that the response has status code 200 (OK)
+        self.assertEqual(response.status_code, 200)
+
+        # Check that logged_in_user_is_profile is False in the context
+        self.assertFalse(response.context["logged_in_user_is_profile"])
+
+        # Check that the edit profile link is not in the response
+        self.assertNotContains(response, 'class="action-btn primary">Edit</a>')
+        self.assertNotContains(
+            response, 'class="action-btn">Change Profile Photo</a>'
+        )
+        self.assertNotContains(
+            response, 'class="action-btn">Change Cover Image</a>'
+        )
+
+    def test_unauthenticated_user_hides_edit_options(self):
+        """Test that an unauthenticated user doesn't see edit options on
+        any profile"""
+        # Access a profile without logging in
+        response = self.client.get(
+            reverse("profile", kwargs={"user": "testuser"})
+        )
+
+        # Check that the response has status code 200 (OK)
+        self.assertEqual(response.status_code, 200)
+
+        # Check that logged_in_user_is_profile is False in the context
+        self.assertFalse(response.context["logged_in_user_is_profile"])
+
+        # Check that the edit profile link is not in the response
+        self.assertNotContains(response, 'class="action-btn primary">Edit</a>')
+        self.assertNotContains(
+            response, 'class="action-btn">Change Profile Photo</a>'
+        )
+        self.assertNotContains(
+            response, 'class="action-btn">Change Cover Image</a>'
+        )
