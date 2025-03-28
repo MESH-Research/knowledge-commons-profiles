@@ -1,3 +1,10 @@
+## 0.8.1 (2025-03-28)
+
+### Fix
+
+- **middleware**: wordpress login/logout fixes
+- **profile**: handle logged_in_user_is_profile identity between user and profile
+
 ## 0.8.0 (2025-03-28)
 
 ### Feat
