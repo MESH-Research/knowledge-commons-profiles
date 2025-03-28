@@ -47,19 +47,29 @@ class WordPressAuthMiddleware:
                     request.session["wordpress_logged_in"] = True
         # if the user is already authenticated, re-check their WordPress
         # session if they were logged in by WordPress
-        elif request.session.get("wordpress_logged_in", False):
+        elif (
+            request.session.get("wordpress_logged_in", True)
+            and not request.user.is_superuser
+        ):
             wordpress_cookie = self.get_wordpress_cookie(request)
 
             if not wordpress_cookie:
                 # If the cookie is not present, log the user out
                 logout(request)
+                request.session["wordpress_logged_in"] = False
                 return self.get_response(request)
 
             user = self.authenticate_wordpress_session(wordpress_cookie)
             if not user:
                 # If the auth is not successful, log the user out
                 logout(request)
+                request.session["wordpress_logged_in"] = False
                 return self.get_response(request)
+        # user is logged in, but there is no value set for
+        # "wordpress_logged_in" and they are not a superuser
+        elif request.user.is_authenticated and not request.user.is_superuser:
+            request.session["wordpress_logged_in"] = False
+            logout(request)
 
         # Return the response
         return self.get_response(request)

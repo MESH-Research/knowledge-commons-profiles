@@ -599,7 +599,8 @@ class WordPressAuthMiddlewareTests(TestCase):
         request.session["wordpress_logged_in"] = True
         request.session.save()
 
-        # Mock authenticate_wordpress_session with actual implementation calling
+        # Mock authenticate_wordpress_session with actual implementation
+        # calling
         with mock.patch.object(
             self.middleware, "get_wordpress_values"
         ) as mock_get_values:
@@ -655,7 +656,79 @@ class WordPressAuthMiddlewareTests(TestCase):
         response = self.middleware(request)
 
         # Assert logout was not called
+        self.mock_logout.assert_called_once()
+
+        # Assert get_response was called with the request
+        self.get_response_mock.assert_called_once_with(request)
+
+        # Assert the response is the expected one
+        self.assertEqual(response, "response")
+
+    def test_call_authenticated_user_not_superuser_without_wordpress_flag(
+        self,
+    ):
+        """Test middleware logs out authenticated users without
+        wordpress_logged_in flag who are not superusers."""
+        # Create a regular authenticated user (not superuser)
+        request = self.factory.get("/")
+        request.user = self.test_user
+        request.user._is_authenticated = True
+        self.assertTrue(request.user.is_authenticated)
+        request.user.is_superuser = False  # Ensure user is not a superuser
+
+        # Setup session without wordpress_logged_in flag
+        middleware = SessionMiddleware(get_response=self.get_response_mock)
+        middleware.process_request(request)
+        # Intentionally not setting request.session["wordpress_logged_in"]
+        request.session.save()
+
+        # Call middleware
+        response = self.middleware(request)
+
+        # Assert logout was called
+        self.mock_logout.assert_called_once_with(request)
+
+        # Assert session flag was set to False before logout
+        self.assertEqual(request.session.get("wordpress_logged_in"), False)
+
+        # Assert get_response was called with the request
+        self.get_response_mock.assert_called_once_with(request)
+
+        # Assert the response is the expected one
+        self.assertEqual(response, "response")
+
+    def test_call_authenticated_superuser_without_wordpress_flag(self):
+        """Test middleware does NOT log out superusers even without
+        wordpress_logged_in flag."""
+        # Create a superuser
+        superuser = User.objects.create_superuser(
+            username="admin_user",
+            email="admin@example.com",
+            password="admin_password",
+        )
+
+        # Create request with authenticated superuser
+        request = self.factory.get("/")
+        request.user = superuser
+
+        request.user._is_authenticated = True
+        self.assertTrue(request.user.is_authenticated)
+        # is_superuser is True for superuser
+
+        # Setup session without wordpress_logged_in flag
+        middleware = SessionMiddleware(get_response=self.get_response_mock)
+        middleware.process_request(request)
+        # Intentionally not setting request.session["wordpress_logged_in"]
+        request.session.save()
+
+        # Call middleware
+        response = self.middleware(request)
+
+        # Assert logout was NOT called for superuser
         self.mock_logout.assert_not_called()
+
+        # Assert wordpress_logged_in flag was not set
+        self.assertNotIn("wordpress_logged_in", request.session)
 
         # Assert get_response was called with the request
         self.get_response_mock.assert_called_once_with(request)
