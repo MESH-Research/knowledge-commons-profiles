@@ -13,6 +13,7 @@ env:
   ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik
   ECS_SERVICE: kcprofiles-blue                # set this to your Amazon ECS service name
   ECS_CLUSTER: kcprofiles                     # set this to your Amazon ECS cluster name
+  AUTOSCALE_GROUP: Infra-ECS-Cluster-kcprofiles-ee645084-ECSAutoScalingGroup-v3MrRnH7laIx
 
 jobs:
   deploy-packages:
@@ -62,3 +63,4 @@ jobs:
       - name: Force deployment
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          aws autoscaling start-instance-refresh --auto-scaling-group-name $AUTOSCALE_GROUP --region $AWS_REGION --preferences '{"SkipMatching": false}'
