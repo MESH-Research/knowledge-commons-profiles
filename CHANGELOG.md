@@ -1,3 +1,9 @@
+## 0.9.0 (2025-03-31)
+
+### Feat
+
+- **sidebar**: seperate sidebar into different nav section and add links
+
 ## 0.8.1 (2025-03-28)
 
 ### Fix
