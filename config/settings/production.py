@@ -242,5 +242,7 @@ sentry_sdk.init(
 )
 
 
-# Your stuff...
+# Application stuff...
 # ------------------------------------------------------------------------------
+# this is duplicated from base.py as STATIC_URL is overwritten above
+TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
