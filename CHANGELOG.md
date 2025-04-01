@@ -1,3 +1,13 @@
+## 0.10.0 (2025-04-01)
+
+### Feat
+
+- **edit**: basic edit profile functionality
+
+### Fix
+
+- **urls**: remove sso urls
+
 ## 0.9.0 (2025-03-31)
 
 ### Feat
