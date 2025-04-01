@@ -1,4 +1,3 @@
-import django_saml2_auth.views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -10,15 +9,15 @@ from knowledge_commons_profiles.newprofile import views
 
 urlpatterns = [
     # These are the SAML2 related URLs. (required)
-    path("^sso/", include("django_saml2_auth.urls")),
+    # path("^sso/", include("django_saml2_auth.urls")),
     # The following line will replace the default user login with
     # SAML2 (optional). If you want to specific the after-login-redirect-URL,
     # use parameter "?next=/the/path/you/want" with this view.
-    path("accounts/login/", django_saml2_auth.views.signin),
+    # path("accounts/login/", django_saml2_auth.views.signin),
     # The following line will replace the admin login with SAML2 (optional)
     # If you want to specific the after-login-redirect-URL, use parameter
     # "?next=/the/path/you/want" with this view.
-    path("admin/login/", django_saml2_auth.views.signin),
+    # path("admin/login/", django_saml2_auth.views.signin),
     path("select2/", include("django_select2.urls")),
     path(settings.ADMIN_URL, admin.site.urls),
     path(
