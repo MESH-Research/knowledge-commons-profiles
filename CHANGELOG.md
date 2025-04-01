@@ -1,3 +1,13 @@
+## 0.11.0 (2025-04-01)
+
+### Feat
+
+- **auth**: add logout support
+
+### Fix
+
+- **settings**: change tinymce base url to point to final static files location
+
 ## 0.10.0 (2025-04-01)
 
 ### Feat
