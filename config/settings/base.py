@@ -337,3 +337,6 @@ SAML2_AUTH = {
 }
 
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
+
+LOGIN_URL = "https://hcommons.org/wp-login.php"
+REDIRECT_FIELD_NAME = "redirect_to"

@@ -160,10 +160,8 @@ class WordPressAuthMiddleware:
             )
 
             if dt < datetime.datetime.now(tz=datetime.UTC) or int(
-                expiration,
-            ) != int(
-                val[b"expiration"],
-            ):
+                expiration
+            ) != int(val[b"expiration"]):
                 # expired
                 continue
 

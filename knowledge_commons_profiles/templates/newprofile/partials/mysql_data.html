@@ -65,6 +65,13 @@
       <img src="{{ logged_in_profile_image }}" alt="{{ logged_in_profile.name }}" />
   </div>
 
+  <li class="sidebar-item" hx-swap-oob="true" id="logout">
+      <a href="{{ logout_url }}" class="sidebar-link">
+          <i class="fas fa-sign-out"></i>
+          <span>Logout</span>
+      </a>
+  </li>
+
   <!-- notifications -->
   {% if notification_count %}
   <div class="notifications-container" hx-swap-oob="true" id="notifications-container">

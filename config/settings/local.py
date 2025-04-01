@@ -14,7 +14,13 @@ SECRET_KEY = env(
     default="zLyaQwagwP0Zzpwkt2bITMdRNrLSQBsQ9dw8ek9RSOE91Blqhdtw8uIsemVdoUhp",
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]  # noqa: S104
+ALLOWED_HOSTS = [
+    "localhost",
+    "0.0.0.0",  # noqa:S104
+    "127.0.0.1",
+    "profilelocal.hcommons.org",
+    "*",
+]
 
 # CACHES
 # ------------------------------------------------------------------------------
@@ -83,7 +89,7 @@ if env("USE_DOCKER") == "yes":
 # django-extensions
 # ------------------------------------------------------------------------------
 # https://django-extensions.readthedocs.io/en/latest/installation_instructions.html#configuration
-INSTALLED_APPS += ["django_extensions"]
+INSTALLED_APPS += ["django_extensions", "sslserver"]
 
 # Your stuff...
 # ------------------------------------------------------------------------------

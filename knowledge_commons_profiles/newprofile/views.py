@@ -6,7 +6,6 @@ import logging
 
 import django
 from django.contrib.auth import logout
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -15,6 +14,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from knowledge_commons_profiles.newprofile.api import API
+from knowledge_commons_profiles.newprofile.custom_login import login_required
+from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
 
@@ -300,6 +301,10 @@ def mysql_data(request, username):
                 "logged_in_profile_image": (
                     api_me.get_profile_photo() if api_me else None
                 ),
+                "logout_url": f"https://hcommons.org/wp-login.php?"
+                f"action=logout&"
+                f"_wpnonce={wp_create_nonce(request=request)}&"
+                f"redirect_to={request.build_absolute_uri()}",
             }
         else:
 
@@ -320,6 +325,7 @@ def mysql_data(request, username):
                 "logged_in_profile_image": (
                     api_me.get_profile_photo() if api_me else None
                 ),
+                "logout_url": None,
             }
 
         return render(
@@ -344,6 +350,7 @@ def mysql_data(request, username):
             "short_notifications": None,
             "notification_count": 0,
             "logged_in_profile_image": None,
+            "logout_url": None,
         }
         return render(request, "newprofile/partials/mysql_data.html", {})
 

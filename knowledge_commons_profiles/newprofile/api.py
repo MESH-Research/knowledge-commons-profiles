@@ -467,7 +467,11 @@ class API:
             return profile_image.full
 
         # Fall back to Gravatar
-        email = self.profile.email
+        email = (
+            self.profile.email
+            if self.profile.email != "martin@martineve.com"
+            else "martin@eve.gd"
+        )
         size = 150
 
         # Encode the email to lowercase and then to bytes

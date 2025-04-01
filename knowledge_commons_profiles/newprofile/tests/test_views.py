@@ -245,7 +245,7 @@ class MyProfileTests(TestCase):
                 ]
             )
         )
-        self.assertTrue(response.url.startswith("/accounts/login/"))
+        self.assertTrue(response.url.startswith("https://hcommons.org"))
 
 
 class ProfileViewTests(TestCase):
@@ -405,7 +405,7 @@ class EditProfileTests(TestCase):
                 ]
             )
         )
-        self.assertTrue(response.url.startswith("/accounts/login/"))
+        self.assertTrue(response.url.startswith("https://hcommons.org"))
 
 
 class BlogPostsTests(TestCase):

@@ -22,7 +22,7 @@
       </option>
     </PathMappingSettings>
     <option name="launchJavascriptDebuger" value="false" />
-    <option name="port" value="8000" />
+    <option name="port" value="80" />
     <option name="host" value="0.0.0.0" />
     <option name="additionalOptions" value="" />
     <option name="browserUrl" value="" />
