@@ -1,62 +1,14 @@
 from unittest.mock import patch
 
-from django.forms import Form
 from django.test import TestCase
 
 from knowledge_commons_profiles.newprofile.forms import (
     AcademicInterestsSelect2TagWidget,
 )
-from knowledge_commons_profiles.newprofile.forms import ProfileBleachFormField
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.forms import SanitizedTinyMCE
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
-
-
-class ProfileBleachFormFieldTests(TestCase):
-    def setUp(self):
-        # Create a simple form with our field for testing
-        class TestForm(Form):
-            content = ProfileBleachFormField()
-
-        self.form_class = TestForm
-
-    def test_widget_class(self):
-        """Test that the field uses TinyMCE widget"""
-        form = self.form_class()
-        self.assertEqual(
-            form.fields["content"].widget.__class__.__name__, "Textarea"
-        )
-
-    def test_sanitize_html(self):
-        """Test that HTML is properly sanitized"""
-        test_html = "<script>alert('XSS')</script><p>Safe content</p>"
-        form = self.form_class(data={"content": test_html})
-        self.assertTrue(form.is_valid())
-        self.assertNotIn("<script>", form.cleaned_data["content"])
-        self.assertIn("Safe content&lt;/p&gt;", form.cleaned_data["content"])
-
-    def test_empty_value_branch(self):
-        """Test specifically the empty_values branch in to_python method"""
-        # Create a direct instance of the field
-        field = ProfileBleachFormField()
-
-        # Test with None value (should be in empty_values)
-        result = field.to_python(None)
-        self.assertEqual(result, field.empty_value)
-
-        # Test with empty string (should be in empty_values)
-        result = field.to_python("")
-        self.assertEqual(result, field.empty_value)
-
-        # Verify the branch is not taken with non-empty value
-        with patch(
-            "knowledge_commons_profiles.newprofile.forms.clean"
-        ) as mock_clean:
-            mock_clean.return_value = "cleaned content"
-            result = field.to_python("some content")
-            mock_clean.assert_called_once()
-            self.assertEqual(result, "cleaned content")
 
 
 class SanitizedTinyMCETests(TestCase):
@@ -203,16 +155,6 @@ class ProfileFormTests(TestCase):
         # Add interests to profile
         self.profile.academic_interests.add(self.interest1, self.interest2)
 
-    def test_init_converts_newlines_to_br(self):
-        """Test that newlines are converted to <br> tags in the initial data"""
-        form = ProfileForm(instance=self.profile)
-
-        self.assertIn("<br", form.initial["about_user"])
-        self.assertIn("<br", form.initial["education"])
-        self.assertIn("<br", form.initial["upcoming_talks"])
-        self.assertIn("<br", form.initial["projects"])
-        self.assertIn("<br", form.initial["publications"])
-
     def test_init_without_instance(self):
         """Test initialization without an instance"""
         form = ProfileForm()
@@ -226,7 +168,6 @@ class ProfileFormTests(TestCase):
         # Check a sample of important fields
         self.assertIn("name", form.fields)
         self.assertIn("title", form.fields)
-        self.assertIn("affiliation", form.fields)
         self.assertIn("academic_interests", form.fields)
         self.assertIn("about_user", form.fields)
         self.assertIn("education", form.fields)

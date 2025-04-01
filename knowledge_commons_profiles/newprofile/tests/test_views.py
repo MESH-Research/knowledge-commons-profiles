@@ -326,7 +326,7 @@ class EditProfileTests(TestCase):
 
         # Assert prefetch was called correctly
         mock_prefetch.assert_called_once_with("academic_interests")
-        mock_queryset.get.assert_called_once_with(username="kfitz")
+        mock_queryset.get.assert_called_once_with(username="testuser")
 
     @patch(
         "knowledge_commons_profiles.newprofile.models.Profile.objects."

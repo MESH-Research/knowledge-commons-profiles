@@ -271,12 +271,11 @@ STATICFILES_FINDERS += ["compressor.finders.CompressorFinder"]
 TINYMCE_DEFAULT_CONFIG = {
     "height": 360,
     "width": "100%",
-    "cleanup_on_startup": True,
     "custom_undo_redo_levels": 20,
     "selector": "textarea",
     "theme": "silver",
     "plugins": """
-        save link image media preview codesample contextmenu
+        save link image media preview contextmenu
         table code lists fullscreen insertdatetime nonbreaking
         directionality searchreplace wordcount visualblocks
         visualchars code fullscreen autolink lists charmap print hr
@@ -286,15 +285,13 @@ TINYMCE_DEFAULT_CONFIG = {
         fullscreen preview bold italic underline | fontselect,
         fontsizeselect | forecolor backcolor | alignleft alignright |
         aligncenter alignjustify | indent outdent | bullist numlist table |
-        | link image media | codesample |
-        """,
-    "toolbar2": """
-        visualblocks visualchars |
-        charmap hr pagebreak nonbreaking anchor | code |
+        | link | code
         """,
     "contextmenu": "formats | link image",
-    "menubar": True,
+    "menubar": False,
     "statusbar": True,
+    "promotion": False,
+    "forced_root_block": " ",
 }
 
 SELECT2_CACHE_BACKEND = "select2"
@@ -339,4 +336,4 @@ SAML2_AUTH = {
     "TOKEN_REQUIRED": False,
 }
 
-TINYMCE_JS_URL = "tinymcelocal/js/tinymce/tinymce.min.js"
+TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"

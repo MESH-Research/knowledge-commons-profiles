@@ -375,12 +375,12 @@ class Profile(models.Model):
         "AcademicInterest",
         related_name="profiles",
     )
-    about_user = ProfileBleachField(blank=True, null=True)
-    education = ProfileBleachField(blank=True, null=True)
+    about_user = models.TextField(blank=True, null=True)
+    education = models.TextField(blank=True, null=True)
 
     upcoming_talks = models.TextField(blank=True, null=True)
     projects = models.TextField(blank=True, null=True)
-    publications = ProfileBleachField(blank=True, null=True)
+    publications = models.TextField(blank=True, null=True)
     site = models.TextField(blank=True, null=True)
     institutional_or_other_affiliation = models.TextField(
         blank=True,
@@ -418,7 +418,9 @@ class Profile(models.Model):
     show_works = models.BooleanField(default=True)
     show_blog_posts = models.BooleanField(default=True)
     show_commons_groups = models.BooleanField(default=True)
+    show_commons_sites = models.BooleanField(default=True)
     show_mastodon_feed = models.BooleanField(default=True)
+    show_recent_activity = models.BooleanField(default=True)
 
     def __str__(self):
         """

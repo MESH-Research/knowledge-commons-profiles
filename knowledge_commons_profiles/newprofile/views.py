@@ -8,6 +8,7 @@ import django
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
@@ -180,25 +181,28 @@ def edit_profile(request):
     :return: A rendered HTML template with a form.
     :rtype: django.http.HttpResponse
     """
-    # user = Profile.objects.prefetch_related("academic_interests").get(
-    #    username=request.user.username
-    # )
 
     user = Profile.objects.prefetch_related("academic_interests").get(
-        username="kfitz",
+        username=request.user.username
     )
 
     if request.method == "POST":
         form = ProfileForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
+            return redirect("profile", user=user.username)
     else:
         form = ProfileForm(instance=user)
 
     return render(
         request,
-        "newprofile/edit_profile.template",
-        {"form": form, "profile": user},
+        "newprofile/edit_profile.html",
+        {
+            "form": form,
+            "username": user.username,
+            "profile": user,
+            "logged_in_user_is_profile": True,
+        },
     )
 
 
@@ -284,7 +288,9 @@ def mysql_data(request, username):
                     request.user if request.user.is_authenticated else None
                 ),
                 "memberships": api.get_memberships(),
-                "follower_count": follower_count,
+                "follower_count": (
+                    follower_count if follower_count != "None" else 0
+                ),
                 "commons_sites": api.get_user_blogs(),
                 "activities": api.get_activity(),
                 "short_notifications": notifications,
