@@ -7,8 +7,5 @@
     </p>
   {% endfor %}
 {% else %}
-  <script type="text/javascript">
-    $("#mastodon-feed-container").hide();
-  </script>
-  <p class="no-posts">No recent Mastodon posts available.</p>
+  <div class="hide" id="mastodon-feed" hx-swap-oob="true"></div>
 {% endif %}
