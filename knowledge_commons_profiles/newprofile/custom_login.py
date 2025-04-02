@@ -9,7 +9,6 @@ import time
 from functools import wraps
 from urllib.parse import urlencode
 
-import django
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
@@ -92,10 +91,9 @@ def wp_create_nonce(action="logout", request=None):
 
     try:
         user = api.wp_user
-    except (
-        WpUser.DoesNotExist,
-        django.test.testcases.DatabaseOperationForbidden,
-    ):
+    except WpUser.DoesNotExist:
+        return ""
+    except Exception:  # noqa: BLE001
         return ""
 
     uid = int(user.id) if hasattr(user, "id") else 0
