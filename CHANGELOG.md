@@ -1,3 +1,13 @@
+## 1.1.0 (2025-04-02)
+
+### Feat
+
+- **csrf**: add csrf reasons
+
+### Fix
+
+- **js**: remove unneeded js
+
 ## 1.0.0 (2025-04-02)
 
 ### BREAKING CHANGE
