@@ -25,7 +25,7 @@ urlpatterns = [
         views.health,
         name="healthcheck",
     ),
-    path("profile/", include("knowledge_commons_profiles.newprofile.urls")),
+    path("", include("knowledge_commons_profiles.newprofile.urls")),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
