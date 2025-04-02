@@ -1,3 +1,9 @@
+## 1.1.1 (2025-04-02)
+
+### Fix
+
+- **csrf**: remove session configuration options which were causing csrf errors
+
 ## 1.1.0 (2025-04-02)
 
 ### Feat
