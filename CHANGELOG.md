@@ -1,3 +1,10 @@
+## 0.11.1 (2025-04-02)
+
+### Fix
+
+- **middleware**: add error handling if wordpress database is not available
+- **styles**: wrap long urls
+
 ## 0.11.0 (2025-04-01)
 
 ### Feat
