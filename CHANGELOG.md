@@ -1,3 +1,9 @@
+## 0.12.0 (2025-04-02)
+
+### Feat
+
+- **login**: add login button to homepage
+
 ## 0.11.2 (2025-04-02)
 
 ### Fix
