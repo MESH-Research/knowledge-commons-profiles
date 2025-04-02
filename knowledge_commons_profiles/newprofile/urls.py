@@ -24,13 +24,12 @@ from knowledge_commons_profiles.newprofile.views import logout_view
 
 urlpatterns = [
     path(
-        r"api/v1.0/user/<str:user_name>/",
+        r"api/v1.0/member/<str:user_name>/",
         ProfileView.as_view(),
         name="profile_rest_view",
     ),
     path("my_profile/", views.my_profile, name="my_profile"),
     path("edit_profile/", views.edit_profile, name="edit_profile"),
-    path("user/<str:user>/", views.profile, name="user_profile"),
     path("member/<str:user>/", views.profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
     path("logout/", logout_view, name="logout_to_remove"),
