@@ -1,3 +1,10 @@
+## 0.11.2 (2025-04-02)
+
+### Fix
+
+- **custom_login**: fix bug with error handling on API request
+- **base-requirements**: limit smart_open requirement to aws
+
 ## 0.11.1 (2025-04-02)
 
 ### Fix
