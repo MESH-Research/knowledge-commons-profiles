@@ -1,3 +1,9 @@
+## 1.1.2 (2025-04-02)
+
+### Fix
+
+- **csrf**: change csrf settings so test pass
+
 ## 1.1.1 (2025-04-02)
 
 ### Fix
