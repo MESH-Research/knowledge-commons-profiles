@@ -33,4 +33,4 @@ pylint==3.3.6
 # base requirements for management commands
 rich==14.0.0
 sqloxide==0.1.54
-smart-open==7.1.0
+smart-open[aws]==7.1.0
