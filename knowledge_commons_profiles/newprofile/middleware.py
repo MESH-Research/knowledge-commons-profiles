@@ -10,6 +10,7 @@ import phpserialize
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login
 from django.contrib.auth import logout
+from django.db import OperationalError
 from django.db import connections
 
 User = get_user_model()
@@ -40,7 +41,17 @@ class WordPressAuthMiddleware:
         if not request.user.is_authenticated:
             wordpress_cookie = self.get_wordpress_cookie(request)
             if wordpress_cookie:
-                user = self.authenticate_wordpress_session(wordpress_cookie)
+
+                # this can fail if WordPress database is not available
+                # although we are in deeper trouble than that if this happens
+                try:
+                    user = self.authenticate_wordpress_session(
+                        wordpress_cookie
+                    )
+                except OperationalError:
+                    request.session["wordpress_logged_in"] = False
+                    return self.get_response(request)
+
                 if user:
                     # If the authentication is successful, log the user in
                     login(request, user)
