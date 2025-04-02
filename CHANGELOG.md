@@ -1,3 +1,19 @@
+## 1.0.0 (2025-04-02)
+
+### BREAKING CHANGE
+
+- This commit moves the URL structure from /profiles/ to /. It therefore breaks anything relying on that structure.
+
+### Feat
+
+- **urls**: move profiles to root of application
+
+### Fix
+
+- **mysql_data**: correct link with new structure
+- **base**: remove erroneous use of jquery in htmx return for mastodon_feed
+- **edit_profile**: remove htmx boost from submit button to avoid 403 csrf errors
+
 ## 0.12.0 (2025-04-02)
 
 ### Feat
