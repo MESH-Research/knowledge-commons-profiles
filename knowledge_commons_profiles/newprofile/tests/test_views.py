@@ -151,7 +151,7 @@ class MastodonFeedTests(TestCase):
 
         # Assert template was rendered with empty posts
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"No recent", response.content)
+        self.assertIn(b'class="hide', response.content)
 
 
 class LogoutViewTests(TestCase):
