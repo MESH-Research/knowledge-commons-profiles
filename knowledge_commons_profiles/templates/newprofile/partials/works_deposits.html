@@ -1,4 +1,4 @@
-{% if works_html %}
+{% if profile.show_works and works_html %}
   <h3 class="card-title">Works Deposits</h3>
   <ul class="works-list" id="works-list">
     {{ works_html | safe }}

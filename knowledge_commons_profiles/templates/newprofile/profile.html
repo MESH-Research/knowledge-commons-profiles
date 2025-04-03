@@ -90,42 +90,62 @@
       </div>
 
       <!-- Education -->
+      {% if profile.show_education %}
       <div class="content-card" id="education"></div>
+      {% endif %}
 
       <!-- Works Deposits -->
+      {% if profile.show_works %}
       <div class="content-card" id="works"
            hx-get="{% url 'works_deposits' username=username %}"
            hx-trigger="load"
            hx-target="this"></div>
+      {% endif %}
 
       <!-- Publications -->
+      {% if profile.show_publications %}
       <div class="content-card" id="publications"></div>
+      {% endif %}
 
       <!-- Projects -->
+      {% if profile.show_projects %}
       <div class="content-card" id="projects"></div>
+      {% endif %}
 
       <!-- Blog Posts -->
+      {% if profile.show_blog_posts %}
       <div class="content-card" id="blog-posts"
            hx-get="{% url 'blog_posts' username=username %}"
            hx-trigger="load"
            hx-target="this"></div>
+      {% endif %}
 
       <!-- Mastodon Feed -->
+      {% if profile.show_mastodon_feed %}
       <div class="content-card" id="mastodon-feed"
            hx-get="{% url 'mastodon_feed' username=username %}"
            hx-trigger="load"
            hx-target="this"></div>
+      {% endif %}
     </div>
 
     <!-- Right Column -->
     <div class="col-12 col-lg-4">
+      {% if profile.show_academic_interests %}
       <div class="content-card" id="academic-interests"></div>
+      {% endif %}
 
+      {% if profile.show_commons_groups %}
       <div class="content-card" id="commons-groups"></div>
+      {% endif %}
 
+      {% if profile.show_recent_activity %}
       <div class="content-card" id="commons-activity"></div>
+      {% endif %}
 
+      {% if profile.show_commons_sites %}
       <div class="content-card" id="commons-sites"></div>
+      {% endif %}
     </div>
   </div>
 </div>

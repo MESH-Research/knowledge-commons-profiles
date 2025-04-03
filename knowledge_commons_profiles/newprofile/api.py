@@ -71,8 +71,8 @@ class API:
         self._works_deposits = None
         self._works_html = None
 
-    @cached_async_property
-    async def works_html(self):
+    @cached_property
+    def works_html(self):
         """
         Get the works HTML
         """
@@ -83,7 +83,7 @@ class API:
             )
 
         if self._works_html is None:
-            self._works_html = await self._works_deposits.display_filter()
+            self._works_html = self._works_deposits.display_filter()
 
         return self._works_html
 
@@ -285,6 +285,7 @@ class API:
             "institutional_or_other_affiliation": (
                 self.profile.institutional_or_other_affiliation
             ),
+            "profile": self.profile,
         }
 
         return self._profile_info

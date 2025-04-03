@@ -72,7 +72,7 @@
 {% endif %}
 
 <!-- Education -->
-{% if education %}
+{% if education and profile_info.profile.show_education %}
   <div class="content-card" id="education" hx-swap-oob="true">
       <h3 class="card-title">Education</h3>
       {{ education|safe|linebreaksbr }}
@@ -83,7 +83,7 @@
 {% endif %}
 
 <!-- Academic Interests -->
-{% if academic_interests|length > 0 %}
+{% if academic_interests|length > 0 and profile_info.profile.show_academic_interests %}
   <div class="content-card" id="academic-interests" hx-swap-oob="true">
       <h3 class="card-title">Academic Interests</h3>
       <ul class="interests-list">
@@ -100,7 +100,7 @@
 
 <!-- Publications -->
 
-{% if profile_info.publications %}
+{% if profile_info.publications and profile_info.profile.show_publications %}
   <div class="content-card" id="publications" hx-swap-oob="true">
     <h3 class="card-title">Publications</h3>
     {{ profile_info.publications | safe | linebreaksbr }}
@@ -110,7 +110,7 @@
 {% endif %}
 
 <!-- Projects -->
-{% if profile_info.projects %}
+{% if profile_info.projects and profile_info.profile.show_projects %}
   <div class="content-card" id="projects" hx-swap-oob="true">
     <h3 class="card-title">Projects</h3>
     {{ profile_info.projects | safe | linebreaksbr }}

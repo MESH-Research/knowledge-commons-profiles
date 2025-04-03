@@ -10,6 +10,9 @@
             src='{% static "js/jquery-3.7.1.min.js" %}'
             id='jquery-core-js'></script>
     <script type='text/javascript'
+            src='{% static "js/jquery-ui.min.js" %}'
+            id='jquery-ui'></script>
+    <script type='text/javascript'
             src='{% static "js/jquery-migrate-3.5.2.min.js" %}'
             id='jquery-migrate-js'></script>
 
@@ -97,7 +100,7 @@
     <!-- Main Content Grid -->
     <div class="row">
       <!-- Left Column - About -->
-      <div class="col-12 col-lg-8">
+      <div class="col-12 col-lg-8" id="left_column">
         <div class="content-card" id="about_user_edit">
           <h3 class="card-title">About</h3>
           <div class="about-text">
@@ -146,7 +149,7 @@
       </div>
 
       <!-- Right Column -->
-      <div class="col-12 col-lg-4">
+      <div class="col-12 col-lg-4" id="right_column">
         <div class="content-card" id="academic-interests_edit">
           <h3 class="card-title">Academic Interests</h3>
           {% crispy_field form.show_academic_interests %}
@@ -173,5 +176,33 @@
     </div>
   </form>
 </div>
+
+<script>
+  $("#left_column").sortable({
+      start: function (e, ui) {
+      $(ui.item).find('.tinymce').each(function () {
+         tinymce.get($(this).attr('id')).remove();
+      });}, stop: function (e, ui) {
+        $(ui.item).find('.tinymce').each(function () {
+           tinymce.init({
+              selector: '#' + $(this).attr('id'),
+              height: 360,
+              width: "100%",
+              custom_undo_redo_levels: 20,
+              theme: "silver",
+              plugins: "save link image media preview table code lists fullscreen insertdatetime nonbreaking directionality searchreplace wordcount visualblocks visualchars code fullscreen autolink lists charmap anchor pagebreak",
+              toolbar1: "fullscreen preview bold italic underline | fontselect, fontsizeselect | forecolor backcolor | alignleft alignright | aligncenter alignjustify | indent outdent | bullist numlist table | | link | code",
+              contextmenu: "formats | link image",
+              menubar: false,
+              statusbar: true,
+              promotion: false,
+              forced_root_block: " ",
+            });
+        });
+      }
+  });
+
+  $("#right_column").sortable();
+</script>
 
 {% endblock content %}

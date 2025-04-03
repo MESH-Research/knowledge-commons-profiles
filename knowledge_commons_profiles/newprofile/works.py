@@ -3,8 +3,9 @@ Works field type.
 
 """
 
-import aiohttp
-from asgiref.sync import sync_to_async
+import logging
+
+import requests
 from django.core.cache import cache
 from django.template.loader import render_to_string
 
@@ -24,7 +25,7 @@ class WorksDeposits:
         self.user = user
         self.works_url = works_url
 
-    async def display_filter(self):
+    def display_filter(self):
         """Front-end display of user's works, ordered by date.
 
         :param mixed      field_value: Field value.
@@ -33,9 +34,7 @@ class WorksDeposits:
         """
         cache_key = f"hc-member-profiles-xprofile-works-deposits-{self.user}"
 
-        html = await sync_to_async(cache.get)(
-            cache_key, version=newprofile.__version__
-        )
+        html = cache.get(cache_key, version=newprofile.__version__)
 
         if html:
             return str(html)
@@ -46,21 +45,25 @@ class WorksDeposits:
             f"identifiers.identifier:{self.user}&size=100"
         )
 
+        logging.info("Requesting endpoint: %s", endpoint)
+
         try:
             headers = {
                 "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; "
                 "rv:134.0) Gecko/20100101 Firefox/134.0",
             }
 
-            async with (
-                aiohttp.ClientSession() as session,
-                await session.get(endpoint, headers=headers) as response,
-            ):
-                if response.status != HTTP_200_OK:
+            with requests.Session() as session:
+                response = session.get(endpoint, headers=headers)
+                if response.status_code != HTTP_200_OK:
+                    logging.info(
+                        "Request failed with status code: %s",
+                        response.status_code,
+                    )
                     response.raise_for_status()
-                works = await response.json()
+                works = response.json()
 
-        except aiohttp.ClientError:
+        except requests.exceptions.RequestException:
             return ""
 
         if (
@@ -68,6 +71,7 @@ class WorksDeposits:
             or not works.get("hits")
             or not works.get("hits", {}).get("hits")
         ):
+            logging.info("No works (hits key) found for user: %s", self.user)
             return ""
 
         works_links = {}
@@ -97,8 +101,6 @@ class WorksDeposits:
         )
 
         # Set cache asynchronously
-        await sync_to_async(cache.set)(
-            cache_key, html, 1800, version=newprofile.__version__
-        )
+        cache.set(cache_key, html, 1800, version=newprofile.__version__)
 
         return html
