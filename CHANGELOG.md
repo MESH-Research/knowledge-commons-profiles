@@ -1,3 +1,9 @@
+## 1.2.0 (2025-04-03)
+
+### Feat
+
+- **edit**: make profile items hideable and sortable
+
 ## 1.1.4 (2025-04-03)
 
 ### Fix
