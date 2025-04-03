@@ -1,3 +1,9 @@
+## 1.1.4 (2025-04-03)
+
+### Fix
+
+- **mysql_data**: change mysql_data processing
+
 ## 1.1.3 (2025-04-02)
 
 ### Fix
