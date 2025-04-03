@@ -1,4 +1,4 @@
-{% if blog_posts|length > 0 %}
+{% if profile.profile.show_blog_posts and blog_posts|length > 0 %}
   <h3 class="card-title">Blog Posts</h3>
   <ul>
     {% for post in blog_posts %}

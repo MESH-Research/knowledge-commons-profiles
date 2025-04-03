@@ -42,19 +42,19 @@ def profile_info(request, username):
     return render(request, "newprofile/partials/profile_info.html", context)
 
 
-async def works_deposits(request, username):
+def works_deposits(request, username):
     """
     Get profile info via HTMX
     """
     api = API(request, username, use_wordpress=False, create=False)
 
     # Get the works deposits for this username
-    user_works_deposits = await api.works_html
+    user_works_deposits = api.works_html if api.profile.show_works else []
 
     return render(
         request,
         "newprofile/partials/works_deposits.html",
-        {"works_html": user_works_deposits},
+        {"works_html": user_works_deposits, "profile": api.profile},
     )
 
 
@@ -64,15 +64,23 @@ def mastodon_feed(request, username):
     """
     api = API(request, username, use_wordpress=False, create=False)
 
+    profile_info_obj = api.get_profile_info()
+
     # Get the mastodon posts for this username
     mastodon_posts = (
-        api.mastodon_posts.latest_posts if api.profile_info["mastodon"] else []
+        (
+            api.mastodon_posts.latest_posts
+            if api.profile_info["mastodon"]
+            else []
+        )
+        if profile_info_obj["profile"].show_mastodon_feed
+        else []
     )
 
     return render(
         request,
         "newprofile/partials/mastodon_feed.html",
-        {"mastodon_posts": mastodon_posts},
+        {"mastodon_posts": mastodon_posts, "profile": profile_info_obj},
     )
 
 
@@ -98,6 +106,8 @@ def profile(request, user=""):
     if not profile_exists_or_has_been_created(user):
         raise Http404
 
+    profile = API(request, user, use_wordpress=False, create=False).profile
+
     # if the logged-in user is the same as the requested profile they are
     # viewing, we should show the edit navigation
     logged_in_user_is_profile = request.user.username == user
@@ -107,6 +117,7 @@ def profile(request, user=""):
         context={
             "username": user,
             "logged_in_user_is_profile": logged_in_user_is_profile,
+            "profile": profile,
         },
         template_name="newprofile/profile.html",
     )
@@ -219,13 +230,19 @@ def blog_posts(request, username):
     try:
         api = API(request, username, use_wordpress=True, create=False)
 
+        profile_info_obj = api.get_profile_info()
+
         # Get the blog posts for this username
-        user_blog_posts = api.get_blog_posts()
+        user_blog_posts = (
+            api.get_blog_posts()
+            if profile_info_obj["profile"].show_blog_posts
+            else None
+        )
 
         return render(
             request,
             "newprofile/partials/blog_posts.html",
-            {"blog_posts": user_blog_posts},
+            {"blog_posts": user_blog_posts, "profile": profile_info_obj},
         )
     except django.db.utils.OperationalError:
         logger.warning("Unable to connect to MySQL database for blogs")
@@ -340,7 +357,11 @@ def mysql_data(request, username):
             context = {
                 "username": username,
                 "profile_image": api.get_profile_photo(),
-                "groups": api.get_groups(),
+                "groups": (
+                    api.get_groups()
+                    if profile_info_obj["profile"].show_commons_groups
+                    else None
+                ),
                 "logged_in_profile": my_profile_info,
                 "logged_in_user": (
                     request.user if request.user.is_authenticated else None
@@ -349,12 +370,21 @@ def mysql_data(request, username):
                 "follower_count": (
                     follower_count if follower_count != "None" else 0
                 ),
-                "commons_sites": api.get_user_blogs(),
-                "activities": api.get_activity(),
+                "commons_sites": (
+                    api.get_user_blogs()
+                    if profile_info_obj["profile"].show_commons_sites
+                    else None
+                ),
+                "activities": (
+                    api.get_activity()
+                    if profile_info_obj["profile"].show_recent_activity
+                    else None
+                ),
                 "logout_url": f"https://hcommons.org/wp-login.php?"
                 f"action=logout&"
                 f"_wpnonce={wp_create_nonce(request=request)}&"
                 f"redirect_to={request.build_absolute_uri()}",
+                "profile": profile_info_obj,
             }
         else:
 
@@ -376,6 +406,7 @@ def mysql_data(request, username):
                     api_me.get_profile_photo() if api_me else None
                 ),
                 "logout_url": None,
+                "profile": profile_info_obj,
             }
 
         return render(
@@ -401,6 +432,7 @@ def mysql_data(request, username):
             "notification_count": 0,
             "logged_in_profile_image": None,
             "logout_url": None,
+            "profile": None,
         }
         return render(request, "newprofile/partials/mysql_data.html", {})
 
