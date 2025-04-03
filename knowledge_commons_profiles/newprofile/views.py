@@ -6,6 +6,7 @@ import logging
 
 import django
 from django.contrib.auth import logout
+from django.http import Http404
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -18,6 +19,9 @@ from knowledge_commons_profiles.newprofile.custom_login import login_required
 from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.utils import (
+    profile_exists_or_has_been_created,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,17 +88,18 @@ def logout_view(request):
     logout(request)
 
 
-def profile(request, user="", create=False):
+def profile(request, user=""):
     """
     The main page of the site.
 
     This view renders the main page of the site.
     """
-    # TODO: if "create" then redirect to the profile edit page
 
-    # the logged-in user is the same as the requested profile they are
-    # viewing. This means we should show the edit navigation
+    if not profile_exists_or_has_been_created(user):
+        raise Http404
 
+    # if the logged-in user is the same as the requested profile they are
+    # viewing, we should show the edit navigation
     logged_in_user_is_profile = request.user.username == user
 
     return render(
@@ -119,7 +124,7 @@ def my_profile(request):
     :type request: django.http.HttpRequest
     """
     # we call with create because this user is logged in and needs a profile
-    return profile(request, user=request.user.username, create=True)
+    return profile(request, user=request.user.username)
 
 
 class ProfileView(APIView):
@@ -244,6 +249,63 @@ def cover_image(request, username):
     )
 
 
+def header_bar(request):
+
+    if request.user.is_authenticated:
+        api_me = (
+            API(
+                request,
+                request.user.username,
+                use_wordpress=True,
+                create=False,
+            )
+            if request.user.is_authenticated
+            else None
+        )
+
+        my_profile_info = api_me.get_profile_info() if api_me else None
+        notifications = api_me.get_short_notifications() if api_me else None
+
+        context = {
+            "username": request.user.username,
+            "logged_in_profile": my_profile_info,
+            "logged_in_user": (
+                request.user if request.user.is_authenticated else None
+            ),
+            "short_notifications": notifications,
+            "notification_count": (len(notifications) if notifications else 0),
+            "logout_url": f"https://hcommons.org/wp-login.php?"
+            f"action=logout&"
+            f"_wpnonce={wp_create_nonce(request=request)}&"
+            f"redirect_to={request.build_absolute_uri()}",
+            "logged_in_profile_image": (
+                api_me.get_profile_photo() if api_me else None
+            ),
+        }
+
+        return render(
+            request,
+            "newprofile/partials/header_bar.html",
+            context=context,
+        )
+
+    context = {
+        "username": request.user.username,
+        "logged_in_profile": None,
+        "logged_in_user": (
+            request.user if request.user.is_authenticated else None
+        ),
+        "short_notifications": None,
+        "notification_count": 0,
+    }
+
+    return render(
+        request,
+        "newprofile/partials/mysql_data.html",
+        context=context,
+    )
+
+
 def mysql_data(request, username):
     """
     Get WordPress data via HTMX
@@ -275,11 +337,6 @@ def mysql_data(request, username):
         success, follower_count = api.follower_count()
 
         if success:
-
-            notifications = (
-                api_me.get_short_notifications() if api_me else None
-            )
-
             context = {
                 "username": username,
                 "profile_image": api.get_profile_photo(),
@@ -294,13 +351,6 @@ def mysql_data(request, username):
                 ),
                 "commons_sites": api.get_user_blogs(),
                 "activities": api.get_activity(),
-                "short_notifications": notifications,
-                "notification_count": (
-                    len(notifications) if notifications else 0
-                ),
-                "logged_in_profile_image": (
-                    api_me.get_profile_photo() if api_me else None
-                ),
                 "logout_url": f"https://hcommons.org/wp-login.php?"
                 f"action=logout&"
                 f"_wpnonce={wp_create_nonce(request=request)}&"

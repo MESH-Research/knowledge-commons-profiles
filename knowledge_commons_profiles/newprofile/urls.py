@@ -69,4 +69,9 @@ urlpatterns = [
         views.profile_image,
         name="profile_image",
     ),
+    path(
+        "htmx/header_bar/",
+        views.header_bar,
+        name="header_bar",
+    ),
 ]
