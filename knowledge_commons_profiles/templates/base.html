@@ -36,15 +36,13 @@
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
-                    <div class="notifications-container" id="notifications-container">
-                      <div class="notifications">
-                          <i class="fas fa-bell"></i>
-                          <span class="notifications-count" id="notifications-count"></span>
-                      </div>
+                    <div class="hide" id="notifications-container">
                     </div>
-                    <div class="user-info" id="user-info">
-                        <span class="user-name" id="logged-in-user"></span>
-                        <img src="" alt="" />
+                    <div class="user-info" id="user-info"
+                         hx-get="{% url 'header_bar' %}"
+                         hx-trigger="load"
+                         hx-target="this">
+                        <a href="https://hcommons.org/wp-login.php?redirect_to=https%3A%2F%2Fprofile.hcommons.org%2Fmy_profile%2F" class="login-link">Login</a>
                     </div>
                 </div>
             </div>

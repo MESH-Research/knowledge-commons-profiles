@@ -4,14 +4,13 @@
   Page not found
 {% endblock title %}
 {% block content %}
-  <div class="row">
-    <h1>Page not found</h1>
-    <p>
-      {% if exception %}
-        {{ exception }}
-      {% else %}
-        This is not the page you were looking for.
-      {% endif %}
-    </p>
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1>Page or profile not found</h1>
+        <p>We were unable to locate the page that you requested.</p>
+        <p>If you feel this was an error, please email <a href="mailto:hello@hcommons.org">hello@hcommons.org</a>.</p>
+      </div>
+    </div>
   </div>
 {% endblock content %}

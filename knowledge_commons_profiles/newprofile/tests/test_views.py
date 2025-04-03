@@ -18,7 +18,6 @@ from knowledge_commons_profiles.newprofile.views import logout_view
 from knowledge_commons_profiles.newprofile.views import mastodon_feed
 from knowledge_commons_profiles.newprofile.views import my_profile
 from knowledge_commons_profiles.newprofile.views import mysql_data
-from knowledge_commons_profiles.newprofile.views import profile
 from knowledge_commons_profiles.newprofile.views import profile_info
 from knowledge_commons_profiles.newprofile.views import works_deposits
 
@@ -174,38 +173,6 @@ class LogoutViewTests(TestCase):
         mock_logout.assert_called_once_with(request)
 
 
-class ProfileTests(TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-        self.user = User.objects.create_user(
-            username="testuser", password="testpass"
-        )
-
-    def test_profile_with_theme(self):
-        # Create request with theme
-        request = self.factory.get("/profile/testuser?theme=new_profile")
-        request.user = self.user
-
-        # Call view
-        response = profile(request, user="testuser")
-
-        # Assert template was rendered
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"testuser", response.content)
-
-    def test_profile_without_theme(self):
-        # Create request without theme
-        request = self.factory.get("/profile/testuser")
-        request.user = self.user
-
-        # Call view
-        response = profile(request, user="testuser")
-
-        # Assert template was rendered
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"testuser", response.content)
-
-
 class MyProfileTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
@@ -227,9 +194,7 @@ class MyProfileTests(TestCase):
         response = my_profile(request)
 
         # Assert profile was called correctly
-        mock_profile.assert_called_once_with(
-            request, user="testuser", create=True
-        )
+        mock_profile.assert_called_once_with(request, user="testuser")
         self.assertEqual(response, "profile_response")
 
     def test_my_profile_login_required(self):
@@ -555,8 +520,18 @@ class ProfileViewTest(TestCase):
         )
         self.client = Client()
 
-    def test_own_profile_shows_edit_options(self):
+    @patch(
+        "knowledge_commons_profiles.newprofile.views."
+        "profile_exists_or_has_been_created"
+    )
+    def test_own_profile_shows_edit_options(
+        self, mock_profile_exists_or_has_been_created
+    ):
         """Test that a user viewing their own profile sees edit options"""
+
+        # Set up the mock return value
+        mock_profile_exists_or_has_been_created.return_value = True
+
         # Log in as test_user
         self.client.login(username="testuser", password="password123")
 
@@ -576,9 +551,18 @@ class ProfileViewTest(TestCase):
         self.assertContains(response, "Change Profile Photo")
         self.assertContains(response, "Change Cover Image")
 
-    def test_other_profile_hides_edit_options(self):
+    @patch(
+        "knowledge_commons_profiles.newprofile.views."
+        "profile_exists_or_has_been_created"
+    )
+    def test_other_profile_hides_edit_options(
+        self, mock_profile_exists_or_has_been_created
+    ):
         """Test that a user viewing someone else's profile doesn't see
         edit options"""
+        # Set up the mock return value
+        mock_profile_exists_or_has_been_created.return_value = True
+
         # Log in as test_user
         self.client.login(username="testuser", password="password123")
 
@@ -602,9 +586,18 @@ class ProfileViewTest(TestCase):
             response, 'class="action-btn">Change Cover Image</a>'
         )
 
-    def test_unauthenticated_user_hides_edit_options(self):
+    @patch(
+        "knowledge_commons_profiles.newprofile.views."
+        "profile_exists_or_has_been_created"
+    )
+    def test_unauthenticated_user_hides_edit_options(
+        self, mock_profile_exists_or_has_been_created
+    ):
         """Test that an unauthenticated user doesn't see edit options on
         any profile"""
+        # Set up the mock return value
+        mock_profile_exists_or_has_been_created.return_value = True
+
         # Access a profile without logging in
         response = self.client.get(
             reverse("profile", kwargs={"user": "testuser"})
