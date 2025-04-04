@@ -101,7 +101,7 @@
     <div class="row">
       <!-- Left Column - About -->
       <div class="col-12 col-lg-8" id="left_column">
-        <div class="content-card" id="about_user_edit">
+        <div class="content-card sortable-item" id="about_user_edit">
           <h3 class="card-title">About</h3>
           <div class="about-text">
             {{ form.about_user }}
@@ -109,40 +109,40 @@
         </div>
 
         <!-- Education -->
-        <div class="content-card" id="education_form">
+        <div class="content-card sortable-item" id="education_form">
           <h3 class="card-title">Education</h3>
           {% crispy_field form.show_education %}
           {{ form.education }}
         </div>
 
         <!-- Works -->
-        <div class="content-card" id="works_form">
+        <div class="content-card sortable-item" id="works_form">
           <h3 class="card-title">Works</h3>
           {% crispy_field form.show_works %}
         </div>
 
         <!-- Publications -->
-        <div class="content-card" id="publications_form">
+        <div class="content-card sortable-item" id="publications_form">
           <h3 class="card-title">Publications</h3>
           {% crispy_field form.show_publications %}
           {{ form.publications }}
         </div>
 
         <!-- Projects -->
-        <div class="content-card" id="projects_edit">
+        <div class="content-card sortable-item" id="projects_edit">
           <h3 class="card-title">Projects</h3>
           {% crispy_field form.show_projects %}
           {{ form.projects }}
         </div>
 
         <!-- Blog Posts -->
-        <div class="content-card" id="blog-posts_edit">
+        <div class="content-card sortable-item" id="blog-posts_edit">
           <h3 class="card-title">Blog Posts</h3>
           {% crispy_field form.show_blog_posts %}
         </div>
 
         <!-- Mastodon Feed -->
-        <div class="content-card" id="mastodon-feed_edit">
+        <div class="content-card sortable-item" id="mastodon-feed_edit">
           <h3 class="card-title">Mastodon Feed</h3>
           {% crispy_field form.show_mastodon_feed %}
         </div>
@@ -150,7 +150,7 @@
 
       <!-- Right Column -->
       <div class="col-12 col-lg-4" id="right_column">
-        <div class="content-card" id="academic-interests_edit">
+        <div class="content-card sortable-item" id="academic-interests_edit">
           <h3 class="card-title">Academic Interests</h3>
           {% crispy_field form.show_academic_interests %}
           <ul>
@@ -158,17 +158,17 @@
           </ul>
         </div>
 
-        <div class="content-card" id="commons-groups_edit">
+        <div class="content-card sortable-item" id="commons-groups_edit">
           <h3 class="card-title">Commons Groups</h3>
           {% crispy_field form.show_commons_groups %}
         </div>
 
-        <div class="content-card" id="commons-activity_edit">
+        <div class="content-card sortable-item" id="commons-activity_edit">
           <h3 class="card-title">Recent Commons Activity</h3>
           {% crispy_field form.show_recent_activity %}
         </div>
 
-        <div class="content-card" id="commons-sites_edit">
+        <div class="content-card sortable-item" id="commons-sites_edit">
           <h3 class="card-title">Commons Sites</h3>
           {% crispy_field form.show_commons_sites %}
         </div>
