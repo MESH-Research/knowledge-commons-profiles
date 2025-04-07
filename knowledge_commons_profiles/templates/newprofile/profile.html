@@ -26,9 +26,11 @@
           hx-trigger="load"
           hx-target="this">
         </div>
-        <h1 class="profile-title" id="profile-title" hx-swap-oob="true"></h1>
-        <h2 class="profile-subtitle" id="profile-subtitle"></h2>
-        <p class="profile-institution" id="profile-institution"></p>
+        <h1 class="profile-title" id="profile-title" hx-swap-oob="true">{{ profile.name }}</h1>
+        <h2 class="profile-subtitle" id="profile-subtitle">{{ profile.title }}</h2>
+        <p class="profile-institution" id="profile-institution">
+          <!-- djlint:off --><a href="/?s={{ profile.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile.institutional_or_other_affiliation }}</a><!-- djlint:on -->
+        </p>
 
         <div class="profile-social">
           <a href="#" class="social-link" id="mastodon">
