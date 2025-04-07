@@ -65,3 +65,13 @@ jobs:
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
           aws autoscaling start-instance-refresh --auto-scaling-group-name $AUTOSCALE_GROUP --region $AWS_REGION --preferences '{"SkipMatching": false}'
+
+      - name: Set a Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: production
+          version: $IMAGE_TAG
