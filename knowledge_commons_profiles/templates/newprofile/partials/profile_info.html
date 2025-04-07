@@ -12,24 +12,6 @@
   <title hx-swap-oob="true">Profile for {{ profile_info.name }}</title>
 {% endif %}
 
-<!-- user name at top -->
-<h1 class="profile-title" id="profile-title" hx-swap-oob="true">{{ profile_info.name }}</h1>
-
-<!-- user job title -->
-{% if profile_info.title %}
-  <h2 class="profile-subtitle" id="profile-subtitle" hx-swap-oob="true">
-    {{ profile_info.title }}
-  </h2>
-{% endif %}
-
-<!-- institution -->
-{% if profile_info.institutional_or_other_affiliation %}
-  <p class="profile-institution" id="profile-institution" hx-swap-oob="true">
-    <!-- djlint:off --><a href="/?s={{ profile_info.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user"
-    rel="nofollow">{{ profile_info.institutional_or_other_affiliation }}</a><!-- djlint:on -->
-  </p>
-{% endif %}
-
 <!-- Mastodon -->
 {% if profile_info.mastodon %}
   <a href="https://{{ profile_info.mastodon_server }}/@{{ profile_info.mastodon_username }}" class="social-link" id="mastodon" hx-swap-oob="true">
