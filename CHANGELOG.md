@@ -1,3 +1,9 @@
+## 1.3.2 (2025-04-07)
+
+### Fix
+
+- **profiles**: move some htmx to main template
+
 ## 1.3.1 (2025-04-07)
 
 ### Fix
