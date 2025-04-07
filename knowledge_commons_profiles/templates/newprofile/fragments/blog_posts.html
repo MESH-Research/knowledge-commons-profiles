@@ -1,0 +1,7 @@
+<!-- Blog Posts -->
+{% if profile.show_blog_posts %}
+<div class="content-card" id="blog-posts"
+     hx-get="{% url 'blog_posts' username=username %}"
+     hx-trigger="load"
+     hx-target="this"></div>
+{% endif %}

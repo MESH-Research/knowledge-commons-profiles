@@ -269,6 +269,7 @@ STATICFILES_FINDERS += ["compressor.finders.CompressorFinder"]
 # ------------------------------------------------------------------------------
 
 TINYMCE_DEFAULT_CONFIG = {
+    "license_key": "gpl",
     "height": 360,
     "width": "100%",
     "custom_undo_redo_levels": 20,
@@ -340,3 +341,20 @@ TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
 LOGIN_URL = "https://hcommons.org/wp-login.php"
 REDIRECT_FIELD_NAME = "redirect_to"
+
+PROFILE_FIELDS_LEFT = [
+    "about_user",
+    "education",
+    "publications",
+    "projects",
+    "works",
+    "blog_posts",
+    "mastodon_feed",
+]
+
+PROFILE_FIELDS_RIGHT = [
+    "academic_interests",
+    "commons_groups",
+    "commons_activity",
+    "commons_sites",
+]

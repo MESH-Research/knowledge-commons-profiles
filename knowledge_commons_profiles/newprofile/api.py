@@ -11,7 +11,6 @@ from urllib.parse import urlencode
 
 import django
 import phpserialize
-from asyncstdlib.functools import cached_property as cached_async_property
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connections
@@ -87,7 +86,7 @@ class API:
 
         return self._works_html
 
-    @cached_async_property
+    @cached_property
     async def works_deposits(self):
         """
         Get the works deposits

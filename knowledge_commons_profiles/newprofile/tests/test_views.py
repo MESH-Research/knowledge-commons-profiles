@@ -1,5 +1,5 @@
-from unittest.mock import AsyncMock
 from unittest.mock import MagicMock
+from unittest.mock import PropertyMock
 from unittest.mock import patch
 
 import django
@@ -74,12 +74,12 @@ class WorksDepositsTests(django.test.TransactionTestCase):
         # Set up mock
         api_instance = MagicMock()
         mock_api.return_value = api_instance
-        api_instance.works_html = AsyncMock(
+        api_instance.works_html = MagicMock(
             return_value="<div>Test works</div>"
         )
 
         # Create a proper awaitable mock
-        mock_works_html = AsyncMock()
+        mock_works_html = MagicMock()
         mock_works_html.return_value = "<div>Test works</div>"
         # Use property() to make works_html a property that returns the
         # AsyncMock
@@ -92,7 +92,7 @@ class WorksDepositsTests(django.test.TransactionTestCase):
         request.user = self.user
 
         # Call view
-        response = await works_deposits(request, "testuser")
+        response = works_deposits(request, "testuser")
 
         # Assert API was called correctly
         mock_api.assert_called_once_with(
@@ -280,6 +280,8 @@ class EditProfileTests(TestCase):
         mock_queryset = MagicMock()
         mock_prefetch.return_value = mock_queryset
         mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
         mock_queryset.get.return_value = mock_user
 
         # Create request
@@ -334,6 +336,8 @@ class EditProfileTests(TestCase):
         mock_queryset = MagicMock()
         mock_prefetch.return_value = mock_queryset
         mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
         mock_queryset.get.return_value = mock_user
 
         # Patch ProfileForm
@@ -432,9 +436,15 @@ class MySQLDataTests(TestCase):
         # Set up mock
         mock_render = MagicMock()  # noqa: F841
 
+        mock_profile = MagicMock()
+        mock_profile.show_commons_groups = True
+
         api_instance = MagicMock()
         mock_api.return_value = api_instance
-        api_instance.get_profile_info.return_value = {"name": "Test User"}
+        api_instance.get_profile_info.return_value = {
+            "name": "Test User",
+            "profile": mock_profile,
+        }
         api_instance.get_cover_image.return_value = "cover.jpg"
         api_instance.get_profile_photo.return_value = "profile.jpg"
         api_instance.get_groups.return_value = ["Group1", "Group2"]
@@ -463,8 +473,15 @@ class MySQLDataTests(TestCase):
     def test_mysql_data_unauthenticated(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
+
+        mock_profile = MagicMock()
+        mock_profile.show_commons_groups = True
+
         mock_api.return_value = api_instance
-        api_instance.get_profile_info.return_value = {"name": "Test User"}
+        api_instance.get_profile_info.return_value = {
+            "name": "Test User",
+            "profile": mock_profile,
+        }
         api_instance.get_cover_image.return_value = "cover.jpg"
         api_instance.get_profile_photo.return_value = "profile.jpg"
         api_instance.get_groups.return_value = ["Group1", "Group2"]

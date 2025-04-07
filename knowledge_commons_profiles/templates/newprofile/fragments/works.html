@@ -1,0 +1,7 @@
+<!-- Works Deposits -->
+{% if profile.show_works %}
+<div class="content-card" id="works"
+     hx-get="{% url 'works_deposits' username=username %}"
+     hx-trigger="load"
+     hx-target="this"></div>
+{% endif %}

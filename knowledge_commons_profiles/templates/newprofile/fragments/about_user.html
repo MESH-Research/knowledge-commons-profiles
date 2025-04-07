@@ -1,0 +1,8 @@
+<div class="content-card" id="about_user">
+  <h3 class="card-title">About</h3>
+  <div class="about-text"
+       hx-get="{% url 'profile_info' username=username %}"
+       hx-trigger="load"
+       hx-target="this">
+  </div>
+</div>

@@ -1,0 +1,7 @@
+{% load crispy_forms_tags crispy_forms_field %}
+<!-- Projects -->
+<div class="content-card sortable-item" id="projects_edit">
+  <h3 class="card-title">Projects</h3>
+  {% crispy_field form.show_projects %}
+  {{ form.projects }}
+</div>

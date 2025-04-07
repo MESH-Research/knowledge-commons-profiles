@@ -15,6 +15,9 @@
     <script type='text/javascript'
             src='{% static "js/jquery-migrate-3.5.2.min.js" %}'
             id='jquery-migrate-js'></script>
+    <script type='text/javascript'
+            src='{% static "js/profile-sort.js" %}'
+            id='profile-sort'></script>
 
     {{ form.media }}
 
@@ -101,108 +104,20 @@
     <div class="row">
       <!-- Left Column - About -->
       <div class="col-12 col-lg-8" id="left_column">
-        <div class="content-card sortable-item" id="about_user_edit">
-          <h3 class="card-title">About</h3>
-          <div class="about-text">
-            {{ form.about_user }}
-          </div>
-        </div>
-
-        <!-- Education -->
-        <div class="content-card sortable-item" id="education_form">
-          <h3 class="card-title">Education</h3>
-          {% crispy_field form.show_education %}
-          {{ form.education }}
-        </div>
-
-        <!-- Works -->
-        <div class="content-card sortable-item" id="works_form">
-          <h3 class="card-title">Works</h3>
-          {% crispy_field form.show_works %}
-        </div>
-
-        <!-- Publications -->
-        <div class="content-card sortable-item" id="publications_form">
-          <h3 class="card-title">Publications</h3>
-          {% crispy_field form.show_publications %}
-          {{ form.publications }}
-        </div>
-
-        <!-- Projects -->
-        <div class="content-card sortable-item" id="projects_edit">
-          <h3 class="card-title">Projects</h3>
-          {% crispy_field form.show_projects %}
-          {{ form.projects }}
-        </div>
-
-        <!-- Blog Posts -->
-        <div class="content-card sortable-item" id="blog-posts_edit">
-          <h3 class="card-title">Blog Posts</h3>
-          {% crispy_field form.show_blog_posts %}
-        </div>
-
-        <!-- Mastodon Feed -->
-        <div class="content-card sortable-item" id="mastodon-feed_edit">
-          <h3 class="card-title">Mastodon Feed</h3>
-          {% crispy_field form.show_mastodon_feed %}
-        </div>
+        {% for left_id in left_order %}
+          {% include "newprofile/fragments/"|add:left_id|add:"_edit.html" %}
+        {% endfor %}
       </div>
 
       <!-- Right Column -->
       <div class="col-12 col-lg-4" id="right_column">
-        <div class="content-card sortable-item" id="academic-interests_edit">
-          <h3 class="card-title">Academic Interests</h3>
-          {% crispy_field form.show_academic_interests %}
-          <ul>
-            {{ form.academic_interests }}
-          </ul>
-        </div>
-
-        <div class="content-card sortable-item" id="commons-groups_edit">
-          <h3 class="card-title">Commons Groups</h3>
-          {% crispy_field form.show_commons_groups %}
-        </div>
-
-        <div class="content-card sortable-item" id="commons-activity_edit">
-          <h3 class="card-title">Recent Commons Activity</h3>
-          {% crispy_field form.show_recent_activity %}
-        </div>
-
-        <div class="content-card sortable-item" id="commons-sites_edit">
-          <h3 class="card-title">Commons Sites</h3>
-          {% crispy_field form.show_commons_sites %}
-        </div>
+        {% for right_id in right_order %}
+          {% include "newprofile/fragments/"|add:right_id|add:"_edit.html" %}
+        {% endfor %}
       </div>
     </div>
   </form>
 </div>
-
-<script>
-  $("#left_column").sortable({
-      start: function (e, ui) {
-      $(ui.item).find('.tinymce').each(function () {
-         tinymce.get($(this).attr('id')).remove();
-      });}, stop: function (e, ui) {
-        $(ui.item).find('.tinymce').each(function () {
-           tinymce.init({
-              selector: '#' + $(this).attr('id'),
-              height: 360,
-              width: "100%",
-              custom_undo_redo_levels: 20,
-              theme: "silver",
-              plugins: "save link image media preview table code lists fullscreen insertdatetime nonbreaking directionality searchreplace wordcount visualblocks visualchars code fullscreen autolink lists charmap anchor pagebreak",
-              toolbar1: "fullscreen preview bold italic underline | fontselect, fontsizeselect | forecolor backcolor | alignleft alignright | aligncenter alignjustify | indent outdent | bullist numlist table | | link | code",
-              contextmenu: "formats | link image",
-              menubar: false,
-              statusbar: true,
-              promotion: false,
-              forced_root_block: " ",
-            });
-        });
-      }
-  });
-
-  $("#right_column").sortable();
-</script>
-
+<input type="hidden" value="{% url "save_profile_order" "left" %}" id="save-profile-left"/>
+<input type="hidden" value="{% url "save_profile_order" "right" %}" id="save-profile-right"/>
 {% endblock content %}
