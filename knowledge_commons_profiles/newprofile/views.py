@@ -291,7 +291,7 @@ def blog_posts(request, username):
             {
                 "blog_posts": user_blog_posts,
                 "profile": profile_info_obj,
-                "show_blog_posts": profile_info_obj.show_blog_posts,
+                "show_blog_posts": profile_info_obj["profile"].show_blog_posts,
             },
         )
     except django.db.utils.OperationalError:
