@@ -1,3 +1,10 @@
+## 1.3.1 (2025-04-07)
+
+### Fix
+
+- **mastodon**: correct mastodon hide variable information
+- **blog_posts**: fix incorrect dictionary access to profile object
+
 ## 1.3.0 (2025-04-07)
 
 ### Feat
