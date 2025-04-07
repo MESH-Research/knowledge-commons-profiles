@@ -1,5 +1,5 @@
 <!-- templates/partials/mastodon_feed.html -->
-{% if mastodon_posts|length > 0 and profile.show_mastodon_feed %}
+{% if mastodon_posts|length > 0 and show_mastodon_feed %}
   <h3 class="card-title">Mastodon Posts</h3>
   {% for post in mastodon_posts %}
     <p>
