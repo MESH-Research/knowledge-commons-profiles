@@ -1,0 +1,6 @@
+{% if profile.show_mastodon_feed %}
+<div class="content-card" id="mastodon-feed"
+     hx-get="{% url 'mastodon_feed' username=username %}"
+     hx-trigger="load"
+     hx-target="this"></div>
+{% endif %}

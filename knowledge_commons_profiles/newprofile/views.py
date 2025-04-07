@@ -2,14 +2,17 @@
 The main views for the profile app
 """
 
+import json
 import logging
 
 import django
 from django.contrib.auth import logout
 from django.http import Http404
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +22,7 @@ from knowledge_commons_profiles.newprofile.custom_login import login_required
 from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
@@ -37,6 +41,10 @@ def profile_info(request, username):
         "academic_interests": api.get_academic_interests(),
         "education": api.get_education(),
         "about_user": api.get_about_user(),
+        "show_education": api.profile.show_education,
+        "show_publications": api.profile.show_publications,
+        "show_projects": api.profile.show_projects,
+        "show_academic_interests": api.profile.show_academic_interests,
     }
 
     return render(request, "newprofile/partials/profile_info.html", context)
@@ -54,7 +62,11 @@ def works_deposits(request, username):
     return render(
         request,
         "newprofile/partials/works_deposits.html",
-        {"works_html": user_works_deposits, "profile": api.profile},
+        {
+            "works_html": user_works_deposits,
+            "profile": api.profile,
+            "show_works": api.profile.show_works,
+        },
     )
 
 
@@ -80,7 +92,13 @@ def mastodon_feed(request, username):
     return render(
         request,
         "newprofile/partials/mastodon_feed.html",
-        {"mastodon_posts": mastodon_posts, "profile": profile_info_obj},
+        {
+            "mastodon_posts": mastodon_posts,
+            "profile": profile_info_obj,
+            "show_mastodon_feed": profile_info_obj[
+                "profile"
+            ].show_mastodon_feed,
+        },
     )
 
 
@@ -106,18 +124,34 @@ def profile(request, user=""):
     if not profile_exists_or_has_been_created(user):
         raise Http404
 
-    profile = API(request, user, use_wordpress=False, create=False).profile
+    profile_obj = API(request, user, use_wordpress=False, create=False).profile
 
     # if the logged-in user is the same as the requested profile they are
     # viewing, we should show the edit navigation
     logged_in_user_is_profile = request.user.username == user
+
+    left_order = (
+        json.loads(profile_obj.left_order) if profile_obj.left_order else []
+    )
+    right_order = (
+        json.loads(profile_obj.right_order) if profile_obj.right_order else []
+    )
+
+    left_order_final, right_order_final = process_orders(
+        left_order, right_order
+    )
+
+    del left_order
+    del right_order
 
     return render(
         request=request,
         context={
             "username": user,
             "logged_in_user_is_profile": logged_in_user_is_profile,
-            "profile": profile,
+            "profile": profile_obj,
+            "left_order": left_order_final,
+            "right_order": right_order_final,
         },
         template_name="newprofile/profile.html",
     )
@@ -211,6 +245,16 @@ def edit_profile(request):
     else:
         form = ProfileForm(instance=user)
 
+    left_order = json.loads(user.left_order) if user.left_order else []
+    right_order = json.loads(user.right_order) if user.right_order else []
+
+    left_order_final, right_order_final = process_orders(
+        left_order, right_order
+    )
+
+    del left_order
+    del right_order
+
     return render(
         request,
         "newprofile/edit_profile.html",
@@ -218,6 +262,8 @@ def edit_profile(request):
             "form": form,
             "username": user.username,
             "profile": user,
+            "left_order": left_order_final,
+            "right_order": right_order_final,
             "logged_in_user_is_profile": True,
         },
     )
@@ -242,7 +288,11 @@ def blog_posts(request, username):
         return render(
             request,
             "newprofile/partials/blog_posts.html",
-            {"blog_posts": user_blog_posts, "profile": profile_info_obj},
+            {
+                "blog_posts": user_blog_posts,
+                "profile": profile_info_obj,
+                "show_blog_posts": profile_info_obj.show_blog_posts,
+            },
         )
     except django.db.utils.OperationalError:
         logger.warning("Unable to connect to MySQL database for blogs")
@@ -385,6 +435,15 @@ def mysql_data(request, username):
                 f"_wpnonce={wp_create_nonce(request=request)}&"
                 f"redirect_to={request.build_absolute_uri()}",
                 "profile": profile_info_obj,
+                "show_commons_groups": profile_info_obj[
+                    "profile"
+                ].show_commons_groups,
+                "show_commons_sites": profile_info_obj[
+                    "profile"
+                ].show_commons_sites,
+                "show_recent_activity": profile_info_obj[
+                    "profile"
+                ].show_recent_activity,
             }
         else:
 
@@ -451,6 +510,36 @@ def profile_image(request, username):
             "username": username,
         },
     )
+
+
+@require_POST
+def save_profile_order(request, side):
+    """
+    Save the ordering of the user's profile via AJAX
+    """
+    try:
+        # Parse the JSON data from the request
+        data = json.loads(request.body)
+        item_order = str(json.dumps(data.get("item_order", [])))
+
+        # get a profile
+        api = API(
+            request, request.user.username, use_wordpress=True, create=False
+        )
+
+        if side == "left":
+            api.profile.left_order = item_order
+        else:
+            api.profile.right_order = item_order
+
+        api.profile.save()
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:  # noqa: BLE001
+        # Log the error for debugging
+        logging.warning("Error saving profile order: %s", e)
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 
 def health(request):

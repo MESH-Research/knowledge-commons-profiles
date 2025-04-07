@@ -4,6 +4,7 @@ Middleware for profiles
 
 import datetime
 import hashlib
+import logging
 from urllib.parse import unquote
 
 import phpserialize
@@ -42,13 +43,14 @@ class WordPressAuthMiddleware:
             wordpress_cookie = self.get_wordpress_cookie(request)
             if wordpress_cookie:
 
-                # this can fail if WordPress database is not available
+                # this can fail if WordPress database is not available,
                 # although we are in deeper trouble than that if this happens
                 try:
                     user = self.authenticate_wordpress_session(
                         wordpress_cookie
                     )
                 except OperationalError:
+                    logging.warning("WordPress database not available")
                     request.session["wordpress_logged_in"] = False
                     return self.get_response(request)
 
@@ -70,7 +72,13 @@ class WordPressAuthMiddleware:
                 request.session["wordpress_logged_in"] = False
                 return self.get_response(request)
 
-            user = self.authenticate_wordpress_session(wordpress_cookie)
+            try:
+                user = self.authenticate_wordpress_session(wordpress_cookie)
+            except OperationalError:
+                logging.warning("WordPress database not available")
+                request.session["wordpress_logged_in"] = False
+                return self.get_response(request)
+
             if not user:
                 # If the auth is not successful, log the user out
                 logout(request)

@@ -78,19 +78,18 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
         """Clean up after the tests."""
         self.works_deposits_patcher.stop()
 
-    async def test_works_html_with_existing_deposits(self):
+    def test_works_html_with_existing_deposits(self):
         """Test that works_html uses existing _works_deposits if available."""
         # Set up an existing _works_deposits
         mock_existing_deposits = mock.MagicMock()
-        mock_existing_deposits.display_filter.return_value = asyncio.Future()
-        mock_existing_deposits.display_filter.return_value.set_result(
+        mock_existing_deposits.display_filter.return_value = (
             "<div>Existing Deposits</div>"
         )
 
         self.model_instance._works_deposits = mock_existing_deposits
 
         # Call the property
-        result = await self.model_instance.works_html
+        result = self.model_instance.works_html
 
         # Assert WorksDeposits was not initialized again
         self.mock_works_deposits.assert_not_called()
@@ -101,14 +100,14 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
         # Assert the result is as expected
         self.assertEqual(result, "<div>Existing Deposits</div>")
 
-    async def test_works_html_with_existing_html(self):
+    def test_works_html_with_existing_html(self):
         """Test that works_html returns cached _works_html if available."""
         # Set up existing _works_html
         existing_html = "<div>Pre-cached HTML</div>"
         self.model_instance._works_html = existing_html
 
         # Call the property
-        result = await self.model_instance.works_html
+        result = self.model_instance.works_html
 
         # Assert display_filter was not called
         self.mock_works_deposits_instance.display_filter.assert_not_called()
@@ -120,14 +119,14 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
         "knowledge_commons_profiles.newprofile.api.WorksDeposits",
         side_effect=Exception("WorksDeposits initialization error"),
     )
-    async def test_works_deposits_initialization_error(self, mock_init):
+    def test_works_deposits_initialization_error(self, mock_init):
         """Test handling of errors during WorksDeposits initialization."""
         # Reset _works_deposits to None
         self.model_instance._works_deposits = None
 
         # Call the property and expect an exception
         with self.assertRaises(Exception) as context:
-            await self.model_instance.works_html
+            _ = self.model_instance.works_html
 
         # Assert the error message is as expected
         self.assertEqual(
@@ -163,145 +162,6 @@ class WorksHtmlIntegrationTests(django.test.TransactionTestCase):
         )
         mock_instance.display_filter.assert_called_once()
         self.assertEqual(result, "<div>Integration Test HTML</div>")
-
-
-class WorksDepositsPropertyTests(django.test.TransactionTestCase):
-    """Tests for the works_deposits cached async property."""
-
-    def setUp(self):
-        """Set up test data and mocks."""
-        # Create mock profile_info with username
-        self.test_username = "test_user"
-        self.profile_info = {
-            "username": self.test_username,
-            "email": "test@example.com",
-        }
-
-        self.model_instance, self.user = set_up_api_instance()
-        self.model_instance._profile_info = self.profile_info
-
-        # Set _works_deposits to None as it would be in the real class
-        self.model_instance._works_deposits = None
-
-        # Create a mock for WorksDeposits
-        self.works_deposits_patcher = mock.patch(
-            "knowledge_commons_profiles.newprofile.api.WorksDeposits"
-        )
-        self.mock_works_deposits_class = self.works_deposits_patcher.start()
-
-        # Create a mock instance that will be returned by the WorksDeposits
-        # constructor
-        self.mock_works_deposits_instance = mock.MagicMock()
-        self.mock_works_deposits_class.return_value = (
-            self.mock_works_deposits_instance
-        )
-
-    def tearDown(self):
-        """Clean up after the tests."""
-        self.works_deposits_patcher.stop()
-
-    async def test_works_deposits_initialization(self):
-        """Test that works_deposits initializes WorksDeposits if it's None."""
-        # Call the property
-        result = await self.model_instance.works_deposits
-
-        # Assert WorksDeposits was initialized with correct parameters
-        self.mock_works_deposits_class.assert_called_once_with(
-            self.test_username, "https://works.hcommons.org"
-        )
-
-        # Assert the result is the mock instance
-        self.assertEqual(result, self.mock_works_deposits_instance)
-
-        # Assert that _works_deposits is now set
-        self.assertIsNotNone(self.model_instance._works_deposits)
-        self.assertEqual(
-            self.model_instance._works_deposits,
-            self.mock_works_deposits_instance,
-        )
-
-    async def test_works_deposits_caching(self):
-        """Test that works_deposits caches the instance and doesn't
-        reinitialize."""
-        # Call the property twice
-        result1 = await self.model_instance.works_deposits
-        result2 = await self.model_instance.works_deposits
-
-        # Assert WorksDeposits was initialized only once
-        self.mock_works_deposits_class.assert_called_once()
-
-        # Assert both results are the same
-        self.assertEqual(result1, result2)
-        self.assertEqual(result1, self.mock_works_deposits_instance)
-
-    async def test_works_deposits_with_existing_instance(self):
-        """Test that works_deposits returns existing _works_deposits if
-        available."""
-        # Set up an existing _works_deposits
-        existing_deposits = mock.MagicMock()
-        self.model_instance._works_deposits = existing_deposits
-
-        # Call the property
-        result = await self.model_instance.works_deposits
-
-        # Assert WorksDeposits was not initialized again
-        self.mock_works_deposits_class.assert_not_called()
-
-        # Assert the result is the existing instance
-        self.assertEqual(result, existing_deposits)
-
-    @mock.patch(
-        "knowledge_commons_profiles.newprofile.api.WorksDeposits",
-        side_effect=Exception("WorksDeposits initialization error"),
-    )
-    async def test_works_deposits_initialization_error(self, mock_init):
-        """Test handling of errors during WorksDeposits initialization."""
-        # Reset _works_deposits to None
-        self.model_instance._works_deposits = None
-
-        # Call the property and expect an exception
-        with self.assertRaises(Exception) as context:
-            await self.model_instance.works_deposits
-
-        # Assert the error message is as expected
-        self.assertEqual(
-            str(context.exception), "WorksDeposits initialization error"
-        )
-
-
-class WorksDepositsPropertyIntegrationTests(django.test.TransactionTestCase):
-    """Integration tests for the works_deposits property with actual
-    dependencies."""
-
-    def setUp(self):
-        """Set up test data for integration tests."""
-        self.model_instance, self.user = set_up_api_instance()
-        self.model_instance._profile_info = {"username": "integration_user"}
-        self.model_instance._works_deposits = None
-
-    @mock.patch("knowledge_commons_profiles.newprofile.api.WorksDeposits")
-    async def test_end_to_end_works_deposits_flow(self, mock_works_deposits):
-        """Test the complete flow of works_deposits with mocked external
-        dependencies."""
-        # Set up the mock to return a specific object
-        mock_instance = mock.MagicMock()
-        mock_instance.name = "Mocked WorksDeposits Instance"
-        mock_works_deposits.return_value = mock_instance
-
-        # Call the property
-        result = await self.model_instance.works_deposits
-
-        # Assert the expected interactions and results
-        mock_works_deposits.assert_called_once_with(
-            "integration_user", "https://works.hcommons.org"
-        )
-        self.assertEqual(result, mock_instance)
-        self.assertEqual(result.name, "Mocked WorksDeposits Instance")
-
-        # Call again and verify caching
-        result2 = await self.model_instance.works_deposits
-        self.assertEqual(result, result2)
-        mock_works_deposits.assert_called_once()
 
 
 class WpUserPropertyTests(django.test.TestCase):

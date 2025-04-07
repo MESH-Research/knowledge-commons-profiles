@@ -80,72 +80,16 @@
   <div class="row">
     <!-- Left Column - About -->
     <div class="col-12 col-lg-8">
-      <div class="content-card" id="about_user">
-        <h3 class="card-title">About</h3>
-        <div class="about-text"
-             hx-get="{% url 'profile_info' username=username %}"
-             hx-trigger="load"
-             hx-target="this">
-        </div>
-      </div>
-
-      <!-- Education -->
-      {% if profile.show_education %}
-      <div class="content-card" id="education"></div>
-      {% endif %}
-
-      <!-- Works Deposits -->
-      {% if profile.show_works %}
-      <div class="content-card" id="works"
-           hx-get="{% url 'works_deposits' username=username %}"
-           hx-trigger="load"
-           hx-target="this"></div>
-      {% endif %}
-
-      <!-- Publications -->
-      {% if profile.show_publications %}
-      <div class="content-card" id="publications"></div>
-      {% endif %}
-
-      <!-- Projects -->
-      {% if profile.show_projects %}
-      <div class="content-card" id="projects"></div>
-      {% endif %}
-
-      <!-- Blog Posts -->
-      {% if profile.show_blog_posts %}
-      <div class="content-card" id="blog-posts"
-           hx-get="{% url 'blog_posts' username=username %}"
-           hx-trigger="load"
-           hx-target="this"></div>
-      {% endif %}
-
-      <!-- Mastodon Feed -->
-      {% if profile.show_mastodon_feed %}
-      <div class="content-card" id="mastodon-feed"
-           hx-get="{% url 'mastodon_feed' username=username %}"
-           hx-trigger="load"
-           hx-target="this"></div>
-      {% endif %}
+      {% for left_id in left_order %}
+          {% include "newprofile/fragments/"|add:left_id|add:".html" %}
+      {% endfor %}
     </div>
 
     <!-- Right Column -->
     <div class="col-12 col-lg-4">
-      {% if profile.show_academic_interests %}
-      <div class="content-card" id="academic-interests"></div>
-      {% endif %}
-
-      {% if profile.show_commons_groups %}
-      <div class="content-card" id="commons-groups"></div>
-      {% endif %}
-
-      {% if profile.show_recent_activity %}
-      <div class="content-card" id="commons-activity"></div>
-      {% endif %}
-
-      {% if profile.show_commons_sites %}
-      <div class="content-card" id="commons-sites"></div>
-      {% endif %}
+      {% for right_id in right_order %}
+          {% include "newprofile/fragments/"|add:right_id|add:".html" %}
+      {% endfor %}
     </div>
   </div>
 </div>

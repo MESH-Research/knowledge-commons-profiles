@@ -422,6 +422,9 @@ class Profile(models.Model):
     show_mastodon_feed = models.BooleanField(default=True)
     show_recent_activity = models.BooleanField(default=True)
 
+    left_order = models.CharField(max_length=255, blank=True, null=True)
+    right_order = models.CharField(max_length=255, blank=True, null=True)
+
     def __str__(self):
         """
         Return a human-readable representation of the Profile model instance

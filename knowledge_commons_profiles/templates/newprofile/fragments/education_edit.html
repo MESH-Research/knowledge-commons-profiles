@@ -1,0 +1,7 @@
+{% load crispy_forms_tags crispy_forms_field %}
+<!-- Education -->
+<div class="content-card sortable-item" id="education_form">
+  <h3 class="card-title">Education</h3>
+  {% crispy_field form.show_education %}
+  {{ form.education }}
+</div>

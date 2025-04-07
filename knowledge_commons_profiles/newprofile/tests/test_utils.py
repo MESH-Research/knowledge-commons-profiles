@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from django.db import OperationalError
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
@@ -15,6 +16,7 @@ from knowledge_commons_profiles.newprofile.tests.model_factories import (
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
     WpUserFactory,
 )
+from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
@@ -156,3 +158,120 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         self.assertFalse(result)
         # Verify logger wasn't called as this error is expected
         mock_logger.warning.assert_not_called()
+
+
+class TestProcessOrders(TestCase):
+    """Test cases for the process_orders function"""
+
+    @override_settings(
+        PROFILE_FIELDS_LEFT=["name", "about_me", "interests"],
+        PROFILE_FIELDS_RIGHT=["email", "website", "social_media"],
+    )
+    def test_basic_processing(self):
+        """Test basic processing of orders with standard input"""
+        left_order = ["name-form", "about_me-form"]
+        right_order = ["email-form", "website-form"]
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        # Check left order results
+        self.assertEqual(left_result, ["name", "about_me", "interests"])
+
+        # Check right order results
+        self.assertEqual(right_result, ["email", "website", "social_media"])
+
+    @override_settings(
+        PROFILE_FIELDS_LEFT=["name", "about_me", "interests", "education"],
+        PROFILE_FIELDS_RIGHT=["email", "website", "social_media", "phone"],
+    )
+    def test_reordering(self):
+        """Test that the order in the input is preserved"""
+        # Intentionally order differently than the settings
+        left_order = ["interests-form", "name-form", "education-form"]
+        right_order = ["phone-form", "email-form"]
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        # Check that order is preserved for items in the input
+        self.assertEqual(left_result[0], "interests")
+        self.assertEqual(left_result[1], "name")
+        self.assertEqual(left_result[2], "education")
+
+        # The item not in the input should be appended
+        self.assertEqual(left_result[3], "about_me")
+
+        # Similar check for right order
+        self.assertEqual(right_result[0], "phone")
+        self.assertEqual(right_result[1], "email")
+
+    @override_settings(
+        PROFILE_FIELDS_LEFT=["name", "about_me"],
+        PROFILE_FIELDS_RIGHT=["email", "website"],
+    )
+    def test_items_not_in_allowed_list(self):
+        """Test items that aren't in the allowed lists are excluded"""
+        left_order = ["name-form", "invalid_field-form"]
+        right_order = ["invalid_field-form", "email-form"]
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        # Check that invalid items are excluded
+        self.assertEqual(left_result, ["name", "about_me"])
+        self.assertEqual(right_result, ["email", "website"])
+
+    @override_settings(
+        PROFILE_FIELDS_LEFT=["name", "about_me"],
+        PROFILE_FIELDS_RIGHT=["email", "website"],
+    )
+    def test_different_formats(self):
+        """Test handling of different input formats (form, edit, dashes,
+        underscores)"""
+        left_order = ["name-form", "about-me_edit"]
+        right_order = ["email_edit", "website-edit"]
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        # Check normalization of different formats
+        self.assertEqual(left_result, ["name", "about_me"])
+        self.assertEqual(right_result, ["email", "website"])
+
+    @override_settings(
+        PROFILE_FIELDS_LEFT=["name", "about_me", "interests"],
+        PROFILE_FIELDS_RIGHT=["email", "website", "social_media"],
+    )
+    def test_empty_input(self):
+        """Test with empty inputs"""
+        left_order = []
+        right_order = []
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        # All allowed fields should be included in the default order
+        self.assertEqual(left_result, ["name", "about_me", "interests"])
+        self.assertEqual(right_result, ["email", "website", "social_media"])
+
+    @override_settings(
+        PROFILE_FIELDS_LEFT=["name", "about_me"],
+        PROFILE_FIELDS_RIGHT=["email", "website"],
+    )
+    def test_duplicate_entries(self):
+        """Test that duplicate entries in input are handled correctly"""
+        left_order = ["name-form", "name-form", "about_me-form"]
+        right_order = ["email-form", "email-form"]
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        self.assertEqual(left_result, ["name", "name", "about_me"])
+        self.assertEqual(right_result, ["email", "email", "website"])
+
+    @override_settings(PROFILE_FIELDS_LEFT=[], PROFILE_FIELDS_RIGHT=[])
+    def test_empty_settings(self):
+        """Test with empty settings"""
+        left_order = ["name-form", "about_me-form"]
+        right_order = ["email-form", "website-form"]
+
+        left_result, right_result = process_orders(left_order, right_order)
+
+        # Nothing should be in the result with empty allowed lists
+        self.assertEqual(left_result, [])
+        self.assertEqual(right_result, [])
