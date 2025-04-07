@@ -1,3 +1,10 @@
+## 1.3.0 (2025-04-07)
+
+### Feat
+
+- **profiles**: make profiles reorderable
+- **edit**: add styling for movable blocks
+
 ## 1.2.0 (2025-04-03)
 
 ### Feat
