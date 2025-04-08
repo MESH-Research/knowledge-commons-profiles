@@ -1,3 +1,34 @@
+## 2.0.0 (2025-04-08)
+
+### BREAKING CHANGE
+
+- This commit moves the URL structure from /profiles/ to /. It therefore breaks anything relying on that structure.
+
+### Feat
+
+- **profiles**: make profiles reorderable
+- **edit**: add styling for movable blocks
+- **edit**: make profile items hideable and sortable
+- **csrf**: add csrf reasons
+- **urls**: move profiles to root of application
+- **login**: add login button to homepage
+
+### Fix
+
+- **profiles**: move some htmx to main template
+- **mastodon**: correct mastodon hide variable information
+- **blog_posts**: fix incorrect dictionary access to profile object
+- **mysql_data**: change mysql_data processing
+- **csrf**: add trusted origins
+- **csrf**: change csrf settings so test pass
+- **csrf**: remove session configuration options which were causing csrf errors
+- **js**: remove unneeded js
+- **mysql_data**: correct link with new structure
+- **base**: remove erroneous use of jquery in htmx return for mastodon_feed
+- **edit_profile**: remove htmx boost from submit button to avoid 403 csrf errors
+- **custom_login**: fix bug with error handling on API request
+- **base-requirements**: limit smart_open requirement to aws
+
 ## 1.3.2 (2025-04-07)
 
 ### Fix
