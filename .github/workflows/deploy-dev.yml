@@ -15,6 +15,7 @@ env:
   ECR_REPOSITORY_REDIS: kcprofiles-redis-dev
   ECS_SERVICE: kcprofiles-dev-blue            # set this to your Amazon ECS service name
   ECS_CLUSTER: kcprofiles-dev                 # set this to your Amazon ECS cluster name
+  AUTOSCALE_GROUP: Infra-ECS-Cluster-kcprofiles-dev-6dc65d85-ECSAutoScalingGroup-YXjDjYbG0la5
 
 jobs:
   deploy-packages:
@@ -71,3 +72,14 @@ jobs:
         continue-on-error: true
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          aws autoscaling start-instance-refresh --auto-scaling-group-name $AUTOSCALE_GROUP --region $AWS_REGION --preferences '{"SkipMatching": false}'
+
+      - name: Set a Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: dev
+          ignore_missing: true
