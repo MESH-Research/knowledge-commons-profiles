@@ -1,3 +1,14 @@
+## 2.1.0 (2025-04-08)
+
+### Feat
+
+- **settings**: remove compressor and rcssmin
+
+### Fix
+
+- **edit**: show form errors alongside fields
+- **edit**: allow academic interests list to be empty
+
 ## 2.0.0 (2025-04-08)
 
 ### BREAKING CHANGE
