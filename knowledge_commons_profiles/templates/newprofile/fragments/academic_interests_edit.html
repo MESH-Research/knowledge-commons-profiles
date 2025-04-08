@@ -2,7 +2,6 @@
 <div class="content-card sortable-item" id="academic-interests_edit">
   <h3 class="card-title">Academic Interests</h3>
   {% crispy_field form.show_academic_interests %}
-  <ul>
-    {{ form.academic_interests }}
-  </ul>
+  {{ form.academic_interests.errors }}
+  {{ form.academic_interests }}
 </div>

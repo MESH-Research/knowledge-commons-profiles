@@ -3,5 +3,6 @@
 <div class="content-card sortable-item" id="education_form">
   <h3 class="card-title">Education</h3>
   {% crispy_field form.show_education %}
+  {{ form.education.errors }}
   {{ form.education }}
 </div>

@@ -3,5 +3,6 @@
 <div class="content-card sortable-item" id="publications_form">
   <h3 class="card-title">Publications</h3>
   {% crispy_field form.show_publications %}
+  {{ form.publications.errors }}
   {{ form.publications }}
 </div>
