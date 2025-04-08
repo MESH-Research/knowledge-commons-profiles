@@ -372,8 +372,7 @@ class Profile(models.Model):
     profile_image = models.URLField(blank=True)
     works_username = models.CharField(max_length=255, blank=True)
     academic_interests = models.ManyToManyField(
-        "AcademicInterest",
-        related_name="profiles",
+        "AcademicInterest", related_name="profiles", blank=True
     )
     about_user = models.TextField(blank=True, null=True)
     education = models.TextField(blank=True, null=True)

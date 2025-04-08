@@ -153,6 +153,7 @@ class ProfileForm(forms.ModelForm):
             "academic_interests": AcademicInterestsSelect2TagWidget(
                 model=AcademicInterest,
                 search_fields=["text__icontains"],
+                allowClear=True,
                 attrs={
                     "data-minimum-input-length": 0,
                     "data-placeholder": "Start typing an interest...",
