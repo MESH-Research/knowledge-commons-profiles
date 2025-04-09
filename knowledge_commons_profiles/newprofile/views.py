@@ -124,22 +124,31 @@ def profile(request, user=""):
     if not profile_exists_or_has_been_created(user):
         raise Http404
 
-    profile_obj = API(request, user, use_wordpress=False, create=False).profile
+    api: API = API(request, user, use_wordpress=False, create=False)
+
+    profile_obj: Profile = api.profile
 
     # if the logged-in user is the same as the requested profile they are
     # viewing, we should show the edit navigation
-    logged_in_user_is_profile = request.user.username == user
+    logged_in_user_is_profile: bool = request.user.username == user
 
-    left_order = (
+    left_order: list = (
         json.loads(profile_obj.left_order) if profile_obj.left_order else []
     )
-    right_order = (
+    right_order: list = (
         json.loads(profile_obj.right_order) if profile_obj.right_order else []
     )
 
     left_order_final, right_order_final = process_orders(
         left_order, right_order
     )
+
+    works_headings: list = API(
+        request, user, use_wordpress=False, create=False
+    ).works_types(sort=True)
+
+    # contains keys such as "Show_Book section" with JavaScript booleans
+    works_show_map = json.loads(profile_obj.works_show)
 
     del left_order
     del right_order
@@ -152,6 +161,8 @@ def profile(request, user=""):
             "profile": profile_obj,
             "left_order": left_order_final,
             "right_order": right_order_final,
+            "works_headings_ordered": works_headings,
+            "works_show_map": works_show_map,
         },
         template_name="newprofile/profile.html",
     )
@@ -234,7 +245,7 @@ def edit_profile(request):
     """
 
     user = Profile.objects.prefetch_related("academic_interests").get(
-        username=request.user.username
+        username=request.user
     )
 
     if request.method == "POST":
@@ -252,6 +263,13 @@ def edit_profile(request):
         left_order, right_order
     )
 
+    works_headings: list = API(
+        request, user.username, use_wordpress=False, create=False
+    ).works_types(sort=True)
+
+    # contains keys such as "Show_Book section" with JavaScript booleans
+    works_show_map = json.loads(user.works_show)
+
     del left_order
     del right_order
 
@@ -265,6 +283,8 @@ def edit_profile(request):
             "left_order": left_order_final,
             "right_order": right_order_final,
             "logged_in_user_is_profile": True,
+            "works_headings_ordered": works_headings,
+            "works_show_map": works_show_map,
         },
     )
 
@@ -510,6 +530,35 @@ def profile_image(request, username):
             "username": username,
         },
     )
+
+
+@require_POST
+def save_works_order(request):
+    """
+    Save the ordering of the user's Works via AJAX
+    """
+    try:
+        # Parse the JSON data from the request
+        data = json.loads(request.body)
+
+        item_order = str(json.dumps(data.get("item_order", [])))
+        items_checked = str(json.dumps(data.get("show_work_values", {})))
+
+        # get a profile
+        api = API(
+            request, request.user.username, use_wordpress=True, create=False
+        )
+
+        api.profile.works_order = item_order
+        api.profile.works_show = items_checked
+        api.profile.save()
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:  # noqa: BLE001
+        # Log the error for debugging
+        logging.warning("Error saving profile order: %s", e)
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 
 @require_POST

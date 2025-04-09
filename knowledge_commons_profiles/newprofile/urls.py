@@ -79,4 +79,9 @@ urlpatterns = [
         views.save_profile_order,
         name="save_profile_order",
     ),
+    path(
+        "save-works-order/",
+        views.save_works_order,
+        name="save_works_order",
+    ),
 ]

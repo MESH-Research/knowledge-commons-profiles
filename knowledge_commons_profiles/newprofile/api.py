@@ -69,6 +69,23 @@ class API:
         self._mastodon_posts = None
         self._works_deposits = None
         self._works_html = None
+        self._works_types = None
+
+    def works_types(self, sort=False):
+        """
+        Get the works types headings
+        """
+        if self._works_deposits is None:
+            self._works_deposits = WorksDeposits(
+                self.user,
+                "https://works.hcommons.org",
+                user_profile=self.profile,
+            )
+
+        if self._works_types is None:
+            self._works_types = self._works_deposits.get_headings(sort=sort)
+
+        return self._works_types
 
     @cached_property
     def works_html(self):
@@ -79,6 +96,7 @@ class API:
             self._works_deposits = WorksDeposits(
                 self.user,
                 "https://works.hcommons.org",
+                user_profile=self.profile,
             )
 
         if self._works_html is None:
@@ -249,7 +267,7 @@ class API:
                     except User.DoesNotExist as exc:
                         # raise 404
                         # use an assignment to avoid EM101
-                        error_message = "Profile not found"
+                        error_message = f"Profile not found: {self.user}"
                         raise Http404(error_message) from exc
         return self._profile
 

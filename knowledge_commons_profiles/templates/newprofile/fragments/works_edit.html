@@ -1,6 +1,15 @@
-{% load crispy_forms_tags crispy_forms_field %}
+{% load crispy_forms_tags crispy_forms_field dict_filters %}
 <!-- Works -->
 <div class="content-card sortable-item" id="works_form">
   <h3 class="card-title">Works</h3>
   {% crispy_field form.show_works %}
+  <ul id="works" class="works-list">
+    {% for work_heading in works_headings_ordered %}
+      {% with key_name="show_works_"|add:work_heading %}
+        {% with show=works_show_map|get_item:key_name %}
+          <li class="sortable-work" id="order-{{ work_heading }}"><h3 class="inline-heading"><input type="checkbox" class="inline-input" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show == "None" %}checked{% endif %}/> {{ work_heading }}</h3></li>
+        {% endwith %}
+      {% endwith %}
+    {% endfor %}
+  </ul>
 </div>

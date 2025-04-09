@@ -5,7 +5,7 @@
       {% for work_link in work_links %}
         <li>
           <a href='{{ work_link.url }}'>{{ work_link.title }}</a>
-          {% if work_link.date %}({{ work_link.date }}){% endif %}
+          {% if work_link.date %}({% if work_link.publisher and "Book" in work_type %}{{ work_link.publisher }}, {% endif %}{{ work_link.date }}){% endif %}
         </li>
       {% endfor %}
     </ul>

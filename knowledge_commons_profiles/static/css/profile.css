@@ -907,3 +907,7 @@ div {
     background: #f0f0f0 !important;
     height: 40px;
 }
+
+.inline-heading, .inline-input {
+  display: inline-block;
+}

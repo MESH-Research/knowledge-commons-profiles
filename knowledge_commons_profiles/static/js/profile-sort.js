@@ -2,13 +2,15 @@ $(document).ready(function() {
 
   const csrftoken = $("[name='csrfmiddlewaretoken']")[0].value;
 
-  function saveOrder(itemOrder, side) {
+  function saveOrder(itemOrder, side, show_work_values= {}) {
     let url = "";
 
     if (side == "left") {
         url = document.querySelector('[id=save-profile-left]').value;
-    } else {
+    } else if (side == "right") {
         url = document.querySelector('[id=save-profile-right]').value;
+    } else if (side == "works") {
+        url = document.querySelector('[id=save-works-order]').value;
     }
 
     // Send AJAX request to save the order
@@ -20,6 +22,7 @@ $(document).ready(function() {
         mode: 'same-origin',
         data: JSON.stringify({
             'item_order': itemOrder,
+            'show_work_values': show_work_values
         }),
         success: function(response) {
             console.log('Order saved successfully:', response);
@@ -33,10 +36,10 @@ $(document).ready(function() {
   $("#left_column").sortable({
     update: function (event, ui) {
       // Get the current order after sorting
-      var itemOrder = [];
+      let itemOrder = [];
       $("#left_column div.sortable-item").each(function () {
         // Extract the item ID from the div id attribute
-        var itemId = $(this).attr('id');
+        let itemId = $(this).attr('id');
         itemOrder.push(itemId);
       });
 
@@ -72,10 +75,11 @@ $(document).ready(function() {
   $("#right_column").sortable({
     update: function (event, ui) {
       // Get the current order after sorting
-      var itemOrder = [];
+      let itemOrder = [];
+
       $("#right_column div.sortable-item").each(function () {
         // Extract the item ID from the div id attribute
-        var itemId = $(this).attr('id');
+        let itemId = $(this).attr('id');
         itemOrder.push(itemId);
       });
 
@@ -83,4 +87,46 @@ $(document).ready(function() {
       saveOrder(itemOrder, "right");
     }
   });
+
+  $("#works").sortable({
+          update: function (event, ui) {
+              // Get the current order after sorting
+              let itemOrder = [];
+              let showWorks = {};
+
+              $("#works li.sortable-work").each(function () {
+                  // Extract the item ID from the div id attribute
+                  let itemId = $(this).attr('id');
+                  itemOrder.push(itemId);
+              });
+
+              $("#works li.sortable-work input").each(function () {
+                  // Extract the item ID from the input id attribute
+                  let inputId = $(this).attr('id');
+                  showWorks[inputId] = $(this).is(':checked');
+              });
+
+              // Send the new order to the server
+              saveOrder(itemOrder, "works", showWorks);
+          }
+      });
+
+  $("#works li.sortable-work h3 input").on('change', function() {
+      let itemOrder = [];
+      let showWorks = {};
+
+      $("#works li.sortable-work").each(function () {
+          // Extract the item ID from the div id attribute
+          let itemId = $(this).attr('id');
+          itemOrder.push(itemId);
+      });
+
+      $("#works li.sortable-work input").each(function () {
+          // Extract the item ID from the input id attribute
+          let inputId = $(this).attr('id');
+          showWorks[inputId] = $(this).is(':checked');
+      });
+
+      saveOrder(itemOrder, "works", showWorks);
+    });
 });
