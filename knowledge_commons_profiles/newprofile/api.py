@@ -93,11 +93,17 @@ class API:
         Get the works HTML
         """
         if self._works_deposits is None:
-            self._works_deposits = WorksDeposits(
-                self.user,
-                "https://works.hcommons.org",
-                user_profile=self.profile,
-            )
+            try:
+                self._works_deposits = WorksDeposits(
+                    self.user,
+                    "https://works.hcommons.org",
+                    user_profile=self.profile,
+                )
+            except django.http.response.Http404:
+                self._works_deposits = WorksDeposits(
+                    None,
+                    "https://works.hcommons.org",
+                )
 
         if self._works_html is None:
             self._works_html = self._works_deposits.display_filter()

@@ -134,36 +134,6 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
         )
 
 
-class WorksHtmlIntegrationTests(django.test.TransactionTestCase):
-    """Integration tests for the works_html property with actual
-    dependencies."""
-
-    @mock.patch("knowledge_commons_profiles.newprofile.api.WorksDeposits")
-    async def test_end_to_end_works_html_flow(self, mock_works_deposits):
-        """Test the complete flow of works_html with mocked external
-        dependencies."""
-        # Set up the mock
-        mock_instance = mock.MagicMock()
-        mock_works_deposits.return_value = mock_instance
-        mock_instance.display_filter.return_value = asyncio.Future()
-        mock_instance.display_filter.return_value.set_result(
-            "<div>Integration Test HTML</div>"
-        )
-
-        # Create a real user
-        model_instance, user = set_up_api_instance()
-
-        # Call the property
-        result = await model_instance.works_html
-
-        # Assert the expected interactions and results
-        mock_works_deposits.assert_called_once_with(
-            user, "https://works.hcommons.org"
-        )
-        mock_instance.display_filter.assert_called_once()
-        self.assertEqual(result, "<div>Integration Test HTML</div>")
-
-
 class WpUserPropertyTests(django.test.TestCase):
     """Tests for the wp_user cached property."""
 

@@ -123,10 +123,10 @@ class WorksDeposits:
 
         html = cache.get(cache_key, version=newprofile.__version__)
 
-        # if html:
-        # return str(html)
+        if html:
+            return str(html)
 
-        works = self.get_works()
+        works: dict = self.get_works()
 
         if (
             not works
@@ -136,7 +136,10 @@ class WorksDeposits:
             logging.info("No works (hits key) found for user: %s", self.user)
             return ""
 
-        visibility_options = json.loads(self.user_profile.works_show)
+        if self.user_profile:
+            visibility_options: dict = json.loads(self.user_profile.works_show)
+        else:
+            visibility_options: dict = {}
 
         work_types: list = list(
             {
@@ -149,7 +152,10 @@ class WorksDeposits:
         )
 
         # Start with ordered types from user profile that exist in work_types
-        ordered_types = json.loads(self.user_profile.works_order)
+        if self.user_profile:
+            ordered_types: list = json.loads(self.user_profile.works_order)
+        else:
+            ordered_types: list = []
 
         # type names are stored in the database as order-<type_name>
         final_sorted = [

@@ -148,7 +148,10 @@ def profile(request, user=""):
     ).works_types(sort=True)
 
     # contains keys such as "Show_Book section" with JavaScript booleans
-    works_show_map = json.loads(profile_obj.works_show)
+    try:
+        works_show_map = json.loads(profile_obj.works_show)
+    except TypeError:
+        works_show_map = {}
 
     del left_order
     del right_order
@@ -268,7 +271,10 @@ def edit_profile(request):
     ).works_types(sort=True)
 
     # contains keys such as "Show_Book section" with JavaScript booleans
-    works_show_map = json.loads(user.works_show)
+    try:
+        works_show_map = json.loads(user.works_show)
+    except TypeError:
+        works_show_map = {}
 
     del left_order
     del right_order
