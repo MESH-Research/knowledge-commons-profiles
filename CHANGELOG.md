@@ -1,3 +1,9 @@
+## 2.2.0 (2025-04-09)
+
+### Feat
+
+- **works**: make kc works entries sortable by section and also allow sections to be hidden
+
 ## 2.1.0 (2025-04-08)
 
 ### Feat
