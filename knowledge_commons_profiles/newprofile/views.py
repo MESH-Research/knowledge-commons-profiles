@@ -7,6 +7,7 @@ import logging
 
 import django
 from django.contrib.auth import logout
+from django.core.cache import cache
 from django.http import Http404
 from django.http import HttpResponse
 from django.http import JsonResponse
@@ -17,6 +18,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from knowledge_commons_profiles import newprofile
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.custom_login import login_required
 from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
@@ -143,6 +145,7 @@ def profile(request, user=""):
         left_order, right_order
     )
 
+    """
     works_headings: list = API(
         request, user, use_wordpress=False, create=False
     ).works_types(sort=True)
@@ -152,6 +155,13 @@ def profile(request, user=""):
         works_show_map = json.loads(profile_obj.works_show)
     except TypeError:
         works_show_map = {}
+
+    # contains keys such as show_axde-4213 with JavaScript booleans
+    try:
+        works_work_show_map = json.loads(profile_obj.works_work_show)
+    except TypeError:
+        works_work_show_map = {}
+    """
 
     del left_order
     del right_order
@@ -164,8 +174,9 @@ def profile(request, user=""):
             "profile": profile_obj,
             "left_order": left_order_final,
             "right_order": right_order_final,
-            "works_headings_ordered": works_headings,
-            "works_show_map": works_show_map,
+            # "works_headings_ordered": works_headings,
+            # "works_show_map": works_show_map,
+            # "works_work_show_map": works_work_show_map,
         },
         template_name="newprofile/profile.html",
     )
@@ -268,13 +279,19 @@ def edit_profile(request):
 
     works_headings: list = API(
         request, user.username, use_wordpress=False, create=False
-    ).works_types(sort=True)
+    ).works_types(sort=True, show_works=True, show_hidden=True)
 
     # contains keys such as "Show_Book section" with JavaScript booleans
     try:
         works_show_map = json.loads(user.works_show)
     except TypeError:
         works_show_map = {}
+
+    # contains keys such as show_axde-4213 with JavaScript booleans
+    try:
+        works_work_show_map = json.loads(user.works_work_show)
+    except TypeError:
+        works_work_show_map = {}
 
     del left_order
     del right_order
@@ -291,6 +308,7 @@ def edit_profile(request):
             "logged_in_user_is_profile": True,
             "works_headings_ordered": works_headings,
             "works_show_map": works_show_map,
+            "works_work_show_map": works_work_show_map,
         },
     )
 
@@ -538,6 +556,49 @@ def profile_image(request, username):
     )
 
 
+@login_required
+@require_POST
+def save_works_visibility(request):
+    """
+    Save the visibility of the user's Works headings via AJAX
+    """
+    try:
+        # Parse the JSON data from the request
+        data = json.loads(request.body)
+
+        works_visibility = str(json.dumps(data.get("works_visibility", {})))
+
+        # get a profile
+        api = API(
+            request, request.user.username, use_wordpress=True, create=False
+        )
+
+        cache_key = (
+            f"hc-member-profiles-xprofile-works-deposits-"
+            f"{request.user.username}"
+        )
+
+        cache.delete(cache_key, version=newprofile.__version__)
+
+        api.profile.works_work_show = works_visibility
+        api.profile.save()
+
+        cache_key = (
+            f"hc-member-profiles-xprofile-works-deposits-"
+            f"{request.user.username}"
+        )
+
+        cache.delete(cache_key, version=newprofile.__version__)
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:  # noqa: BLE001
+        # Log the error for debugging
+        logging.warning("Error saving profile order: %s", e)
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+
+@login_required
 @require_POST
 def save_works_order(request):
     """
@@ -559,6 +620,13 @@ def save_works_order(request):
         api.profile.works_show = items_checked
         api.profile.save()
 
+        cache_key = (
+            f"hc-member-profiles-xprofile-works-deposits-"
+            f"{request.user.username}"
+        )
+
+        cache.delete(cache_key, version=newprofile.__version__)
+
         return JsonResponse({"success": True})
 
     except Exception as e:  # noqa: BLE001
@@ -567,6 +635,7 @@ def save_works_order(request):
         return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 
+@login_required
 @require_POST
 def save_profile_order(request, side):
     """
@@ -588,6 +657,13 @@ def save_profile_order(request, side):
             api.profile.right_order = item_order
 
         api.profile.save()
+
+        cache_key = (
+            f"hc-member-profiles-xprofile-works-deposits-"
+            f"{request.user.username}"
+        )
+
+        cache.delete(cache_key, version=newprofile.__version__)
 
         return JsonResponse({"success": True})
 

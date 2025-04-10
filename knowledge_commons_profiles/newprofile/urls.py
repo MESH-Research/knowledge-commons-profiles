@@ -84,4 +84,9 @@ urlpatterns = [
         views.save_works_order,
         name="save_works_order",
     ),
+    path(
+        "save-works-visibility/",
+        views.save_works_visibility,
+        name="save_works_visibility",
+    ),
 ]

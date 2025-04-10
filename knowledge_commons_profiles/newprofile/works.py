@@ -3,6 +3,8 @@ Works field type.
 
 """
 
+# ruff: noqa: PLC0206
+
 import json
 import logging
 
@@ -31,7 +33,7 @@ class WorksDeposits:
         self.works_url: str = works_url
         self.user_profile: models.Profile = user_profile
 
-    def get_headings(self, sort=False):
+    def get_headings(self, sort=False, show_works=False, show_hidden=False):
         """Get the headings for a user's Works."""
         works: dict = self.get_works()
 
@@ -55,17 +57,49 @@ class WorksDeposits:
 
         # sort the work types if the user requested it. Requires a Profile.
         if sort and self.user_profile and self.user_profile.works_order:
-            # Start with ordered types from user profile that exist in
-            # work_types
-            ordered_types = json.loads(self.user_profile.works_order)
+            final_sorted = self.create_final_sorted(
+                work_types, show_hidden=True
+            )
+        else:
+            final_sorted = work_types
 
+        works_links: dict = {key: [] for key in final_sorted}
+
+        # now add works if that has been requested
+        if show_works:
+            self.get_works_list(
+                final_sorted, works, works_links, show_hidden=show_hidden
+            )
+
+        return works_links
+
+    def create_final_sorted(self, work_types, show_hidden=False):
+        """
+        Create the final sorted list of work types
+
+        """
+        # Start with ordered types from user profile that exist in work_types
+        if self.user_profile and self.user_profile.works_order:
+            ordered_types: list = json.loads(self.user_profile.works_order)
+        else:
+            ordered_types: list = []
+
+        if (
+            not show_hidden
+            and self.user_profile
+            and self.user_profile.works_show
+        ):
+            visibility_list = json.loads(self.user_profile.works_show)
+        else:
+            visibility_list = {}
+
+        if show_hidden:
             # type names are stored in the database as order-<type_name>
             final_sorted = [
                 type_name.split("order-")[1]
                 for type_name in ordered_types
                 if type_name.split("order-")[1] in work_types
             ]
-
             # Add any remaining types that weren't in the ordered list
             final_sorted.extend(
                 [
@@ -75,9 +109,75 @@ class WorksDeposits:
                 ]
             )
         else:
-            final_sorted = work_types
+            # type names are stored in the database as order-<type_name>
+            final_sorted = [
+                type_name.split("order-")[1]
+                for type_name in ordered_types
+                if type_name.split("order-")[1] in work_types
+                and visibility_list.get(
+                    "show_works_" + type_name.split("order-")[1], True
+                )
+            ]
+            # Add any remaining types that weren't in the ordered list
+            final_sorted.extend(
+                [
+                    type_name
+                    for type_name in work_types
+                    if type_name not in final_sorted
+                    and visibility_list.get("show_works_" + type_name, True)
+                ]
+            )
 
         return final_sorted
+
+    def get_works_list(
+        self,
+        final_sorted: list,
+        works: dict,
+        works_links: dict,
+        show_hidden=False,
+    ):
+        """
+        Add works to the prepopulated works_links dict
+        """
+        try:
+            works_work_show = json.loads(self.user_profile.works_work_show)
+        except (TypeError, AttributeError):
+            works_work_show = {}
+
+        for work in works.get("hits", {}).get("hits", []):
+            work_final = {
+                "title": work.get("metadata", {}).get("title"),
+                "url": work.get("links", {}).get("latest_html"),
+                "date": work.get("metadata", {}).get("publication_date"),
+                "publisher": work.get("metadata", {}).get("publisher"),
+                "id": work.get("id"),
+            }
+
+            work_type = (
+                work.get("metadata", {})
+                .get("resource_type", {})
+                .get("title", {})
+                .get("en", "Other")
+            )
+
+            # if the section isn't visible or the work is hidden and
+            # the show_hidden flag is true, then don't add the work
+            if work_type not in final_sorted or (
+                "show_works_work_" + work_final["id"] in works_work_show
+                and works_work_show["show_works_work_" + work_final["id"]]
+                is False
+                and show_hidden is False
+            ):
+                # invisible
+                continue
+            works_links[work_type].append(work_final)
+
+        for key in works_links:
+            works_links[key].sort(
+                key=lambda x: x["date"],
+                reverse=True,
+            )
 
     def get_works(self):
         """
@@ -131,11 +231,6 @@ class WorksDeposits:
             logging.info("No works (hits key) found for user: %s", self.user)
             return ""
 
-        if self.user_profile and self.user_profile.works_show:
-            visibility_options: dict = json.loads(self.user_profile.works_show)
-        else:
-            visibility_options: dict = {}
-
         work_types: list = list(
             {
                 work.get("metadata", {})
@@ -146,62 +241,14 @@ class WorksDeposits:
             }
         )
 
-        # Start with ordered types from user profile that exist in work_types
-        if self.user_profile and self.user_profile.works_order:
-            ordered_types: list = json.loads(self.user_profile.works_order)
-        else:
-            ordered_types: list = []
-
         # type names are stored in the database as order-<type_name>
-        final_sorted = [
-            type_name.split("order-")[1]
-            for type_name in ordered_types
-            if type_name.split("order-")[1] in work_types
-            and (
-                "show_works_" + type_name.split("order-")[1]
-                not in visibility_options
-                or visibility_options[
-                    "show_works_" + type_name.split("order-")[1]
-                ]
-                is True
-            )
-        ]
+        final_sorted = self.create_final_sorted(work_types, show_hidden=False)
 
-        # Add any remaining types that weren't in the ordered list
-        final_sorted.extend(
-            [
-                type_name
-                for type_name in work_types
-                if type_name not in final_sorted
-                and (
-                    "show_works_" + type_name not in visibility_options
-                    or visibility_options["show_works_" + type_name] is True
-                )
-            ]
-        )
-
-        # works_links = dict.fromkeys(final_sorted, [])
         works_links: dict = {key: [] for key in final_sorted}
 
-        for work in works.get("hits", {}).get("hits", []):
-            work_final = {
-                "title": work.get("metadata", {}).get("title"),
-                "url": work.get("links", {}).get("latest_html"),
-                "date": work.get("metadata", {}).get("publication_date"),
-                "publisher": work.get("metadata", {}).get("publisher"),
-            }
-
-            work_type = (
-                work.get("metadata", {})
-                .get("resource_type", {})
-                .get("title", {})
-                .get("en", "Other")
-            )
-
-            if work_type not in final_sorted:
-                # invisible
-                continue
-            works_links[work_type].append(work_final)
+        self.get_works_list(
+            final_sorted, works, works_links, show_hidden=False
+        )
 
         html = render_to_string(
             "newprofile/works.html",

@@ -4,10 +4,26 @@
   <h3 class="card-title">Works</h3>
   {% crispy_field form.show_works %}
   <ul id="works" class="works-list">
-    {% for work_heading in works_headings_ordered %}
+    {% for work_heading, list_of_works in works_headings_ordered.items %}
       {% with key_name="show_works_"|add:work_heading %}
         {% with show=works_show_map|get_item:key_name %}
-          <li class="sortable-work" id="order-{{ work_heading }}"><h3 class="inline-heading"><input type="checkbox" class="inline-input" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show is None %}checked{% endif %}/> {{ work_heading }}</h3></li>
+          <li class="sortable-work" id="order-{{ work_heading }}">
+            <input type="checkbox" class="inline-input work-heading" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show is None %}checked{% endif %}/>
+            <h3 class="inline-heading">
+              {{ work_heading }}
+            </h3>
+            <ul class="list-of-works">
+              {% for work_link in list_of_works %}
+                <li class="sortable-work-item" id="work-item-{{ work_link.id }}">
+                  {% with work_work_key_name="show_works_work_"|add:work_link.id %}
+                    {% with show_work=works_work_show_map|get_item:work_work_key_name %}
+                      <span><input type="checkbox" class="inline-input individual_work" id="show_works_work_{{ work_link.id }}" name="show_works_work_{{ work_link.id }}" {% if show_work is True or show_work == "True" or show_work == "true" or show_work is None %}checked{% endif %} /> {{ work_link.title }} {% if work_link.date %}({% if work_link.publisher and "Book" in work_heading %}{{ work_link.publisher }}, {% endif %}{{ work_link.date }}){% endif %}</span>
+                    {% endwith %}
+                  {% endwith %}
+                </li>
+              {% endfor %}
+            </ul>
+          </li>
         {% endwith %}
       {% endwith %}
     {% endfor %}

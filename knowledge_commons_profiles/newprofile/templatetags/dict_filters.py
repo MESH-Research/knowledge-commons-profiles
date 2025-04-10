@@ -12,4 +12,5 @@ def get_item(dictionary, key):
     """
     Get an item from a dictionary
     """
-    return dictionary.get(key)
+
+    return dictionary.get(key) if isinstance(dictionary, dict) else None

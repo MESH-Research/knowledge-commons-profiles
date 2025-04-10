@@ -425,6 +425,7 @@ class Profile(models.Model):
     right_order = models.CharField(max_length=255, blank=True, null=True)
     works_order = models.TextField(blank=True, null=True)
     works_show = models.TextField(blank=True, null=True)
+    works_work_show = models.TextField(blank=True, null=True)
 
     def __str__(self):
         """

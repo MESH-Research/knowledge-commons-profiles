@@ -71,7 +71,7 @@ class API:
         self._works_html = None
         self._works_types = None
 
-    def works_types(self, sort=False):
+    def works_types(self, sort=False, show_works=False, show_hidden=False):
         """
         Get the works types headings
         """
@@ -83,7 +83,9 @@ class API:
             )
 
         if self._works_types is None:
-            self._works_types = self._works_deposits.get_headings(sort=sort)
+            self._works_types = self._works_deposits.get_headings(
+                sort=sort, show_works=show_works, show_hidden=show_hidden
+            )
 
         return self._works_types
 

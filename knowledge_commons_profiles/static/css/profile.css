@@ -585,7 +585,8 @@
 
         /* Category headers (Journal article, Slides, etc.) */
         .works-list > li {
-          margin-bottom: 2rem;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
           border-bottom: 1px solid #eaeaea;
           padding-bottom: 1rem;
         }
@@ -634,6 +635,10 @@
         .works-list > li > ul > li::after {
           content: attr(data-year);
           color: #666;
+        }
+
+        .list-of-works {
+          list-style: none;
         }
 
         #mastodon-feed > p {
