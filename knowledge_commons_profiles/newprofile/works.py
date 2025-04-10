@@ -54,7 +54,7 @@ class WorksDeposits:
         )
 
         # sort the work types if the user requested it. Requires a Profile.
-        if sort and self.user_profile:
+        if sort and self.user_profile and self.user_profile.works_order:
             # Start with ordered types from user profile that exist in
             # work_types
             ordered_types = json.loads(self.user_profile.works_order)
@@ -113,12 +113,7 @@ class WorksDeposits:
             return None
 
     def display_filter(self):
-        """Front-end display of user's works, ordered by date.
-
-        :param mixed      field_value: Field value.
-        :param string|int field_id:    ID of the field.
-        :return: mixed
-        """
+        """Front-end display of user's works, ordered by date."""
         cache_key = f"hc-member-profiles-xprofile-works-deposits-{self.user}"
 
         html = cache.get(cache_key, version=newprofile.__version__)
@@ -136,7 +131,7 @@ class WorksDeposits:
             logging.info("No works (hits key) found for user: %s", self.user)
             return ""
 
-        if self.user_profile:
+        if self.user_profile and self.user_profile.works_show:
             visibility_options: dict = json.loads(self.user_profile.works_show)
         else:
             visibility_options: dict = {}
@@ -152,7 +147,7 @@ class WorksDeposits:
         )
 
         # Start with ordered types from user profile that exist in work_types
-        if self.user_profile:
+        if self.user_profile and self.user_profile.works_order:
             ordered_types: list = json.loads(self.user_profile.works_order)
         else:
             ordered_types: list = []
