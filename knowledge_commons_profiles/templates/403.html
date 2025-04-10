@@ -4,14 +4,18 @@
   Forbidden (403)
 {% endblock title %}
 {% block content %}
-  <div class="row">
-    <h1>Forbidden (403)</h1>
-    <p>
-      {% if exception %}
-        {{ exception }}
-      {% else %}
-        You're not allowed to access this page.
-      {% endif %}
-    </p>
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1>Forbidden (403)</h1>
+        <p>
+          {% if exception %}
+            {{ exception }}
+          {% else %}
+            You're not allowed to access this page.
+          {% endif %}
+        </p>
+      </div>
+    </div>
   </div>
 {% endblock content %}
