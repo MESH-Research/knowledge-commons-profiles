@@ -1,3 +1,9 @@
+## 2.2.1 (2025-04-10)
+
+### Fix
+
+- **works**: fix nonetype handling bug in json parsing
+
 ## 2.2.0 (2025-04-09)
 
 ### Feat
