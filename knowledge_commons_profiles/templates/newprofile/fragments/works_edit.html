@@ -7,7 +7,7 @@
     {% for work_heading in works_headings_ordered %}
       {% with key_name="show_works_"|add:work_heading %}
         {% with show=works_show_map|get_item:key_name %}
-          <li class="sortable-work" id="order-{{ work_heading }}"><h3 class="inline-heading"><input type="checkbox" class="inline-input" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show == "None" %}checked{% endif %}/> {{ work_heading }}</h3></li>
+          <li class="sortable-work" id="order-{{ work_heading }}"><h3 class="inline-heading"><input type="checkbox" class="inline-input" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show is None %}checked{% endif %}/> {{ work_heading }}</h3></li>
         {% endwith %}
       {% endwith %}
     {% endfor %}
