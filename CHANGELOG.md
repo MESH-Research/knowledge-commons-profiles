@@ -1,3 +1,9 @@
+## 2.4.0 (2025-04-11)
+
+### Feat
+
+- **works**: add csl for citation formatting
+
 ## 2.3.0 (2025-04-10)
 
 ### Feat
