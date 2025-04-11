@@ -352,3 +352,16 @@ PROFILE_FIELDS_RIGHT = [
     "commons_activity",
     "commons_sites",
 ]
+
+CITATION_STYLES = {
+    "ACM": "styles/association-for-computing-machinery.csl",
+    "APA": "styles/apa.csl",
+    "APS": "styles/american-physical-society.csl",
+    "Chicago": "styles/chicago-author-date.csl",
+    "Harvard": "harvard1.csl",
+    "IEEE": "styles/ieee.csl",
+    "JACS": "styles/journal-of-the-american-college-of-surgeons.csl",
+    "MHRA": "styles/modern-humanities-research-association.csl",
+    "MLA": "styles/modern-language-association.csl",
+    "Vancouver": "styles/vancouver.csl",
+}

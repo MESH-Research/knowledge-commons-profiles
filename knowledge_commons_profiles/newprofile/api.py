@@ -47,7 +47,14 @@ class API:
     A class containing API calls for user details
     """
 
-    def __init__(self, request, user, use_wordpress=True, create=False):
+    def __init__(
+        self,
+        request,
+        user,
+        use_wordpress=True,
+        create=False,
+        works_citation_style="MHRA",
+    ):
         """
         Initialise the API class with a request and user object.
         """
@@ -56,6 +63,7 @@ class API:
         self.create = create
 
         self.use_wordpress = use_wordpress
+        self._works_citation_style = works_citation_style
 
         # these fields are all loaded on first access via the cached_property
         # decorators below. This means you can init an API without triggering
@@ -83,8 +91,10 @@ class API:
             )
 
         if self._works_types is None:
-            self._works_types = self._works_deposits.get_headings(
-                sort=sort, show_works=show_works, show_hidden=show_hidden
+            self._works_types = (
+                self._works_deposits.get_headings_and_works_for_edit(
+                    sort=sort, show_works=show_works, show_hidden=show_hidden
+                )
             )
 
         return self._works_types
@@ -108,7 +118,9 @@ class API:
                 )
 
         if self._works_html is None:
-            self._works_html = self._works_deposits.display_filter()
+            self._works_html = self._works_deposits.display_filter(
+                style=self._works_citation_style
+            )
 
         return self._works_html
 
@@ -151,10 +163,11 @@ class API:
             self._mastodon_profile = self.profile_info["mastodon"]
 
             if self._mastodon_profile:
-                self.mastodon_username, self.mastodon_server = (
-                    self._get_mastodon_user_and_server(
-                        mastodon_field=self._mastodon_profile
-                    )
+                (
+                    self.mastodon_username,
+                    self.mastodon_server,
+                ) = self._get_mastodon_user_and_server(
+                    mastodon_field=self._mastodon_profile
                 )
                 self._mastodon_posts = mastodon.MastodonFeed(
                     self.mastodon_username,

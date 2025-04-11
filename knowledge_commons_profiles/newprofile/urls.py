@@ -50,6 +50,11 @@ urlpatterns = [
         name="works_deposits",
     ),
     path(
+        "htmx/works-deposits/<str:username>/<str:style>/",
+        views.works_deposits,
+        name="works_deposits_style",
+    ),
+    path(
         "htmx/profile-info/<str:username>/",
         views.profile_info,
         name="profile_info",

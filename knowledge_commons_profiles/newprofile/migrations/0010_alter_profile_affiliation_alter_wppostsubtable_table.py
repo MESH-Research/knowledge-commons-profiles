@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("newprofile", "0009_alter_academicinterest_text_and_more"),
     ]

@@ -90,14 +90,15 @@ class Command(BaseCommand):
                             f"cover-image/{filename}"
                         )
 
-                        cover_image, created = (
-                            CoverImage.objects.update_or_create(
-                                profile=profile_object,
-                                defaults={
-                                    "filename": filename,
-                                    "file_path": final_filename,
-                                },
-                            )
+                        (
+                            cover_image,
+                            created,
+                        ) = CoverImage.objects.update_or_create(
+                            profile=profile_object,
+                            defaults={
+                                "filename": filename,
+                                "file_path": final_filename,
+                            },
                         )
 
                         status = "Created" if created else "Updated"

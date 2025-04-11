@@ -42,7 +42,6 @@ class WordPressAuthMiddleware:
         if not request.user.is_authenticated:
             wordpress_cookie = self.get_wordpress_cookie(request)
             if wordpress_cookie:
-
                 # this can fail if WordPress database is not available,
                 # although we are in deeper trouble than that if this happens
                 try:

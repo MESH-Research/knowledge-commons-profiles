@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("newprofile", "0008_profile_show_commons_groups_and_more"),
     ]

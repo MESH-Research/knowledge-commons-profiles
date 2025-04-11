@@ -64,6 +64,9 @@ line-length = 80
 [tool.black]
 line-length = 79
 
+[tool.ruff.lint.flake8-builtins]
+builtins-allowed-modules = ["json", "string", "types", "html"]
+
 [tool.ruff.lint]
 select = [
   "F",

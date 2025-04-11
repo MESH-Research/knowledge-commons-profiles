@@ -52,11 +52,17 @@ def profile_info(request, username):
     return render(request, "newprofile/partials/profile_info.html", context)
 
 
-def works_deposits(request, username):
+def works_deposits(request, username, style="MHRA"):
     """
     Get profile info via HTMX
     """
-    api = API(request, username, use_wordpress=False, create=False)
+    api = API(
+        request,
+        username,
+        use_wordpress=False,
+        create=False,
+        works_citation_style=style,
+    )
 
     # Get the works deposits for this username
     user_works_deposits = api.works_html if api.profile.show_works else []
@@ -361,7 +367,6 @@ def cover_image(request, username):
 
 
 def header_bar(request):
-
     if request.user.is_authenticated:
         api_me = (
             API(
@@ -490,7 +495,6 @@ def mysql_data(request, username):
                 ].show_recent_activity,
             }
         else:
-
             context = {
                 "username": username,
                 "cover_image": api.get_cover_image(),

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("newprofile", "0005_profile_bluesky_alter_wppostsubtable_table"),
     ]

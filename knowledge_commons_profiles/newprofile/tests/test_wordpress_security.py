@@ -138,7 +138,6 @@ class WordPressCompatibilityTestCase(TestCase):
                 return_value=expected_hash,
             ),
         ):
-
             actual_nonce = wp_create_nonce(
                 action=test_action, request=self.request
             )
@@ -158,7 +157,6 @@ class WordPressCompatibilityTestCase(TestCase):
             mock.patch.object(settings, "LOGIN_URL", "/custom-login/"),
             mock.patch.object(settings, "REDIRECT_FIELD_NAME", "redirect_to"),
         ):
-
             login_url = get_login_url(next_url)
             parsed_url = urlparse(login_url)
             query_params = parse_qs(parsed_url.query)
@@ -202,7 +200,6 @@ class WordPressCompatibilityTestCase(TestCase):
                 return_value="/current-path/",
             ),
         ):
-
             response = test_view(self.request)
 
             self.assertIsInstance(response, HttpResponseRedirect)
