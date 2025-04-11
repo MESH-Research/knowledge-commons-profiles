@@ -1,3 +1,14 @@
+## 2.3.0 (2025-04-10)
+
+### Feat
+
+- **works**: add ability to hide specific works
+
+### Fix
+
+- **works**: when editing works, tick all checkboxes by default
+- **errors**: change error pages to use correct html layout
+
 ## 2.2.1 (2025-04-10)
 
 ### Fix
