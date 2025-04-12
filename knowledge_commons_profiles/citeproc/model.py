@@ -1306,6 +1306,8 @@ class Name(CitationStylesElement, Formatted, Affixed, Delimited):
             and_term = " " + self.get_term("and").single
         elif and_ == "symbol":
             and_term = " " + self.preformat("&")
+        else:
+            and_term = " " + "and"
 
         et_al = self.et_al()
         output = []

@@ -123,6 +123,7 @@ class ProfileForm(forms.ModelForm):
             "show_recent_activity",
             "show_commons_sites",
             "academic_interests",
+            "reference_style",
         ]
         widgets = {
             "title": forms.TextInput(
@@ -224,6 +225,15 @@ class ProfileForm(forms.ModelForm):
                 attrs={
                     "style": "display: inline-block; float:right; "
                     "margin-top:-4.5em;"
+                },
+            ),
+            "reference_style": forms.Select(
+                attrs={
+                    "style": "display: inline-block; float:right; "
+                    "margin-top:-4.6em; margin-right: 2em;",
+                    "hx-trigger": "change",
+                    "hx-post": "/works-deposits-edit/",  # NOTE: this is a hack
+                    "hx-swap": "none",
                 },
             ),
             "projects": SanitizedTinyMCE(attrs={"cols": 80, "rows": 20}),

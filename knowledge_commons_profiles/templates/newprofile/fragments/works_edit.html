@@ -1,8 +1,8 @@
 {% load crispy_forms_tags crispy_forms_field dict_filters %}
-<!-- Works -->
-<div class="content-card sortable-item" id="works_form">
+<div class="content-card sortable-item" id="works_form" hx-swap-oob="true">
   <h3 class="card-title">Works</h3>
   {% crispy_field form.show_works %}
+  {% crispy_field form.reference_style %}
   <ul id="works" class="works-list">
     {% for work_heading, list_of_works in works_headings_ordered.items %}
       {% with key_name="show_works_"|add:work_heading %}

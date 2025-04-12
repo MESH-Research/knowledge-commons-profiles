@@ -79,6 +79,20 @@ class API:
         self._works_html = None
         self._works_types = None
 
+    @property
+    def works_citation_style(self):
+        """
+        Get the works citation style
+        """
+        return self._works_citation_style
+
+    @works_citation_style.setter
+    def works_citation_style(self, value):
+        """
+        Set the works citation style
+        """
+        self._works_citation_style = value
+
     def works_types(self, sort=False, show_works=False, show_hidden=False):
         """
         Get the works types headings
@@ -93,7 +107,10 @@ class API:
         if self._works_types is None:
             self._works_types = (
                 self._works_deposits.get_headings_and_works_for_edit(
-                    sort=sort, show_works=show_works, show_hidden=show_hidden
+                    sort=sort,
+                    show_works=show_works,
+                    show_hidden=show_hidden,
+                    style=self._works_citation_style,
                 )
             )
 

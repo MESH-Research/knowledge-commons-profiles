@@ -74,32 +74,6 @@ class WorksDepositsTest(TransactionTestCase):
             }
         }
 
-    async def async_test_wrapper(self, coroutine):
-        """Wrapper to run async tests."""
-        return await coroutine
-
-    @patch("knowledge_commons_profiles.newprofile.works.requests.Session")
-    def test_display_filter_from_cache(self, mock_client_session):
-        """Test display_filter when result is already in cache."""
-        # Set up cache
-        cache_key = (
-            f"hc-member-profiles-xprofile-works-deposits-{self.user_id}"
-        )
-
-        cache.set(
-            cache_key,
-            "<div>Cached HTML</div>",
-            3600,
-            version=newprofile.__version__,
-        )
-
-        # Call the method
-        result = self.works_deposits.display_filter()
-
-        # Assertions
-        mock_client_session.assert_not_called()  # don't create API session
-        self.assertEqual(result, "<div>Cached HTML</div>")
-
     @patch("knowledge_commons_profiles.newprofile.works.requests.Session")
     def test_display_filter_no_works_found(self, mock_client_session):
         """Test display_filter when no works are found in the API."""
@@ -126,7 +100,7 @@ class WorksDepositsTest(TransactionTestCase):
             f"hc-member-profiles-xprofile-works-deposits-{self.user_id}"
         )
         cached_value = cache.get(cache_key, version=newprofile.__version__)
-        self.assertEqual(cached_value, "\n")
+        self.assertEqual(cached_value, None)
 
     @patch("knowledge_commons_profiles.newprofile.works.requests.Session")
     def test_display_filter_malformed_response(self, mock_client_session):
@@ -165,6 +139,8 @@ class WorksDepositsTest(TransactionTestCase):
         mock_session.__aenter__.return_value = mock_session
         mock_session.get.return_value = mock_response
         mock_response.__aenter__.return_value = mock_response
+        mock_json = ""
+        mock_response.json.return_value = mock_json
 
         # Call the method
         result = self.works_deposits.display_filter()

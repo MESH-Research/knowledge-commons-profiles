@@ -94,4 +94,9 @@ urlpatterns = [
         views.save_works_visibility,
         name="save_works_visibility",
     ),
+    path(
+        "works-deposits-edit/",
+        views.works_deposits_edit,
+        name="works_deposits_edit",
+    ),
 ]

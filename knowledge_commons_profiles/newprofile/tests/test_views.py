@@ -100,7 +100,7 @@ class WorksDepositsTests(django.test.TransactionTestCase):
             "testuser",
             use_wordpress=False,
             create=False,
-            works_citation_style="MHRA",
+            works_citation_style=None,
         )
 
         # Assert template was rendered with correct context

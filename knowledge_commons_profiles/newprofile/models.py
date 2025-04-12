@@ -2,10 +2,13 @@
 A set of models for user profiles
 """
 
-# pylint: disable=too-few-public-methods,no-member, too-many-ancestors
+from django.conf import settings
 
+# pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 from django.db import models
 from django_bleach.models import BleachField
+
+CITATION_STYLE_CHOICES = [(key, key) for key in settings.CITATION_STYLES]
 
 
 class ProfileBleachField(BleachField):
@@ -426,6 +429,13 @@ class Profile(models.Model):
     works_order = models.TextField(blank=True, null=True)
     works_show = models.TextField(blank=True, null=True)
     works_work_show = models.TextField(blank=True, null=True)
+    reference_style = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        default="MHRA",
+        choices=CITATION_STYLE_CHOICES,
+    )
 
     def __str__(self):
         """

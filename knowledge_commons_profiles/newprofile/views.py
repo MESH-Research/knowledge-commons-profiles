@@ -52,7 +52,7 @@ def profile_info(request, username):
     return render(request, "newprofile/partials/profile_info.html", context)
 
 
-def works_deposits(request, username, style="MHRA"):
+def works_deposits(request, username, style=None):
     """
     Get profile info via HTMX
     """
@@ -62,6 +62,10 @@ def works_deposits(request, username, style="MHRA"):
         use_wordpress=False,
         create=False,
         works_citation_style=style,
+    )
+
+    api.works_citation_style = (
+        api.profile.reference_style if style is None else style
     )
 
     # Get the works deposits for this username
@@ -250,6 +254,57 @@ class ProfileView(APIView):
 
 
 @login_required
+@require_POST
+def works_deposits_edit(request):
+    """
+    A view for logged-in users to edit their works.
+    """
+
+    # get id_reference_style from POST
+    id_reference_style = request.POST.get("reference_style", "")
+
+    user = Profile.objects.prefetch_related("academic_interests").get(
+        username=request.user
+    )
+
+    works_headings: list = API(
+        request,
+        user.username,
+        use_wordpress=False,
+        create=False,
+        works_citation_style=id_reference_style,
+    ).works_types(sort=True, show_works=True, show_hidden=True)
+
+    # contains keys such as "Show_Book section" with JavaScript booleans
+    try:
+        works_show_map = json.loads(user.works_show)
+    except TypeError:
+        works_show_map = {}
+
+    # contains keys such as show_axde-4213 with JavaScript booleans
+    try:
+        works_work_show_map = json.loads(user.works_work_show)
+    except TypeError:
+        works_work_show_map = {}
+
+    user.reference_style = id_reference_style
+    user.save()
+
+    return render(
+        request,
+        "newprofile/fragments/works_edit_fragment.html",
+        {
+            "username": user.username,
+            "profile": user,
+            "logged_in_user_is_profile": True,
+            "works_headings_ordered": works_headings,
+            "works_show_map": works_show_map,
+            "works_work_show_map": works_work_show_map,
+        },
+    )
+
+
+@login_required
 def edit_profile(request):
     """
     A view for logged-in users to edit their own profile page.
@@ -284,7 +339,11 @@ def edit_profile(request):
     )
 
     works_headings: list = API(
-        request, user.username, use_wordpress=False, create=False
+        request,
+        user.username,
+        use_wordpress=False,
+        create=False,
+        works_citation_style=user.reference_style,
     ).works_types(sort=True, show_works=True, show_hidden=True)
 
     # contains keys such as "Show_Book section" with JavaScript booleans

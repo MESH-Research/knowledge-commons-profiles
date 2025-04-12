@@ -347,6 +347,13 @@ class WorksDeposits:
         """
         Get the works for a user from the API
         """
+        cache_key = f"hc-member-profiles-xprofile-works-json-{self.user}"
+
+        result = cache.get(cache_key, version=newprofile.__version__)
+
+        if result:
+            return result
+
         endpoint: str = (
             f"{self.works_url + "/api/records"}?q="
             f"metadata.creators.person_or_org."
@@ -370,7 +377,24 @@ class WorksDeposits:
                         response.status_code,
                     )
                     response.raise_for_status()
-                return response.json()
+
+                result = response.json()
+
+                try:
+                    cache.set(
+                        cache_key,
+                        result,
+                        1800,
+                        version=newprofile.__version__,
+                    )
+                except Exception as e:
+                    msg = (
+                        f"Unable to cache works for user: {self.user} "
+                        f"because {e}"
+                    )
+                    logging.exception(msg)
+
+                return result
 
         except requests.exceptions.RequestException:
             logging.exception("Error requesting Works endpoint: %s", endpoint)
@@ -378,12 +402,6 @@ class WorksDeposits:
 
     def display_filter(self, style="MHRA"):
         """Front-end display of user's works, ordered by date."""
-        cache_key = f"hc-member-profiles-xprofile-works-deposits-{self.user}"
-
-        html = cache.get(cache_key, version=newprofile.__version__)
-
-        if html and not settings.DEBUG:
-            return str(html)
 
         works: dict = self.get_works()
 
@@ -418,12 +436,7 @@ class WorksDeposits:
             style, works_links, works_links_citation
         )
 
-        html = render_to_string(
+        return render_to_string(
             "newprofile/works.html",
             context={"works_links": final_works},
         )
-
-        # Set cache asynchronously
-        cache.set(cache_key, html, 1800, version=newprofile.__version__)
-
-        return html
