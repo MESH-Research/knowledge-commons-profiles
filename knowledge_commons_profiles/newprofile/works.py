@@ -140,7 +140,7 @@ class WorksDeposits:
 
                 bib_style = CitationStylesStyle(
                     str(
-                        (Path(settings.STATICFILES_DIRS) / style_file)
+                        (Path(settings.STATICFILES_DIRS[0]) / style_file)
                         if "styles" in style_file
                         else style_file
                     ),
