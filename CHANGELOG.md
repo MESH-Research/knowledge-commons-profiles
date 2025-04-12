@@ -1,3 +1,9 @@
+## 2.5.0 (2025-04-12)
+
+### Feat
+
+- **works**: add ability to change reference style
+
 ## 2.4.0 (2025-04-11)
 
 ### Feat
