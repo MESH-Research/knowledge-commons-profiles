@@ -96,7 +96,11 @@ class WorksDepositsTests(django.test.TransactionTestCase):
 
         # Assert API was called correctly
         mock_api.assert_called_once_with(
-            request, "testuser", use_wordpress=False, create=False
+            request,
+            "testuser",
+            use_wordpress=False,
+            create=False,
+            works_citation_style="MHRA",
         )
 
         # Assert template was rendered with correct context
