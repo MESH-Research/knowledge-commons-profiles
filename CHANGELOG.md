@@ -1,3 +1,9 @@
+## 2.5.1 (2025-04-12)
+
+### Fix
+
+- **works**: use settings.STATICFILES_DIRS for static file locations
+
 ## 2.5.0 (2025-04-12)
 
 ### Feat
