@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.test import Client
 from django.test import RequestFactory
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 
@@ -266,7 +267,16 @@ class ProfileViewTests(TestCase):
         self.assertEqual(response.data["memberships"], ["Membership1"])
 
 
+@override_settings(
+    CACHES={
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+)
 class EditProfileTests(TestCase):
+    """
+    Tests for the edit_profile view
+    """
+
     def setUp(self):
         self.factory = RequestFactory()
         self.user = User.objects.create_user(
