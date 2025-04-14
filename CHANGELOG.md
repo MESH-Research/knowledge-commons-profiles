@@ -1,3 +1,9 @@
+## 2.5.2 (2025-04-12)
+
+### Fix
+
+- **works**: fix incorrect location
+
 ## 2.5.1 (2025-04-12)
 
 ### Fix
