@@ -28,6 +28,7 @@ from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
 from knowledge_commons_profiles.newprofile.models import WpPostSubTable
 from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.models import WpUserMeta
+from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 User = get_user_model()
@@ -93,7 +94,10 @@ class API:
         """
         self._works_citation_style = value
 
-    def works_types(self, sort=False, show_works=False, show_hidden=False):
+    def works_types(
+        self,
+        hidden_works: HiddenWorks = HiddenWorks.HIDE,
+    ):
         """
         Get the works types headings
         """
@@ -106,10 +110,8 @@ class API:
 
         if self._works_types is None:
             self._works_types = (
-                self._works_deposits.get_headings_and_works_for_edit(
-                    sort=sort,
-                    show_works=show_works,
-                    show_hidden=show_hidden,
+                self._works_deposits.get_works_for_backend_edit(
+                    hidden_works=hidden_works,
                     style=self._works_citation_style,
                 )
             )
@@ -135,8 +137,10 @@ class API:
                 )
 
         if self._works_html is None:
-            self._works_html = self._works_deposits.display_filter(
-                style=self._works_citation_style
+            self._works_html = (
+                self._works_deposits.get_works_for_frontend_display(
+                    style=self._works_citation_style
+                )
             )
 
         return self._works_html

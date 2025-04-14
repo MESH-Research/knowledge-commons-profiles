@@ -1,8 +1,6 @@
-$(document).ready(function() {
 
-  const csrftoken = $("[name='csrfmiddlewaretoken']")[0].value;
-
-  function saveOrder(itemOrder, side, show_work_values= {}, works_visibilities= {}) {
+function saveOrder(itemOrder, side, show_work_values= {}, works_visibilities= {}) {
+    const csrftoken = $("[name='csrfmiddlewaretoken']")[0].value;
     let url = "";
 
     if (side == "left") {
@@ -34,28 +32,93 @@ $(document).ready(function() {
             console.error('Error saving order:', error);
         }
     });
-  }
+}
 
-  function enableAndDisableWorksItems(show_work_values) {
-      $("#works li.sortable-work").each(function () {
-        // Extract the item ID from the div id attribute
-        let itemIdPlain = $(this).attr('id').replaceAll(" ", "\\ ");
-        let itemId = $(this).attr('id').replace("order-", "show_works_").replaceAll(" ", "\\ ");
+function enableAndDisableWorksItems() {
+  $("#works li.sortable-work").each(function () {
+    // Extract the item ID from the div id attribute
+    let itemIdPlain = $(this).attr('id').replaceAll(" ", "\\ ");
+    let itemId = $(this).attr('id').replace("order-", "show_works_").replaceAll(" ", "\\ ");
 
-        if ($("#" + itemId).is(':checked')) {
-          $("#" + itemIdPlain + " ul li input").each(function () {
-              this.disabled = false;
-          });
-        } else {
-            $("#" + itemIdPlain + " ul li input").each(function () {
-              this.disabled = true;
-          });
-        }
+    if ($("#" + itemId).is(':checked')) {
+      $("#" + itemIdPlain + " ul li input").each(function () {
+          this.disabled = false;
       });
-  }
+    } else {
+        $("#" + itemIdPlain + " ul li input").each(function () {
+          this.disabled = true;
+      });
+    }
+  });
+}
 
-  enableAndDisableWorksItems();
+function make_works_sortable() {
+  $("#works").sortable({
+      items: "> li",
+      update: function (event, ui) {
+          // Get the current order after sorting
+          let itemOrder = [];
+          let showWorks = {};
 
+          $("#works li.sortable-work").each(function () {
+              // Extract the item ID from the div id attribute
+              let itemId = $(this).attr('id');
+              itemOrder.push(itemId);
+          });
+
+          $("#works li.sortable-work input.work-heading").each(function () {
+              // Extract the item ID from the input id attribute
+              let inputId = $(this).attr('id');
+              showWorks[inputId] = $(this).is(':checked');
+          });
+
+          // Send the new order to the server
+          saveOrder(itemOrder, "works", showWorks);
+      }
+    });
+
+    $("#works li.sortable-work input.work-heading").on('change', function() {
+      let itemOrder = [];
+      let showWorks = {};
+
+      $("#works li.sortable-work").each(function () {
+          // Extract the item ID from the div id attribute
+          let itemId = $(this).attr('id');
+          itemOrder.push(itemId);
+      });
+
+      $("#works li.sortable-work input.work-heading").each(function () {
+          // Extract the item ID from the input id attribute
+          let inputId = $(this).attr('id');
+          showWorks[inputId] = $(this).is(':checked');
+      });
+
+      enableAndDisableWorksItems();
+      saveOrder(itemOrder, "works", showWorks);
+    });
+
+    $("#works li.sortable-work ul li span input").on('change', function() {
+      let showWorks = {};
+
+      $("#works li.sortable-work ul li span input").each(function () {
+          // Extract the item ID from the input id attribute
+          let inputId = $(this).attr('id');
+          showWorks[inputId] = $(this).is(':checked');
+      });
+
+      saveOrder([], "works_work", {}, showWorks);
+    });
+}
+
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    window.make_works_sortable()
+    window.enableAndDisableWorksItems();
+});
+
+
+$(document).ready(function() {
+
+  window.enableAndDisableWorksItems();
 
   $("#left_column").sortable({
     update: function (event, ui) {
@@ -112,60 +175,6 @@ $(document).ready(function() {
     }
   });
 
-  $("#works").sortable({
-      items: "> li",
-      update: function (event, ui) {
-          // Get the current order after sorting
-          let itemOrder = [];
-          let showWorks = {};
-
-          $("#works li.sortable-work").each(function () {
-              // Extract the item ID from the div id attribute
-              let itemId = $(this).attr('id');
-              itemOrder.push(itemId);
-          });
-
-          $("#works li.sortable-work input.work-heading").each(function () {
-              // Extract the item ID from the input id attribute
-              let inputId = $(this).attr('id');
-              showWorks[inputId] = $(this).is(':checked');
-          });
-
-          // Send the new order to the server
-          saveOrder(itemOrder, "works", showWorks);
-      }
-    });
-
-  $("#works li.sortable-work input.work-heading").on('change', function() {
-      let itemOrder = [];
-      let showWorks = {};
-
-      $("#works li.sortable-work").each(function () {
-          // Extract the item ID from the div id attribute
-          let itemId = $(this).attr('id');
-          itemOrder.push(itemId);
-      });
-
-      $("#works li.sortable-work input.work-heading").each(function () {
-          // Extract the item ID from the input id attribute
-          let inputId = $(this).attr('id');
-          showWorks[inputId] = $(this).is(':checked');
-      });
-
-      enableAndDisableWorksItems();
-      saveOrder(itemOrder, "works", showWorks);
-    });
-
-    $("#works li.sortable-work ul li span input").on('change', function() {
-      let showWorks = {};
-
-      $("#works li.sortable-work ul li span input").each(function () {
-          // Extract the item ID from the input id attribute
-          let inputId = $(this).attr('id');
-          showWorks[inputId] = $(this).is(':checked');
-      });
-
-      saveOrder([], "works_work", {}, showWorks);
-    });
+  window.make_works_sortable();
 
 });

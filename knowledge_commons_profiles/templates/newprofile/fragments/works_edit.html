@@ -3,29 +3,6 @@
   <h3 class="card-title">Works</h3>
   {% crispy_field form.show_works %}
   {% crispy_field form.reference_style %}
-  <ul id="works" class="works-list">
-    {% for work_heading, list_of_works in works_headings_ordered.items %}
-      {% with key_name="show_works_"|add:work_heading %}
-        {% with show=works_show_map|get_item:key_name %}
-          <li class="sortable-work" id="order-{{ work_heading }}">
-            <input type="checkbox" class="inline-input work-heading" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show is None %}checked{% endif %}/>
-            <h3 class="inline-heading">
-              {{ work_heading }}
-            </h3>
-            <ul class="list-of-works">
-              {% for work_link in list_of_works %}
-                <li class="sortable-work-item" id="work-item-{{ work_link.work_obj.id }}">
-                  {% with work_work_key_name="show_works_work_"|add:work_link.work_obj.id %}
-                    {% with show_work=works_work_show_map|get_item:work_work_key_name %}
-                      <span><input type="checkbox" class="inline-input individual_work" id="show_works_work_{{ work_link.work_obj.id }}" name="show_works_work_{{ work_link.work_obj.id }}" {% if show_work is True or show_work == "True" or show_work == "true" or show_work is None %}checked{% endif %} /> {{ work_link.html|safe }}</span>
-                    {% endwith %}
-                  {% endwith %}
-                </li>
-              {% endfor %}
-            </ul>
-          </li>
-        {% endwith %}
-      {% endwith %}
-    {% endfor %}
+  <ul id="works" class="works-list" hx-trigger="load" hx-post="{% url 'works_deposits_edit' %}">
   </ul>
 </div>

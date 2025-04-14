@@ -78,28 +78,6 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
         """Clean up after the tests."""
         self.works_deposits_patcher.stop()
 
-    def test_works_html_with_existing_deposits(self):
-        """Test that works_html uses existing _works_deposits if available."""
-        # Set up an existing _works_deposits
-        mock_existing_deposits = mock.MagicMock()
-        mock_existing_deposits.display_filter.return_value = (
-            "<div>Existing Deposits</div>"
-        )
-
-        self.model_instance._works_deposits = mock_existing_deposits
-
-        # Call the property
-        result = self.model_instance.works_html
-
-        # Assert WorksDeposits was not initialized again
-        self.mock_works_deposits.assert_not_called()
-
-        # Assert the existing instance's display_filter was called
-        mock_existing_deposits.display_filter.assert_called_once()
-
-        # Assert the result is as expected
-        self.assertEqual(result, "<div>Existing Deposits</div>")
-
     def test_works_html_with_existing_html(self):
         """Test that works_html returns cached _works_html if available."""
         # Set up existing _works_html

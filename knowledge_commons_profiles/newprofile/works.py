@@ -5,15 +5,24 @@ Works field type.
 
 import json
 import logging
+from enum import Enum
 
 # ruff: noqa: PLC0206
 from pathlib import Path
+from typing import Any
 
-import requests
+import httpx
 from django.conf import settings
 from django.core.cache import cache
 from django.template.loader import render_to_string
-from requests import Response
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import HttpUrl
+from pydantic import ValidationError
+from tenacity import retry
+from tenacity import retry_if_exception_type
+from tenacity import stop_after_attempt
+from tenacity import wait_fixed
 
 from knowledge_commons_profiles import newprofile
 from knowledge_commons_profiles.citeproc import Citation
@@ -23,6 +32,11 @@ from knowledge_commons_profiles.citeproc import CitationStylesStyle
 from knowledge_commons_profiles.citeproc import formatter
 from knowledge_commons_profiles.citeproc.source.json import CiteProcJSON
 from knowledge_commons_profiles.newprofile import models
+
+logger = logging.getLogger(__name__)
+
+HTTP_TIMEOUT = 10
+CACHE_TIMEOUT = 1800  # 30 minutes
 
 HTTP_200_OK = 200
 
@@ -39,310 +53,254 @@ CSL_TYPES = {
 }
 
 
-class WorksDeposits:
-    """Works field type."""
+class Imprint(BaseModel):
+    """
+    Imprint information
+    """
 
-    name = "Works Deposits"
-    accepts_null_value = True
+    title: str | None = None
+    isbn: str | None = None
+    place: str | None = None
+    pages: str | None = None
+
+
+class Journal(BaseModel):
+    """
+    Journal information
+    """
+
+    title: str
+    volume: str | None = None
+    issue: str | None = None
+    pages: str | None = None
+    issn: str | None = None
+
+
+class Pid(BaseModel):
+    """
+    Pid
+    """
+
+    identifier: str
+
+
+class CustomFields(BaseModel):
+    """
+    CustomFields
+    """
+
+    imprint: Imprint | None = Field(None, validation_alias="imprint:imprint")
+    journal: Journal | None = Field(None, validation_alias="journal:journal")
+
+    # Additional custom fields
+    kcr_commons_domain: str | None = Field(
+        None, validation_alias="kcr:commons_domain"
+    )
+    kcr_submitter_email: str | None = Field(
+        None, validation_alias="kcr:submitter_email"
+    )
+    kcr_submitter_username: str | None = Field(
+        None, validation_alias="kcr:submitter_username"
+    )
+    kcr_user_defined_tags: list[str] | None = Field(
+        None, validation_alias="kcr:user_defined_tags"
+    )
+
+
+class ResourceTypeInLanguage(BaseModel):
+    """
+    ResourceTypeInLanguage
+    """
+
+    en: str | None
+
+
+class ResourceType(BaseModel):
+    """
+    ResourceType
+    """
+
+    title: ResourceTypeInLanguage
+    id: str
+
+
+class Identifier(BaseModel):
+    """
+    Identifier
+    """
+
+    identifier: str
+    scheme: str
+
+
+class PersonOrOrg(BaseModel):
+    """
+    PersonOrOrg
+    """
+
+    type: str  # Usually "personal"
+    name: str
+    given_name: str | None = None
+    family_name: str | None = None
+    identifiers: list[Identifier] | None = None
+
+
+class RoleInfo(BaseModel):
+    """
+    RoleInfo
+    """
+
+    id: str  # e.g., "author", "editor", "translator"
+    title: dict[str, str]  # e.g., {"en": "Author"}
+
+
+class Affiliation(BaseModel):
+    """
+    Affiliation
+    """
+
+    id: str | None = None
+    name: str
+
+
+class Creator(BaseModel):
+    """
+    Creator
+    """
+
+    person_or_org: PersonOrOrg
+    role: RoleInfo
+    affiliations: list[Affiliation] | None = None
+
+
+class Metadata(BaseModel):
+    """
+    Metadata
+    """
+
+    title: str
+    publication_date: str
+    publisher: str
+    resource_type: ResourceType
+    creators: list[Creator]
+
+
+class Record(BaseModel):
+    """
+    A record
+    """
+
+    id: str
+    links: dict[str, HttpUrl]
+    metadata: Metadata
+    pids: dict[str, Pid]
+    custom_fields: CustomFields | None
+
+
+class Hitdict(BaseModel):
+    """
+    A dictionary of hits
+    """
+
+    hits: dict[str, list[Record] | int]
+
+
+class WorksApiError(Exception):
+    """
+    Works API error
+    """
+
+
+class HiddenWorks(Enum):
+    """
+    HiddenWorks enum
+    """
+
+    SHOW = 1
+    HIDE = 2
+
+
+class OutputType(Enum):
+    """
+    OutputType enum
+    """
+
+    HTML = 1
+    JSON = 2
+
+
+class OutputFormat(Enum):
+    """
+    OutputFormat enum
+    """
+
+    RAW_OBJECTS = 1
+    JUST_OUTPUT = 2
+
+
+class WorksVisibility(Enum):
+    """
+    WorksVisibility enum
+    """
+
+    SHOW_WORKS = 1
+    HEADINGS_ONLY = 2
+
+
+class WorksDeposits:
+    """Works class."""
 
     def __init__(
-        self, user: str, works_url: str, user_profile: models.Profile = None
+        self,
+        user: str,
+        works_url: str,
+        user_profile: models.Profile | None = None,
     ):
         """Constructor."""
         self.user: str = user
         self.works_url: str = works_url
         self.user_profile: models.Profile = user_profile
 
-    def get_headings_and_works_for_edit(
-        self, sort=False, show_works=False, show_hidden=False, style="MHRA"
+    def get_works_for_backend_edit(
+        self,
+        hidden_works=HiddenWorks.SHOW,
+        style="MLA",
     ):
-        """Get the headings and works for a user's Works for editing."""
-        works: dict = self.get_works()
-
-        if (
-            not works
-            or not works.get("hits")
-            or not works.get("hits", {}).get("hits")
-        ):
-            logging.info("No works (hits key) found for user: %s", self.user)
-            return []
-
-        work_types: list = list(
-            {
-                work.get("metadata", {})
-                .get("resource_type", {})
-                .get("title", {})
-                .get("en", "Other")
-                for work in works.get("hits", {}).get("hits", [])
-            }
+        """
+        Get works for editing in the backend
+        """
+        return self.get_formatted_works(
+            style=style,
+            hidden_works=hidden_works.SHOW,
+            output_type=OutputType.JSON,
+            output_format=OutputFormat.RAW_OBJECTS,
         )
 
-        # sort the work types if the user requested it. Requires a Profile.
-        if sort and self.user_profile and self.user_profile.works_order:
-            final_sorted = self.create_final_sorted(
-                work_types, show_hidden=True
-            )
-        else:
-            final_sorted = work_types
-
-        works_links: dict = {key: [] for key in final_sorted}
-
-        # now add works if that has been requested
-        if show_works:
-            # list of dictionary objects
-            works_links_citation = self.get_works_list(
-                final_sorted, works, works_links, show_hidden=show_hidden
-            )
-
-            # dicts with lists of formatted html
-            final_works: dict = self.format_style(
-                style, works_links, works_links_citation
-            )
-
-            works_dict_final = {}
-            item_counter = 0
-
-            for section_counter, (section, works) in enumerate(
-                final_works.items()
-            ):
-                works_dict_final[section] = []
-
-                for work_html in works:
-                    works_dict_final[section].append(
-                        {
-                            "html": work_html,
-                            "work_obj": works_links_citation["items"][
-                                section_counter
-                            ][item_counter],
-                        }
-                    )
-                    item_counter += 1
-
-                item_counter = 0
-        else:
-            works_dict_final = works_links
-
-        return works_dict_final
-
-    def format_style(self, style, works_links, works_links_citation):
-        final_works = {}
-        work_index = 0
-        keys = list(works_links.keys())
-
-        style_file = settings.CITATION_STYLES.get(
-            style, settings.CITATION_STYLES.get("MHRA")
-        )
-
-        # citeproc render each entry
-        for list_of_works in works_links_citation.values():
-            for citation_item in list_of_works:
-                bib_source = CiteProcJSON(citation_item)
-
-                bib_style = CitationStylesStyle(
-                    str(
-                        (Path(settings.STATICFILES_DIRS[0]) / style_file)
-                        if "styles" in style_file
-                        else style_file
-                    ),
-                    validate=False,
-                )
-                bibliography = CitationStylesBibliography(
-                    bib_style, bib_source, formatter.html
-                )
-
-                for citation in citation_item:
-                    bibliography.register(
-                        Citation([CitationItem(citation["id"])])
-                    )
-
-                # produces a list of list items. Need to join the inner lists
-                final_bib = bibliography.bibliography()
-
-                final_works[keys[work_index]] = final_bib
-                work_index += 1
-
-        return final_works
-
-    def create_final_sorted(self, work_types, show_hidden=False):
+    def _create_sorted_works_types_list(self, work_types, show_hidden=False):
         """
         Create the final sorted list of work types
 
         """
         # Start with ordered types from user profile that exist in work_types
-        if self.user_profile and self.user_profile.works_order:
-            ordered_types: list = json.loads(self.user_profile.works_order)
-        else:
-            ordered_types: list = []
 
-        if (
-            not show_hidden
-            and self.user_profile
-            and self.user_profile.works_show
-        ):
-            visibility_list = json.loads(self.user_profile.works_show)
-        else:
-            visibility_list = {}
-
-        if show_hidden:
-            # type names are stored in the database as order-<type_name>
-            final_sorted = [
-                type_name.split("order-")[1]
-                for type_name in ordered_types
-                if type_name.split("order-")[1] in work_types
-            ]
-            # Add any remaining types that weren't in the ordered list
-            final_sorted.extend(
-                [
-                    type_name
-                    for type_name in work_types
-                    if type_name not in final_sorted
-                ]
-            )
-        else:
-            # type names are stored in the database as order-<type_name>
-            final_sorted = [
-                type_name.split("order-")[1]
-                for type_name in ordered_types
-                if type_name.split("order-")[1] in work_types
-                and visibility_list.get(
-                    "show_works_" + type_name.split("order-")[1], True
-                )
-            ]
-            # Add any remaining types that weren't in the ordered list
-            final_sorted.extend(
-                [
-                    type_name
-                    for type_name in work_types
-                    if type_name not in final_sorted
-                    and visibility_list.get("show_works_" + type_name, True)
-                ]
-            )
-
-        return final_sorted
-
-    def format_date_for_dict(self, date_string):
+    def format_date_parts(
+        self, date_string: str
+    ) -> dict[str, list[list[int]]]:
         """
         Format a date string to be used in a dictionary
-        :return:
         """
-        # Split the date string by hyphens
-        parts = date_string.split("-")
-
-        # Create the nested structure
-        result = {"date-parts": [[]]}
-
-        # Add available parts to the inner list
-        for part in parts:
-            result["date-parts"][0].append(part)
-
-        return result
-
-    def get_works_list(
-        self,
-        final_sorted: list,
-        works: dict,
-        works_links: dict,
-        show_hidden=False,
-    ):
-        """
-        Add works to the prepopulated works_links dict
-        """
-        try:
-            works_work_show = json.loads(self.user_profile.works_work_show)
-        except (TypeError, AttributeError):
-            works_work_show = {}
-
-        for work in works.get("hits", {}).get("hits", []):
-            work_final, work_type = self.build_work(work)
-
-            for creator in work.get("metadata", {}).get("creators", {}):
-                role = creator["role"]["id"]
-
-                if role not in work_final:
-                    work_final[role] = []
-
-                # try to assign names
-                try:
-                    work_final[role].append(
-                        {
-                            "family": creator["person_or_org"]["name"].split(
-                                ", "
-                            )[0],
-                            "given": creator["person_or_org"]["name"].split(
-                                ", "
-                            )[1],
-                        }
-                    )
-                except IndexError:
-                    logging.warning(
-                        "Unable to parse creator name: %s", creator
-                    )
-
-            # if the section isn't visible or the work is hidden and
-            # the show_hidden flag is true, then don't add the work
-            if work_type not in final_sorted or (
-                "show_works_work_" + work_final["id"] in works_work_show
-                and works_work_show["show_works_work_" + work_final["id"]]
-                is False
-                and show_hidden is False
-            ):
-                # invisible
-                continue
-            works_links[work_type].append(work_final)
-
-        for key in works_links:
-            works_links[key].sort(
-                key=lambda x: x["date"],
-                reverse=True,
-            )
-
-        works_links_new = {"items": []}
-
-        for value in works_links.values():
-            works_links_new["items"].append(value)
-
-        return works_links_new
-
-    def build_work(self, work):
-        """
-        Build a work object
-        """
-        work_final = {
-            "title": work.get("metadata", {}).get("title"),
-            "url": work.get("links", {}).get("latest_html"),
-            "date": work.get("metadata", {}).get("publication_date"),
-            "publisher": work.get("metadata", {}).get("publisher"),
-            "id": work.get("id"),
-            "issued": self.format_date_for_dict(
-                work.get("metadata", {}).get("publication_date")
-            ),
+        return {
+            "date-parts": [
+                [int(date_val) for date_val in date_string.split("-")]
+            ]
         }
-        work_type = (
-            work.get("metadata", {})
-            .get("resource_type", {})
-            .get("title", {})
-            .get("en", "Other")
-        )
-        work_final["original_type"] = work_type
-        csl_type = CSL_TYPES.get(work_type, "document")
-        if csl_type in {"article-journal", "review-book"}:
-            work_final["container-title"] = (
-                work.get("custom_fields", {})
-                .get("journal:journal", {})
-                .get("title", "")
-            )
-        if csl_type == "chapter":
-            work_final["container-title"] = (
-                work.get("custom_fields", {})
-                .get("imprint:imprint", {})
-                .get("title", "")
-            )
-        work_final["DOI"] = (
-            work.get("pids", {}).get("doi", {}).get("identifier")
-        )
-        work_final["type"] = csl_type
-        return work_final, work_type
 
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(2),
+        retry=retry_if_exception_type(httpx.RequestError),
+    )
     def get_works(self):
         """
         Get the works for a user from the API
@@ -361,82 +319,279 @@ class WorksDeposits:
             f"size=100"
         )
 
-        logging.info("Requesting endpoint: %s", endpoint)
+        logger.info("Fetching record from %s", endpoint)
+
+        headers: dict = {
+            "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; "
+            "rv:134.0) Gecko/20100101 Firefox/134.0",
+        }
 
         try:
-            headers: dict = {
-                "user-agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; "
-                "rv:134.0) Gecko/20100101 Firefox/134.0",
-            }
+            response = httpx.get(
+                endpoint, timeout=HTTP_TIMEOUT, headers=headers
+            )
+            response.raise_for_status()
 
-            with requests.Session() as session:
-                response: Response = session.get(endpoint, headers=headers)
-                if response.status_code != HTTP_200_OK:
-                    logging.info(
-                        "Request failed with status code: %s",
-                        response.status_code,
-                    )
-                    response.raise_for_status()
+            validated = Hitdict(**response.json())
 
-                result = response.json()
+            try:
+                cache.set(
+                    key=cache_key,
+                    value=validated.hits["hits"],
+                    timeout=CACHE_TIMEOUT,
+                    version=newprofile.__version__,
+                )
+            except Exception as e:
+                msg = (
+                    f"Unable to cache works for user: {self.user} "
+                    f"because {e}"
+                )
+                logger.exception(msg)
 
-                try:
-                    cache.set(
-                        cache_key,
-                        result,
-                        1800,
-                        version=newprofile.__version__,
-                    )
-                except Exception as e:
-                    msg = (
-                        f"Unable to cache works for user: {self.user} "
-                        f"because {e}"
-                    )
-                    logging.exception(msg)
+            return validated.hits["hits"]
 
-                return result
+        except httpx.HTTPStatusError as e:
+            logger.exception("HTTP error")
+            raise WorksApiError from e
+        except httpx.RequestError as e:
+            logger.exception("Request error")
+            raise WorksApiError from e
+        except (ValidationError, ValueError) as e:
+            logger.exception("Validation or JSON error")
+            raise WorksApiError from e
+        except Exception as e:
+            logger.exception("Unknown error")
+            raise WorksApiError from e
 
-        except requests.exceptions.RequestException:
-            logging.exception("Error requesting Works endpoint: %s", endpoint)
-            return None
+    def get_works_for_frontend_display(self, style="MLA"):
+        """
+        Get works for frontend display
+        """
+        return self.get_formatted_works(
+            style=style,
+            hidden_works=HiddenWorks.HIDE,
+            output_format=OutputFormat.JUST_OUTPUT,
+            output_type=OutputType.HTML,
+        )
 
-    def display_filter(self, style="MHRA"):
-        """Front-end display of user's works, ordered by date."""
+    def sort_and_group_works_by_type(
+        self, works: list[Record], hidden_works: HiddenWorks = HiddenWorks.HIDE
+    ) -> dict[str, list[dict[str, Any]]]:
+        """
+        Sort and group works by type
+        """
 
-        works: dict = self.get_works()
+        works_by_type: dict[str, list[dict[str, Any]]] = {}
+        work_types = {
+            w.metadata.resource_type.title.en
+            for w in works
+            if w.metadata.resource_type.title.en
+        }
+
+        if self.user_profile and self.user_profile.works_order:
+            ordered_types = json.loads(self.user_profile.works_order)
+            ordered_types = [
+                t.split("order-")[-1]
+                for t in ordered_types
+                if t.split("order-")[-1] in work_types
+            ]
+
+            # Add any remaining types that aren't already in ordered list
+            unordered_types = [t for t in work_types if t not in ordered_types]
+            ordered_types.extend(sorted(unordered_types))
+        else:
+            ordered_types = sorted(work_types)
+
+        visibility: dict[str, bool] = {}
+        visibility_works: dict[str, bool] = {}
 
         if (
-            not works
-            or not works.get("hits")
-            or not works.get("hits", {}).get("hits")
+            hidden_works == HiddenWorks.HIDE
+            and self.user_profile
+            and self.user_profile.works_show
         ):
-            logging.info("No works (hits key) found for user: %s", self.user)
-            return ""
+            visibility = json.loads(self.user_profile.works_show)
 
-        work_types: list = list(
-            {
-                work.get("metadata", {})
-                .get("resource_type", {})
-                .get("title", {})
-                .get("en", "Other")
-                for work in works.get("hits", {}).get("hits", [])
-            }
+        if (
+            hidden_works == HiddenWorks.HIDE
+            and self.user_profile
+            and self.user_profile.works_work_show
+        ):
+            visibility_works = json.loads(self.user_profile.works_work_show)
+
+        for work in works:
+            work_entry = self.build_work_entry(work)
+            work_type = work_entry["original_type"]
+
+            # hide works in hidden sections
+            if hidden_works == HiddenWorks.HIDE and not visibility.get(
+                f"show_works_{work_type}", True
+            ):
+                continue
+
+            # hide works individually hidden
+            if hidden_works == HiddenWorks.HIDE and not visibility_works.get(
+                f"show_works_work_{work.id}", True
+            ):
+                continue
+
+            if work_type not in works_by_type:
+                works_by_type[work_type] = []
+
+            works_by_type[work_type].append(work_entry)
+
+        for entries in works_by_type.values():
+            entries.sort(key=lambda x: x["date"], reverse=True)
+
+        # Ensure all ordered_types are in the result, even if empty
+        return {t: works_by_type.get(t, []) for t in ordered_types}
+
+    def format_style(
+        self,
+        style: str,
+        works_by_type: dict[str, list[dict[str, Any]]],
+    ) -> dict[str, list[str]]:
+        """
+        Format works by style
+        """
+
+        result: dict[str, list[str]] = {}
+        style_file = settings.CITATION_STYLES.get(
+            style, settings.CITATION_STYLES.get("MLA")
+        )
+        style_path = (
+            Path(settings.STATICFILES_DIRS[0]) / style_file
+            if "styles" in style_file
+            else Path(style_file)
         )
 
-        # type names are stored in the database as order-<type_name>
-        final_sorted = self.create_final_sorted(work_types, show_hidden=False)
+        for section, works in works_by_type.items():
+            bib_source = CiteProcJSON(works)
+            bib_style = CitationStylesStyle(
+                str(style_path), validate=False, locale="en-US"
+            )
+            bibliography = CitationStylesBibliography(
+                bib_style, bib_source, formatter.html
+            )
 
-        works_links: dict = {key: [] for key in final_sorted}
+            for work in works:
+                bibliography.register(Citation([CitationItem(work["id"])]))
 
-        works_links_citation = self.get_works_list(
-            final_sorted, works, works_links, show_hidden=False
-        )
+            result[section] = [
+                str(entry) for entry in bibliography.bibliography()
+            ]
 
-        final_works = self.format_style(
-            style, works_links, works_links_citation
-        )
+        return result
 
+    def render_html(self, styled_works: dict[str, list[str]]) -> str:
         return render_to_string(
-            "newprofile/works.html",
-            context={"works_links": final_works},
+            "newprofile/works.html", context={"works_links": styled_works}
         )
+
+    def get_formatted_works(
+        self,
+        style: str = "MLA",
+        hidden_works: HiddenWorks = HiddenWorks.HIDE,
+        output_format: OutputFormat = OutputFormat.JUST_OUTPUT,
+        output_type: OutputType = OutputType.HTML,
+    ) -> str | list[dict[str, Any]] | dict[str, Any]:
+        """
+        Get formatted works
+        :param style: the CSL stylesheet to use
+        :param hidden_works: how to handle hidden works
+        :param output_format: whether to return just the output or an html and
+         work_obj key underneath
+        :param output_type: the output type
+        """
+
+        works = self.get_works()
+
+        if not works:
+            logger.info("No works found for user: %s", self.user)
+            return "" if output_format else []
+
+        grouped_works = self.sort_and_group_works_by_type(
+            works, hidden_works=hidden_works
+        )
+
+        styled = self.format_style(style, grouped_works)
+
+        # remove headers if there are no works
+        if hidden_works == HiddenWorks.HIDE:
+            to_remove = []
+
+            for section, works in styled.items():
+                if len(works) == 0:
+                    to_remove.append(section)
+
+            for section in to_remove:
+                del styled[section]
+
+        if output_format == OutputFormat.RAW_OBJECTS:
+            combined = {}
+            for section, html_list in styled.items():
+                combined[section] = []
+                for html, obj in zip(
+                    html_list, grouped_works[section], strict=False
+                ):
+                    combined[section].append({"html": html, "work_obj": obj})
+            return combined
+
+        if output_type == OutputType.HTML:
+            return self.render_html(styled)
+
+        return grouped_works
+
+    def build_work_entry(self, work: Record) -> dict[str, Any | None]:
+        """
+        Build a work dictionary
+        """
+        work_type: str = work.metadata.resource_type.title.en or "Other"
+
+        container_title = (
+            work.custom_fields.journal.title
+            if work.custom_fields and work.custom_fields.journal
+            else (
+                work.custom_fields.imprint.title
+                if work.custom_fields and work.custom_fields.imprint
+                else None
+            )
+        )
+
+        result = {
+            "title": work.metadata.title,
+            "url": str(work.links.get("latest_html")),
+            "date": work.metadata.publication_date,
+            "publisher": work.metadata.publisher,
+            "id": work.id,
+            "issued": self.format_date_parts(work.metadata.publication_date),
+            "container-title": container_title,
+            "DOI": work.pids.get("doi", Pid(identifier="")).identifier,
+            "type": CSL_TYPES.get(work_type, "document"),
+            "original_type": work_type,
+        }
+
+        if result["container-title"] is None:
+            del result["container-title"]
+
+        for creator in work.metadata.creators:
+            role = creator.role.id
+
+            if role not in result:
+                result[role] = []
+
+            # try to assign names
+            try:
+                result[role].append(
+                    {
+                        "family": creator.person_or_org.name.split(", ")[0],
+                        "given": creator.person_or_org.name.split(", ")[1],
+                    }
+                )
+            except IndexError:
+                logger.warning("Unable to parse creator name: %s", creator)
+                result[role].append(
+                    {"family": creator.person_or_org.name, "given": ""}
+                )
+
+        return result

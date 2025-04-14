@@ -306,9 +306,7 @@ class EditProfileTests(TestCase):
         _ = edit_profile(request)
 
         # Assert prefetch was called correctly
-        mock_prefetch.assert_called_with(
-            "academic_interests", "coverimage_set"
-        )
+        mock_prefetch.assert_called_with("academic_interests")
         mock_queryset.get.assert_called()
 
     @patch(

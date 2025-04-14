@@ -28,6 +28,7 @@ from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
+from knowledge_commons_profiles.newprofile.works import HiddenWorks
 
 logger = logging.getLogger(__name__)
 
@@ -155,24 +156,6 @@ def profile(request, user=""):
         left_order, right_order
     )
 
-    """
-    works_headings: list = API(
-        request, user, use_wordpress=False, create=False
-    ).works_types(sort=True)
-
-    # contains keys such as "Show_Book section" with JavaScript booleans
-    try:
-        works_show_map = json.loads(profile_obj.works_show)
-    except TypeError:
-        works_show_map = {}
-
-    # contains keys such as show_axde-4213 with JavaScript booleans
-    try:
-        works_work_show_map = json.loads(profile_obj.works_work_show)
-    except TypeError:
-        works_work_show_map = {}
-    """
-
     del left_order
     del right_order
 
@@ -273,7 +256,7 @@ def works_deposits_edit(request):
         use_wordpress=False,
         create=False,
         works_citation_style=id_reference_style,
-    ).works_types(sort=True, show_works=True, show_hidden=True)
+    ).works_types(hidden_works=HiddenWorks.SHOW)
 
     # contains keys such as "Show_Book section" with JavaScript booleans
     try:
@@ -338,26 +321,6 @@ def edit_profile(request):
         left_order, right_order
     )
 
-    works_headings: list = API(
-        request,
-        user.username,
-        use_wordpress=False,
-        create=False,
-        works_citation_style=user.reference_style,
-    ).works_types(sort=True, show_works=True, show_hidden=True)
-
-    # contains keys such as "Show_Book section" with JavaScript booleans
-    try:
-        works_show_map = json.loads(user.works_show)
-    except TypeError:
-        works_show_map = {}
-
-    # contains keys such as show_axde-4213 with JavaScript booleans
-    try:
-        works_work_show_map = json.loads(user.works_work_show)
-    except TypeError:
-        works_work_show_map = {}
-
     del left_order
     del right_order
 
@@ -371,9 +334,6 @@ def edit_profile(request):
             "left_order": left_order_final,
             "right_order": right_order_final,
             "logged_in_user_is_profile": True,
-            "works_headings_ordered": works_headings,
-            "works_show_map": works_show_map,
-            "works_work_show_map": works_work_show_map,
         },
     )
 
