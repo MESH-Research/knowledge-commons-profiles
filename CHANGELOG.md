@@ -1,3 +1,9 @@
+## 2.5.3 (2025-04-14)
+
+### Refactor
+
+- **works**: rewrite of works module and tests to use pydantic for api parsing
+
 ## 2.5.2 (2025-04-12)
 
 ### Fix
