@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import django.test
 from django.core.cache import cache
+from django.test import override_settings
 
 from knowledge_commons_profiles import newprofile
 from knowledge_commons_profiles.newprofile.works import Creator
@@ -20,6 +21,11 @@ from knowledge_commons_profiles.newprofile.works import WorksApiError
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 
+@override_settings(
+    CACHES={
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+)
 class TestWorksDeposits(django.test.TestCase):
 
     def setUp(self):
