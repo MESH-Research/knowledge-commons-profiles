@@ -1,3 +1,9 @@
+## 2.8.0 (2025-04-15)
+
+### Feat
+
+- **works**: add graph of works by year
+
 ## 2.7.0 (2025-04-15)
 
 ### Feat
