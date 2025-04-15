@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.custom_login import login_required
 from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
@@ -601,7 +601,7 @@ def save_works_visibility(request):
             f"{request.user.username}"
         )
 
-        cache.delete(cache_key, version=newprofile.__version__)
+        cache.delete(cache_key, version=VERSION)
 
         api.profile.works_work_show = works_visibility
         api.profile.save()
@@ -611,7 +611,7 @@ def save_works_visibility(request):
             f"{request.user.username}"
         )
 
-        cache.delete(cache_key, version=newprofile.__version__)
+        cache.delete(cache_key, version=VERSION)
 
         return JsonResponse({"success": True})
 
@@ -648,7 +648,7 @@ def save_works_order(request):
             f"{request.user.username}"
         )
 
-        cache.delete(cache_key, version=newprofile.__version__)
+        cache.delete(cache_key, version=VERSION)
 
         return JsonResponse({"success": True})
 
@@ -686,7 +686,7 @@ def save_profile_order(request, side):
             f"{request.user.username}"
         )
 
-        cache.delete(cache_key, version=newprofile.__version__)
+        cache.delete(cache_key, version=VERSION)
 
         return JsonResponse({"success": True})
 

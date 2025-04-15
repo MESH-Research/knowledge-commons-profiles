@@ -916,3 +916,10 @@ div {
 .inline-heading, .inline-input {
   display: inline-block;
 }
+
+.version{
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  font-size: small;
+}

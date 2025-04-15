@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
     ProfileFactory,
@@ -1010,7 +1010,7 @@ class GetBlogPostsTests(django.test.TestCase):
         # Check cache was queried with correct key
         self.mock_cache_get.assert_called_once_with(
             f"blog_post_list-{self.model_instance.user}",
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Check result is the cached response
@@ -1046,7 +1046,7 @@ class GetBlogPostsTests(django.test.TestCase):
             f"blog_post_list-{self.model_instance.user}",
             [],
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
     def test_sql_generation_with_blogs(self):
@@ -1104,7 +1104,7 @@ class GetBlogPostsTests(django.test.TestCase):
             f"blog_post_list-{self.model_instance.user}",
             mock_posts,
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
     def test_sql_injection_prevention(self):
@@ -1813,7 +1813,7 @@ class GetMembershipsTests(django.test.TestCase):
         # Assert that cache.get was called with the correct key
         self.mock_cache_get.assert_called_once_with(
             f"user_memberships-{self.model_instance.user}",
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert that WpUserMeta.objects.filter was not called (early return)
@@ -1859,7 +1859,7 @@ class GetMembershipsTests(django.test.TestCase):
             f"user_memberships-{self.model_instance.user}",
             expected_memberships,
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert the result is the sorted list of valid memberships
@@ -1930,7 +1930,7 @@ class GetMembershipsTests(django.test.TestCase):
             f"user_memberships-{self.model_instance.user}",
             [],
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert the result is an empty list
@@ -2068,7 +2068,7 @@ class GetUserBlogsTests(django.test.TestCase):
         # Assert that cache.get was called with the correct key
         self.mock_cache_get.assert_called_once_with(
             f"user_blog_post_list-{self.model_instance.user}",
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert that the database cursor was not accessed
@@ -2132,7 +2132,7 @@ class GetUserBlogsTests(django.test.TestCase):
             f"user_blog_post_list-{self.model_instance.user}",
             expected_results,
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert the result is sorted by blog name
@@ -2157,7 +2157,7 @@ class GetUserBlogsTests(django.test.TestCase):
             f"user_blog_post_list-{self.model_instance.user}",
             [],
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert the result is an empty list
@@ -2254,7 +2254,7 @@ class GetActivityTests(django.test.TestCase):
         # Assert that cache.get was called with the correct key
         self.mock_cache_get.assert_called_once_with(
             f"user_activities_list-{self.model_instance.user}",
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert that WpBpActivity.objects was not accessed
@@ -2328,7 +2328,7 @@ class GetActivityTests(django.test.TestCase):
             f"user_activities_list-{self.model_instance.user}",
             result,
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
     def test_get_activity_more_than_five_distinct_types(self):
@@ -2383,7 +2383,7 @@ class GetActivityTests(django.test.TestCase):
             f"user_activities_list-{self.model_instance.user}",
             [],
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
     def test_get_activity_fewer_than_five_distinct_types(self):

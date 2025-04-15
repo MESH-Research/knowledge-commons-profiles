@@ -5,7 +5,7 @@ import django.test
 from django.core.cache import cache
 from django.test import override_settings
 
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.works import Creator
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import Metadata
@@ -75,7 +75,7 @@ class TestWorksDeposits(django.test.TestCase):
     @patch("knowledge_commons_profiles.newprofile.works.httpx.get")
     def test_get_works_http_error(self, mock_get):
         cache_key = f"hc-member-profiles-xprofile-works-json-{self.user}"
-        cache.delete(cache_key, version=newprofile.__version__)
+        cache.delete(cache_key, version=VERSION)
 
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = Exception("HTTP error")

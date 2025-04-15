@@ -11,7 +11,7 @@ import requests
 from django.core.cache import cache
 from lxml import etree
 
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class MastodonFeed:
         - reblogged: Whether the post is a reblog or not
         """
         cache_key = f"{self.username}_{self.server}_latest_posts"
-        latest_posts = cache.get(cache_key, version=newprofile.__version__)
+        latest_posts = cache.get(cache_key, version=VERSION)
 
         if latest_posts is None:
             latest_posts = self._fetch_and_parse_posts()
@@ -64,7 +64,7 @@ class MastodonFeed:
                     cache_key,
                     latest_posts,
                     self.cache_time,
-                    version=newprofile.__version__,
+                    version=VERSION,
                 )
 
         return latest_posts

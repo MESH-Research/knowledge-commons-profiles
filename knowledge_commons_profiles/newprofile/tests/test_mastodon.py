@@ -4,7 +4,7 @@ from unittest import mock
 import requests
 from django.test import TestCase
 
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.mastodon import MastodonFeed
 
 
@@ -81,7 +81,7 @@ class MastodonFeedTests(TestCase):
         # Assert that cache.get was called with the correct key
         self.mock_cache_get.assert_called_once_with(
             f"{self.username}_{self.server}_latest_posts",
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         # Assert that _fetch_and_parse_posts was not called
@@ -144,9 +144,7 @@ xmlns:media="http://search.yahoo.com/mrss/">
         self.assertEqual(
             self.mock_cache_set.call_args[0][2], self.mastodon_feed.cache_time
         )
-        self.assertEqual(
-            self.mock_cache_set.call_args[1]["version"], newprofile.__version__
-        )
+        self.assertEqual(self.mock_cache_set.call_args[1]["version"], VERSION)
 
         # Verify the parsed posts
         self.assertEqual(len(result), 2)

@@ -16,7 +16,7 @@ from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
 
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile import mastodon
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
@@ -372,7 +372,7 @@ class API:
             return []
 
         cache_key = f"blog_post_list-{self.user}"
-        cached_response = cache.get(cache_key, version=newprofile.__version__)
+        cached_response = cache.get(cache_key, version=VERSION)
 
         if cached_response is not None:
             return cached_response
@@ -398,7 +398,7 @@ class API:
                 cache_key,
                 [],
                 timeout=600,
-                version=newprofile.__version__,
+                version=VERSION,
             )
             return []
 
@@ -456,7 +456,7 @@ class API:
             cache_key,
             results,
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         return results
@@ -550,7 +550,7 @@ class API:
         :return:
         """
         cache_key = f"user_memberships-{self.user}"
-        cached_response = cache.get(cache_key, version=newprofile.__version__)
+        cached_response = cache.get(cache_key, version=VERSION)
 
         if cached_response is not None:
             return cached_response
@@ -587,7 +587,7 @@ class API:
                 cache_key,
                 memberships,
                 timeout=600,
-                version=newprofile.__version__,
+                version=VERSION,
             )
 
             return sorted(memberships)
@@ -617,7 +617,7 @@ class API:
         :return:
         """
         cache_key = f"user_blog_post_list-{self.user}"
-        cached_response = cache.get(cache_key, version=newprofile.__version__)
+        cached_response = cache.get(cache_key, version=VERSION)
 
         if cached_response is not None:
             return cached_response
@@ -658,7 +658,7 @@ class API:
             cache_key,
             results,
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         return sorted(results, key=itemgetter(0))
@@ -668,7 +668,7 @@ class API:
         Return a list of user activities
         """
         cache_key = f"user_activities_list-{self.user}"
-        cached_response = cache.get(cache_key, version=newprofile.__version__)
+        cached_response = cache.get(cache_key, version=VERSION)
 
         if cached_response is not None:
             return cached_response
@@ -696,7 +696,7 @@ class API:
             cache_key,
             distinct_objects[:5],
             timeout=600,
-            version=newprofile.__version__,
+            version=VERSION,
         )
 
         return distinct_objects[:5]

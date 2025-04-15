@@ -24,7 +24,7 @@ from tenacity import retry_if_exception_type
 from tenacity import stop_after_attempt
 from tenacity import wait_fixed
 
-from knowledge_commons_profiles import newprofile
+from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.citeproc import Citation
 from knowledge_commons_profiles.citeproc import CitationItem
 from knowledge_commons_profiles.citeproc import CitationStylesBibliography
@@ -307,7 +307,7 @@ class WorksDeposits:
         """
         cache_key = f"hc-member-profiles-xprofile-works-json-{self.user}"
 
-        result = cache.get(cache_key, version=newprofile.__version__)
+        result = cache.get(cache_key, version=VERSION)
 
         if result:
             return result
@@ -339,7 +339,7 @@ class WorksDeposits:
                     key=cache_key,
                     value=validated.hits["hits"],
                     timeout=CACHE_TIMEOUT,
-                    version=newprofile.__version__,
+                    version=VERSION,
                 )
             except Exception as e:
                 msg = (
