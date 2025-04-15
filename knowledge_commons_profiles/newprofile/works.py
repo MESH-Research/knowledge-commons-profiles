@@ -441,7 +441,12 @@ class WorksDeposits:
             works_by_type[work_type].append(work_entry)
 
         for entries in works_by_type.values():
-            entries.sort(key=lambda x: x["date"], reverse=True)
+            entries.sort(
+                key=lambda x: x.get("issued", {}).get(
+                    "date-parts", [["n.d."]]
+                )[0][0],
+                reverse=True,
+            )
 
         # Ensure all ordered_types are in the result, even if empty
         return {t: works_by_type.get(t, []) for t in ordered_types}
@@ -561,7 +566,6 @@ class WorksDeposits:
         result = {
             "title": work.metadata.title,
             "url": str(work.links.get("latest_html")),
-            "date": work.metadata.publication_date,
             "publisher": work.metadata.publisher,
             "id": work.id,
             "issued": self.format_date_parts(work.metadata.publication_date),
