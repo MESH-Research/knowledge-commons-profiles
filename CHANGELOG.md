@@ -1,3 +1,9 @@
+## 2.9.0 (2025-04-15)
+
+### Feat
+
+- **works**: change chart to stacked
+
 ## 2.8.0 (2025-04-15)
 
 ### Feat
