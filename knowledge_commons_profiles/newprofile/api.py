@@ -118,6 +118,20 @@ class API:
 
         return self._works_types
 
+    @property
+    def works_chart_json(self):
+        """
+        Get the works chart JSON
+        """
+        if self._works_deposits is None:
+            self._works_deposits = WorksDeposits(
+                self.user,
+                "https://works.hcommons.org",
+                user_profile=self.profile,
+            )
+
+        return self._works_deposits.get_works_for_chart()
+
     @cached_property
     def works_html(self):
         """

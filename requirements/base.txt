@@ -35,3 +35,5 @@ smart-open[aws]==7.1.0
 pydantic==2.11.3
 httpx==0.28.1
 tenacity==9.1.2
+pandas==2.2.3
+altair==5.5.0

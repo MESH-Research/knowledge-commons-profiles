@@ -1,8 +1,19 @@
 {% if profile.show_works and works_html %}
   <h3 class="card-title">Works Deposits</h3>
-  <ul class="works-list" id="works-list">
-    {{ works_html | safe }}
-  </ul>
+  <div class="col-12" id="chart">
+  </div>
+  <div class="row">
+    <div class="col-12">
+      <ul class="works-list" id="works-list">
+        {{ works_html | safe }}
+      </ul>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    let chart = {{ chart|safe }};
+    vegaEmbed('#chart', chart);
+  </script>
 {% else %}
   <div class="hide" id="works" hx-swap-oob="true"></div>
 {% endif %}

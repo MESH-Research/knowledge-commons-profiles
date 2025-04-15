@@ -83,6 +83,7 @@ def works_deposits(request, username, style=None):
             "works_html": user_works_deposits,
             "profile": api.profile,
             "show_works": api.profile.show_works,
+            "chart": api.works_chart_json,
         },
     )
 

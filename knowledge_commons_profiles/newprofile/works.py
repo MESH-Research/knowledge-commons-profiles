@@ -11,7 +11,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+import altair as alt
 import httpx
+import pandas as pd
 from django.conf import settings
 from django.core.cache import cache
 from django.template.loader import render_to_string
@@ -603,3 +605,29 @@ class WorksDeposits:
                 )
 
         return result
+
+    def get_works_for_chart(self):
+
+        works = self.get_works()
+
+        # create a count of each year
+        years = {}
+        for work in works:
+            year = work.metadata.publication_date.split("-")[0]
+            if year not in years:
+                years[year] = 0
+            years[year] += 1
+
+        source = pd.DataFrame(
+            {
+                "Years": years.keys(),
+                "Publications": years.values(),
+            }
+        )
+
+        return (
+            alt.Chart(source)
+            .mark_bar()
+            .encode(x="Years:T", y="Publications")
+            .to_json()
+        )
