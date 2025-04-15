@@ -1,6 +1,7 @@
+{% load pluralize_works_titles %}
 {% for work_type, work_links in works_links.items %}
   <li>
-    <strong>{{ work_type }}</strong>
+    <strong>{{ work_type|pluralize_work_heading }}</strong>
     <ul>
       {% for work_link in work_links %}
         <li>

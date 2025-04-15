@@ -1,3 +1,4 @@
+{% load pluralize_works_titles %}
 {% load dict_filters %}
 <ul id="works" class="works-list" hx-swap-oob="true">
   {% for work_heading, list_of_works in works_headings_ordered.items %}
@@ -6,7 +7,7 @@
         <li class="sortable-work" id="order-{{ work_heading }}">
           <input type="checkbox" class="inline-input work-heading" id="show_works_{{ work_heading }}" name="show_works_{{ work_heading }}" {% if show is True or show == "True" or show == "true" or show is None %}checked{% endif %}/>
           <h3 class="inline-heading">
-            {{ work_heading }}
+            {{ work_heading|pluralize_work_heading }}
           </h3>
           <ul class="list-of-works">
             {% for work_link in list_of_works %}
