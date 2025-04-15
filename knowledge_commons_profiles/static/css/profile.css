@@ -923,3 +923,13 @@ div {
   left: 0;
   font-size: small;
 }
+
+.vega-embed {
+  width: 100%;
+  display: flex;
+}
+
+.vega-embed details,
+.vega-embed details summary {
+  position: relative;
+}

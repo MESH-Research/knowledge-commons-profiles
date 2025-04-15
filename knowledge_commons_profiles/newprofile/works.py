@@ -613,21 +613,36 @@ class WorksDeposits:
         # create a count of each year
         years = {}
         for work in works:
-            year = work.metadata.publication_date.split("-")[0]
-            if year not in years:
-                years[year] = 0
-            years[year] += 1
 
-        source = pd.DataFrame(
-            {
-                "Years": years.keys(),
-                "Publications": years.values(),
-            }
-        )
+            year = work.metadata.publication_date.split("-")[0]
+            work_type = work.metadata.resource_type.title.en
+
+            if year not in years:
+                years[year] = {}
+
+            if work_type not in years[year]:
+                years[year][work_type] = 0
+            years[year][work_type] += 1
+
+        results = []
+        for year, values in years.items():
+            for work_type, count in values.items():
+                results.append(
+                    {
+                        "Year": year,
+                        "Work Type": work_type,
+                        "Publications": count,
+                    }
+                )
+
+        source = pd.DataFrame.from_dict(results)
 
         return (
-            alt.Chart(source)
-            .mark_bar()
-            .encode(x="Years:T", y="Publications")
-            .to_json()
-        )
+            alt.Chart(
+                source,
+                width=600,
+                height=300,
+            )
+            .mark_bar(size=25)
+            .encode(x="Year:T", y="sum(Publications)", color="Work Type")
+        ).to_json()
