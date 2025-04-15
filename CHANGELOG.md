@@ -1,3 +1,14 @@
+## 2.7.0 (2025-04-15)
+
+### Feat
+
+- **works**: pluralize works title headings
+- **health**: add additional information on redis, databases, etc. to healthcheck
+
+### Fix
+
+- **works**: remive redundant date field from citeproc parsing
+
 ## 2.6.0 (2025-04-15)
 
 ### Feat
