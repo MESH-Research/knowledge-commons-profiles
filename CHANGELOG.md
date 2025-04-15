@@ -1,3 +1,9 @@
+## 2.6.0 (2025-04-15)
+
+### Feat
+
+- **versioning**: switch to commitizen versioning everywhere
+
 ## 2.5.3 (2025-04-14)
 
 ### Refactor
