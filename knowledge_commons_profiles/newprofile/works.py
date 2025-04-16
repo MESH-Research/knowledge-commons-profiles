@@ -451,11 +451,13 @@ class WorksDeposits:
         """
 
         result: dict[str, list[str]] = {}
+
         style_file = settings.CITATION_STYLES.get(
             style, settings.CITATION_STYLES.get("MLA")
         )
+
         style_path = (
-            Path(settings.STATICFILES_DIRS[0]) / style_file
+            Path(settings.BASE_DIR) / style_file
             if "styles" in style_file
             else Path(style_file)
         )
