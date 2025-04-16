@@ -1,3 +1,15 @@
+## 2.10.0 (2025-04-16)
+
+### Feat
+
+- **works**: rewrite of charts to optimize, use kc color scheme, and alphabetically order legend
+
+## 2.9.0 (2025-04-15)
+
+### Feat
+
+- **works**: change chart to stacked
+
 ## 2.8.0 (2025-04-15)
 
 ### Feat
