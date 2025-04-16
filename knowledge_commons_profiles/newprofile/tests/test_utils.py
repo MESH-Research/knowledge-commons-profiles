@@ -275,3 +275,74 @@ class TestProcessOrders(TestCase):
         # Nothing should be in the result with empty allowed lists
         self.assertEqual(left_result, [])
         self.assertEqual(right_result, [])
+
+
+class HideWorkTests(TestCase):
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_hide_nothing(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+        work = MagicMock()
+        work.id = "123"
+        hidden_works = "SHOW"  # Not HIDE
+        visibility = {"show_works_article": True}
+        visibility_works = {"show_works_work_123": True}
+
+        from knowledge_commons_profiles.newprofile.utils import hide_work
+
+        result = hide_work(
+            work, "article", hidden_works, visibility, visibility_works
+        )
+
+        self.assertEqual(result, (False, False))
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_hide_heading_only(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+        work = MagicMock()
+        work.id = "456"
+        hidden_works = "HIDE"
+        visibility = {"show_works_book": False}
+        visibility_works = {"show_works_work_456": True}
+
+        from knowledge_commons_profiles.newprofile.utils import hide_work
+
+        result = hide_work(
+            work, "book", hidden_works, visibility, visibility_works
+        )
+
+        self.assertEqual(result, (True, False))
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_hide_individual_work_only(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+        work = MagicMock()
+        work.id = "789"
+        hidden_works = "HIDE"
+        visibility = {"show_works_paper": True}
+        visibility_works = {"show_works_work_789": False}
+
+        from knowledge_commons_profiles.newprofile.utils import hide_work
+
+        result = hide_work(
+            work, "paper", hidden_works, visibility, visibility_works
+        )
+
+        self.assertEqual(result, (False, True))
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_hide_both_heading_and_work(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+        work = MagicMock()
+        work.id = "999"
+        hidden_works = "HIDE"
+        visibility = {"show_works_report": False}
+        visibility_works = {"show_works_work_999": False}
+
+        from knowledge_commons_profiles.newprofile.utils import hide_work
+
+        result = hide_work(
+            work, "report", hidden_works, visibility, visibility_works
+        )
+
+        self.assertEqual(result, (True, True))
