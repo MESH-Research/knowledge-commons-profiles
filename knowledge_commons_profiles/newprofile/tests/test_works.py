@@ -242,3 +242,64 @@ class TestWorksDeposits(django.test.TestCase):
         entry = self.works_deposits.build_work_entry(incomplete_record)
         self.assertEqual(entry["type"], "document")  # default type fallback
         self.assertNotIn("container-title", entry)
+
+
+class WorksDepositsChartTests(django.test.TestCase):
+
+    @patch("knowledge_commons_profiles.newprofile.works.alt.Chart")
+    @patch(
+        "knowledge_commons_profiles.newprofile.works.pd.DataFrame.from_dict"
+    )
+    @patch("knowledge_commons_profiles.newprofile.works.hide_work")
+    @patch("knowledge_commons_profiles.newprofile.works.get_visibilities")
+    @override_settings(CHART_COLORS=["#ff0000", "#00ff00", "#0000ff"])
+    def test_chart_json_basic(
+        self, mock_get_visibilities, mock_hide_work, mock_df, mock_chart
+    ):
+        from knowledge_commons_profiles.newprofile.works import HiddenWorks
+        from knowledge_commons_profiles.newprofile.works import WorksDeposits
+
+        # Set up mocks
+        mock_get_visibilities.return_value = ({}, {})
+        mock_hide_work.return_value = (False, False)
+
+        # Simulated work metadata
+        work1 = MagicMock()
+        work1.metadata.publication_date = "2020-01-01"
+        work1.metadata.resource_type.title.en = "article"
+
+        work2 = MagicMock()
+        work2.metadata.publication_date = "2021-05-15"
+        work2.metadata.resource_type.title.en = "book"
+
+        instance = WorksDeposits(
+            user="martin_eve",
+            user_profile=MagicMock(),
+            works_url="http://test.com",
+        )
+        instance.get_works = MagicMock(return_value=[work1, work2])
+
+        # Mock Altair chart return
+        dummy_chart = MagicMock()
+        dummy_chart.to_json.return_value = '{"mock": "chart"}'
+
+        dummy_mark = MagicMock()
+        dummy_mark.encode.return_value = dummy_chart
+
+        mock_chart.mark_bar.return_value = dummy_mark
+        dummy_chart.mark_bar.return_value = dummy_mark
+        mock_chart.return_value = dummy_chart
+        dummy_chart.return_value = dummy_mark
+
+        # Run method
+        result_json = instance.get_vega_chart_json(
+            hidden_works=HiddenWorks.HIDE
+        )
+
+        # Assert chart was rendered
+        self.assertEqual(result_json, '{"mock": "chart"}')
+        mock_get_visibilities.assert_called_once_with(
+            instance, HiddenWorks.HIDE
+        )
+        self.assertEqual(mock_hide_work.call_count, 2)
+        mock_df.assert_called_once()  # ensure DataFrame built
