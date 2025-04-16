@@ -130,7 +130,7 @@ class API:
                 user_profile=self.profile,
             )
 
-        return self._works_deposits.get_works_for_chart()
+        return self._works_deposits.get_vega_chart_json()
 
     @cached_property
     def works_html(self):

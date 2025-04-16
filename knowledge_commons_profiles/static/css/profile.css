@@ -933,3 +933,7 @@ div {
 .vega-embed details summary {
   position: relative;
 }
+
+.works_deposits_card {
+  width:100%;
+}
