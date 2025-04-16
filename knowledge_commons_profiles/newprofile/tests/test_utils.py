@@ -282,6 +282,9 @@ class HideWorkTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_hide_nothing(self, mock_hidden_works):
+        """
+        Test hiding nothing
+        """
         mock_hidden_works.HIDE = "HIDE"
         work = MagicMock()
         work.id = "123"
@@ -299,6 +302,9 @@ class HideWorkTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_hide_heading_only(self, mock_hidden_works):
+        """
+        Test hiding a heading
+        """
         mock_hidden_works.HIDE = "HIDE"
         work = MagicMock()
         work.id = "456"
@@ -316,6 +322,9 @@ class HideWorkTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_hide_individual_work_only(self, mock_hidden_works):
+        """
+        Test hiding an individual work
+        """
         mock_hidden_works.HIDE = "HIDE"
         work = MagicMock()
         work.id = "789"
@@ -333,6 +342,9 @@ class HideWorkTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_hide_both_heading_and_work(self, mock_hidden_works):
+        """
+        Test hiding both
+        """
         mock_hidden_works.HIDE = "HIDE"
         work = MagicMock()
         work.id = "999"
@@ -353,6 +365,9 @@ class GetVisibilitiesTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_no_user_profile(self, mock_hidden_works):
+        """
+        Test with no user profile
+        """
         mock_hidden_works.HIDE = "HIDE"
 
         instance = MagicMock()
@@ -368,6 +383,9 @@ class GetVisibilitiesTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_user_profile_with_no_fields(self, mock_hidden_works):
+        """
+        Test with no fields
+        """
         mock_hidden_works.HIDE = "HIDE"
 
         user_profile = MagicMock()
@@ -387,6 +405,9 @@ class GetVisibilitiesTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_user_profile_with_valid_fields(self, mock_hidden_works):
+        """
+        Test with valid fields
+        """
         mock_hidden_works.HIDE = "HIDE"
 
         visibility_data = {"show_works_article": True}
@@ -409,6 +430,9 @@ class GetVisibilitiesTests(TestCase):
 
     @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
     def test_hidden_works_not_hide(self, mock_hidden_works):
+        """
+        Test with hidden works not HIDE
+        """
         mock_hidden_works.HIDE = "HIDE"
 
         user_profile = MagicMock()
