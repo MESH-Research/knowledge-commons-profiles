@@ -331,3 +331,5 @@ knowledge_commons_profiles/media/
 .envs/*
 !.envs/.github
 !.envs/.github/*
+
+users.csv
