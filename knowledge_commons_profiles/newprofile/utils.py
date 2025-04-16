@@ -102,3 +102,27 @@ def process_orders(left_order, right_order):
         ]
     )
     return left_order_final, right_order_final
+
+
+def hide_work(work, work_type, hidden_works, visibility, visibility_works):
+    """
+    Determine if a work should be hidden
+    :return: booleans tuple: first bool for heading, second for work
+    """
+    from knowledge_commons_profiles.newprofile.works import HiddenWorks
+
+    hide_heading = False
+    hide_individual_work = False
+
+    if hidden_works == HiddenWorks.HIDE and not visibility.get(
+        f"show_works_{work_type}", True
+    ):
+        hide_heading = True
+
+    # hide works individually hidden
+    if hidden_works == HiddenWorks.HIDE and not visibility_works.get(
+        f"show_works_work_{work.id}", True
+    ):
+        hide_individual_work = True
+
+    return hide_heading, hide_individual_work

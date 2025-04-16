@@ -1,5 +1,5 @@
 {% if profile.show_works and works_html %}
-  <h3 class="card-title">Works Deposits</h3>
+  <h3 class="card-title" id="works_deposits_card">Works Deposits</h3>
   <div class="col-12" id="chart">
   </div>
   <div class="row">
@@ -12,7 +12,7 @@
 
   <script type="text/javascript">
     let chart = {{ chart|safe }};
-    vegaEmbed('#chart', chart);
+    vegaEmbed('#chart', chart, {renderer: "svg", actions: false});
   </script>
 {% else %}
   <div class="hide" id="works" hx-swap-oob="true"></div>

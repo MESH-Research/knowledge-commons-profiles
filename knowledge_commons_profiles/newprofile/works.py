@@ -5,6 +5,7 @@ Works field type.
 
 import json
 import logging
+from collections import defaultdict
 from enum import Enum
 
 # ruff: noqa: PLC0206
@@ -34,6 +35,7 @@ from knowledge_commons_profiles.citeproc import CitationStylesStyle
 from knowledge_commons_profiles.citeproc import formatter
 from knowledge_commons_profiles.citeproc.source.json import CiteProcJSON
 from knowledge_commons_profiles.newprofile import models
+from knowledge_commons_profiles.newprofile.utils import hide_work
 
 logger = logging.getLogger(__name__)
 
@@ -430,15 +432,11 @@ class WorksDeposits:
             work_type = work_entry["original_type"]
 
             # hide works in hidden sections
-            if hidden_works == HiddenWorks.HIDE and not visibility.get(
-                f"show_works_{work_type}", True
-            ):
-                continue
+            hide_heading, hide_individual_work = hide_work(
+                work, work_type, hidden_works, visibility, visibility_works
+            )
 
-            # hide works individually hidden
-            if hidden_works == HiddenWorks.HIDE and not visibility_works.get(
-                f"show_works_work_{work.id}", True
-            ):
+            if any([hide_heading, hide_individual_work]):
                 continue
 
             if work_type not in works_by_type:
@@ -606,43 +604,98 @@ class WorksDeposits:
 
         return result
 
-    def get_works_for_chart(self):
+    def get_vega_chart_json(
+        self,
+        hidden_works=HiddenWorks.HIDE,
+    ):
+        """
+        Build a JSON Vega representation of Works
+        :return: JSON string
+        """
 
+        # caches
         works = self.get_works()
 
-        # create a count of each year
-        years = {}
+        color_map = {}
+        color_map_counter = 0
+        color_list = settings.CHART_COLORS
+        color_count = len(color_list)
+
+        visibility: dict[str, bool] = {}
+        visibility_works: dict[str, bool] = {}
+
+        if (
+            hidden_works == HiddenWorks.HIDE
+            and self.user_profile
+            and self.user_profile.works_show
+        ):
+            visibility = json.loads(self.user_profile.works_show)
+
+        if (
+            hidden_works == HiddenWorks.HIDE
+            and self.user_profile
+            and self.user_profile.works_work_show
+        ):
+            visibility_works = json.loads(self.user_profile.works_work_show)
+
+        # Nested defaultdicts to simplify initialization
+        year_counts = defaultdict(lambda: defaultdict(int))
+
         for work in works:
 
             year = work.metadata.publication_date.split("-")[0]
             work_type = work.metadata.resource_type.title.en
 
-            if year not in years:
-                years[year] = {}
+            # hide works in hidden sections
+            hide_heading, hide_individual_work = hide_work(
+                work, work_type, hidden_works, visibility, visibility_works
+            )
 
-            if work_type not in years[year]:
-                years[year][work_type] = 0
-            years[year][work_type] += 1
+            if any([hide_heading, hide_individual_work]):
+                continue
 
-        results = []
-        for year, values in years.items():
-            for work_type, count in values.items():
-                results.append(
-                    {
-                        "Year": year,
-                        "Work Type": work_type,
-                        "Publications": count,
-                    }
-                )
+            # Count works by year and type
+            year_counts[year][work_type] += 1
+
+            # Assign color if not already assigned
+            if work_type not in color_map:
+                color_map[work_type] = color_list[color_map_counter]
+                color_map_counter = (color_map_counter + 1) % color_count
+
+        # Generate final results and lists
+        results = [
+            {
+                "Year": year,
+                "Work Type": work_type,
+                "Publications": count,
+                "Color": color_map[work_type],
+            }
+            for year, work_types in year_counts.items()
+            for work_type, count in work_types.items()
+        ]
+
+        work_type_list = list(color_map.keys())
+        color_list_extended = list(color_map.values())
 
         source = pd.DataFrame.from_dict(results)
 
         return (
             alt.Chart(
                 source,
-                width=600,
+                width="container",
                 height=300,
             )
             .mark_bar(size=25)
-            .encode(x="Year:T", y="sum(Publications)", color="Work Type")
+            .encode(
+                x=alt.X("Year:T", scale=alt.Scale(padding=25)),
+                y="sum(Publications)",
+                color=alt.Color(
+                    "Work Type",
+                    scale=alt.Scale(
+                        domain=sorted(work_type_list),
+                        range=color_list_extended,
+                    ),
+                    legend=alt.Legend(title="Work Type"),
+                ),
+            )
         ).to_json()

@@ -365,3 +365,13 @@ CITATION_STYLES = {
     "MLA": "styles/modern-language-association.csl",
     "Vancouver": "styles/vancouver.csl",
 }
+
+# colors to use for stacked bar charts
+CHART_COLORS = [
+    "#1C4036",
+    "#669999",
+    "#C9E3DB",
+    "#F5F5EB",
+    "#D9B01C",
+    "#F0FAF5",
+]
