@@ -1,4 +1,4 @@
-{% load static %}
+{% load static version %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,9 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Knowledge Commons</title>
 
+    <!-- CSS -->
+
+    <!-- the application's internal CSS -->
+    <!-- the application version querystring ensures that the CSS isn't cached between releases -->
+    <link rel="stylesheet" href="{% static "css/profile.css" %}?version={% version %}" />
+
+    <!-- font awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <!-- google font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" />
-    <link rel="stylesheet" href="{% static "css/profile.css" %}" />
+
+    <!-- Javascript -->
 
     <!-- htmx -->
     <script src="{% static "js/htmx-1.9.12.min.js" %}"></script>
@@ -18,6 +28,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@6.1.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.29.0"></script>
 
+    <!-- icons -->
 
     <!-- favicon -->
     <link rel="icon" href="{% static "img/cropped-kc_logo_80_c-32x32.png" %}" sizes="32x32" />

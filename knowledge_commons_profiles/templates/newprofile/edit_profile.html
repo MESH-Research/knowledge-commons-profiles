@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static version %}
 {% load crispy_forms_tags crispy_forms_field %}
 
 {% block content %}
@@ -16,7 +16,7 @@
             src='{% static "js/jquery-migrate-3.5.2.min.js" %}'
             id='jquery-migrate-js'></script>
     <script type='text/javascript'
-            src='{% static "js/profile-sort.js" %}'
+            src='{% static "js/profile-sort.js" %}?version={% version %}'
             id='profile-sort'></script>
 
     {{ form.media }}
