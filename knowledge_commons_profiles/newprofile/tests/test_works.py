@@ -7,7 +7,6 @@ from django.test import override_settings
 
 from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.works import Creator
-from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import Metadata
 from knowledge_commons_profiles.newprofile.works import OutputFormat
 from knowledge_commons_profiles.newprofile.works import OutputType
@@ -103,6 +102,8 @@ class TestWorksDeposits(django.test.TestCase):
         }
         mock_get.return_value = mock_response
 
+        from knowledge_commons_profiles.newprofile.works import HiddenWorks
+
         result = self.works_deposits.get_formatted_works(
             output_type=OutputType.HTML,
             output_format=OutputFormat.JUST_OUTPUT,
@@ -121,6 +122,8 @@ class TestWorksDeposits(django.test.TestCase):
             "hits": {"hits": [self.fake_record.dict()]}
         }
         mock_get.return_value = mock_response
+
+        from knowledge_commons_profiles.newprofile.works import HiddenWorks
 
         result = self.works_deposits.get_formatted_works(
             output_type=OutputType.JSON,
@@ -153,6 +156,8 @@ class TestWorksDeposits(django.test.TestCase):
         profile.works_show = '{"show_works_Journal article": false}'
         profile.works_work_show = "{}"
 
+        from knowledge_commons_profiles.newprofile.works import HiddenWorks
+
         works = WorksDeposits(
             user=self.user, works_url=self.works_url, user_profile=profile
         )
@@ -167,6 +172,8 @@ class TestWorksDeposits(django.test.TestCase):
         profile.works_order = '["order-Journal article"]'
         profile.works_show = "{}"
         profile.works_work_show = '{"show_works_work_abc123": false}'
+
+        from knowledge_commons_profiles.newprofile.works import HiddenWorks
 
         works = WorksDeposits(
             user=self.user, works_url=self.works_url, user_profile=profile
@@ -234,6 +241,4 @@ class TestWorksDeposits(django.test.TestCase):
         )
         entry = self.works_deposits.build_work_entry(incomplete_record)
         self.assertEqual(entry["type"], "document")  # default type fallback
-        self.assertNotIn(
-            "container-title", entry
-        )  # optional field is excluded if None
+        self.assertNotIn("container-title", entry)

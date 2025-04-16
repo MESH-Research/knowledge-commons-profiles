@@ -2,6 +2,7 @@
 Utility functions
 """
 
+import json
 import logging
 
 from django.conf import settings
@@ -126,3 +127,32 @@ def hide_work(work, work_type, hidden_works, visibility, visibility_works):
         hide_individual_work = True
 
     return hide_heading, hide_individual_work
+
+
+def get_visibilities(works_object, hidden_works):
+    """
+    Get visibilities
+    """
+
+    from knowledge_commons_profiles.newprofile.works import HiddenWorks
+
+    visibility: dict[str, bool] = {}
+    visibility_works: dict[str, bool] = {}
+
+    if (
+        hidden_works == HiddenWorks.HIDE
+        and works_object.user_profile
+        and works_object.user_profile.works_show
+    ):
+        visibility = json.loads(works_object.user_profile.works_show)
+
+    if (
+        hidden_works == HiddenWorks.HIDE
+        and works_object.user_profile
+        and works_object.user_profile.works_work_show
+    ):
+        visibility_works = json.loads(
+            works_object.user_profile.works_work_show
+        )
+
+    return visibility, visibility_works

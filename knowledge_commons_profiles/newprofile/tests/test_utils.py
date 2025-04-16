@@ -2,6 +2,7 @@
 Tests for utility functions in the knowledge_commons_profiles app
 """
 
+import json
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -346,3 +347,79 @@ class HideWorkTests(TestCase):
         )
 
         self.assertEqual(result, (True, True))
+
+
+class GetVisibilitiesTests(TestCase):
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_no_user_profile(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+
+        instance = MagicMock()
+        instance.user_profile = None
+
+        from knowledge_commons_profiles.newprofile.utils import get_visibilities
+
+        visibility, visibility_works = get_visibilities(
+            instance, mock_hidden_works.HIDE
+        )
+        self.assertEqual(visibility, {})
+        self.assertEqual(visibility_works, {})
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_user_profile_with_no_fields(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+
+        user_profile = MagicMock()
+        user_profile.works_show = None
+        user_profile.works_work_show = None
+
+        instance = MagicMock()
+        instance.user_profile = user_profile
+
+        from knowledge_commons_profiles.newprofile.utils import get_visibilities
+
+        visibility, visibility_works = get_visibilities(
+            instance, mock_hidden_works.HIDE
+        )
+        self.assertEqual(visibility, {})
+        self.assertEqual(visibility_works, {})
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_user_profile_with_valid_fields(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+
+        visibility_data = {"show_works_article": True}
+        visibility_works_data = {"show_works_work_123": False}
+
+        user_profile = MagicMock()
+        user_profile.works_show = json.dumps(visibility_data)
+        user_profile.works_work_show = json.dumps(visibility_works_data)
+
+        instance = MagicMock()
+        instance.user_profile = user_profile
+
+        from knowledge_commons_profiles.newprofile.utils import get_visibilities
+
+        visibility, visibility_works = get_visibilities(
+            instance, mock_hidden_works.HIDE
+        )
+        self.assertEqual(visibility, visibility_data)
+        self.assertEqual(visibility_works, visibility_works_data)
+
+    @patch("knowledge_commons_profiles.newprofile.works.HiddenWorks")
+    def test_hidden_works_not_hide(self, mock_hidden_works):
+        mock_hidden_works.HIDE = "HIDE"
+
+        user_profile = MagicMock()
+        user_profile.works_show = json.dumps({"some_key": False})
+        user_profile.works_work_show = json.dumps({"some_work": True})
+
+        instance = MagicMock()
+        instance.user_profile = user_profile
+
+        from knowledge_commons_profiles.newprofile.utils import get_visibilities
+
+        visibility, visibility_works = get_visibilities(instance, "SHOW")
+        self.assertEqual(visibility, {})
+        self.assertEqual(visibility_works, {})

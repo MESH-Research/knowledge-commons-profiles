@@ -35,6 +35,7 @@ from knowledge_commons_profiles.citeproc import CitationStylesStyle
 from knowledge_commons_profiles.citeproc import formatter
 from knowledge_commons_profiles.citeproc.source.json import CiteProcJSON
 from knowledge_commons_profiles.newprofile import models
+from knowledge_commons_profiles.newprofile.utils import get_visibilities
 from knowledge_commons_profiles.newprofile.utils import hide_work
 
 logger = logging.getLogger(__name__)
@@ -410,22 +411,7 @@ class WorksDeposits:
         else:
             ordered_types = sorted(work_types)
 
-        visibility: dict[str, bool] = {}
-        visibility_works: dict[str, bool] = {}
-
-        if (
-            hidden_works == HiddenWorks.HIDE
-            and self.user_profile
-            and self.user_profile.works_show
-        ):
-            visibility = json.loads(self.user_profile.works_show)
-
-        if (
-            hidden_works == HiddenWorks.HIDE
-            and self.user_profile
-            and self.user_profile.works_work_show
-        ):
-            visibility_works = json.loads(self.user_profile.works_work_show)
+        visibility, visibility_works = get_visibilities(self, hidden_works)
 
         for work in works:
             work_entry = self.build_work_entry(work)
@@ -621,22 +607,7 @@ class WorksDeposits:
         color_list = settings.CHART_COLORS
         color_count = len(color_list)
 
-        visibility: dict[str, bool] = {}
-        visibility_works: dict[str, bool] = {}
-
-        if (
-            hidden_works == HiddenWorks.HIDE
-            and self.user_profile
-            and self.user_profile.works_show
-        ):
-            visibility = json.loads(self.user_profile.works_show)
-
-        if (
-            hidden_works == HiddenWorks.HIDE
-            and self.user_profile
-            and self.user_profile.works_work_show
-        ):
-            visibility_works = json.loads(self.user_profile.works_work_show)
+        visibility, visibility_works = get_visibilities(self, hidden_works)
 
         # Nested defaultdicts to simplify initialization
         year_counts = defaultdict(lambda: defaultdict(int))
