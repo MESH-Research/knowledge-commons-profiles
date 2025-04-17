@@ -276,7 +276,14 @@ class WpProfileData(models.Model):
         Return a human-readable representation of the WpProfileData model
         :return:
         """
-        return f"Profile data {self.field} for user {self.user.user_login}"
+        try:
+
+            return (
+                f"Profile data {self.field} for user "
+                f"{self.user.user_login}: {self.value}"
+            )
+        except WpProfileFields.DoesNotExist:
+            return self.value
 
 
 class WpProfileFields(models.Model):
