@@ -1,3 +1,20 @@
+## 2.11.0 (2025-04-17)
+
+### Feat
+
+- **works**: add links to citations
+- **commands**: add csv export command for users
+- **works**: rewrite of charts to optimize, use kc color scheme, and alphabetically order legend
+
+### Fix
+
+- **works**: move styles to root to speed deploy
+- **base**: add version to css loader so that stylesheets are not cached between releases
+
+### Perf
+
+- **stats**: optimise csv generation
+
 ## 2.10.0 (2025-04-16)
 
 ### Feat
