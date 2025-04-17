@@ -379,8 +379,8 @@ class WorksDeposits:
         return self.get_formatted_works(
             style=style,
             hidden_works=HiddenWorks.HIDE,
-            output_format=OutputFormat.JUST_OUTPUT,
-            output_type=OutputType.HTML,
+            output_format=OutputFormat.RAW_OBJECTS,
+            output_type=OutputType.JSON,
         )
 
     def sort_and_group_works_by_type(

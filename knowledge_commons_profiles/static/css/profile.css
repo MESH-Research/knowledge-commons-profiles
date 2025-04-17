@@ -937,3 +937,7 @@ div {
 .works_deposits_card {
   width:100%;
 }
+
+#works a {
+  color: #000000;
+}

@@ -80,6 +80,7 @@ def works_deposits(request, username, style=None):
         request,
         "newprofile/partials/works_deposits.html",
         {
+            "works_headings_ordered": user_works_deposits,
             "works_html": user_works_deposits,
             "profile": api.profile,
             "show_works": api.profile.show_works,
