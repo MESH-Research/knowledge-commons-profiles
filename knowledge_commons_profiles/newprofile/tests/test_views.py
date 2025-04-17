@@ -81,7 +81,9 @@ class WorksDepositsTests(django.test.TransactionTestCase):
 
         # Create a proper awaitable mock
         mock_works_html = MagicMock()
-        mock_works_html.return_value = "<div>Test works</div>"
+        mock_works_html.return_value = {
+            "Book": [{"html": "<div>Test works</div>"}]
+        }
         # Use property() to make works_html a property that returns the
         # AsyncMock
         type(api_instance).works_html = property(
