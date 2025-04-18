@@ -99,4 +99,5 @@ urlpatterns = [
         views.works_deposits_edit,
         name="works_deposits_edit",
     ),
+    path("stats/", views.stats_board, name="stats"),
 ]

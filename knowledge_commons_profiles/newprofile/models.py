@@ -2,11 +2,23 @@
 A set of models for user profiles
 """
 
+import contextlib
+import csv
+import logging
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 
 # pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 from django.db import models
 from django_bleach.models import BleachField
+
+if TYPE_CHECKING:
+    # False at run time, only for type checker
+    from _typeshed import SupportsWrite
+    from django.db.models import QuerySet
+
+logger = logging.getLogger(__name__)
 
 CITATION_STYLE_CHOICES = [(key, key) for key in settings.CITATION_STYLES]
 
@@ -361,6 +373,99 @@ class WpUser(models.Model):
         :return:
         """
         return str(self.user_login)
+
+    @staticmethod
+    def get_user_data(
+        output_stream: "SupportsWrite[str] | None" = None,
+    ) -> list[dict[str, str]]:
+        """
+        Get user data as a CSV written to a stream or a list of dicts
+
+        :param output_stream: stream to write to
+        :return:
+        """
+        writer: csv.DictWriter | None = None
+        output_list: list[dict[str, str]] = []
+
+        users: QuerySet[WpUser] = (
+            WpUser.objects.all()
+            .prefetch_related("wpprofiledata_set__field")
+            .prefetch_related("wpbpactivity_set")
+        )
+
+        logger.info("Got WordPress users (%s)", len(users))
+
+        fieldnames: list[str] = [
+            "id",
+            "display_name",
+            "user_login",
+            "user_email",
+            "institution",
+            "date_registered",
+            "latest_activity",
+        ]
+
+        if output_stream:
+            writer: csv.DictWriter = csv.DictWriter(
+                output_stream,
+                fieldnames=fieldnames,
+                quotechar='"',
+                quoting=csv.QUOTE_ALL,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+
+        wp_user: WpUser
+
+        for wp_user in users:
+
+            activities: list[WpBpActivity] = sorted(
+                wp_user.wpbpactivity_set.all(),
+                key=lambda a: a.date_recorded,
+                reverse=True,
+            )
+
+            # get profile data
+            institution: str = ""
+            data: WpProfileData
+
+            for data in wp_user.wpprofiledata_set.all():
+                with contextlib.suppress(WpProfileFields.DoesNotExist):
+                    if (
+                        data.user_id == wp_user.id
+                        and data.field.name
+                        == "Institutional or Other Affiliation"
+                    ):
+                        institution = data.value
+                        break
+            try:
+                activity: WpBpActivity = next(
+                    (activity for activity in activities),
+                    None,
+                )
+
+                output_object: dict = {
+                    "id": wp_user.id,
+                    "display_name": wp_user.display_name,
+                    "user_login": wp_user.user_login,
+                    "user_email": wp_user.user_email,
+                    "institution": institution,
+                    "date_registered": wp_user.user_registered,
+                    "latest_activity": (
+                        activity.date_recorded if activity else None
+                    ),
+                }
+
+                if output_stream:
+                    writer.writerow(output_object)
+
+                output_list.append(output_object)
+
+            except WpBpActivity.DoesNotExist:
+                msg: str = f"User activity for {wp_user.user_login} not found"
+                logger.exception(msg=msg)
+
+        return output_list
 
 
 class Profile(models.Model):

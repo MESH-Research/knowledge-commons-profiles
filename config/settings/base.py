@@ -375,3 +375,6 @@ CHART_COLORS = [
     "#D9B01C",
     "#F0FAF5",
 ]
+
+BASICAUTH_USERS = {"martin": "test"}
+BASICAUTH_REALM = "Knowledge Commons User Stats"

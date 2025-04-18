@@ -2,11 +2,13 @@
 The main views for the profile app
 """
 
+import datetime
 import json
 import logging
 
 import django
 import redis
+from basicauth.decorators import basic_auth_required
 from django.conf import settings
 from django.contrib.auth import logout
 from django.core.cache import cache
@@ -30,6 +32,7 @@ from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
+from knowledge_commons_profiles.newprofile.works import CACHE_TIMEOUT
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 
 logger = logging.getLogger(__name__)
@@ -743,3 +746,199 @@ def health(request):
     health_result["VERSION"] = VERSION
 
     return JsonResponse(health_result, status=200 if not fail else 500)
+
+
+@basic_auth_required
+def stats_board(request):  # noqa: C901
+    cache.delete("user_data", version=VERSION)
+    cache.delete("user_count_active", version=VERSION)
+    cache.delete("user_count_active_two", version=VERSION)
+    cache.delete("user_count_active_three", version=VERSION)
+
+    users = cache.get("user_data", version=VERSION)
+
+    if not users:
+        # users = models.WpUser.get_user_data()
+        # make a dummy list of dict[str, strs] with these fields:
+
+        users = [
+            {
+                "id": "12",
+                "display_name": "John Doe",
+                "user_login": "jdoe",
+                "user_email": "jdoe@uw.edu",
+                "institution": "UW",
+                "date_registered": "2016-01-01 01:00:00+00:00",
+                "latest_activity": "2022-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "12",
+                "display_name": "John Doe",
+                "user_login": "jdoe",
+                "user_email": "jdoe@uw.edu",
+                "institution": "UW",
+                "date_registered": "2014-01-01 01:00:00+00:00",
+                "latest_activity": "2022-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "12",
+                "display_name": "John Doe",
+                "user_login": "jdoe",
+                "user_email": "jdoe@uw.edu",
+                "institution": "UW",
+                "date_registered": "2015-01-01 01:00:00+00:00",
+                "latest_activity": "2022-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "12",
+                "display_name": "John Doe",
+                "user_login": "jdoe",
+                "user_email": "jdoe@uw.edu",
+                "institution": "UW",
+                "date_registered": "2014-01-01 01:00:00+00:00",
+                "latest_activity": "2022-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "12",
+                "display_name": "John Doe",
+                "user_login": "jdoe",
+                "user_email": "jdoe@uw.edu",
+                "institution": "UW",
+                "date_registered": "2014-01-01 01:00:00+00:00",
+                "latest_activity": "2022-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "1",
+                "display_name": "John Doe",
+                "user_login": "jdoe",
+                "user_email": "jdoe@uw.edu",
+                "institution": "UW",
+                "date_registered": "2022-01-01 01:00:00+00:00",
+                "latest_activity": "2022-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "2",
+                "display_name": "Jane Doe",
+                "user_login": "jane",
+                "user_email": "jane@uw.edu",
+                "institution": "UW",
+                "date_registered": "2023-01-01 01:00:00+00:00",
+                "latest_activity": "2023-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "2",
+                "display_name": "Jane Doe",
+                "user_login": "jane",
+                "user_email": "jane@uw.edu",
+                "institution": "UW",
+                "date_registered": "2025-02-01 01:00:00+00:00",
+                "latest_activity": "2024-01-01 01:00:00+00:00",
+            },
+            {
+                "id": "2",
+                "display_name": "Jane Doe",
+                "user_login": "jane",
+                "user_email": "jane@uw.edu",
+                "institution": "UW",
+                "date_registered": "2025-01-01 01:00:00+00:00",
+                "latest_activity": "2025-01-01 01:00:00+00:00",
+            },
+        ]
+
+        cache.set("user_data", users, version=VERSION, timeout=CACHE_TIMEOUT)
+
+    user_count_active = cache.get(
+        "user_count_active", version=VERSION, default=0
+    )
+
+    user_count_active_two = cache.get(
+        "user_count_active_two", version=VERSION, default=0
+    )
+
+    user_count_active_three = cache.get(
+        "user_count_active_three", version=VERSION, default=0
+    )
+
+    if (
+        not user_count_active
+        or not user_count_active_two
+        or not user_count_active_three
+    ):
+        user_count_active = 0
+        user_count_active_two = 0
+        user_count_active_three = 0
+
+        for user in users:
+            try:
+                # parse "latest_activity" key as a python date
+                user_date_of_last_activity = datetime.datetime.strptime(
+                    user["latest_activity"], "%Y-%m-%d %H:%M:%S+00:00"
+                ).replace(tzinfo=datetime.UTC)
+            except (ValueError, TypeError):
+                continue
+
+            if user_date_of_last_activity > datetime.datetime.now(
+                tz=datetime.UTC
+            ) - datetime.timedelta(weeks=166):
+                user_count_active += 1
+
+            if user_date_of_last_activity > datetime.datetime.now(
+                tz=datetime.UTC
+            ) - datetime.timedelta(weeks=104):
+                user_count_active_two += 1
+
+            if user_date_of_last_activity > datetime.datetime.now(
+                tz=datetime.UTC
+            ) - datetime.timedelta(weeks=52):
+                user_count_active_three += 1
+
+        cache.set(
+            "user_count_active",
+            user_count_active,
+            version=VERSION,
+            timeout=CACHE_TIMEOUT,
+        )
+
+        cache.set(
+            "user_count_active_two",
+            user_count_active_two,
+            version=VERSION,
+            timeout=CACHE_TIMEOUT,
+        )
+
+        cache.set(
+            "user_count_active_three",
+            user_count_active_three,
+            version=VERSION,
+            timeout=CACHE_TIMEOUT,
+        )
+
+    # build a dictionary of signups by year since 2014 and add keys from 2014
+    # to the current year with default value of zero
+    signups_by_year = {}
+
+    for year in range(2014, datetime.datetime.now(tz=datetime.UTC).year + 1):
+        signups_by_year[str(year)] = 0
+
+    # now get the date_registered count for each year
+    for user in users:
+        try:
+            # parse "date_registered" key as a python date
+            user_date_registered = datetime.datetime.strptime(
+                user["date_registered"], "%Y-%m-%d %H:%M:%S+00:00"
+            ).replace(tzinfo=datetime.UTC)
+
+            signups_by_year[str(user_date_registered.year)] += 1
+        except (ValueError, TypeError):
+            continue
+
+    context = {
+        "user_count": len(users),
+        "user_count_active": user_count_active,
+        "user_count_active_two": user_count_active_two,
+        "user_count_active_three": user_count_active_three,
+        "years": str(list(signups_by_year.keys())),
+        "data": str(list(signups_by_year.values())),
+    }
+
+    return render(request, "newprofile/dashboard.html", context)
