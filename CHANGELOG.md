@@ -1,3 +1,9 @@
+## 2.11.1 (2025-04-18)
+
+### Fix
+
+- **works**: fix works display and add various formatting tweaks to bullets and titles
+
 ## 2.11.0 (2025-04-17)
 
 ### Feat
