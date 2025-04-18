@@ -160,7 +160,7 @@ class API:
         return self._works_html
 
     @cached_property
-    async def works_deposits(self):
+    def works_deposits(self):
         """
         Get the works deposits
         """

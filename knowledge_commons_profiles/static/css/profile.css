@@ -608,9 +608,21 @@
         }
 
         .works-list > li > ul > li {
-          list-style: square;
+          list-style: none;
           border-radius: 4px;
           transition: background-color 0.2s;
+          display: flex;
+          align-items: flex-start;
+          position: relative;
+        }
+
+        .works-list > li > ul > li::before {
+            content: "•"; /* or use "\2022" */
+            font-size: 1.2em;
+            line-height: 1;
+            margin-right: 0.5em;
+            position: relative;
+            top: 0.2em; /* this nudges it to align better */
         }
 
         .works-list > li > ul > li:hover {

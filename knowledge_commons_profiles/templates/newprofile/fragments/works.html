@@ -1,7 +1,16 @@
 <!-- Works Deposits -->
 {% if profile.show_works %}
-<div class="content-card" id="works"
-     hx-get="{% url 'works_deposits' username=username %}"
-     hx-trigger="load"
-     hx-target="this"></div>
+<div class="content-card" id="works">
+  <h3 class="card-title" id="works_deposits_card">Works Deposits</h3>
+  <div class="col-12" id="chart">
+  </div>
+  <div class="row">
+    <div class="col-12">
+      <ul id="works" class="works-list" hx-get="{% url 'works_deposits' username=username %}"
+         hx-trigger="load"
+         hx-target="this">
+      </ul>
+    </div>
+  </div>
+</div>
 {% endif %}
