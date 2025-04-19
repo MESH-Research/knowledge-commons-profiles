@@ -23,7 +23,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         logger.info("Installing ROR lookups.")
 
-        users: list[dict[str, str | WpUser]] = WpUser.get_user_data(limit=50)
+        users: list[dict[str, str | WpUser]] = WpUser.get_user_data()
 
         for user in track(users):
             RORLookup.lookup(text=user["institution"])
