@@ -1,3 +1,9 @@
+## 2.13.1 (2025-04-19)
+
+### Fix
+
+- **dashboard**: rewrite and optimize function to retrieve wordpress users and associated annotations
+
 ## 2.13.0 (2025-04-19)
 
 ### Feat
