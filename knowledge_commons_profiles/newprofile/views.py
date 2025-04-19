@@ -752,14 +752,14 @@ def health(request):
 @basic_auth_required
 def stats_board(request):  # noqa: C901
     # cache.delete("user_data", version=VERSION)
-    cache.delete("user_count_active", version=VERSION)
-    cache.delete("user_count_active_two", version=VERSION)
-    cache.delete("user_count_active_three", version=VERSION)
+    # cache.delete("user_count_active", version=VERSION)
+    # cache.delete("user_count_active_two", version=VERSION)
+    # cache.delete("user_count_active_three", version=VERSION)
 
     users = cache.get("user_data", version=VERSION)
 
     if not users:
-        users = get_local_data() if settings.DEBUG else WpUser.get_user_data()
+        users = WpUser.get_user_data()
 
         cache.set("user_data", users, version=VERSION, timeout=CACHE_TIMEOUT)
 
@@ -785,28 +785,21 @@ def stats_board(request):  # noqa: C901
         user_count_active_three = 0
 
         for user in users:
-            try:
-                # parse "latest_activity" key as a python date
-                user_date_of_last_activity = datetime.datetime.strptime(
-                    user["latest_activity"], "%Y-%m-%d %H:%M:%S+00:00"
-                ).replace(tzinfo=datetime.UTC)
-            except (ValueError, TypeError):
-                continue
+            if user.latest_activity is not None:
+                if user.latest_activity > datetime.datetime.now(
+                    tz=datetime.UTC
+                ) - datetime.timedelta(weeks=166):
+                    user_count_active += 1
 
-            if user_date_of_last_activity > datetime.datetime.now(
-                tz=datetime.UTC
-            ) - datetime.timedelta(weeks=166):
-                user_count_active += 1
+                if user.latest_activity > datetime.datetime.now(
+                    tz=datetime.UTC
+                ) - datetime.timedelta(weeks=104):
+                    user_count_active_two += 1
 
-            if user_date_of_last_activity > datetime.datetime.now(
-                tz=datetime.UTC
-            ) - datetime.timedelta(weeks=104):
-                user_count_active_two += 1
-
-            if user_date_of_last_activity > datetime.datetime.now(
-                tz=datetime.UTC
-            ) - datetime.timedelta(weeks=52):
-                user_count_active_three += 1
+                if user.latest_activity > datetime.datetime.now(
+                    tz=datetime.UTC
+                ) - datetime.timedelta(weeks=52):
+                    user_count_active_three += 1
 
         cache.set(
             "user_count_active",
@@ -833,18 +826,13 @@ def stats_board(request):  # noqa: C901
     # to the current year with default value of zero
     signups_by_year = {}
 
-    for year in range(2014, datetime.datetime.now(tz=datetime.UTC).year + 1):
+    for year in range(2005, datetime.datetime.now(tz=datetime.UTC).year + 1):
         signups_by_year[str(year)] = 0
 
     # now get the date_registered count for each year
     for user in users:
         try:
-            # parse "date_registered" key as a python date
-            user_date_registered = datetime.datetime.strptime(
-                user["date_registered"], "%Y-%m-%d %H:%M:%S+00:00"
-            ).replace(tzinfo=datetime.UTC)
-
-            signups_by_year[str(user_date_registered.year)] += 1
+            signups_by_year[str(user.user_registered.year)] += 1
         except (ValueError, TypeError):
             continue
 

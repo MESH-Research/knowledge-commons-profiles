@@ -13,13 +13,19 @@ from django.conf import settings
 
 # pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 from django.db import models
+from django.db.models import Case
+from django.db.models import IntegerField
+from django.db.models import OuterRef
+from django.db.models import Subquery
+from django.db.models import Value
+from django.db.models import When
+from django.db.models.functions import Coalesce
 from django_bleach.models import BleachField
 from requests import Response
 
 if TYPE_CHECKING:
     from _typeshed import SupportsWrite
     from django.db.models.query import QuerySet
-
 
 logger = logging.getLogger(__name__)
 
@@ -382,7 +388,7 @@ class WpUser(models.Model):
     @staticmethod
     def get_user_data(
         output_stream: "SupportsWrite[str] | None" = None, limit: int = -1
-    ) -> list[dict[str, "str | WpUser"]]:
+    ) -> "QuerySet[WpUser]":
         """
         Get user data as a CSV written to a stream or a list of dicts
 
@@ -391,20 +397,52 @@ class WpUser(models.Model):
         :return:
         """
         writer: csv.DictWriter | None = None
-        output_list: list[dict[str, str | WpUser]] = []
+
+        # first, make sure there is at least one RORLookup row
+        if RORLookup.objects.all().count() == 0:
+            RORLookup.objects.create(text="Test", ror=None)
+
+        # 1) Subquery for the institution:
+        institution_sq = (
+            WpProfileData.objects.filter(
+                user_id=OuterRef("pk"),
+                field__name="Institutional or Other Affiliation",
+            )
+            .order_by()
+            .values("value")[:1]
+        )
+
+        # 2) Subquery for the latest activity date:
+        latest_activity_sq = (
+            WpBpActivity.objects.filter(user_id=OuterRef("pk"))
+            .order_by("-date_recorded")
+            .values("date_recorded")[:1]
+        )
 
         if limit == -1:
-            users: QuerySet[WpUser] = (
-                WpUser.objects.all()
-                .prefetch_related("wpprofiledata_set__field")
-                .prefetch_related("wpbpactivity_set")
+            users: QuerySet[WpUser] = WpUser.objects.annotate(
+                institution=Subquery(institution_sq),
+                latest_activity=Subquery(latest_activity_sq),
             )
         else:
-            users: QuerySet[WpUser] = (
-                WpUser.objects.all()
-                .prefetch_related("wpprofiledata_set__field")
-                .prefetch_related("wpbpactivity_set")
+            users: QuerySet[WpUser] = WpUser.objects.annotate(
+                institution=Subquery(institution_sq),
+                latest_activity=Subquery(latest_activity_sq),
             )[:limit]
+
+        ror_map = {row.text: row.ror for row in RORLookup.objects.all()}
+
+        cases = [
+            When(institution=inst, then=Value(ror))
+            for inst, ror in ror_map.items()
+        ]
+
+        users = users.annotate(
+            ror=Coalesce(
+                Case(*cases, default=Value(None), output_field=IntegerField()),
+                Value(None),
+            )
+        )
 
         logger.info("Got WordPress users (%s)", len(users))
 
@@ -428,59 +466,26 @@ class WpUser(models.Model):
             )
             writer.writeheader()
 
-        wp_user: WpUser
+            wp_user: WpUser
 
-        for wp_user in users:
-
-            activities: list[WpBpActivity] = sorted(
-                wp_user.wpbpactivity_set.all(),
-                key=lambda a: a.date_recorded,
-                reverse=True,
-            )
-
-            # get profile data
-            institution: str = ""
-            data: WpProfileData
-
-            for data in wp_user.wpprofiledata_set.all():
-                with contextlib.suppress(WpProfileFields.DoesNotExist):
-                    if (
-                        data.user_id == wp_user.id
-                        and data.field.name
-                        == "Institutional or Other Affiliation"
-                    ):
-                        institution = data.value
-                        break
-            try:
-                activity: WpBpActivity = next(
-                    (activity for activity in activities),
-                    None,
-                )
-
+            for wp_user in users:
                 output_object: dict = {
                     "id": wp_user.id,
                     "display_name": wp_user.display_name,
                     "user_login": wp_user.user_login,
                     "user_email": wp_user.user_email,
-                    "institution": institution,
+                    "institution": wp_user.institution,
                     "date_registered": wp_user.user_registered,
                     "latest_activity": (
-                        activity.date_recorded if activity else None
+                        wp_user.latest_activity
+                        if wp_user.latest_activity
+                        else None
                     ),
                 }
 
-                if output_stream:
-                    writer.writerow(output_object)
+                writer.writerow(output_object)
 
-                output_object["object"] = wp_user
-
-                output_list.append(output_object)
-
-            except WpBpActivity.DoesNotExist:
-                msg: str = f"User activity for {wp_user.user_login} not found"
-                logger.exception(msg=msg)
-
-        return output_list
+        return users
 
 
 class Profile(models.Model):
@@ -1093,8 +1098,19 @@ class RORLookup(models.Model):
     """
 
     id: int = models.BigAutoField(primary_key=True)
-    ror: RORRecord = models.ForeignKey(RORRecord, on_delete=models.CASCADE)
+    ror: RORRecord = models.ForeignKey(
+        RORRecord, on_delete=models.CASCADE, null=True, blank=True
+    )
     text: str = models.TextField()
+
+    class Meta:
+        """
+        Metadata for the RORLookup model
+        """
+
+        indexes = [
+            models.Index(fields=["text"], name="idx_rorlookup_text"),
+        ]
 
     def __str__(self) -> str:
         """
