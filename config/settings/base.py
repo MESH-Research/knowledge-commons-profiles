@@ -378,3 +378,8 @@ CHART_COLORS = [
 
 BASICAUTH_USERS = {"martin": "test"}
 BASICAUTH_REALM = "Knowledge Commons User Stats"
+
+ROR_TIMEOUT = 10
+ZENODO_TIMEOUT = 10
+
+ROR_THRESHOLD = 0.6

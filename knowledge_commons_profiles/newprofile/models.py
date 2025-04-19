@@ -7,18 +7,22 @@ import csv
 import logging
 from typing import TYPE_CHECKING
 
+import requests
 from django.conf import settings
 
 # pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 from django.db import models
 from django_bleach.models import BleachField
+from requests import Response
 
 if TYPE_CHECKING:
-    # False at run time, only for type checker
     from _typeshed import SupportsWrite
-    from django.db.models import QuerySet
+    from django.db.models.query import QuerySet
+
 
 logger = logging.getLogger(__name__)
+
+HTTP_200_OK = 200
 
 CITATION_STYLE_CHOICES = [(key, key) for key in settings.CITATION_STYLES]
 
@@ -376,8 +380,8 @@ class WpUser(models.Model):
 
     @staticmethod
     def get_user_data(
-        output_stream: "SupportsWrite[str] | None" = None,
-    ) -> list[dict[str, str]]:
+        output_stream: "SupportsWrite[str] | None" = None, limit: int = -1
+    ) -> list[dict[str, "str | WpUser"]]:
         """
         Get user data as a CSV written to a stream or a list of dicts
 
@@ -385,13 +389,20 @@ class WpUser(models.Model):
         :return:
         """
         writer: csv.DictWriter | None = None
-        output_list: list[dict[str, str]] = []
+        output_list: list[dict[str, str | WpUser]] = []
 
-        users: QuerySet[WpUser] = (
-            WpUser.objects.all()
-            .prefetch_related("wpprofiledata_set__field")
-            .prefetch_related("wpbpactivity_set")
-        )
+        if limit == -1:
+            users: QuerySet[WpUser] = (
+                WpUser.objects.all()
+                .prefetch_related("wpprofiledata_set__field")
+                .prefetch_related("wpbpactivity_set")
+            )
+        else:
+            users: QuerySet[WpUser] = (
+                WpUser.objects.all()
+                .prefetch_related("wpprofiledata_set__field")
+                .prefetch_related("wpbpactivity_set")
+            )[:limit]
 
         logger.info("Got WordPress users (%s)", len(users))
 
@@ -458,6 +469,8 @@ class WpUser(models.Model):
 
                 if output_stream:
                     writer.writerow(output_object)
+
+                output_object["object"] = wp_user
 
                 output_list.append(output_object)
 
@@ -1037,3 +1050,160 @@ class WpBpNotification(models.Model):
             short=True,
             username=username,
         )
+
+
+class RORRecord(models.Model):
+    """
+    A record corresponding to an ROR record
+    """
+
+    ror_id: str = models.URLField(blank=True, null=True)
+    institution_name: str = models.TextField(blank=True, null=True)
+    grid_id: str = models.CharField(max_length=255, blank=True, null=True)
+    country: str = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["institution_name"]),
+            models.Index(fields=["ror_id"]),
+        ]
+
+    def __str__(self) -> str:
+        """
+        A string representation of the ROR record
+        :return:
+        """
+        return (
+            self.institution_name
+            + ", "
+            + self.country
+            + " ("
+            + self.ror_id
+            + ")"
+        )
+
+
+class RORLookup(models.Model):
+    """
+    A model for a ROR lookup
+    """
+
+    id: int = models.BigAutoField(primary_key=True)
+    ror: RORRecord = models.ForeignKey(RORRecord, on_delete=models.CASCADE)
+    text: str = models.TextField()
+
+    def __str__(self) -> str:
+        """
+        A string representation of the ROR lookup
+        :return:
+        """
+        return str(self.ror)
+
+    @staticmethod
+    def lookup(text: str) -> "RORLookup | None":
+        # see if we have an existing match
+        # if not, consult the ROR API to find one
+
+        if text == "":
+            return None
+
+        replaced_text = text.replace("U of", "University of")
+
+        with contextlib.suppress(RORLookup.DoesNotExist):
+            ror_lookup: RORLookup = RORLookup.objects.get(text=text)
+            logger.info("Found existing ROR lookup: %s", ror_lookup)
+            return ror_lookup
+
+        # see if there's a precise ROR
+        ror_lookup: RORLookup | None = RORLookup.check_for_precise_ror(text)
+
+        if ror_lookup:
+            return ror_lookup
+
+        # See if the ROR API can return us a match
+        # we use the ROR query API at
+        # https://api.ror.org/v2/organizations?affiliation=
+
+        url: str = (
+            "https://api.ror.org/v2/organizations?affiliation=" + replaced_text
+        )
+
+        logger.info("ROR lookup: %s", url)
+        response: Response = requests.get(url, timeout=settings.ROR_TIMEOUT)
+
+        if response.status_code == HTTP_200_OK:
+            response.raise_for_status()
+
+            results: dict = response.json()
+
+            if len(results["items"]) > 0:
+                chosen: bool = results["items"][0]["chosen"]
+                score: int = results["items"][0]["score"]
+
+                if chosen or score > settings.ROR_THRESHOLD:
+                    with contextlib.suppress(RORRecord.DoesNotExist):
+                        ror = RORLookup.get_ror(results)
+
+                        return RORLookup.objects.get_or_create(
+                            ror=ror,
+                            text=text,
+                        )[0]
+
+        logger.info("ROR lookup failed: %s", text)
+        return None
+
+    @staticmethod
+    def get_ror(results):
+        """
+        Get the ROR record
+        """
+        ror_id: str = results["items"][0]["organization"]["id"]
+        ror: RORRecord = RORRecord.objects.get(ror_id=ror_id)
+        # Found ROR match
+        logger.info("Found ROR match: %s", ror)
+        return ror
+
+    @staticmethod
+    def check_for_precise_ror(text: str) -> "RORLookup | None":
+        """
+        Check if we have a precise ROR and create a lookup
+        """
+        with contextlib.suppress(RORRecord.DoesNotExist, IndexError):
+            try:
+                ror_lookup: RORLookup = RORLookup.objects.get_or_create(
+                    ror=RORRecord.objects.get(institution_name=text),
+                    text=text,
+                )[0]
+            except RORRecord.MultipleObjectsReturned:
+                ror_lookup: RORLookup = RORLookup.objects.get_or_create(
+                    ror=RORRecord.objects.filter(institution_name=text)[0],
+                    text=text,
+                )[0]
+
+                logger.info("Found precise ROR: %s", ror_lookup)
+                return ror_lookup
+
+            logger.info("Found precise ROR: %s", ror_lookup)
+            return ror_lookup
+
+        return None
+
+    @staticmethod
+    def get_affiliation(
+        wp_user_dict: dict[str, str | WpUser],
+    ) -> RORRecord | str:
+        """
+        Get the affiliation for a user
+        """
+        # see if there's a RORLookup
+        ror_lookup: RORLookup | None = None
+
+        with contextlib.suppress(RORLookup.DoesNotExist):
+            ror_lookup: RORLookup | None = RORLookup.objects.filter(
+                text=wp_user_dict["institution"]
+            ).first()
+
+        if ror_lookup:
+            return ror_lookup.ror
+
+        return wp_user_dict["institution"]
