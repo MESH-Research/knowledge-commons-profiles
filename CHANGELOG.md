@@ -1,3 +1,13 @@
+## 2.13.0 (2025-04-19)
+
+### Feat
+
+- **dashboard**: add maps to dashboard
+
+### Refactor
+
+- **dashboard**: move local data generation to new function
+
 ## 2.12.1 (2025-04-19)
 
 ### Fix
