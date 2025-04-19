@@ -386,6 +386,7 @@ class WpUser(models.Model):
         Get user data as a CSV written to a stream or a list of dicts
 
         :param output_stream: stream to write to
+        :param limit: number of users to get or -1 for all
         :return:
         """
         writer: csv.DictWriter | None = None
