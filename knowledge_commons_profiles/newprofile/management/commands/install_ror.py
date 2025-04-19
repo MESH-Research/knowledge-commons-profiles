@@ -4,6 +4,7 @@ This program is free software; you may redistribute and/or modify
 it under the terms of the Apache License v2.0.
 """
 
+import contextlib
 import io
 import json
 import logging
@@ -85,11 +86,21 @@ class Command(BaseCommand):
             except KeyError:
                 grid_id = None
 
+            lat = 0
+            lon = 0
+
+            if "addresses" in entry:
+                with contextlib.suppress(KeyError):
+                    lat = entry["addresses"][0]["lat"]
+                    lon = entry["addresses"][0]["lng"]
+
             ror_record = RORRecord(
                 ror_id=ror_id,
                 institution_name=ror_name,
                 country=ror_country,
                 grid_id=grid_id,
+                lat=lat,
+                lon=lon,
             )
             ror_record.save()
 

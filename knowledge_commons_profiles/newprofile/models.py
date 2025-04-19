@@ -1063,6 +1063,8 @@ class RORRecord(models.Model):
     institution_name: str = models.TextField(blank=True, null=True)
     grid_id: str = models.CharField(max_length=255, blank=True, null=True)
     country: str = models.CharField(max_length=255, blank=True, null=True)
+    lat: float = models.FloatField(null=True)
+    lon: float = models.FloatField(null=True)
 
     class Meta:
         indexes = [
@@ -1184,7 +1186,7 @@ class RORLookup(models.Model):
         return None
 
     @staticmethod
-    def get_ror(results):
+    def get_ror(results) -> RORRecord:
         """
         Get the ROR record
         """

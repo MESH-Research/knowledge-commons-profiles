@@ -29150,4 +29150,12 @@ pre[class*=language-] {
   }
 }
 
+#map_stats {
+  height: 550px !important;
+}
+
+.map_stats_cont {
+  margin-bottom: 0 !important;
+}
+
 /*# sourceMappingURL=dashboard-free.css.map */
