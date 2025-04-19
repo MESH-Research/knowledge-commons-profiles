@@ -1,3 +1,14 @@
+## 2.12.0 (2025-04-19)
+
+### Feat
+
+- **ror**: add ROR import
+- **dashboard**: add initial work on dashboard
+
+### Fix
+
+- **ror**: remove limit
+
 ## 2.11.1 (2025-04-18)
 
 ### Fix
