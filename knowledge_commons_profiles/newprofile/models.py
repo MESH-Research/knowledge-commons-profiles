@@ -5,6 +5,7 @@ A set of models for user profiles
 import contextlib
 import csv
 import logging
+import re
 from typing import TYPE_CHECKING
 
 import requests
@@ -1101,6 +1102,25 @@ class RORLookup(models.Model):
         return str(self.ror)
 
     @staticmethod
+    def replace_at_end(text: str, old_suffix: str, new_suffix: str):
+        """
+        Replaces 'old_suffix' with 'new_suffix' in 'text' only if 'old_suffix'
+        is found at the end of the string.
+
+        Args:
+            text: The original string.
+            old_suffix: The suffix to be replaced.
+            new_suffix: The new suffix to replace with.
+
+        Returns:
+            The modified string, or the original string if the suffix is
+            not found.
+        """
+        if text.endswith(old_suffix):
+            return re.sub(re.escape(old_suffix) + r"$", new_suffix, text)
+        return text
+
+    @staticmethod
     def lookup(text: str) -> "RORLookup | None":
         # see if we have an existing match
         # if not, consult the ROR API to find one
@@ -1109,6 +1129,16 @@ class RORLookup(models.Model):
             return None
 
         replaced_text = text.replace("U of", "University of")
+        replaced_text = RORLookup.replace_at_end(
+            replaced_text, " U", " University"
+        )
+        replaced_text = RORLookup.replace_at_end(
+            replaced_text, " U.", " University"
+        )
+        replaced_text.replace("comm C", "Community College")
+        replaced_text.replace("Comm C", "Community College")
+        replaced_text.replace("comm C.", "Community College")
+        replaced_text.replace("Comm C", "Community College")
 
         with contextlib.suppress(RORLookup.DoesNotExist):
             ror_lookup: RORLookup = RORLookup.objects.get(text=text)

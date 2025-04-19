@@ -20,8 +20,18 @@ class Command(BaseCommand):
 
     help = "Matches current WordPress users against ROR"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--delete",
+            action="store_true",
+            help="Whether to delete",
+        )
+
     def handle(self, *args, **options):
         logger.info("Installing ROR lookups.")
+
+        if options["delete"]:
+            RORLookup.objects.all().delete()
 
         users: list[dict[str, str | WpUser]] = WpUser.get_user_data()
 
