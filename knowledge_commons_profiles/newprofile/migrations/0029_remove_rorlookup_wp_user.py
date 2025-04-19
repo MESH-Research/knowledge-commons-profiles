@@ -7,10 +7,3 @@ class Migration(migrations.Migration):
     dependencies = [
         ("newprofile", "0028_rorrecord_rorlookup"),
     ]
-
-    operations = [
-        migrations.RemoveField(
-            model_name="rorlookup",
-            name="wp_user",
-        ),
-    ]

@@ -51,13 +51,6 @@ class Migration(migrations.Migration):
                 ("id", models.BigAutoField(primary_key=True, serialize=False)),
                 ("text", models.TextField()),
                 (
-                    "wp_user",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE,
-                        to="newprofile.wpuser",
-                    ),
-                ),
-                (
                     "ror",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
