@@ -28,6 +28,7 @@ from knowledge_commons_profiles.newprofile.custom_login import login_required
 from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
@@ -750,7 +751,7 @@ def health(request):
 
 @basic_auth_required
 def stats_board(request):  # noqa: C901
-    cache.delete("user_data", version=VERSION)
+    # cache.delete("user_data", version=VERSION)
     cache.delete("user_count_active", version=VERSION)
     cache.delete("user_count_active_two", version=VERSION)
     cache.delete("user_count_active_three", version=VERSION)
@@ -758,92 +759,7 @@ def stats_board(request):  # noqa: C901
     users = cache.get("user_data", version=VERSION)
 
     if not users:
-        # users = models.WpUser.get_user_data()
-        # make a dummy list of dict[str, strs] with these fields:
-
-        users = [
-            {
-                "id": "12",
-                "display_name": "John Doe",
-                "user_login": "jdoe",
-                "user_email": "jdoe@uw.edu",
-                "institution": "UW",
-                "date_registered": "2016-01-01 01:00:00+00:00",
-                "latest_activity": "2022-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "12",
-                "display_name": "John Doe",
-                "user_login": "jdoe",
-                "user_email": "jdoe@uw.edu",
-                "institution": "UW",
-                "date_registered": "2014-01-01 01:00:00+00:00",
-                "latest_activity": "2022-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "12",
-                "display_name": "John Doe",
-                "user_login": "jdoe",
-                "user_email": "jdoe@uw.edu",
-                "institution": "UW",
-                "date_registered": "2015-01-01 01:00:00+00:00",
-                "latest_activity": "2022-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "12",
-                "display_name": "John Doe",
-                "user_login": "jdoe",
-                "user_email": "jdoe@uw.edu",
-                "institution": "UW",
-                "date_registered": "2014-01-01 01:00:00+00:00",
-                "latest_activity": "2022-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "12",
-                "display_name": "John Doe",
-                "user_login": "jdoe",
-                "user_email": "jdoe@uw.edu",
-                "institution": "UW",
-                "date_registered": "2014-01-01 01:00:00+00:00",
-                "latest_activity": "2022-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "1",
-                "display_name": "John Doe",
-                "user_login": "jdoe",
-                "user_email": "jdoe@uw.edu",
-                "institution": "UW",
-                "date_registered": "2022-01-01 01:00:00+00:00",
-                "latest_activity": "2022-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "2",
-                "display_name": "Jane Doe",
-                "user_login": "jane",
-                "user_email": "jane@uw.edu",
-                "institution": "UW",
-                "date_registered": "2023-01-01 01:00:00+00:00",
-                "latest_activity": "2023-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "2",
-                "display_name": "Jane Doe",
-                "user_login": "jane",
-                "user_email": "jane@uw.edu",
-                "institution": "UW",
-                "date_registered": "2025-02-01 01:00:00+00:00",
-                "latest_activity": "2024-01-01 01:00:00+00:00",
-            },
-            {
-                "id": "2",
-                "display_name": "Jane Doe",
-                "user_login": "jane",
-                "user_email": "jane@uw.edu",
-                "institution": "UW",
-                "date_registered": "2025-01-01 01:00:00+00:00",
-                "latest_activity": "2025-01-01 01:00:00+00:00",
-            },
-        ]
+        users = get_local_data() if settings.DEBUG else WpUser.get_user_data()
 
         cache.set("user_data", users, version=VERSION, timeout=CACHE_TIMEOUT)
 
@@ -942,3 +858,92 @@ def stats_board(request):  # noqa: C901
     }
 
     return render(request, "newprofile/dashboard.html", context)
+
+
+def get_local_data():
+    """
+    Get local data for debugging
+    """
+    return [
+        {
+            "id": "12",
+            "display_name": "John Doe",
+            "user_login": "jdoe",
+            "user_email": "jdoe@uw.edu",
+            "institution": "UW",
+            "date_registered": "2016-01-01 01:00:00+00:00",
+            "latest_activity": "2022-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "12",
+            "display_name": "John Doe",
+            "user_login": "jdoe",
+            "user_email": "jdoe@uw.edu",
+            "institution": "UW",
+            "date_registered": "2014-01-01 01:00:00+00:00",
+            "latest_activity": "2022-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "12",
+            "display_name": "John Doe",
+            "user_login": "jdoe",
+            "user_email": "jdoe@uw.edu",
+            "institution": "UW2",
+            "date_registered": "2015-01-01 01:00:00+00:00",
+            "latest_activity": "2022-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "12",
+            "display_name": "John Doe",
+            "user_login": "jdoe",
+            "user_email": "jdoe@uw.edu",
+            "institution": "UW3",
+            "date_registered": "2014-01-01 01:00:00+00:00",
+            "latest_activity": "2022-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "12",
+            "display_name": "John Doe",
+            "user_login": "jdoe",
+            "user_email": "jdoe@uw.edu",
+            "institution": "UW",
+            "date_registered": "2014-01-01 01:00:00+00:00",
+            "latest_activity": "2022-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "1",
+            "display_name": "John Doe",
+            "user_login": "jdoe",
+            "user_email": "jdoe@uw.edu",
+            "institution": "UW4",
+            "date_registered": "2022-01-01 01:00:00+00:00",
+            "latest_activity": "2022-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "2",
+            "display_name": "Jane Doe",
+            "user_login": "jane",
+            "user_email": "jane@uw.edu",
+            "institution": "UW",
+            "date_registered": "2023-01-01 01:00:00+00:00",
+            "latest_activity": "2023-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "2",
+            "display_name": "Jane Doe",
+            "user_login": "jane",
+            "user_email": "jane@uw.edu",
+            "institution": "UW5",
+            "date_registered": "2025-02-01 01:00:00+00:00",
+            "latest_activity": "2024-01-01 01:00:00+00:00",
+        },
+        {
+            "id": "2",
+            "display_name": "Jane Doe",
+            "user_login": "jane",
+            "user_email": "jane@uw.edu",
+            "institution": "UW5",
+            "date_registered": "2025-01-01 01:00:00+00:00",
+            "latest_activity": "2025-01-01 01:00:00+00:00",
+        },
+    ]
