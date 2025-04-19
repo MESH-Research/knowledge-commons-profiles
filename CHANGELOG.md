@@ -1,3 +1,10 @@
+## 2.12.1 (2025-04-19)
+
+### Fix
+
+- **ror**: fixes ROR import bugs
+- **dashboard**: fix problematic static access paths
+
 ## 2.12.0 (2025-04-19)
 
 ### Feat
