@@ -1,3 +1,9 @@
+## 2.15.1 (2025-04-20)
+
+### Fix
+
+- **dashboard**: remove command from dockerfile
+
 ## 2.15.0 (2025-04-20)
 
 ### Feat
