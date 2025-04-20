@@ -37,44 +37,46 @@ class Command(BaseCommand):
     ):
         for user in users:
             if (
-                user.ror_record is not None
-                and user.canonical_institution_name is not None
+                user["ror_record"] is not None
+                and user["canonical_institution_name"] is not None
             ):
                 if (
-                    user.canonical_institution_name
-                    and user.canonical_institution_name != ""
+                    user["canonical_institution_name"]
+                    and user["canonical_institution_name"] != ""
                 ):
-                    institutions.append(user.canonical_institution_name)
+                    institutions.append(user["canonical_institution_name"])
 
                 # append the email domain if found
                 with contextlib.suppress(IndexError):
-                    if user.user_email:
-                        emails.append(user.user_email.split("@")[1])
+                    if user["user_email"]:
+                        emails.append(user["user_email"].split("@")[1])
 
                 current_score = lat_long.get(
-                    user.canonical_institution_name, [0, 0, 0]
+                    user["canonical_institution_name"], [0, 0, 0]
                 )[2]
-                lat_long[user.canonical_institution_name] = [
-                    user.ror_record.lat,
-                    user.ror_record.lon,
+
+                lat_long[user["canonical_institution_name"]] = [
+                    user["ror_record"].lat,
+                    user["ror_record"].lon,
                     current_score + 1,
                 ]
 
             with contextlib.suppress(ValueError, TypeError):
-                signups_by_year[str(user.user_registered.year)] += 1
+                if user["user_registered"] is not None:
+                    signups_by_year[str(user["user_registered"].year)] += 1
 
-            if user.latest_activity is not None:
-                if user.latest_activity > datetime.datetime.now(
+            if user["latest_activity"] is not None:
+                if user["latest_activity"] > datetime.datetime.now(
                     tz=datetime.UTC
                 ) - datetime.timedelta(weeks=166):
                     user_count_active += 1
 
-                if user.latest_activity > datetime.datetime.now(
+                if user["latest_activity"] > datetime.datetime.now(
                     tz=datetime.UTC
                 ) - datetime.timedelta(weeks=104):
                     user_count_active_two += 1
 
-                if user.latest_activity > datetime.datetime.now(
+                if user["latest_activity"] > datetime.datetime.now(
                     tz=datetime.UTC
                 ) - datetime.timedelta(weeks=52):
                     user_count_active_three += 1

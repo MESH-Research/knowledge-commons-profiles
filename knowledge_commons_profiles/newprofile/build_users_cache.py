@@ -7,13 +7,8 @@ import logging
 from typing import TYPE_CHECKING
 
 # pylint: disable=too-few-public-methods,no-member, too-many-ancestors
-from django.db.models import Case
-from django.db.models import IntegerField
 from django.db.models import OuterRef
 from django.db.models import Subquery
-from django.db.models import Value
-from django.db.models import When
-from django.db.models.functions import Coalesce
 
 from knowledge_commons_profiles.newprofile.models import RORLookup
 from knowledge_commons_profiles.newprofile.models import RORRecord
@@ -33,22 +28,12 @@ def get_user_data(
     output_stream: "SupportsWrite[str] | None" = None, limit: int = -1
 ) -> "QuerySet[WpUser]":
     """
-    Get user data as a CSV written to a stream or a list of dicts
-
-    :param output_stream: stream to write to
-    :param limit: number of users to get or -1 for all
-    :return:
+    :param output_stream: if given, write CSV rows here
+    :param limit: max number of users, or -1 for all
+    :return: list of dicts (if no output_stream), else None
     """
 
-    logger.info("Fetching WordPress users")
-
-    writer: csv.DictWriter | None = None
-
-    # first, make sure there is at least one RORLookup row
-    if RORLookup.objects.all().count() == 0:
-        RORLookup.objects.create(text="Test", ror=None)
-
-    # 1) Subquery for the institution:
+    # 1) build the annotated base queryset (only two correlated subqueries)
     institution_sq = (
         WpProfileData.objects.filter(
             user_id=OuterRef("pk"),
@@ -57,52 +42,55 @@ def get_user_data(
         .order_by()
         .values("value")[:1]
     )
-
-    # 2) Subquery for the latest activity date:
-    latest_activity_sq = (
+    latest_sq = (
         WpBpActivity.objects.filter(user_id=OuterRef("pk"))
         .order_by("-date_recorded")
         .values("date_recorded")[:1]
     )
 
-    if limit == -1:
-        users: QuerySet[WpUser] = WpUser.objects.annotate(
-            institution=Subquery(institution_sq),
-            latest_activity=Subquery(latest_activity_sq),
-        )
-    else:
-        users: QuerySet[WpUser] = WpUser.objects.annotate(
-            institution=Subquery(institution_sq),
-            latest_activity=Subquery(latest_activity_sq),
-        )[:limit]
+    qs = WpUser.objects.annotate(
+        institution=Subquery(institution_sq),
+        latest_activity=Subquery(latest_sq),
+    )
+    if limit != -1:
+        qs = qs[:limit]
 
-    ror_map = {row.text: row.ror for row in RORLookup.objects.all()}
-
-    cases = [
-        When(institution=inst, then=Value(ror.id) if ror else None)
-        for inst, ror in ror_map.items()
-    ]
-
-    users = users.annotate(
-        ror=Coalesce(
-            Case(*cases, default=Value(None), output_field=IntegerField()),
-            Value(None),
+    # 2) pull out exactly the columns we need into Python dicts
+    users = list(
+        qs.values(
+            "id",
+            "display_name",
+            "user_login",
+            "user_email",
+            "institution",
+            "latest_activity",
+            "user_registered",
         )
     )
 
-    ror_record_ids = {u.ror for u in users if u.ror is not None}
-    ror_record_map = RORRecord.objects.in_bulk(ror_record_ids)
+    # 3) bulk load all RORLookup rows in one shot (other DB)
+    distinct_insts = {u["institution"] for u in users if u["institution"]}
+    lookups = RORLookup.objects.filter(text__in=distinct_insts)
+    lookup_by_text = {rl.text: rl for rl in lookups}
+
+    # 4) bulk-load all RORRecord rows you'll need
+    ror_ids = {rl.ror.id for rl in lookup_by_text.values() if rl.ror}
+    records = RORRecord.objects.in_bulk(ror_ids)
 
     for u in users:
-        record = ror_record_map.get(u.ror, None)
+        inst = u["institution"]
+        rl = lookup_by_text.get(inst)
+        rec = records.get(rl.ror.id) if (rl and rl.ror) else None
 
-        u.canonical_institution_name = (
-            record.institution_name
-            if record and record.institution_name
-            else u.institution
+        u["ror"] = rl.ror if rl else None
+        u["ror_record"] = rec if rec else None
+        u["canonical_institution_name"] = (
+            rec.institution_name if rec and rec.institution_name else inst
         )
+        u["user_registered"] = u["user_registered"]
 
-        u.ror_record = record
+        if "user_registered" not in u:
+            u["user_registered"] = None
 
     logger.info("Got WordPress users (%s)", len(users))
 
