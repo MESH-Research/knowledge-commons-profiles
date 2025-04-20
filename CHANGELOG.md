@@ -1,3 +1,9 @@
+## 2.15.0 (2025-04-20)
+
+### Feat
+
+- **dashboard**: accelerate dashboard loading by pre-generating results
+
 ## 2.14.1 (2025-04-20)
 
 ### Fix
