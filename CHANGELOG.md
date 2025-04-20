@@ -1,3 +1,18 @@
+## 2.14.0 (2025-04-20)
+
+### Feat
+
+- **dashboard**: add institutions to map
+- **dashboard**: add maps to dashboard
+
+### Fix
+
+- **dashboard**: rewrite and optimize function to retrieve wordpress users and associated annotations
+
+### Refactor
+
+- **dashboard**: move local data generation to new function
+
 ## 2.13.1 (2025-04-19)
 
 ### Fix
