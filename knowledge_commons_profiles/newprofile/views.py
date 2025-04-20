@@ -2,6 +2,7 @@
 The main views for the profile app
 """
 
+import contextlib
 import datetime
 import json
 import logging
@@ -39,6 +40,7 @@ from knowledge_commons_profiles.newprofile.works import HiddenWorks
 logger = logging.getLogger(__name__)
 
 REDIS_TEST_TIMEOUT_VALUE = 25
+MAP_LIMIT = 200
 
 
 def profile_info(request, username):
@@ -750,7 +752,7 @@ def health(request):
 
 
 @basic_auth_required
-def stats_board(request):  # noqa: C901
+def stats_board(request):
     # cache.delete("user_data", version=VERSION)
     # cache.delete("user_count_active", version=VERSION)
     # cache.delete("user_count_active_two", version=VERSION)
@@ -775,16 +777,40 @@ def stats_board(request):  # noqa: C901
         "user_count_active_three", version=VERSION, default=0
     )
 
-    if (
-        not user_count_active
-        or not user_count_active_two
-        or not user_count_active_three
-    ):
-        user_count_active = 0
-        user_count_active_two = 0
-        user_count_active_three = 0
+    # build a dictionary of signups by year since 2014 and add keys from 2014
+    # to the current year with default value of zero
+    signups_by_year = {}
+    for year in range(2005, datetime.datetime.now(tz=datetime.UTC).year + 1):
+        signups_by_year[str(year)] = 0
 
-        for user in users:
+    lat_long = {}
+
+    for user in users:
+        if (
+            user.ror_record is not None
+            and user.canonical_institution_name is not None
+        ):
+            current_score = lat_long.get(
+                user.canonical_institution_name, [0, 0, 0]
+            )[2]
+            lat_long[user.canonical_institution_name] = [
+                user.ror_record.lat,
+                user.ror_record.lon,
+                current_score + 1,
+            ]
+
+        with contextlib.suppress(ValueError, TypeError):
+            signups_by_year[str(user.user_registered.year)] += 1
+
+        if (
+            not user_count_active
+            or not user_count_active_two
+            or not user_count_active_three
+        ):
+            user_count_active = 0
+            user_count_active_two = 0
+            user_count_active_three = 0
+
             if user.latest_activity is not None:
                 if user.latest_activity > datetime.datetime.now(
                     tz=datetime.UTC
@@ -801,40 +827,32 @@ def stats_board(request):  # noqa: C901
                 ) - datetime.timedelta(weeks=52):
                     user_count_active_three += 1
 
-        cache.set(
-            "user_count_active",
-            user_count_active,
-            version=VERSION,
-            timeout=CACHE_TIMEOUT,
-        )
+    cache.set(
+        "user_count_active",
+        user_count_active,
+        version=VERSION,
+        timeout=CACHE_TIMEOUT,
+    )
 
-        cache.set(
-            "user_count_active_two",
-            user_count_active_two,
-            version=VERSION,
-            timeout=CACHE_TIMEOUT,
-        )
+    cache.set(
+        "user_count_active_two",
+        user_count_active_two,
+        version=VERSION,
+        timeout=CACHE_TIMEOUT,
+    )
 
-        cache.set(
-            "user_count_active_three",
-            user_count_active_three,
-            version=VERSION,
-            timeout=CACHE_TIMEOUT,
-        )
+    cache.set(
+        "user_count_active_three",
+        user_count_active_three,
+        version=VERSION,
+        timeout=CACHE_TIMEOUT,
+    )
 
-    # build a dictionary of signups by year since 2014 and add keys from 2014
-    # to the current year with default value of zero
-    signups_by_year = {}
-
-    for year in range(2005, datetime.datetime.now(tz=datetime.UTC).year + 1):
-        signups_by_year[str(year)] = 0
-
-    # now get the date_registered count for each year
-    for user in users:
-        try:
-            signups_by_year[str(user.user_registered.year)] += 1
-        except (ValueError, TypeError):
-            continue
+    top200 = dict(
+        sorted(lat_long.items(), key=lambda item: item[1][2], reverse=True)[
+            :MAP_LIMIT
+        ]
+    )
 
     context = {
         "user_count": len(users),
@@ -843,95 +861,7 @@ def stats_board(request):  # noqa: C901
         "user_count_active_three": user_count_active_three,
         "years": str(list(signups_by_year.keys())),
         "data": str(list(signups_by_year.values())),
+        "latlong": top200,
     }
 
     return render(request, "newprofile/dashboard.html", context)
-
-
-def get_local_data():
-    """
-    Get local data for debugging
-    """
-    return [
-        {
-            "id": "12",
-            "display_name": "John Doe",
-            "user_login": "jdoe",
-            "user_email": "jdoe@uw.edu",
-            "institution": "UW",
-            "date_registered": "2016-01-01 01:00:00+00:00",
-            "latest_activity": "2022-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "12",
-            "display_name": "John Doe",
-            "user_login": "jdoe",
-            "user_email": "jdoe@uw.edu",
-            "institution": "UW",
-            "date_registered": "2014-01-01 01:00:00+00:00",
-            "latest_activity": "2022-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "12",
-            "display_name": "John Doe",
-            "user_login": "jdoe",
-            "user_email": "jdoe@uw.edu",
-            "institution": "UW2",
-            "date_registered": "2015-01-01 01:00:00+00:00",
-            "latest_activity": "2022-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "12",
-            "display_name": "John Doe",
-            "user_login": "jdoe",
-            "user_email": "jdoe@uw.edu",
-            "institution": "UW3",
-            "date_registered": "2014-01-01 01:00:00+00:00",
-            "latest_activity": "2022-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "12",
-            "display_name": "John Doe",
-            "user_login": "jdoe",
-            "user_email": "jdoe@uw.edu",
-            "institution": "UW",
-            "date_registered": "2014-01-01 01:00:00+00:00",
-            "latest_activity": "2022-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "1",
-            "display_name": "John Doe",
-            "user_login": "jdoe",
-            "user_email": "jdoe@uw.edu",
-            "institution": "UW4",
-            "date_registered": "2022-01-01 01:00:00+00:00",
-            "latest_activity": "2022-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "2",
-            "display_name": "Jane Doe",
-            "user_login": "jane",
-            "user_email": "jane@uw.edu",
-            "institution": "UW",
-            "date_registered": "2023-01-01 01:00:00+00:00",
-            "latest_activity": "2023-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "2",
-            "display_name": "Jane Doe",
-            "user_login": "jane",
-            "user_email": "jane@uw.edu",
-            "institution": "UW5",
-            "date_registered": "2025-02-01 01:00:00+00:00",
-            "latest_activity": "2024-01-01 01:00:00+00:00",
-        },
-        {
-            "id": "2",
-            "display_name": "Jane Doe",
-            "user_login": "jane",
-            "user_email": "jane@uw.edu",
-            "institution": "UW5",
-            "date_registered": "2025-01-01 01:00:00+00:00",
-            "latest_activity": "2025-01-01 01:00:00+00:00",
-        },
-    ]
