@@ -1159,3 +1159,26 @@ class RORLookup(models.Model):
             return ror_lookup.ror
 
         return wp_user_dict["institution"]
+
+
+class UserStats(models.Model):
+    # Integer fields
+    user_count = models.IntegerField()
+    user_count_active = models.IntegerField()
+
+    # Everything else as TextFields
+    user_count_active_two = models.TextField()
+    user_count_active_three = models.TextField()
+    years = models.TextField()
+    data = models.TextField()
+    latlong = models.TextField()
+    topinsts = models.TextField()
+    topinstscount = models.TextField()
+    emails = models.TextField()
+    emailcount = models.TextField()
+
+    def __str__(self):
+        return (
+            f"Stats(pk={self.pk}, users={self.user_count}, "
+            f"active={self.user_count_active})"
+        )

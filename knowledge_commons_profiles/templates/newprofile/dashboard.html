@@ -185,8 +185,8 @@
         <div class="col-lg-4 col-md-6 mt-4 mb-4">
           <div class="card ">
             <div class="card-body">
-              <h6 class="mb-0 "> Another Graph </h6>
-              <p class="text-sm "> (<span class="font-weight-bolder">+15%</span>) in OA material. </p>
+              <h6 class="mb-0 ">ROR-Normalized Institutions</h6>
+              <p class="text-sm ">Best guess at standardized institutuion name </p>
               <div class="pe-2">
                 <div class="chart">
                   <canvas id="chart-line" class="chart-canvas" height="170"></canvas>
@@ -194,8 +194,8 @@
               </div>
               <hr class="dark horizontal" />
               <div class="d-flex ">
-                <i class="material-symbols-rounded text-sm my-auto me-1">schedule</i>
-                <p class="mb-0 text-sm"> updated 4 min ago </p>
+
+                <p class="mb-0 text-sm">&nbsp;</p>
               </div>
             </div>
           </div>
@@ -203,8 +203,8 @@
         <div class="col-lg-4 mt-4 mb-3">
           <div class="card">
             <div class="card-body">
-              <h6 class="mb-0 ">Something Else</h6>
-              <p class="text-sm ">Not Sure Yet</p>
+              <h6 class="mb-0 ">Users by Email Domain</h6>
+              <p class="text-sm ">Users by email address</p>
               <div class="pe-2">
                 <div class="chart">
                   <canvas id="chart-line-tasks" class="chart-canvas" height="170"></canvas>
@@ -212,8 +212,7 @@
               </div>
               <hr class="dark horizontal" />
               <div class="d-flex ">
-                <i class="material-symbols-rounded text-sm my-auto me-1">schedule</i>
-                <p class="mb-0 text-sm">just updated</p>
+                <p class="mb-0 text-sm">&nbsp;</p>
               </div>
             </div>
           </div>
@@ -654,42 +653,30 @@
       },
     });
 
-
     var ctx2 = document.getElementById("chart-line").getContext("2d");
 
     new Chart(ctx2, {
-      type: "line",
+      type: "bar",
       data: {
-        labels: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+        labels: {{ topinsts|safe }},
         datasets: [{
-          label: "Sales",
-          tension: 0,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: "#43A047",
-          pointBorderColor: "transparent",
-          borderColor: "#43A047",
-          backgroundColor: "transparent",
-          fill: true,
-          data: [120, 230, 130, 440, 250, 360, 270, 180, 90, 300, 310, 220],
-          maxBarThickness: 6
-
-        }],
+          label: "Users",
+          tension: 0.4,
+          borderWidth: 0,
+          borderRadius: 4,
+          borderSkipped: false,
+          backgroundColor: "#43A047",
+          data: {{ topinstscount|safe }},
+          barThickness: 'flex'
+        }, ],
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
             display: false,
-          },
-          tooltip: {
-            callbacks: {
-              title: function(context) {
-                const fullMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                return fullMonths[context[0].dataIndex];
-              }
-            }
           }
         },
         interaction: {
@@ -703,18 +690,20 @@
               display: true,
               drawOnChartArea: true,
               drawTicks: false,
-              borderDash: [4, 4],
+              borderDash: [5, 5],
               color: '#e5e5e5'
             },
             ticks: {
-              display: true,
-              color: '#737373',
+              suggestedMin: 0,
+              suggestedMax: 500,
+              beginAtZero: true,
               padding: 10,
               font: {
-                size: 12,
+                size: 14,
                 lineHeight: 2
               },
-            }
+              color: "#737373"
+            },
           },
           x: {
             grid: {
@@ -729,7 +718,7 @@
               color: '#737373',
               padding: 10,
               font: {
-                size: 12,
+                size: 14,
                 lineHeight: 2
               },
             }
@@ -738,28 +727,25 @@
       },
     });
 
-    var ctx3 = document.getElementById("chart-line-tasks").getContext("2d");
+   var ctx3 = document.getElementById("chart-line-tasks").getContext("2d");
 
     new Chart(ctx3, {
-      type: "line",
+      type: "bar",
       data: {
-        labels: ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        labels: {{ emails|safe }},
         datasets: [{
-          label: "Tasks",
-          tension: 0,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: "#43A047",
-          pointBorderColor: "transparent",
-          borderColor: "#43A047",
-          backgroundColor: "transparent",
-          fill: true,
-          data: [50, 40, 300, 220, 500, 250, 400, 230, 500],
-          maxBarThickness: 6
-
-        }],
+          label: "Emails",
+          tension: 0.4,
+          borderWidth: 0,
+          borderRadius: 4,
+          borderSkipped: false,
+          backgroundColor: "#43A047",
+          data: {{ emailcount|safe }},
+          barThickness: 'flex'
+        }, ],
       },
       options: {
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -778,18 +764,20 @@
               display: true,
               drawOnChartArea: true,
               drawTicks: false,
-              borderDash: [4, 4],
+              borderDash: [5, 5],
               color: '#e5e5e5'
             },
             ticks: {
-              display: true,
+              suggestedMin: 0,
+              suggestedMax: 500,
+              beginAtZero: true,
               padding: 10,
-              color: '#737373',
               font: {
                 size: 14,
                 lineHeight: 2
               },
-            }
+              color: "#737373"
+            },
           },
           x: {
             grid: {
@@ -797,7 +785,7 @@
               display: false,
               drawOnChartArea: false,
               drawTicks: false,
-              borderDash: [4, 4]
+              borderDash: [5, 5]
             },
             ticks: {
               display: true,

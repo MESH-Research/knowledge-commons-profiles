@@ -41,5 +41,6 @@ class Command(BaseCommand):
 
         for user in track(users):
             RORLookup.lookup(text=user.institution)
+            return
 
         logger.info("ROR lookups installed.")

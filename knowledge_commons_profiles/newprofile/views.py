@@ -2,8 +2,6 @@
 The main views for the profile app
 """
 
-import contextlib
-import datetime
 import json
 import logging
 
@@ -29,18 +27,16 @@ from knowledge_commons_profiles.newprofile.custom_login import login_required
 from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
-from knowledge_commons_profiles.newprofile.models import WpUser
+from knowledge_commons_profiles.newprofile.models import UserStats
 from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
-from knowledge_commons_profiles.newprofile.works import CACHE_TIMEOUT
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 
 logger = logging.getLogger(__name__)
 
 REDIS_TEST_TIMEOUT_VALUE = 25
-MAP_LIMIT = 200
 
 
 def profile_info(request, username):
@@ -753,115 +749,21 @@ def health(request):
 
 @basic_auth_required
 def stats_board(request):
-    # cache.delete("user_data", version=VERSION)
-    # cache.delete("user_count_active", version=VERSION)
-    # cache.delete("user_count_active_two", version=VERSION)
-    # cache.delete("user_count_active_three", version=VERSION)
 
-    users = cache.get("user_data", version=VERSION)
-
-    if not users:
-        users = WpUser.get_user_data()
-
-        cache.set("user_data", users, version=VERSION, timeout=CACHE_TIMEOUT)
-
-    user_count_active = cache.get(
-        "user_count_active", version=VERSION, default=0
-    )
-
-    user_count_active_two = cache.get(
-        "user_count_active_two", version=VERSION, default=0
-    )
-
-    user_count_active_three = cache.get(
-        "user_count_active_three", version=VERSION, default=0
-    )
-
-    # build a dictionary of signups by year since 2014 and add keys from 2014
-    # to the current year with default value of zero
-    signups_by_year = {}
-    for year in range(2005, datetime.datetime.now(tz=datetime.UTC).year + 1):
-        signups_by_year[str(year)] = 0
-
-    lat_long = {}
-
-    for user in users:
-        if (
-            user.ror_record is not None
-            and user.canonical_institution_name is not None
-        ):
-            current_score = lat_long.get(
-                user.canonical_institution_name, [0, 0, 0]
-            )[2]
-            lat_long[user.canonical_institution_name] = [
-                user.ror_record.lat,
-                user.ror_record.lon,
-                current_score + 1,
-            ]
-
-        with contextlib.suppress(ValueError, TypeError):
-            signups_by_year[str(user.user_registered.year)] += 1
-
-        if (
-            not user_count_active
-            or not user_count_active_two
-            or not user_count_active_three
-        ):
-            user_count_active = 0
-            user_count_active_two = 0
-            user_count_active_three = 0
-
-            if user.latest_activity is not None:
-                if user.latest_activity > datetime.datetime.now(
-                    tz=datetime.UTC
-                ) - datetime.timedelta(weeks=166):
-                    user_count_active += 1
-
-                if user.latest_activity > datetime.datetime.now(
-                    tz=datetime.UTC
-                ) - datetime.timedelta(weeks=104):
-                    user_count_active_two += 1
-
-                if user.latest_activity > datetime.datetime.now(
-                    tz=datetime.UTC
-                ) - datetime.timedelta(weeks=52):
-                    user_count_active_three += 1
-
-    cache.set(
-        "user_count_active",
-        user_count_active,
-        version=VERSION,
-        timeout=CACHE_TIMEOUT,
-    )
-
-    cache.set(
-        "user_count_active_two",
-        user_count_active_two,
-        version=VERSION,
-        timeout=CACHE_TIMEOUT,
-    )
-
-    cache.set(
-        "user_count_active_three",
-        user_count_active_three,
-        version=VERSION,
-        timeout=CACHE_TIMEOUT,
-    )
-
-    top200 = dict(
-        sorted(lat_long.items(), key=lambda item: item[1][2], reverse=True)[
-            :MAP_LIMIT
-        ]
-    )
+    stats = UserStats.objects.all().first()
 
     context = {
-        "user_count": len(users),
-        "user_count_active": user_count_active,
-        "user_count_active_two": user_count_active_two,
-        "user_count_active_three": user_count_active_three,
-        "years": str(list(signups_by_year.keys())),
-        "data": str(list(signups_by_year.values())),
-        "latlong": top200,
+        "user_count": stats.user_count,
+        "user_count_active": stats.user_count_active,
+        "user_count_active_two": stats.user_count_active_two,
+        "user_count_active_three": stats.user_count_active_three,
+        "years": stats.years,
+        "data": stats.data,
+        "latlong": json.loads(stats.latlong),
+        "topinsts": stats.topinsts,
+        "topinstscount": stats.topinstscount,
+        "emails": stats.emails,
+        "emailcount": stats.emailcount,
     }
 
     return render(request, "newprofile/dashboard.html", context)
