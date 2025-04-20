@@ -3,7 +3,6 @@ A set of models for user profiles
 """
 
 import contextlib
-import csv
 import logging
 import re
 from typing import TYPE_CHECKING
@@ -13,13 +12,6 @@ from django.conf import settings
 
 # pylint: disable=too-few-public-methods,no-member, too-many-ancestors
 from django.db import models
-from django.db.models import Case
-from django.db.models import IntegerField
-from django.db.models import OuterRef
-from django.db.models import Subquery
-from django.db.models import Value
-from django.db.models import When
-from django.db.models.functions import Coalesce
 from django_bleach.models import BleachField
 from requests import Response
 
@@ -390,102 +382,13 @@ class WpUser(models.Model):
         output_stream: "SupportsWrite[str] | None" = None, limit: int = -1
     ) -> "QuerySet[WpUser]":
         """
-        Get user data as a CSV written to a stream or a list of dicts
-
-        :param output_stream: stream to write to
-        :param limit: number of users to get or -1 for all
-        :return:
+        Return an annotated list of all users
         """
-        writer: csv.DictWriter | None = None
-
-        # first, make sure there is at least one RORLookup row
-        if RORLookup.objects.all().count() == 0:
-            RORLookup.objects.create(text="Test", ror=None)
-
-        # 1) Subquery for the institution:
-        institution_sq = (
-            WpProfileData.objects.filter(
-                user_id=OuterRef("pk"),
-                field__name="Institutional or Other Affiliation",
-            )
-            .order_by()
-            .values("value")[:1]
+        from knowledge_commons_profiles.newprofile.build_users_cache import (
+            get_user_data,
         )
 
-        # 2) Subquery for the latest activity date:
-        latest_activity_sq = (
-            WpBpActivity.objects.filter(user_id=OuterRef("pk"))
-            .order_by("-date_recorded")
-            .values("date_recorded")[:1]
-        )
-
-        if limit == -1:
-            users: QuerySet[WpUser] = WpUser.objects.annotate(
-                institution=Subquery(institution_sq),
-                latest_activity=Subquery(latest_activity_sq),
-            )
-        else:
-            users: QuerySet[WpUser] = WpUser.objects.annotate(
-                institution=Subquery(institution_sq),
-                latest_activity=Subquery(latest_activity_sq),
-            )[:limit]
-
-        ror_map = {row.text: row.ror for row in RORLookup.objects.all()}
-
-        cases = [
-            When(institution=inst, then=Value(ror))
-            for inst, ror in ror_map.items()
-        ]
-
-        users = users.annotate(
-            ror=Coalesce(
-                Case(*cases, default=Value(None), output_field=IntegerField()),
-                Value(None),
-            )
-        )
-
-        logger.info("Got WordPress users (%s)", len(users))
-
-        fieldnames: list[str] = [
-            "id",
-            "display_name",
-            "user_login",
-            "user_email",
-            "institution",
-            "date_registered",
-            "latest_activity",
-        ]
-
-        if output_stream:
-            writer: csv.DictWriter = csv.DictWriter(
-                output_stream,
-                fieldnames=fieldnames,
-                quotechar='"',
-                quoting=csv.QUOTE_ALL,
-                lineterminator="\n",
-            )
-            writer.writeheader()
-
-            wp_user: WpUser
-
-            for wp_user in users:
-                output_object: dict = {
-                    "id": wp_user.id,
-                    "display_name": wp_user.display_name,
-                    "user_login": wp_user.user_login,
-                    "user_email": wp_user.user_email,
-                    "institution": wp_user.institution,
-                    "date_registered": wp_user.user_registered,
-                    "latest_activity": (
-                        wp_user.latest_activity
-                        if wp_user.latest_activity
-                        else None
-                    ),
-                }
-
-                writer.writerow(output_object)
-
-        return users
+        return get_user_data()
 
 
 class Profile(models.Model):
@@ -1143,7 +1046,7 @@ class RORLookup(models.Model):
         # see if we have an existing match
         # if not, consult the ROR API to find one
 
-        if text == "":
+        if text == "" or text is None:
             return None
 
         replaced_text = text.replace("U of", "University of")

@@ -225,7 +225,7 @@
             <div class="card-header pb-8">
               <div class="row">
                 <div class="col-lg-12 col-12">
-                  <h6>Participation Map</h6>
+                  <h6>Participation Map (Top 200)</h6>
                    <div id="map_stats"></div>
                 </div>
               </div>
@@ -833,6 +833,16 @@
       maxZoom: 19,
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
+
+    {% for inst, values in latlong.items %}
+      var circle = L.circle([{{ values.0 }}, {{ values.1 }}], {
+        color: 'red',
+        fillColor: '#f03',
+        fillOpacity: 0.5,
+        radius: {{ values.2 }}
+      }).addTo(map);
+      circle.bindPopup('{{ inst }}');
+    {% endfor %}
   </script>
 </body>
 

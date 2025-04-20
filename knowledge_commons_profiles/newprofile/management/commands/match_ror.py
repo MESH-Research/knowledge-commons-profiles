@@ -3,12 +3,16 @@ A management command that fetches and installs the latest ROR support
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from django.core.management.base import BaseCommand
 from rich.progress import track
 
 from knowledge_commons_profiles.newprofile.models import RORLookup
 from knowledge_commons_profiles.newprofile.models import WpUser
+
+if TYPE_CHECKING:
+    from django.db.models.query import QuerySet
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +37,9 @@ class Command(BaseCommand):
         if options["delete"]:
             RORLookup.objects.all().delete()
 
-        users: list[dict[str, str | WpUser]] = WpUser.get_user_data()
+        users: QuerySet[WpUser] | None = WpUser.get_user_data()
 
         for user in track(users):
-            RORLookup.lookup(text=user["institution"])
+            RORLookup.lookup(text=user.institution)
 
         logger.info("ROR lookups installed.")
