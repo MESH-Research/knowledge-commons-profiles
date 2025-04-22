@@ -388,7 +388,7 @@ class WpUser(models.Model):
             get_user_data,
         )
 
-        return get_user_data()
+        return get_user_data(output_stream=output_stream, limit=limit)
 
 
 class Profile(models.Model):

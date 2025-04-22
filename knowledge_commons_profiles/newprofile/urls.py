@@ -100,4 +100,6 @@ urlpatterns = [
         name="works_deposits_edit",
     ),
     path("stats/", views.stats_board, name="stats"),
+    path("stats/download/", views.stats_download, name="get_stats_csv"),
+    path("stats/table/", views.stats_table, name="stats_table"),
 ]
