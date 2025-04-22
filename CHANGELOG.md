@@ -1,3 +1,10 @@
+## 2.16.0 (2025-04-22)
+
+### Feat
+
+- **dashboard**: add table and csv download
+- **dashboard**: change password system and exclude useless emails
+
 ## 2.15.2 (2025-04-20)
 
 ### Fix
