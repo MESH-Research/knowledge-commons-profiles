@@ -1,3 +1,10 @@
+## 2.16.1 (2025-04-22)
+
+### Fix
+
+- **dashboard**: fix mobile table width on stats
+- **styles**: remove gemfile lock
+
 ## 2.16.0 (2025-04-22)
 
 ### Feat
