@@ -376,7 +376,9 @@ CHART_COLORS = [
     "#F0FAF5",
 ]
 
-BASICAUTH_USERS = {"martin": "test"}
+STATS_PASSWORD = env("STATS_PASSWORD", default="")
+
+BASICAUTH_USERS = {"stats": STATS_PASSWORD}
 BASICAUTH_REALM = "Knowledge Commons User Stats"
 
 ROR_TIMEOUT = 10
@@ -384,4 +386,4 @@ ZENODO_TIMEOUT = 10
 
 ROR_THRESHOLD = 0.6
 
-STATS_PASSWORD = env("STATS_PASSWORD", default="")
+EXCLUDE_STATS_EMAILS = ["gmail.com", "yahoo.com", "hotmail.com"]

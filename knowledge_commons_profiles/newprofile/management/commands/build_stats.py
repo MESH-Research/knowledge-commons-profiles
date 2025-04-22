@@ -8,6 +8,7 @@ import datetime
 import json
 from collections import Counter
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from knowledge_commons_profiles.newprofile.models import UserStats
@@ -48,7 +49,11 @@ class Command(BaseCommand):
 
                 # append the email domain if found
                 with contextlib.suppress(IndexError):
-                    if user["user_email"]:
+                    if (
+                        user["user_email"]
+                        and user["user_email"]
+                        not in settings.EXCLUDE_STATS_EMAILS
+                    ):
                         emails.append(user["user_email"].split("@")[1])
 
                 current_score = lat_long.get(
