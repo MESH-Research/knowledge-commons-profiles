@@ -1,3 +1,9 @@
+## 2.15.2 (2025-04-20)
+
+### Fix
+
+- **dashboard**: fix resource hog query
+
 ## 2.15.1 (2025-04-20)
 
 ### Fix
