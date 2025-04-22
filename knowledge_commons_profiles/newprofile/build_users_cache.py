@@ -52,6 +52,7 @@ def get_user_data(
         institution=Subquery(institution_sq),
         latest_activity=Subquery(latest_sq),
     )
+
     if limit != -1:
         qs = qs[:limit]
 
@@ -87,7 +88,6 @@ def get_user_data(
         u["canonical_institution_name"] = (
             rec.institution_name if rec and rec.institution_name else inst
         )
-        u["user_registered"] = u["user_registered"]
 
         if "user_registered" not in u:
             u["user_registered"] = None
@@ -102,6 +102,8 @@ def get_user_data(
         "institution",
         "date_registered",
         "latest_activity",
+        "ror_institution",
+        "ror_id",
     ]
 
     if output_stream:
@@ -114,19 +116,29 @@ def get_user_data(
         )
         writer.writeheader()
 
-        wp_user: WpUser
+        wp_user: dict
 
         for wp_user in users:
             output_object: dict = {
-                "id": wp_user.id,
-                "display_name": wp_user.display_name,
-                "user_login": wp_user.user_login,
-                "user_email": wp_user.user_email,
-                "institution": wp_user.institution,
-                "date_registered": wp_user.user_registered,
+                "id": wp_user["id"],
+                "display_name": wp_user["display_name"],
+                "user_login": wp_user["user_login"],
+                "user_email": wp_user["user_email"],
+                "institution": wp_user["institution"],
+                "date_registered": wp_user["user_registered"],
                 "latest_activity": (
-                    wp_user.latest_activity
-                    if wp_user.latest_activity
+                    wp_user["latest_activity"]
+                    if wp_user["latest_activity"]
+                    else None
+                ),
+                "ror_institution": (
+                    wp_user["ror_record"].institution_name
+                    if wp_user["ror_record"]
+                    else None
+                ),
+                "ror_id": (
+                    wp_user["ror_record"].ror_id
+                    if wp_user["ror_record"]
                     else None
                 ),
             }

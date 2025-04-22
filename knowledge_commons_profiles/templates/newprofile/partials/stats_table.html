@@ -1,0 +1,34 @@
+<div class="table-responsive" id="user_table">
+  <table class="table align-items-center mb-0" id="users_full">
+    <thead>
+      <tr>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">User ID</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Display Name</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Username</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Email</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Institution</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ROR Institution</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date Registered</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Latest Activity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.display_name }}</td>
+          <td>{{ user.login_name }}</td>
+          <td>{{ user.user_email }}</td>
+          <td>{{ user.institution }}</td>
+          <td>{{ user.ror_record.institution_name }}</td>
+          <td>{{ user.user_registered }}</td>
+          <td>{{ user.latest_activity }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+    let table = new DataTable('#users_full');
+  </script>
+</div>

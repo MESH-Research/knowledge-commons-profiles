@@ -13,6 +13,7 @@ from django.contrib.auth import logout
 from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
+from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -28,6 +29,7 @@ from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import UserStats
+from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
@@ -749,8 +751,13 @@ def health(request):
 
 @basic_auth_required
 def stats_board(request):
+    """
+    The stats dashboard
+    """
 
     stats = UserStats.objects.all().first()
+
+    users = WpUser.get_user_data(limit=10)
 
     context = {
         "user_count": stats.user_count,
@@ -764,6 +771,34 @@ def stats_board(request):
         "topinstscount": stats.topinstscount,
         "emails": stats.emails,
         "emailcount": stats.emailcount,
+        "users": users,
     }
 
     return render(request, "newprofile/dashboard.html", context)
+
+
+@basic_auth_required
+def stats_download(request):
+    """
+    The stats CSV download
+    """
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="users.csv"'
+
+    WpUser.get_user_data(limit=-1, output_stream=response)
+
+    return response
+
+
+@basic_auth_required
+def stats_table(request):
+    """
+    The stats table
+    """
+
+    users = WpUser.get_user_data(limit=-1)
+
+    return render(
+        request, "newprofile/partials/stats_table.html", {"users": users}
+    )
