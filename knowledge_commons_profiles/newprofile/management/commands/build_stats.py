@@ -49,11 +49,13 @@ class Command(BaseCommand):
 
                 # append the email domain if found
                 with contextlib.suppress(IndexError):
+                  
                     if user["user_email"]:
                         domain = user["user_email"].split("@")[1]
 
                         if domain not in settings.EXCLUDE_STATS_EMAILS:
                             emails.append(domain)
+
 
                 current_score = lat_long.get(
                     user["canonical_institution_name"], [0, 0, 0]
