@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
                 # append the email domain if found
                 with contextlib.suppress(IndexError):
-                  
+
                     if user["user_email"]:
                         domain = user["user_email"].split("@")[1]
 
