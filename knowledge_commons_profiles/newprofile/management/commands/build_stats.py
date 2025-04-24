@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
     help = "Extract data from a CSV of all users"
 
-    def process_users(  # noqa: PLR0913
+    def process_users(  # noqa: PLR0913, C901
         self,
         emails,
         institutions,
@@ -49,12 +49,11 @@ class Command(BaseCommand):
 
                 # append the email domain if found
                 with contextlib.suppress(IndexError):
-                    if (
-                        user["user_email"]
-                        and user["user_email"]
-                        not in settings.EXCLUDE_STATS_EMAILS
-                    ):
-                        emails.append(user["user_email"].split("@")[1])
+                    if user["user_email"]:
+                        domain = user["user_email"].split("@")[1]
+
+                        if domain not in settings.EXCLUDE_STATS_EMAILS:
+                            emails.append(domain)
 
                 current_score = lat_long.get(
                     user["canonical_institution_name"], [0, 0, 0]
