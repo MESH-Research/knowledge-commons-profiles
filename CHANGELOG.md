@@ -1,3 +1,9 @@
+## 2.16.2 (2025-04-24)
+
+### Fix
+
+- **dashboard**: fix syntax in build_stats
+
 ## 2.16.1 (2025-04-22)
 
 ### Fix
