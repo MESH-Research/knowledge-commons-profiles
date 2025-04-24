@@ -1,3 +1,23 @@
+## 2.16.2 (2025-04-24)
+
+### Fix
+
+- **dashboard**: fix syntax in build_stats
+
+## 2.16.1 (2025-04-22)
+
+### Fix
+
+- **dashboard**: fix mobile table width on stats
+- **styles**: remove gemfile lock
+
+## 2.16.0 (2025-04-22)
+
+### Feat
+
+- **dashboard**: add table and csv download
+- **dashboard**: change password system and exclude useless emails
+
 ## 2.15.2 (2025-04-20)
 
 ### Fix
