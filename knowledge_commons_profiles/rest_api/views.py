@@ -22,6 +22,7 @@ class ProfileView(APIView):
 
     authentication_classes = [StaticBearerAuthentication]
     permission_classes = [AllowAny]  # allow both token & anon
+    api = None
 
     def get(self, request, *args, **kw):
         """
@@ -44,8 +45,10 @@ class ProfileView(APIView):
                 headers={"Is-Authorized": has_full_access},
             )
 
-        api = API(request, user, use_wordpress=True)
-        profile_info_obj = api.get_profile_info()
+        if not self.api:
+            self.api = API(request, user, use_wordpress=True)
+
+        profile_info_obj = self.api.get_profile_info()
 
         # format the name into components
         name_object = HumanName(profile_info_obj["name"])
@@ -65,7 +68,7 @@ class ProfileView(APIView):
                 "institutional_or_other_affiliation"
             ],
             "orcid": profile_info_obj["orcid"],
-            "groups": api.get_groups(status_choices=group_status),
+            "groups": self.api.get_groups(status_choices=group_status),
         }
 
         return Response(

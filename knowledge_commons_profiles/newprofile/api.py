@@ -524,7 +524,7 @@ class API:
                 WpBpGroupMember.objects.filter(
                     user_id=self.wp_user.id,
                     is_confirmed=True,
-                    group__status=status_keys,
+                    group__status__in=status_keys,
                 )
                 .select_related("group")
                 .annotate(
