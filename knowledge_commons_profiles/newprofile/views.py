@@ -20,9 +20,6 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.api import API
@@ -187,52 +184,6 @@ def my_profile(request):
     """
     # we call with create because this user is logged in and needs a profile
     return profile(request, user=request.user.username)
-
-
-class ProfileView(APIView):
-    """
-    A REST view for retrieving and updating user profile information
-    """
-
-    def get(self, request, *args, **kw):
-        """
-        Return a JSON response containing the user's profile information,
-        academic interests, education, a short string about the user,
-        their latest blog posts, their latest Mastodon posts (if they have
-        a Mastodon account), and a string representing their works.
-
-        The response is returned with a status of 200 OK.
-
-        :param request: The request object.
-        :type request: django.http.HttpRequest
-        :param args: Additional positional arguments.
-        :type args: list
-        :param kw: Additional keyword arguments.
-        :type kw: dict
-        :return: A JSON response containing the user's profile information.
-        :rtype: django.http.JsonResponse
-        """
-
-        user = kw.get("user_name", "")
-
-        api = API(request, user, use_wordpress=True)
-
-        profile_info_obj = api.get_profile_info()
-
-        context = {
-            "profile_info": profile_info_obj,
-            "education": api.get_education(),
-            "about_user": api.get_about_user(),
-            "mastodon_posts": (
-                api.mastodon_posts.latest_posts
-                if profile_info_obj["mastodon"]
-                else []
-            ),
-            # "groups": api.get_groups(),
-            "memberships": api.get_memberships(),
-        }
-
-        return Response(context, status=status.HTTP_200_OK)
 
 
 @login_required

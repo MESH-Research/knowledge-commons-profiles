@@ -40,3 +40,4 @@ altair==5.5.0
 django-basicauth==0.5.3
 Authlib==1.5.2
 requests==2.32.3
+nameparser==1.1.3

@@ -20,14 +20,8 @@ from django.urls import include
 from django.urls import path
 
 from knowledge_commons_profiles.newprofile import views
-from knowledge_commons_profiles.newprofile.views import ProfileView
 
 urlpatterns = [
-    path(
-        r"api/v1.0/member/<str:user_name>/",
-        ProfileView.as_view(),
-        name="profile_rest_view",
-    ),
     path("my-profile/", views.my_profile, name="my_profile"),
     path("edit-profile/", views.edit_profile, name="edit_profile"),
     path("member/<str:user>/", views.profile, name="profile"),

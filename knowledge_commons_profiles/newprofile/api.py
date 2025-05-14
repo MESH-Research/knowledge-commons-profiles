@@ -14,6 +14,11 @@ import phpserialize
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connections
+from django.db.models import Case
+from django.db.models import CharField
+from django.db.models import F
+from django.db.models import Value
+from django.db.models import When
 from django.http import Http404
 
 from knowledge_commons_profiles.__version__ import VERSION
@@ -22,6 +27,7 @@ from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
 from knowledge_commons_profiles.newprofile.models import WpBpActivity
 from knowledge_commons_profiles.newprofile.models import WpBpFollow
+from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpGroupMember
 from knowledge_commons_profiles.newprofile.models import WpBpNotification
 from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
@@ -496,20 +502,50 @@ class API:
         """
         return self.profile.education
 
-    def get_groups(self):
+    def get_groups(self, status_choices=None):
         """
         Return a list of groups that the user is a member of
         :return:
         """
-        return (
-            WpBpGroupMember.objects.filter(
-                user_id=self.wp_user.id,
-                is_confirmed=True,
-                group__status="public",
+        # default to [("public","Public")]
+        if status_choices is None:
+            status_choices = WpBpGroup.STATUS_CHOICES[:1]
+
+        # status_choices is either "public" or all the others
+        status_keys = [key for key, label in status_choices]
+
+        if len(status_keys) > 1:
+            logging.info(
+                "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
             )
-            .prefetch_related("group")
-            .order_by("group__name")
-        )
+
+        try:
+            return (
+                WpBpGroupMember.objects.filter(
+                    user_id=self.wp_user.id,
+                    is_confirmed=True,
+                    group__status=status_keys,
+                )
+                .select_related("group")
+                .annotate(
+                    # rename group__name → group_name
+                    group_name=F("group__name"),
+                    # compute “role” based on is_admin / is_mod
+                    role=Case(
+                        When(is_admin=True, then=Value("administrator")),
+                        When(is_mod=True, then=Value("moderator")),
+                        default=Value("member"),
+                        output_field=CharField(),
+                    ),
+                )
+                .order_by("group_name")
+                .values("id", "group_name", "role")
+            )
+        except django.db.utils.OperationalError:
+            logging.warning(
+                "Unable to connect to MySQL, fast-failing group data."
+            )
+            return []
 
     def get_cover_image(self):
         """

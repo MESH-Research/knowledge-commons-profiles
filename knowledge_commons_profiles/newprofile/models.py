@@ -557,6 +557,9 @@ class WpBpGroup(models.Model):
     A model for a WordPress group
     """
 
+    # NOTE: the ordering here is important. Public must be first.
+    # See get_groups in api.py to see why.
+    # In fact, don't change this. It will break things.
     STATUS_CHOICES = (
         ("public", "Public"),
         ("private", "Private"),

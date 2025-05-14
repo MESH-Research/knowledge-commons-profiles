@@ -92,6 +92,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
+    "knowledge_commons_profiles.rest_api.apps.RestAPIConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -394,3 +395,5 @@ CILOGON_CLIENT_SECRET = env("CILOGON_CLIENT_SECRET")
 
 
 OIDC_CALLBACK = "cilogon/callback/"
+
+STATIC_API_BEARER = env("STATIC_API_BEARER")

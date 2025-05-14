@@ -26,6 +26,7 @@ urlpatterns = [
         name="healthcheck",
     ),
     path("", include("knowledge_commons_profiles.newprofile.urls")),
+    path("", include("knowledge_commons_profiles.rest_api.urls")),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
