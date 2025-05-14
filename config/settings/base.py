@@ -87,6 +87,7 @@ THIRD_PARTY_APPS = [
     "django_saml2_auth",
     "tinymce",
     "django_select2",
+    "authlib.integrations.django_client",
 ]
 
 LOCAL_APPS = [
@@ -145,7 +146,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "knowledge_commons_profiles.newprofile.middleware.WordPressAuthMiddleware",
+    "knowledge_commons_profiles.newprofile.middleware.AutoRefreshTokenMiddleware",
 ]
 
 # STATIC
@@ -387,3 +388,9 @@ ZENODO_TIMEOUT = 10
 ROR_THRESHOLD = 0.6
 
 EXCLUDE_STATS_EMAILS = ["gmail.com", "yahoo.com", "hotmail.com"]
+
+CILOGON_CLIENT_ID = env("CILOGON_CLIENT_ID")
+CILOGON_CLIENT_SECRET = env("CILOGON_CLIENT_SECRET")
+
+
+OIDC_CALLBACK = "cilogon/callback/"

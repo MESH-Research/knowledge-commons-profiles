@@ -15,12 +15,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
 from django.urls import include
 from django.urls import path
 
 from knowledge_commons_profiles.newprofile import views
 from knowledge_commons_profiles.newprofile.views import ProfileView
-from knowledge_commons_profiles.newprofile.views import logout_view
 
 urlpatterns = [
     path(
@@ -32,7 +32,6 @@ urlpatterns = [
     path("edit-profile/", views.edit_profile, name="edit_profile"),
     path("member/<str:user>/", views.profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
-    path("logout/", logout_view, name="logout_to_remove"),
     path("tinymce/", include("tinymce.urls")),
     path(
         "htmx/mastodon-feed/<str:username>/",
@@ -102,4 +101,8 @@ urlpatterns = [
     path("stats/", views.stats_board, name="stats"),
     path("stats/download/", views.stats_download, name="get_stats_csv"),
     path("stats/table/", views.stats_table, name="stats_table"),
+    # oAuth views
+    path("login/", views.login, name="login"),
+    path("logout/", views.logout, name="logout"),
+    path(settings.OIDC_CALLBACK, views.callback, name="oidc_callback"),
 ]
