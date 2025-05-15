@@ -66,7 +66,7 @@ class ProfileView(APIView):
 
         context = {
             "username": profile_info_obj["username"],
-            "email": profile_info_obj["email"],
+            "email": profile_info_obj["email"] if has_full_access else "",
             "name": name_object.full_name,
             "first_name": name_object.first + " " + name_object.middle,
             "last_name": name_object.last,
