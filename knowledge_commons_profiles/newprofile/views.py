@@ -7,8 +7,6 @@ import logging
 
 import django
 import redis
-import sentry_sdk
-from authlib.integrations.base_client import OAuthError
 from basicauth.decorators import basic_auth_required
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -27,7 +25,6 @@ from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import UserStats
 from knowledge_commons_profiles.newprofile.models import WpUser
-from knowledge_commons_profiles.newprofile.oauth import oauth
 from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
@@ -740,69 +737,3 @@ def stats_table(request):
     return render(
         request, "newprofile/partials/stats_table.html", {"users": users}
     )
-
-
-def login(request):
-    """
-    The login redirect for OAuth
-    :param request: the request
-    """
-    from django.conf import settings
-
-    redirect_uri = request.build_absolute_uri("/" + settings.OIDC_CALLBACK)
-    return oauth.cilogon.authorize_redirect(request, redirect_uri)
-
-
-def callback(request):
-    """
-    The callback view for OAuth
-    :param request: request
-    """
-    try:
-        token = oauth.cilogon.authorize_access_token(request)
-    except OAuthError as e:
-        # send to Sentry if there are errors that are not just the user
-        # not being found etc.
-        if "Client has not been approved. Unapproved client" in e.description:
-            sentry_sdk.capture_exception(e)
-
-        return render(
-            request=request,
-            template_name="newprofile/auth_error.html",
-            context={"exception": e},
-        )
-
-    userinfo = oauth.cilogon.parse_id_token(request, token)
-    request.session["oidc_token"] = token
-    request.session["oidc_userinfo"] = userinfo
-
-    # our linking logic:
-    logger.info("Linking user %s", userinfo)
-
-    return redirect("home")
-
-
-def logout(request):
-    # 1. Pull off the ID Token so we can hint it to CILogon
-    id_token = request.session.get("oidc_token", {}).get("id_token")
-
-    # 2. Find the OP's end_session_endpoint in the metadata
-    client = oauth.create_client("cilogon")
-    end_session = client.server_metadata.get("end_session_endpoint")
-
-    # 3. Kill the local Django session immediately
-    # TODO: kill session
-
-    # you might also want to: request.session.flush()
-
-    # 4. If the OP supports RP-Initiated Logout, send them there;
-    #    otherwise just go back to your site's post-logout page.
-    if end_session and id_token:
-        redirect_url = settings.LOGOUT_REDIRECT_URL  # e.g. "/"
-        return redirect(
-            f"{end_session}"
-            f"?id_token_hint={id_token}"
-            f"&post_logout_redirect_uri={redirect_url}"
-        )
-
-    return redirect(settings.LOGOUT_REDIRECT_URL)

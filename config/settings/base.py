@@ -91,6 +91,7 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    "knowledge_commons_profiles.cilogon.apps.CILogonConfig",
     "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
     "knowledge_commons_profiles.rest_api.apps.RestAPIConfig",
 ]
@@ -147,7 +148,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "knowledge_commons_profiles.newprofile.middleware.AutoRefreshTokenMiddleware",
+    "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
 ]
 
 # STATIC

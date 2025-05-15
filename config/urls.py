@@ -25,6 +25,7 @@ urlpatterns = [
         views.health,
         name="healthcheck",
     ),
+    path("", include("knowledge_commons_profiles.cilogon.urls")),
     path("", include("knowledge_commons_profiles.newprofile.urls")),
     path("", include("knowledge_commons_profiles.rest_api.urls")),
     # Media files

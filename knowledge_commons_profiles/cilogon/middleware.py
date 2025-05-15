@@ -27,7 +27,7 @@ from requests.exceptions import (
     Timeout,  # when your timeout parameter is exceeded
 )
 
-from knowledge_commons_profiles.newprofile.oauth import oauth
+from knowledge_commons_profiles.cilogon.oauth import oauth
 
 logger = logging.getLogger(__name__)
 

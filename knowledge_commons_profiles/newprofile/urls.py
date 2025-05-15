@@ -15,7 +15,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.conf import settings
 from django.urls import include
 from django.urls import path
 
@@ -96,7 +95,4 @@ urlpatterns = [
     path("stats/download/", views.stats_download, name="get_stats_csv"),
     path("stats/table/", views.stats_table, name="stats_table"),
     # oAuth views
-    path("login/", views.login, name="login"),
-    path("logout/", views.logout, name="logout"),
-    path(settings.OIDC_CALLBACK, views.callback, name="oidc_callback"),
 ]
