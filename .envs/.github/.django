@@ -14,3 +14,6 @@ WORDPRESS_DATABASE_URL=mysql://todo:todo@mysql:3306/database_name
 DATABASE_URL="postgres://bQKTlJuHOdWNSyQjwVpMGQQjydnqMSEE:PbHi5FVc8hhpe8uY5mMEu496UL7V5UuEpXdlVeavUGyofwMXvqXwargpKAuresI7@postgres:5432/knowledge_commons_profiles"
 DJANGO_SETTINGS_MODULE=config.settings.local
 STATS_PASSWORD=github_stats
+CILOGON_CLIENT_ID=cilogon:/client_id/1234
+CILOGON_CLIENT_SECRET=client_secret
+STATIC_API_BEARER=static_bearer

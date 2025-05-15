@@ -1,16 +1,21 @@
 import asyncio
 import hashlib
 from operator import itemgetter
+from types import SimpleNamespace
 from unittest import mock
+from unittest.mock import MagicMock
+from unittest.mock import patch
 from urllib.parse import urlencode
 
 import django.test
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import OperationalError
 from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
 from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
     ProfileFactory,
 )
@@ -1361,86 +1366,96 @@ class GetGroupsTests(django.test.TestCase):
     """Tests for the get_groups method."""
 
     def setUp(self):
-        """Set up test data and mocks."""
+        # Fake user & request
+        self.wp_user = SimpleNamespace(id=1)
+        self.request = SimpleNamespace(META={"REMOTE_ADDR": "127.0.0.1"})
 
-        self.model_instance, self.user = set_up_api_instance()
+        # Service under test
+        self.service, self.user = set_up_api_instance()
+        self.service.wp_user = self.wp_user
+        self.service.request = self.request
 
-        # Create a mock for wp_user with an ID
-        self.model_instance.wp_user = mock.MagicMock()
-        self.model_instance.wp_user.id = 42
-
-        # Mock WpBpGroupMember.objects.filter
-        self.filter_patcher = mock.patch(
-            "knowledge_commons_profiles.newprofile.api."
-            "WpBpGroupMember.objects.filter"
-        )
-        self.mock_filter = self.filter_patcher.start()
-
-        # Set up mock chain for the QuerySet methods
-        self.mock_queryset = mock.MagicMock()
-        self.mock_filter.return_value = self.mock_queryset
-
-        # Mock for prefetch_related
-        self.mock_prefetch = mock.MagicMock()
-        self.mock_queryset.prefetch_related.return_value = self.mock_prefetch
-
-        # Mock for order_by
-        self.mock_order_by = mock.MagicMock()
-        self.mock_prefetch.order_by.return_value = self.mock_order_by
-
-        # Sample groups that will be returned by the query
-        self.sample_groups = [
-            mock.MagicMock(name="Group A"),
-            mock.MagicMock(name="Group B"),
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_default_public_only(self, mock_manager):
+        # Prepare a mock queryset chain
+        mock_qs = MagicMock()
+        mock_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = mock_qs
+        mock_qs.values.return_value = [
+            {"id": 1, "group_name": "G1", "role": "member"}
         ]
 
-    def tearDown(self):
-        """Clean up after the tests."""
-        self.filter_patcher.stop()
+        result = self.service.get_groups()
 
-    def test_get_groups_standard_case(self):
-        """Test that get_groups returns the properly filtered and
-        ordered groups."""
-        # Set up the mock to return our sample groups
-        self.mock_order_by.__iter__.return_value = self.sample_groups
-
-        # Call the method
-        self.model_instance.get_groups()
-
-        # Assert that filter was called with the correct parameters
-        self.mock_filter.assert_called_once_with(
-            user_id=42,  # The ID of wp_user
-            is_confirmed=True,
-            group__status__in=["public"],
+        # Should filter only on public
+        mock_manager.filter.assert_called_once_with(
+            user_id=1, is_confirmed=True, group__status__in=["public"]
+        )
+        mock_qs.select_related.assert_called_once_with("group")
+        mock_qs.annotate.assert_called_once()
+        mock_qs.order_by.assert_called_once_with("group_name")
+        mock_qs.values.assert_called_once_with("id", "group_name", "role")
+        self.assertEqual(
+            result, [{"id": 1, "group_name": "G1", "role": "member"}]
         )
 
-    def test_get_groups_empty_result(self):
-        """Test that get_groups handles empty results correctly."""
-        # Set up the mock to return an empty list
-        self.mock_order_by.__iter__.return_value = []
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_private_hidden_option(self, mock_manager):
+        choices = WpBpGroup.STATUS_CHOICES[1:]  # private & hidden
 
-        # Call the method
-        result = self.model_instance.get_groups()
+        mock_qs = MagicMock()
+        mock_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = mock_qs
+        mock_qs.values.return_value = [
+            {"id": 2, "group_name": "G2", "role": "administrator"},
+            {"id": 3, "group_name": "G3", "role": "moderator"},
+        ]
 
-        # Assert that the method chain was called correctly
-        self.mock_filter.assert_called_once()
-        self.mock_queryset.select_related.assert_called_once()
+        with self.assertLogs(level="INFO") as cm:
+            result = self.service.get_groups(status_choices=choices)
 
-        # Assert the result is an empty list
-        self.assertEqual(list(result), [])
+        # Should log privileged access
+        self.assertTrue(
+            any(
+                "Privileged API call from 127.0.0.1" in msg
+                for msg in cm.output
+            )
+        )
 
-    def test_get_groups_none_wp_user(self):
-        """Test that get_groups raises AttributeError when wp_user is
-        None."""
-        # Set wp_user to None
-        self.model_instance.wp_user = None
+        # Should filter on private+hidden
+        mock_manager.filter.assert_called_once_with(
+            user_id=1,
+            is_confirmed=True,
+            group__status__in=["private", "hidden"],
+        )
+        self.assertEqual(len(result), 2)
+        self.assertCountEqual([r["group_name"] for r in result], ["G2", "G3"])
 
-        # Call the method and expect AttributeError
-        with self.assertRaises(AttributeError):
-            self.model_instance.get_groups()
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_operational_error(self, mock_manager):
+        # Make filter() raise OperationalError
+        mock_manager.filter.side_effect = OperationalError
 
-        # Assert that filter was not called
-        self.mock_filter.assert_not_called()
+        with self.assertLogs(level="WARNING") as cm:
+            result = self.service.get_groups()
+
+        self.assertEqual(result, [])
+        self.assertTrue(
+            any(
+                "Unable to connect to MySQL, fast-failing group data." in msg
+                for msg in cm.output
+            )
+        )
 
 
 class GetCoverImageTests(django.test.TestCase):
