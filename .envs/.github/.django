@@ -17,3 +17,5 @@ STATS_PASSWORD=github_stats
 CILOGON_CLIENT_ID=cilogon:/client_id/1234
 CILOGON_CLIENT_SECRET=client_secret
 STATIC_API_BEARER=static_bearer
+WP_MEDIA_URL=https://hcommons.org/app/uploads
+WP_MEDIA_PATH=/home/martin/sixteenTB/uploads/

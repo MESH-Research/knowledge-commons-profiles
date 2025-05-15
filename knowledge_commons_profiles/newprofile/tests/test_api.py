@@ -1385,9 +1385,7 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.select_related.return_value = mock_qs
         mock_qs.annotate.return_value = mock_qs
         mock_qs.order_by.return_value = mock_qs
-        mock_qs.values.return_value = [
-            {"id": 1, "group_name": "G1", "role": "member"}
-        ]
+        mock_qs.values_list.return_value = [[1, "G1", "member"]]
 
         result = self.service.get_groups()
 
@@ -1398,7 +1396,9 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.select_related.assert_called_once_with("group")
         mock_qs.annotate.assert_called_once()
         mock_qs.order_by.assert_called_once_with("group_name")
-        mock_qs.values.assert_called_once_with("id", "group_name", "role")
+        mock_qs.values_list.assert_called_once_with(
+            "gid", "group_name", "role"
+        )
         self.assertEqual(
             result, [{"id": 1, "group_name": "G1", "role": "member"}]
         )
@@ -1414,9 +1414,9 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.select_related.return_value = mock_qs
         mock_qs.annotate.return_value = mock_qs
         mock_qs.order_by.return_value = mock_qs
-        mock_qs.values.return_value = [
-            {"id": 2, "group_name": "G2", "role": "administrator"},
-            {"id": 3, "group_name": "G3", "role": "moderator"},
+        mock_qs.values_list.return_value = [
+            [2, "G2", "administrator"],
+            [3, "G3", "moderator"],
         ]
 
         with self.assertLogs(level="INFO") as cm:

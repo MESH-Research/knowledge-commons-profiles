@@ -7,10 +7,12 @@ import logging
 import re
 from functools import cached_property
 from operator import itemgetter
+from pathlib import Path
 from urllib.parse import urlencode
 
 import django
 import phpserialize
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connections
@@ -503,6 +505,30 @@ class API:
         """
         return self.profile.education
 
+    def get_group_avatar_url(self, group_id: int) -> str:
+        """
+        Replicates BP's groups_avatar_upload_dir() logic and
+        returns the full URL to the first “-bpfull” avatar image,
+        or an empty string if none is found.
+        """
+        # 1) Your WP uploads root on disk, e.g.
+        # '/var/www/html/wp-content/uploads'
+        uploads_root = settings.WP_MEDIA_ROOT
+        # 2) The corresponding URL prefix,
+        # e.g. 'https://hcommons.org/app/uploads'
+        uploads_url = settings.WP_MEDIA_URL
+
+        # 3) Build the group-avatar directory path
+        avatar_dir = Path(uploads_root) / Path("group-avatars") / str(group_id)
+
+        # 4) Look for any “full” avatar file (e.g. 196c1430...-bpfull.png)
+        matches = avatar_dir.glob("*-bpfull.*")
+
+        for file in matches:
+            return f"{uploads_url}/group-avatars/{group_id}/{file.name}"
+
+        return ""
+
     def get_group(self, group_id, status_choices=None):
         """
         Get a group with a list of allowed status choices
@@ -520,7 +546,7 @@ class API:
                 "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
             )
 
-        # 2) try to fetch the group (or bail out)
+        # Try to fetch the group (or bail out)
         try:
             grp = WpBpGroup.objects.get(id=group_id, status__in=status_keys)
         except WpBpGroup.DoesNotExist:
@@ -529,17 +555,11 @@ class API:
         # TODO: build the canonical URL
         url = f"/groups/{grp.slug}/"
 
-        # 4) grab any avatar meta (your meta_key may be different)
-        avatar_path = (
-            WpBpGroupsGroupmeta.objects.filter(
-                group=grp, meta_key="avatar_upload"
-            )
-            .values_list("meta_value", flat=True)
-            .first()
-        )
-        avatar = f"/{avatar_path}" if avatar_path else ""
+        # Grab any avatar meta (your meta_key may be different)
+        avatar_path = self.get_group_avatar_url(group_id=group_id)
+        avatar = avatar_path if avatar_path else ""
 
-        # 5) grab the groupblog ID → turn it into a blog URL
+        # Grab the groupblog ID → turn it into a blog URL
         blog_id = (
             WpBpGroupsGroupmeta.objects.filter(group=grp, meta_key="blog_id")
             .values_list("meta_value", flat=True)
@@ -554,7 +574,7 @@ class API:
         else:
             group_blog = ""
 
-        # 6) static arrays for upload/ moderate permissions
+        # Static arrays for upload/ moderate permissions
         upload_roles = ["member", "moderator", "administrator"]
         moderate_roles = ["moderator", "administrator"]
 
@@ -588,7 +608,7 @@ class API:
             )
 
         try:
-            return (
+            group_member = (
                 WpBpGroupMember.objects.filter(
                     user_id=self.wp_user.id,
                     is_confirmed=True,
@@ -596,6 +616,7 @@ class API:
                 )
                 .select_related("group")
                 .annotate(
+                    gid=F("group__id"),
                     # rename group__name → group_name
                     group_name=F("group__name"),
                     # compute “role” based on is_admin / is_mod
@@ -607,8 +628,13 @@ class API:
                     ),
                 )
                 .order_by("group_name")
-                .values("id", "group_name", "role")
+                .values_list("gid", "group_name", "role")
             )
+
+            return [
+                {"id": gid, "group_name": name, "role": role}
+                for gid, name, role in group_member
+            ]
         except django.db.utils.OperationalError:
             logging.warning(
                 "Unable to connect to MySQL, fast-failing group data."
