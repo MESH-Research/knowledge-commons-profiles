@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.urls import path
 
+from knowledge_commons_profiles.rest_api.views import GroupView
 from knowledge_commons_profiles.rest_api.views import ProfileView
 
 urlpatterns = [
@@ -24,5 +25,10 @@ urlpatterns = [
         r"api/v1/user/<str:user_name>/",
         ProfileView.as_view(),
         name="profile_rest_view",
+    ),
+    path(
+        r"api/v1/group/<int:pk>/",
+        GroupView.as_view(),
+        name="group_rest_view",
     ),
 ]

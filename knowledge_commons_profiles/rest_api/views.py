@@ -13,6 +13,9 @@ from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.rest_api.authentication import (
     StaticBearerAuthentication,
 )
+from knowledge_commons_profiles.rest_api.serializers import (
+    GroupMembershipSerializer,
+)
 
 
 class ProfileView(APIView):
@@ -26,10 +29,7 @@ class ProfileView(APIView):
 
     def get(self, request, *args, **kw):
         """
-        Return a JSON response containing the user's profile information,
-        academic interests, education, a short string about the user,
-        their latest blog posts, their latest Mastodon posts (if they have
-        a Mastodon account), and a string representing their works.
+        Return a JSON response containing the user's profile information.
 
         The response is returned with a status of 200 OK.
         """
@@ -58,6 +58,12 @@ class ProfileView(APIView):
             None if not has_full_access else WpBpGroup.STATUS_CHOICES
         )
 
+        serialized_groups = GroupMembershipSerializer(
+            self.api.get_groups(status_choices=group_status),
+            many=True,
+            context={"request": request},
+        )
+
         context = {
             "username": profile_info_obj["username"],
             "email": profile_info_obj["email"],
@@ -68,11 +74,53 @@ class ProfileView(APIView):
                 "institutional_or_other_affiliation"
             ],
             "orcid": profile_info_obj["orcid"],
-            "groups": self.api.get_groups(status_choices=group_status),
+            "groups": serialized_groups.data,
         }
 
         return Response(
             context,
+            status=status.HTTP_200_OK,
+            headers={"Is-Authorized": has_full_access},
+        )
+
+
+class GroupView(APIView):
+    """
+    A REST view for retrieving group information
+    """
+
+    authentication_classes = [StaticBearerAuthentication]
+    permission_classes = [AllowAny]  # allow both token & anon
+    api = None
+
+    def get(self, request, *args, **kw):
+        """
+        Return a JSON response containing the group's information,
+
+        The response is returned with a status of 200 OK.
+        """
+
+        has_full_access = bool(request.auth)
+
+        group_id = kw.get("pk")
+
+        if not group_id:
+            return Response(
+                {},
+                status=status.HTTP_200_OK,
+                headers={"Is-Authorized": has_full_access},
+            )
+
+        if not self.api:
+            self.api = API(request, None, use_wordpress=True)
+
+        # build the access level for group permissions
+        group_status = (
+            None if not has_full_access else WpBpGroup.STATUS_CHOICES
+        )
+
+        return Response(
+            self.api.get_group(group_id=group_id, status_choices=group_status),
             status=status.HTTP_200_OK,
             headers={"Is-Authorized": has_full_access},
         )

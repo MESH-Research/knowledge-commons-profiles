@@ -29,6 +29,7 @@ from knowledge_commons_profiles.newprofile.models import WpBpActivity
 from knowledge_commons_profiles.newprofile.models import WpBpFollow
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpGroupMember
+from knowledge_commons_profiles.newprofile.models import WpBpGroupsGroupmeta
 from knowledge_commons_profiles.newprofile.models import WpBpNotification
 from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
 from knowledge_commons_profiles.newprofile.models import WpPostSubTable
@@ -501,6 +502,73 @@ class API:
             A string of the user's education details.
         """
         return self.profile.education
+
+    def get_group(self, group_id, status_choices=None):
+        """
+        Get a group with a list of allowed status choices
+
+        """
+        # default to [("public","Public")]
+        if status_choices is None:
+            status_choices = WpBpGroup.STATUS_CHOICES[:1]
+
+        # status_choices is either "public" or all the others
+        status_keys = [key for key, label in status_choices]
+
+        if len(status_keys) > 1:
+            logging.info(
+                "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
+            )
+
+        # 2) try to fetch the group (or bail out)
+        try:
+            grp = WpBpGroup.objects.get(id=group_id, status__in=status_keys)
+        except WpBpGroup.DoesNotExist:
+            return None
+
+        # TODO: build the canonical URL
+        url = f"/groups/{grp.slug}/"
+
+        # 4) grab any avatar meta (your meta_key may be different)
+        avatar_path = (
+            WpBpGroupsGroupmeta.objects.filter(
+                group=grp, meta_key="avatar_upload"
+            )
+            .values_list("meta_value", flat=True)
+            .first()
+        )
+        avatar = f"/{avatar_path}" if avatar_path else ""
+
+        # 5) grab the groupblog ID → turn it into a blog URL
+        blog_id = (
+            WpBpGroupsGroupmeta.objects.filter(group=grp, meta_key="blog_id")
+            .values_list("meta_value", flat=True)
+            .first()
+        )
+        if blog_id:
+            try:
+                blog = WpBlog.objects.get(blog_id=blog_id)
+                group_blog = f"https://{blog.domain}{blog.path}"
+            except WpBlog.DoesNotExist:
+                group_blog = ""
+        else:
+            group_blog = ""
+
+        # 6) static arrays for upload/ moderate permissions
+        upload_roles = ["member", "moderator", "administrator"]
+        moderate_roles = ["moderator", "administrator"]
+
+        return {
+            "id": grp.id,
+            "name": grp.name,
+            "url": url,
+            "visibility": grp.status,
+            "description": grp.description or "",
+            "avatar": avatar,
+            "groupblog": group_blog,
+            "upload_roles": upload_roles,
+            "moderate_roles": moderate_roles,
+        }
 
     def get_groups(self, status_choices=None):
         """

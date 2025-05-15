@@ -552,6 +552,32 @@ class WpBpGroupMember(models.Model):
         return str(self.user) + " in " + str(self.group)
 
 
+class WpBpGroupsGroupmeta(models.Model):
+    """
+    Mirrors the BuddyPress `wp_bp_groups_groupmeta` table.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    group = models.ForeignKey(
+        "WpBpGroup",
+        on_delete=models.DO_NOTHING,
+        db_column="group_id",
+        related_name="meta",
+    )
+    meta_key = models.CharField(max_length=255)
+    meta_value = models.TextField()
+
+    class Meta:
+        db_table = "wp_bp_groups_groupmeta"
+        managed = False
+
+    def __str__(self):
+        """
+        String representation of the WpBpGroupsGroupmeta model
+        """
+        return str(self.group)
+
+
 class WpBpGroup(models.Model):
     """
     A model for a WordPress group
