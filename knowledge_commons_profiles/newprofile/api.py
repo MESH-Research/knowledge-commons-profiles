@@ -5,6 +5,7 @@ A class of API calls for user details
 import hashlib
 import logging
 import re
+from enum import Enum
 from functools import cached_property
 from operator import itemgetter
 from pathlib import Path
@@ -50,6 +51,11 @@ DOMAIN_PATTERN = (
     r"([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
 )
 DOMAIN_REGEX = re.compile(DOMAIN_PATTERN, re.IGNORECASE)
+
+
+class ErrorModel(Enum):
+    RAISE = 1
+    RETURN = 2
 
 
 class API:
@@ -546,16 +552,11 @@ class API:
                 "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
             )
 
-        # Try to fetch the group (or bail out)
-        try:
-            if slug:
-                grp = WpBpGroup.objects.get(slug=slug, status__in=status_keys)
-            else:
-                grp = WpBpGroup.objects.get(
-                    id=group_id, status__in=status_keys
-                )
-        except WpBpGroup.DoesNotExist:
-            return None
+        # Try to fetch the group (or bail out with exception)
+        if slug:
+            grp = WpBpGroup.objects.get(slug=slug, status__in=status_keys)
+        else:
+            grp = WpBpGroup.objects.get(id=group_id, status__in=status_keys)
 
         # TODO: build the canonical URL
         url = f"/groups/{grp.slug}/"
@@ -595,7 +596,9 @@ class API:
             "moderate_roles": moderate_roles,
         }
 
-    def get_groups(self, status_choices=None):
+    def get_groups(
+        self, status_choices=None, on_error: ErrorModel = ErrorModel.RAISE
+    ):
         """
         Return a list of groups that the user is a member of
         :return:
@@ -636,15 +639,28 @@ class API:
                 .values_list("gid", "group_name", "role")
             )
 
-            return [
+            return_value = [
                 {"id": gid, "group_name": name, "role": role}
                 for gid, name, role in group_member
             ]
-        except django.db.utils.OperationalError:
+
+
+        except django.db.utils.OperationalError as oe:
             logging.warning(
                 "Unable to connect to MySQL, fast-failing group data."
             )
-            return []
+
+            if on_error == ErrorModel.RAISE:
+                raise
+
+            return [], oe
+
+        else:
+            return (
+                (return_value, None)
+                if on_error == ErrorModel.RETURN
+                else return_value
+            )
 
     def get_cover_image(self):
         """

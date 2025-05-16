@@ -6,6 +6,7 @@ import logging
 
 import sentry_sdk
 from django.db import OperationalError
+from django.http import Http404
 from nameparser import HumanName
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -13,10 +14,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from knowledge_commons_profiles.newprofile.api import API
+from knowledge_commons_profiles.newprofile.api import ErrorModel
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.rest_api.authentication import (
     StaticBearerAuthentication,
 )
+from knowledge_commons_profiles.rest_api.errors import RESTError
 from knowledge_commons_profiles.rest_api.serializers import (
     GroupMembershipSerializer,
 )
@@ -24,6 +27,24 @@ from knowledge_commons_profiles.rest_api.timer import get_elapsed
 from knowledge_commons_profiles.rest_api.timer import rest_timer
 
 logger = logging.getLogger(__name__)
+
+
+def build_metadata(authed, error=None):
+    """
+    Build the metadata for the response
+    """
+
+    return_dict = {
+        "meta": {
+            "authorized": authed,
+            "elapsed": get_elapsed(),
+        }
+    }
+
+    if error:
+        return_dict["meta"]["error"] = error
+
+    return return_dict
 
 
 class ProfileView(APIView):
@@ -39,22 +60,19 @@ class ProfileView(APIView):
     def get(self, request, *args, **kw):
         """
         Return a JSON response containing the user's profile information.
-
-        The response is returned with a status of 200 OK.
         """
 
-        has_full_access = bool(request.auth)
+        non_fatal_error = None
 
+        has_full_access = bool(request.auth)
         user = kw.get("user_name")
 
         if not user:
             return Response(
-                {
-                    "error": "No user name provided",
-                    "authorized": has_full_access,
-                    "elapsed": get_elapsed(),
-                },
-                status=status.HTTP_200_OK,
+                build_metadata(
+                    has_full_access, error=RESTError.FATAL_NO_USERNAME_DEFINED
+                ),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         # build the API object
@@ -62,7 +80,24 @@ class ProfileView(APIView):
             self.api = API(request, user, use_wordpress=True)
 
         # get the profile: triggers MySQL access
-        profile_info_obj = self.api.get_profile_info()
+        try:
+            profile_info_obj = self.api.get_profile_info()
+        except Http404:
+            return Response(
+                build_metadata(
+                    has_full_access, error=RESTError.FATAL_USER_NOT_FOUND
+                ),
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as exc:  # noqa: BLE001
+            sentry_sdk.capture_exception(exc)
+
+            return Response(
+                build_metadata(
+                    has_full_access, error=RESTError.FATAL_UNDEFINED_ERROR
+                ),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # format the name into components
         # NOTE: we want to harmonise this with Works's name parser
@@ -75,8 +110,20 @@ class ProfileView(APIView):
         )
 
         # serialize the groups for the user
+        groups, error = self.api.get_groups(
+            status_choices=group_status, on_error=ErrorModel.RETURN
+        )
+
+        if error:
+            if isinstance(error, OperationalError):
+                non_fatal_error = (
+                    RESTError.NON_FATAL_NO_MYSQL_SILENT_FIELDS_MISSING
+                )
+            else:
+                non_fatal_error = RESTError.NON_FATAL_UNDEFINED_ERROR
+
         serialized_groups = GroupMembershipSerializer(
-            self.api.get_groups(status_choices=group_status),
+            groups,
             many=True,
             context={"request": request},
         )
@@ -84,7 +131,7 @@ class ProfileView(APIView):
         # Note that email is confidential
         # Only groups that are "public" will be shown by default unless authed
         context = {
-            "hits": {
+            "data": {
                 "username": profile_info_obj["username"],
                 "email": profile_info_obj["email"] if has_full_access else "",
                 "name": name_object.full_name,
@@ -95,10 +142,9 @@ class ProfileView(APIView):
                 ],
                 "orcid": profile_info_obj["orcid"],
                 "groups": serialized_groups.data,
-            },
-            "authorized": has_full_access,
-            "elapsed": get_elapsed(),
+            }
         }
+        context.update(build_metadata(has_full_access, error=non_fatal_error))
 
         return Response(
             context,
@@ -115,11 +161,10 @@ class GroupView(APIView):
     permission_classes = [AllowAny]  # allow both token & anon
     api = None
 
+    @rest_timer
     def get(self, request, *args, **kw):
         """
         Return a JSON response containing the group's information,
-
-        The response is returned with a status of 200 OK.
         """
 
         has_full_access = bool(request.auth)
@@ -129,11 +174,9 @@ class GroupView(APIView):
 
         if not group_id and not slug:
             return Response(
-                {
-                    "error": "No group ID or slug provided",
-                    "authorized": has_full_access,
-                    "elapsed": get_elapsed(),
-                },
+                build_metadata(
+                    has_full_access, error=RESTError.FATAL_NO_GROUP_ID_OR_SLUG
+                ),
                 status=status.HTTP_200_OK,
             )
 
@@ -150,17 +193,22 @@ class GroupView(APIView):
         # Note that only groups that are "public" will be shown by default
         # unless authed. Users with the static bearer key can see all groups.
         try:
+            context = {
+                "data": self.api.get_group(
+                    group_id=group_id,
+                    slug=slug,
+                    status_choices=group_status,
+                ),
+            }
+            context.update(build_metadata(has_full_access))
+
+            return Response(context, status=status.HTTP_200_OK)
+        except WpBpGroup.DoesNotExist:
             return Response(
-                {
-                    "hits": self.api.get_group(
-                        group_id=group_id,
-                        slug=slug,
-                        status_choices=group_status,
-                    ),
-                    "authorized": has_full_access,
-                    "elapsed": get_elapsed(),
-                },
-                status=status.HTTP_200_OK,
+                build_metadata(
+                    has_full_access, error=RESTError.FATAL_GROUP_NOT_FOUND
+                ),
+                status=status.HTTP_404_NOT_FOUND,
             )
         except OperationalError as oe:
             logger.warning(
@@ -170,10 +218,9 @@ class GroupView(APIView):
             sentry_sdk.capture_exception(oe)
 
             return Response(
-                {
-                    "Error": "Unable to connect to database.",
-                    "authorized": has_full_access,
-                    "elapsed": get_elapsed(),
-                },
+                build_metadata(
+                    has_full_access,
+                    error=RESTError.NON_FATAL_NO_MYSQL_SILENT_FIELDS_MISSING,
+                ),
                 status=status.HTTP_200_OK,
             )
