@@ -10,15 +10,22 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.rest_api.authentication import (
+    HasStaticBearerToken,
+)
 from knowledge_commons_profiles.rest_api.authentication import (
     StaticBearerAuthentication,
 )
 from knowledge_commons_profiles.rest_api.errors import RESTError
 from knowledge_commons_profiles.rest_api.pagination import (
     ProfileCursorPagination,
+)
+from knowledge_commons_profiles.rest_api.pagination import (
+    SubProfileCursorPagination,
 )
 from knowledge_commons_profiles.rest_api.serializers import (
     GroupDetailSerializer,
@@ -27,9 +34,31 @@ from knowledge_commons_profiles.rest_api.serializers import (
     ProfileDetailSerializer,
 )
 from knowledge_commons_profiles.rest_api.serializers import ProfileSerializer
+from knowledge_commons_profiles.rest_api.serializers import SubProfileSerializer
 from knowledge_commons_profiles.rest_api.utils import build_metadata
 
 logger = logging.getLogger(__name__)
+
+
+class SubListView(generics.ListAPIView):
+    """
+    List all profiles
+    """
+
+    authentication_classes = [StaticBearerAuthentication]
+    permission_classes = [HasStaticBearerToken]
+    queryset = SubAssociation.objects.all()
+
+    serializer_class = SubProfileSerializer
+    pagination_class = SubProfileCursorPagination
+
+    def get_queryset(self):
+        sub = self.request.GET.get("sub")
+
+        if not sub:
+            raise Http404
+
+        return SubAssociation.objects.filter(sub=sub)
 
 
 class ProfileListView(generics.ListAPIView):

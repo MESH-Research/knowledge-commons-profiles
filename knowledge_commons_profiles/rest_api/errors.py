@@ -35,3 +35,8 @@ class RESTError:
         "status": "fatal",
         "code": 1007,
     }
+    FATAL_NO_SUB = {
+        "message": "Sub not specified",
+        "status": "fatal",
+        "code": 1008,
+    }

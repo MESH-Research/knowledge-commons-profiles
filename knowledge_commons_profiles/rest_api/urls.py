@@ -20,8 +20,14 @@ from django.urls import path
 from knowledge_commons_profiles.rest_api.views import GroupDetailView
 from knowledge_commons_profiles.rest_api.views import ProfileDetailView
 from knowledge_commons_profiles.rest_api.views import ProfileListView
+from knowledge_commons_profiles.rest_api.views import SubListView
 
 urlpatterns = [
+    path(
+        r"api/v1/subs/",
+        SubListView.as_view(),
+        name="profiles_list_view",
+    ),
     path(
         r"api/v1/users/",
         ProfileListView.as_view(),

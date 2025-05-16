@@ -7,6 +7,7 @@ from nameparser import HumanName
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
+from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
@@ -66,7 +67,10 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
-        logged_in = bool(kwargs["context"]["request"].auth)
+        try:
+            logged_in = bool(kwargs["context"]["request"].auth)
+        except KeyError:
+            logged_in = False
 
         if not logged_in:
             del self.fields["email"]
@@ -125,7 +129,9 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
-        logged_in = bool(kwargs["context"]["request"].auth)
+        request = self._kwargs.get("context", {}).get("request")
+
+        logged_in = False if not request else bool(request.auth)
 
         if not logged_in:
             del self.fields["email"]
@@ -183,3 +189,27 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 
     def get_last_name(self, obj):
         return HumanName(obj.name or "").last
+
+
+class SubProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the SubAssociation model
+    """
+
+    profile = ProfileSerializer()
+    sub = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = SubAssociation
+        fields = ["sub", "profile"]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # rebuild 'profile' with the current context
+        fields["profile"] = ProfileSerializer(
+            context=self.context, read_only=True
+        )
+        return fields

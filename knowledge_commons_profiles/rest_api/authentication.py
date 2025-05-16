@@ -6,6 +6,7 @@ Authentication for the REST API
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.authentication import BaseAuthentication
+from rest_framework.permissions import BasePermission
 
 
 class StaticBearerAuthentication(BaseAuthentication):
@@ -37,3 +38,13 @@ class StaticBearerAuthentication(BaseAuthentication):
         # We don't have a real User to return; by convention we can return
         # an AnonymousUser instance but then look at request.auth in the view.
         return AnonymousUser(), token
+
+
+class HasStaticBearerToken(BasePermission):
+    """
+    Only allow if request.auth (the token from your StaticBearerAuthentication)
+    exactly matches settings.STATIC_API_BEARER.
+    """
+
+    def has_permission(self, request, view):
+        return request.auth == settings.STATIC_API_BEARER
