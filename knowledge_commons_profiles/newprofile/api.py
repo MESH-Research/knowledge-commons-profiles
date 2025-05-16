@@ -529,7 +529,7 @@ class API:
 
         return ""
 
-    def get_group(self, group_id, status_choices=None):
+    def get_group(self, group_id, slug="", status_choices=None):
         """
         Get a group with a list of allowed status choices
 
@@ -548,7 +548,12 @@ class API:
 
         # Try to fetch the group (or bail out)
         try:
-            grp = WpBpGroup.objects.get(id=group_id, status__in=status_keys)
+            if slug:
+                grp = WpBpGroup.objects.get(slug=slug, status__in=status_keys)
+            else:
+                grp = WpBpGroup.objects.get(
+                    id=group_id, status__in=status_keys
+                )
         except WpBpGroup.DoesNotExist:
             return None
 

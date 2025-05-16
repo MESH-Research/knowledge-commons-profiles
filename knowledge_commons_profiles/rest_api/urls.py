@@ -22,13 +22,18 @@ from knowledge_commons_profiles.rest_api.views import ProfileView
 
 urlpatterns = [
     path(
-        r"api/v1/user/<str:user_name>/",
+        r"api/v1/users/<str:user_name>/",
         ProfileView.as_view(),
         name="profile_rest_view",
     ),
     path(
-        r"api/v1/group/<int:pk>/",
+        r"api/v1/groups/<int:pk>/",
         GroupView.as_view(),
         name="group_rest_view",
+    ),
+    path(
+        r"api/v1/groups/<str:slug>/",
+        GroupView.as_view(),
+        name="group_slug_rest_view",
     ),
 ]
