@@ -123,7 +123,7 @@ class GroupDetailView(generics.RetrieveAPIView):
 
         try:
             instance = self.get_object(*args, **kwargs)
-        except Http404:
+        except (Http404, WpBpGroup.DoesNotExist):
             meta = build_metadata(
                 has_full_access, error=RESTError.FATAL_GROUP_NOT_FOUND
             )
