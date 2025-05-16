@@ -14,6 +14,7 @@ from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.newprofile import api
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
@@ -1447,7 +1448,9 @@ class GetGroupsTests(django.test.TestCase):
         mock_manager.filter.side_effect = OperationalError
 
         with self.assertLogs(level="WARNING") as cm:
-            result = self.service.get_groups()
+            result, error = self.service.get_groups(
+                on_error=api.ErrorModel.RETURN
+            )
 
         self.assertEqual(result, [])
         self.assertTrue(
