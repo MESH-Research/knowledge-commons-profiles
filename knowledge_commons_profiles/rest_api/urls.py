@@ -17,23 +17,29 @@ Including another URLconf
 
 from django.urls import path
 
-from knowledge_commons_profiles.rest_api.views import GroupView
-from knowledge_commons_profiles.rest_api.views import ProfileView
+from knowledge_commons_profiles.rest_api.views import GroupDetailView
+from knowledge_commons_profiles.rest_api.views import ProfileDetailView
+from knowledge_commons_profiles.rest_api.views import ProfileListView
 
 urlpatterns = [
     path(
+        r"api/v1/users/",
+        ProfileListView.as_view(),
+        name="profiles_list_view",
+    ),
+    path(
         r"api/v1/users/<str:user_name>/",
-        ProfileView.as_view(),
-        name="profile_rest_view",
+        ProfileDetailView.as_view(),
+        name="profiles_detail_view",
     ),
     path(
         r"api/v1/groups/<int:pk>/",
-        GroupView.as_view(),
-        name="group_rest_view",
+        GroupDetailView.as_view(),
+        name="groups_detail_view",
     ),
     path(
         r"api/v1/groups/<str:slug>/",
-        GroupView.as_view(),
-        name="group_slug_rest_view",
+        GroupDetailView.as_view(),
+        name="groups_slug_detail_view",
     ),
 ]

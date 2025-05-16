@@ -587,6 +587,7 @@ class API:
         return {
             "id": grp.id,
             "name": grp.name,
+            "slug": grp.slug,
             "url": url,
             "visibility": grp.status,
             "description": grp.description or "",
@@ -643,7 +644,6 @@ class API:
                 {"id": gid, "group_name": name, "role": role}
                 for gid, name, role in group_member
             ]
-
 
         except django.db.utils.OperationalError as oe:
             logging.warning(

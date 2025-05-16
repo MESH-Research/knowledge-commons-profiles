@@ -401,3 +401,8 @@ STATIC_API_BEARER = env("STATIC_API_BEARER")
 
 WP_MEDIA_ROOT = env("WP_MEDIA_ROOT")
 WP_MEDIA_URL = env("WP_MEDIA_URL")
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
+    "PAGE_SIZE": 50,
+}
