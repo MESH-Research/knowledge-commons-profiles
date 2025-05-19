@@ -406,3 +406,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": 50,
 }
+
+ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
+    "ALLOWED_CILOGON_FORWARDING_DOMAINS",
+    default=["hcommons.org", "msu.edu", "localhost"],
+)

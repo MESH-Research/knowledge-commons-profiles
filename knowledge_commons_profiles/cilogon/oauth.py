@@ -68,3 +68,13 @@ def extract_code_next_url(request):
     code = request.GET.get("code")
 
     return code, next_url
+
+
+def pack_state(next_url):
+    """
+    B64 encode a next URL
+    """
+    # Pack next_url into state and b64 encode
+    return base64.urlsafe_b64encode(
+        json.dumps({"next": next_url}).encode()
+    ).decode()

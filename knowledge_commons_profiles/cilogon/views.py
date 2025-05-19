@@ -10,15 +10,18 @@ import logging
 import urllib.parse as urlparse
 
 import sentry_sdk
+import tldextract
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
 from django.shortcuts import redirect
 from django.shortcuts import render
+from idna import IDNAError
 
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
 from knowledge_commons_profiles.cilogon.oauth import extract_code_next_url
 from knowledge_commons_profiles.cilogon.oauth import generate_next_url
 from knowledge_commons_profiles.cilogon.oauth import oauth
+from knowledge_commons_profiles.cilogon.oauth import pack_state
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +32,14 @@ def login(request):
     :param request: the request
     """
 
+    # can use this to pass a next_url if we wish
+    # an empty string assumes authentication to Profiles app
+    # values for base domain here must be present in
+    # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
+    state = pack_state("")
+
     redirect_uri = request.build_absolute_uri("/" + settings.OIDC_CALLBACK)
-    return oauth.cilogon.authorize_redirect(request, redirect_uri)
+    return oauth.cilogon.authorize_redirect(request, redirect_uri, state=state)
 
 
 def callback(request):
@@ -47,12 +56,30 @@ def callback(request):
     ):
         code, next_url = extract_code_next_url(request)
 
-        if next_url:
+        if next_url and next_url != "":
             url_parts = generate_next_url(code, next_url, request)
 
-            return redirect(str(urlparse.urlunparse(url_parts)))
+            try:
+                # parse netloc into subdomain, base domain etc.
+                extract_result = tldextract.extract(next_url)
 
-    # no "next" was found, so we will decode the result here
+                # validate that the next URL is in the allowed list
+                # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
+                if (
+                    extract_result.domain + "." + extract_result.suffix
+                ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
+                    logger.info("Forwarding CILogon code to %s", next_url)
+                    return redirect(str(urlparse.urlunparse(url_parts)))
+                logger.warning(
+                    "Disallowed CILogon code forwarding URL: %s", next_url
+                )
+            except (ValueError, IDNAError, UnicodeDecodeError, OSError) as e:
+                sentry_sdk.capture_exception(e)
+                logger.exception(
+                    "Exception parsing and validating next_url: %s", next_url
+                )
+
+    # no "next" was found or was valid, so we will decode the result here
     try:
         token = oauth.cilogon.authorize_access_token(
             request, prompt="none", claims_cls=ORCIDHandledToken
@@ -78,9 +105,6 @@ def callback(request):
     logger.info("Linking user %s", userinfo)
 
     # determine whether we have an account here
-
-    if next_url:
-        return redirect(next_url)
 
     return None
 
