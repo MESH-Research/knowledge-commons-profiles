@@ -5,6 +5,7 @@ import binascii
 import contextlib
 import json
 import logging
+import time
 import urllib.parse as urlparse
 from urllib.parse import urlencode
 
@@ -14,6 +15,8 @@ from authlib.integrations.django_client import OAuth
 from authlib.jose.errors import InvalidClaimError
 from authlib.oidc.core import CodeIDToken
 from django.conf import settings
+from django.contrib.auth import login
+from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from idna import IDNAError
 
@@ -25,10 +28,8 @@ oauth.register(
     name="cilogon",
     client_id=settings.CILOGON_CLIENT_ID,
     client_secret=settings.CILOGON_CLIENT_SECRET,
-    server_metadata_url="https://cilogon.org/.well-known/openid-configuration",
-    client_kwargs={
-        "scope": "openid email profile org.cilogon.userinfo offline_access"
-    },
+    server_metadata_url=settings.CILOGON_DISCOVERY_URL,
+    client_kwargs={"scope": settings.CILOGON_SCOPE},
 )
 
 
@@ -128,8 +129,63 @@ def store_session_variables(request, token):
     """
     Store session variables
     """
-    userinfo = token["userinfo"]
+    logger.info("Storing new token")
+
     request.session["oidc_token"] = token
-    request.session["oidc_userinfo"] = userinfo
+
+    userinfo = request.session.get("oidc_userinfo", {})
+
+    if "userinfo" in token:
+        userinfo = token["userinfo"]
+        request.session["oidc_userinfo"] = userinfo
 
     return userinfo
+
+
+def find_user_and_login(request, sub_association):
+    """
+    Find the user and log them in
+    """
+    # does the user exist in Django?
+    user = User.objects.filter(
+        username=sub_association.profile.username
+    ).first()
+
+    if user:
+        logger.info(
+            "Logging in user %s from sub %s",
+            user.username,
+            sub_association.sub,
+        )
+    else:
+        # there is no user at the moment, so create one
+        # note: this is an odd situation as the user has a Profile
+        # but not a User
+        user = User.objects.create(
+            username=sub_association.profile.username,
+            email=sub_association.profile.email,
+        )
+
+    # log the user in
+    login(request, user)
+
+
+def token_expired(token, user):
+    """
+    Check if the token has expired
+    """
+    now = time.time()
+    expires_at = token.get("expires_at", 0)
+
+    # if we're not yet expired, nothing to do
+    if (
+        expires_at
+        and now < expires_at - settings.CILOGON_REFRESH_TOKEN_TIMEOUT
+    ):
+        logger.debug(
+            "Login token for user %s is still valid for another %ds",
+            user,
+            expires_at - now,
+        )
+        return False
+    return True

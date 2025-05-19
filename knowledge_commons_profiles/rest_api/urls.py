@@ -21,12 +21,18 @@ from knowledge_commons_profiles.rest_api.views import GroupDetailView
 from knowledge_commons_profiles.rest_api.views import ProfileDetailView
 from knowledge_commons_profiles.rest_api.views import ProfileListView
 from knowledge_commons_profiles.rest_api.views import SubListView
+from knowledge_commons_profiles.rest_api.views import TokenPutView
 
 urlpatterns = [
     path(
         r"api/v1/subs/",
         SubListView.as_view(),
-        name="profiles_list_view",
+        name="subs_list_view",
+    ),
+    path(
+        r"api/v1/tokens/",
+        TokenPutView.as_view(),
+        name="tokens_put_view",
     ),
     path(
         r"api/v1/users/",

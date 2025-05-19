@@ -3,23 +3,25 @@ Views for CILogon
 
 """
 
+import contextlib
+import json
 import logging
 
 import sentry_sdk
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
-from django.contrib.auth import login
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 
 from knowledge_commons_profiles.cilogon.models import SubAssociation
+from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
+from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import forward_url
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
-from knowledge_commons_profiles.newprofile.api import User
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,9 @@ def cilogon_login(request):
     :param request: the request
     """
 
+    # flush the session
+    request.session.flush()
+
     # can use this to pass a next_url if we wish
     # an empty string assumes authentication to Profiles app
     # values for base domain here must be present in
@@ -37,6 +42,7 @@ def cilogon_login(request):
     state = pack_state("")
 
     redirect_uri = request.build_absolute_uri("/" + settings.OIDC_CALLBACK)
+
     return oauth.cilogon.authorize_redirect(request, redirect_uri, state=state)
 
 
@@ -91,55 +97,87 @@ def callback(request):
     return None
 
 
-def find_user_and_login(request, sub_association):
+def app_logout(request):
     """
-    Find the user and log them in
+    Log the user out of all sessions sharing this user agent
+    :param request:
+    :return:
     """
-    # does the user exist in Django?
-    user = User.objects.filter(
-        username=sub_association.profile.username
-    ).first()
-
-    if user:
-        logger.info(
-            "Logging in user %s from sub %s",
-            user.username,
-            sub_association.sub,
-        )
-    else:
-        # there is no user at the moment, so create one
-        # note: this is an odd situation as the user has a Profile
-        # but not a User
-        user = User.objects.create(
-            username=sub_association.profile.username,
-            email=sub_association.profile.email,
-        )
-
-    # log the user in
-    login(request, user)
-
-
-def logout(request):
     # 1. Pull off the ID Token so we can hint it to CILogon
-    id_token = request.session.get("oidc_token", {}).get("id_token")
+    token = request.session.get("oidc_token", {})
 
     # 2. Find the OP's end_session_endpoint in the metadata
     client = oauth.create_client("cilogon")
-    end_session = client.server_metadata.get("end_session_endpoint")
+    client.load_server_metadata()
+    end_session = client.server_metadata.get("revocation_endpoint")
 
-    # 3. Kill the local Django session immediately
-    # TODO: kill session
+    # set flag to middleware
+    request.session["hard_refresh"] = True
+    request.session.save()
 
-    # you might also want to: request.session.flush()
+    # get all token associations for this browser
+    token_associations = TokenUserAgentAssociations.objects.filter(
+        user_agent=request.headers["user-agent"],
+        app="Profiles",
+    )
 
-    # 4. If the OP supports RP-Initiated Logout, send them there;
-    #    otherwise just go back to your site's post-logout page.
-    if end_session and id_token:
-        redirect_url = settings.LOGOUT_REDIRECT_URL  # e.g. "/"
-        return redirect(
-            f"{end_session}"
-            f"?id_token_hint={id_token}"
-            f"&post_logout_redirect_uri={redirect_url}"
+    with contextlib.suppress(OAuthError):
+        # for each relevant token, revoke on CILogon
+        for token_association in token_associations:
+            token_revoke = json.loads(token_association.token)
+
+            # for each relevant token, revoke on CILogon, with this token last
+            client.post(
+                end_session,
+                data={
+                    "token": token_revoke.get("refresh_token"),
+                    "token_type_hint": "refresh_token",
+                },
+                auth=(client.client_id, client.client_secret),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                token=token,
+            )
+
+            client.post(
+                end_session,
+                data={
+                    "token": token_revoke.get("access_token"),
+                    "token_type_hint": "access_token",
+                },
+                auth=(client.client_id, client.client_secret),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                token=token,
+            )
+
+        # delete these token associations that have now been revoked
+        token_associations.delete()
+
+        # now revoke our token, in case it wasn't in the list
+        client.post(
+            end_session,
+            data={
+                "token": token.get("refresh_token"),
+                "token_type_hint": "refresh_token",
+            },
+            auth=(client.client_id, client.client_secret),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            token=token,
         )
 
-    return redirect(settings.LOGOUT_REDIRECT_URL)
+        client.post(
+            end_session,
+            data={
+                "token": token.get("access_token"),
+                "token_type_hint": "access_token",
+            },
+            auth=(client.client_id, client.client_secret),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            token=token,
+        )
+
+    # Kill the local Django session immediately
+    # logout(request)
+
+    # redirect the user to the home page
+    # TODO: proper redirect
+    return redirect("/")

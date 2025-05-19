@@ -35,6 +35,7 @@ from knowledge_commons_profiles.rest_api.serializers import (
 )
 from knowledge_commons_profiles.rest_api.serializers import ProfileSerializer
 from knowledge_commons_profiles.rest_api.serializers import SubProfileSerializer
+from knowledge_commons_profiles.rest_api.serializers import TokenSerializer
 from knowledge_commons_profiles.rest_api.utils import build_metadata
 
 logger = logging.getLogger(__name__)
@@ -168,3 +169,13 @@ class GroupDetailView(generics.RetrieveAPIView):
         meta = build_metadata(has_full_access)
 
         return Response({"data": data, **meta}, status=status.HTTP_200_OK)
+
+
+class TokenPutView(generics.CreateAPIView):
+    """
+    Update a token for an app
+    """
+
+    authentication_classes = [StaticBearerAuthentication]
+    permission_classes = [HasStaticBearerToken]
+    serializer_class = TokenSerializer

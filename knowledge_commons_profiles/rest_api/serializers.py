@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from knowledge_commons_profiles.cilogon.models import SubAssociation
+from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
@@ -213,3 +214,13 @@ class SubProfileSerializer(serializers.ModelSerializer):
             context=self.context, read_only=True
         )
         return fields
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the TokenUserAgentAssociations model
+    """
+
+    class Meta:
+        model = TokenUserAgentAssociations
+        fields = "__all__"

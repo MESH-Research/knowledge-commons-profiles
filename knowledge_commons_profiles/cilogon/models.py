@@ -13,3 +13,17 @@ class SubAssociation(models.Model):
 
     def __str__(self):
         return self.sub
+
+
+class TokenUserAgentAssociations(models.Model):
+    """
+    Associates the most recent token with a user agent and an app, allowing
+    single-service logout
+    """
+
+    user_agent = models.CharField(max_length=255)
+    token = models.TextField()
+    app = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.app} - {self.token} - {self.user_agent}"

@@ -2,116 +2,99 @@
 Middleware for profiles
 """
 
+import json
 import logging
-from enum import Enum
 
-import sentry_sdk
-from authlib.integrations.base_client import InvalidTokenError
-from authlib.integrations.base_client import MissingRequestTokenError
-from authlib.integrations.base_client import MissingTokenError
 from authlib.integrations.base_client import OAuthError
-from authlib.integrations.base_client import UnsupportedTokenTypeError
 from django.contrib.auth import get_user_model
+from django.contrib.auth import logout
 from django.utils.deprecation import MiddlewareMixin
-from requests.exceptions import (
-    ConnectionError as RequestsConnectionError,  # DNS failure,
-    # refused connection, etc.
-)
-from requests.exceptions import (
-    HTTPError,  # if you call response.raise_for_status()
-)
-from requests.exceptions import (
-    RequestException,  # the base class for all requests exceptions
-)
-from requests.exceptions import (
-    Timeout,  # when your timeout parameter is exceeded
-)
 
+from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import oauth
+from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.cilogon.oauth import token_expired
 
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
 
-class RetryStatus(Enum):
-    """
-    Enumeration for retry status
-    """
-
-    FIRST = 1
-    SECOND = 2
-    FINAL = 3
-
-    def successor(self):
-        """
-        Go to the next RetryStatus
-        """
-        new_value = self.value + 1
-        if new_value > RetryStatus.FINAL.value:
-            error_message = "Enumeration ended"
-            raise ValueError(error_message)
-        return RetryStatus(new_value)
-
-    def predecessor(self):
-        """
-        Go to the previous RetryStatus
-        """
-        new_value = self.value - 1
-        if new_value == 0:
-            error_message = "Enumeration ended"
-            raise ValueError(error_message)
-        return RetryStatus(new_value)
-
-
 class AutoRefreshTokenMiddleware(MiddlewareMixin):
-    def process_request(
-        self, request, current_attempt: RetryStatus = RetryStatus.FIRST
-    ):
-        user = getattr(request, "user", None)
-        if not user or not user.is_authenticated:
-            return
+    """
+    Middleware to refresh tokens
+    """
 
+    def process_request(self, request):
         # Grab the stored token
         token = request.session.get("oidc_token")
         if not token:
+            # could be during login cycle
             return
 
-        # Create an Authlib client and set its token
-        client = oauth.create_client("cilogon")
-        client.token = token
+        # determine whether we have a user
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            # user is not logged in
+            return
+
+        # get the user's browser user-agent
+        user_agent = request.headers.get("user-agent", "")
+
+        # store the user's browser user-agent, token, and app
+        logger.debug(
+            "Storing token for user %s and user agent %s on app Profiles",
+            user,
+            user_agent,
+        )
+        TokenUserAgentAssociations.objects.update_or_create(
+            user_agent=user_agent,
+            app="Profiles",
+            defaults={"token": json.dumps(token)},
+        )
+
+        # first, do hard refresh override
+        # this is a flag set by the logout routine to force a hard
+        # refresh on the next page load, because the user is logged out
+        hard_refresh = request.session.get("hard_refresh", False)
+
+        if hard_refresh:
+            try:
+                logger.debug("Hard refreshing login token for user %s", user)
+
+                # send a refresh request
+                new_token = oauth.cilogon.fetch_access_token(
+                    refresh_token=token["refresh_token"],
+                    grant_type="refresh_token",
+                )
+                store_session_variables(request, new_token)
+            except OAuthError:
+                # user has an invalid refresh token
+                # has been revoked centrally at CILogon
+                logger.debug(
+                    "Login token for user %s expired. Logging out.", user
+                )
+                logout(request)
+
+            request.session["hard_refresh"] = False
+            return
+
+        # determine whether token is expired
+        if not token_expired(token, user):
+            # token is still valid
+            return
 
         try:
-            # This GET will trigger a refresh if needed,
-            # via the token_endpoint metadata
-            client.get(client.server_metadata["userinfo_endpoint"])
-        except (
-            MissingTokenError,
-            InvalidTokenError,
-            MissingRequestTokenError,
-        ):
-            # e.g. refresh_token expired or invalid
-            # log the user out and force re-auth
-            # TODO: logout
-            logging.info("Token invalid or expired")
-        except (UnsupportedTokenTypeError, OAuthError) as e:
-            # log to Sentry
-            # log the user out
-            # TODO: logout
-            logging.info("Token error: %s", e.description)
-            sentry_sdk.capture_exception(e)
-        except (RequestsConnectionError, Timeout, RequestException, HTTPError):
-            # transient network error
-            logging.info("Transient network error in auth")
+            logger.debug("Refreshing login token for user %s", user)
 
-            if current_attempt == RetryStatus.FINAL:
-                # log the user out
-                # TODO: logout
-                pass
-            else:
-                self.process_request(
-                    request, current_attempt=current_attempt.successor()
-                )
+            # refresh the token
+            new_token = oauth.cilogon.fetch_access_token(
+                refresh_token=token["refresh_token"],
+                grant_type="refresh_token",
+            )
+            store_session_variables(request, new_token)
 
-        # Persist the possibly-updated token back
-        request.session["oidc_token"] = client.token
+        except OAuthError:
+            # refresh token has expired
+            logger.debug("Login token for user %s expired. Logging out.", user)
+            logout(request)

@@ -84,7 +84,6 @@ THIRD_PARTY_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "rest_framework",
-    "django_saml2_auth",
     "tinymce",
     "django_select2",
     "authlib.integrations.django_client",
@@ -259,7 +258,7 @@ LOGGING = {
             "formatter": "verbose",
         },
     },
-    "root": {"level": "INFO", "handlers": ["console"]},
+    "root": {"level": "DEBUG", "handlers": ["console"]},
 }
 
 # Your stuff...
@@ -336,7 +335,6 @@ SAML2_AUTH = {
 
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
-LOGIN_URL = "https://hcommons.org/wp-login.php"
 REDIRECT_FIELD_NAME = "redirect_to"
 
 PROFILE_FIELDS_LEFT = [
@@ -355,6 +353,8 @@ PROFILE_FIELDS_RIGHT = [
     "commons_activity",
     "commons_sites",
 ]
+
+LOGIN_URL = "/login/"
 
 CITATION_STYLES = {
     "ACM": "styles/association-for-computing-machinery.csl",
@@ -411,3 +411,8 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
     "ALLOWED_CILOGON_FORWARDING_DOMAINS",
     default=["hcommons.org", "msu.edu", "localhost"],
 )
+
+CILOGON_DISCOVERY_URL = "https://cilogon.org/.well-known/openid-configuration"
+CILOGON_SCOPE = "openid email profile org.cilogon.userinfo offline_access"
+CILOGON_REFRESH_TOKEN_TIMEOUT = 300
+CILOGON_LOGOUT_URL = "https://cilogon.org/logout"

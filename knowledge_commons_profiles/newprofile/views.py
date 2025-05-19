@@ -17,6 +17,7 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from knowledge_commons_profiles.__version__ import VERSION
@@ -356,9 +357,7 @@ def header_bar(request):
             ),
             "short_notifications": notifications,
             "notification_count": (len(notifications) if notifications else 0),
-            "logout_url": f"https://hcommons.org/wp-login.php?"
-            f"action=logout&"
-            f"redirect_to={request.build_absolute_uri()}",
+            "logout_url": reverse("logout"),
             "logged_in_profile_image": (
                 api_me.get_profile_photo() if api_me else None
             ),
@@ -444,9 +443,7 @@ def mysql_data(request, username):
                     if profile_info_obj["profile"].show_recent_activity
                     else None
                 ),
-                "logout_url": f"https://hcommons.org/wp-login.php?"
-                f"action=logout&"
-                f"redirect_to={request.build_absolute_uri()}",
+                "logout_url": reverse("logout"),
                 "profile": profile_info_obj,
                 "show_commons_groups": profile_info_obj[
                     "profile"
