@@ -21,7 +21,7 @@ from django.urls import path
 from knowledge_commons_profiles.cilogon import views
 
 urlpatterns = [
-    path("login/", views.login, name="login"),
+    path("login/", views.cilogon_login, name="login"),
     path("logout/", views.logout, name="logout"),
     path(settings.OIDC_CALLBACK, views.callback, name="oidc_callback"),
 ]

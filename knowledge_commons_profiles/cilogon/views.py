@@ -3,30 +3,28 @@ Views for CILogon
 
 """
 
-import binascii
-import contextlib
-import json
 import logging
-import urllib.parse as urlparse
 
 import sentry_sdk
-import tldextract
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
+from django.contrib.auth import login
 from django.shortcuts import redirect
 from django.shortcuts import render
-from idna import IDNAError
+from django.urls import reverse
 
+from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
-from knowledge_commons_profiles.cilogon.oauth import extract_code_next_url
-from knowledge_commons_profiles.cilogon.oauth import generate_next_url
+from knowledge_commons_profiles.cilogon.oauth import forward_url
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
+from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.newprofile.api import User
 
 logger = logging.getLogger(__name__)
 
 
-def login(request):
+def cilogon_login(request):
     """
     The login redirect for OAuth
     :param request: the request
@@ -48,36 +46,10 @@ def callback(request):
     :param request: request
     """
 
-    # attempt to decode state to see if there is a next URL
-    # if there is, we want to forward the code to the next URL for it to decode
-    # If there is no next URL, we want to decode the code here and login
-    with contextlib.suppress(
-        json.JSONDecodeError, TypeError, binascii.Error, ValueError
-    ):
-        code, next_url = extract_code_next_url(request)
-
-        if next_url and next_url != "":
-            url_parts = generate_next_url(code, next_url, request)
-
-            try:
-                # parse netloc into subdomain, base domain etc.
-                extract_result = tldextract.extract(next_url)
-
-                # validate that the next URL is in the allowed list
-                # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
-                if (
-                    extract_result.domain + "." + extract_result.suffix
-                ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
-                    logger.info("Forwarding CILogon code to %s", next_url)
-                    return redirect(str(urlparse.urlunparse(url_parts)))
-                logger.warning(
-                    "Disallowed CILogon code forwarding URL: %s", next_url
-                )
-            except (ValueError, IDNAError, UnicodeDecodeError, OSError) as e:
-                sentry_sdk.capture_exception(e)
-                logger.exception(
-                    "Exception parsing and validating next_url: %s", next_url
-                )
+    # forward the code to the next URL if it's valid
+    forwarding_url = forward_url(request)
+    if forwarding_url:
+        return forwarding_url
 
     # no "next" was found or was valid, so we will decode the result here
     try:
@@ -96,17 +68,55 @@ def callback(request):
             context={"exception": e},
         )
 
-    userinfo = token["userinfo"]
-    request.session["oidc_token"] = token
-    request.session["oidc_userinfo"] = userinfo
+    userinfo = store_session_variables(request, token)
 
     # our linking logic:
-    logger.info("Token %s", token)
-    logger.info("Linking user %s", userinfo)
+    # see whether we have a sub object
+    sub_association = SubAssociation.objects.filter(
+        sub=userinfo["sub"]
+    ).first()
 
-    # determine whether we have an account here
+    # do we have a sub->profile?
+    if sub_association:
+        # yes, found a sub->profile, log them in
+        find_user_and_login(request, sub_association)
 
+        # update user network affiliations
+        # TODO: update user network affiliations
+
+        # return to the profile page
+        return redirect(reverse("my_profile"))
+
+    # no, no user. Redirect to the profile association page
     return None
+
+
+def find_user_and_login(request, sub_association):
+    """
+    Find the user and log them in
+    """
+    # does the user exist in Django?
+    user = User.objects.filter(
+        username=sub_association.profile.username
+    ).first()
+
+    if user:
+        logger.info(
+            "Logging in user %s from sub %s",
+            user.username,
+            sub_association.sub,
+        )
+    else:
+        # there is no user at the moment, so create one
+        # note: this is an odd situation as the user has a Profile
+        # but not a User
+        user = User.objects.create(
+            username=sub_association.profile.username,
+            email=sub_association.profile.email,
+        )
+
+    # log the user in
+    login(request, user)
 
 
 def logout(request):
