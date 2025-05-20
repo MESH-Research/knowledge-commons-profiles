@@ -40,3 +40,8 @@ class RESTError:
         "status": "fatal",
         "code": 1008,
     }
+    FATAL_NO_USER_AGENT_DEFINED = {
+        "message": "No user agent specified",
+        "status": "fatal",
+        "code": 1009,
+    }

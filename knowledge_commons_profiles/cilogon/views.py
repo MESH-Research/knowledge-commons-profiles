@@ -111,13 +111,19 @@ def callback(request):
 
 
 def app_logout(
-    request, redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT
+    request,
+    redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT,
+    user_name=None,
+    user_agent=None,
+    apps=None,
 ):
     """
     Log the user out of all sessions sharing this user agent
-    :param request:
-    :return:
     """
+
+    if not apps:
+        apps = settings.CILOGON_APP_LIST
+
     # An important note: CILogon does not support the end_session_endpoint
     # hence we have to revoke keys manually to do full federated logout
 
@@ -127,19 +133,23 @@ def app_logout(
     # 2. Find the OP's end_session_endpoint in the metadata
     client = oauth.create_client("cilogon")
     client.load_server_metadata()
-    end_session = client.server_metadata.get("revocation_endpoint")
+    revocation_endpoint = client.server_metadata.get("revocation_endpoint")
 
     # set flag to middleware
     request.session["hard_refresh"] = True
     request.session.save()
 
     # get current username
-    user_name = request.user.username
+    user_name = user_name if user_name else request.user.username
+
+    user_agent = (
+        user_agent if user_agent else request.headers.get("user-agent", "")
+    )
 
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
-        user_agent=request.headers.get("user-agent"),
-        app="Profiles",
+        user_agent=user_agent,
+        app__in=apps,
         user_name=user_name,
     )
 
@@ -151,7 +161,7 @@ def app_logout(
             try:
                 revoke_token(
                     client=client,
-                    revocation_url=end_session,
+                    revocation_url=revocation_endpoint,
                     token_with_privilege=token,
                     token_revoke={
                         "refresh_token": token_association.refresh_token,
@@ -177,7 +187,7 @@ def app_logout(
         try:
             revoke_token(
                 client=client,
-                revocation_url=end_session,
+                revocation_url=revocation_endpoint,
                 token_with_privilege=token,
                 token_revoke={
                     "refresh_token": token.get("refresh_token", ""),

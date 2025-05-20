@@ -4,6 +4,7 @@ The REST API for the profile app
 
 import logging
 
+from django.conf import settings
 from django.http import Http404
 from rest_framework import generics
 from rest_framework import status
@@ -11,6 +12,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from knowledge_commons_profiles.cilogon.models import SubAssociation
+from knowledge_commons_profiles.cilogon.views import RedirectBehaviour
+from knowledge_commons_profiles.cilogon.views import app_logout
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
@@ -179,3 +182,100 @@ class TokenPutView(generics.CreateAPIView):
     authentication_classes = [StaticBearerAuthentication]
     permission_classes = [HasStaticBearerToken]
     serializer_class = TokenSerializer
+
+
+class LogoutView(generics.CreateAPIView):
+    """
+    Log a user out
+    """
+
+    authentication_classes = [StaticBearerAuthentication]
+    permission_classes = [HasStaticBearerToken]
+    serializer_class = TokenSerializer
+
+    def post(self, request, *args, **kwargs):
+        # should always be true
+        has_full_access = bool(self.request.auth)
+
+        try:
+            user_name, user_agent, error = self.get_data(
+                has_full_access=has_full_access
+            )
+
+            if error:
+                return error
+
+            app_logout(
+                request=self.request,
+                redirect_behaviour=RedirectBehaviour.NO_REDIRECT,
+                user_name=user_name,
+                user_agent=user_agent,
+            )
+
+            meta = build_metadata(has_full_access)
+
+            return Response(
+                {
+                    "message": "Action successfully triggered.",
+                    "data": {
+                        "user_name": user_name,
+                        "user_agent": user_agent,
+                        "app": settings.CILOGON_APP_LIST,
+                    },
+                    **meta,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:  # noqa:BLE001
+            return Response(
+                {
+                    "error": str(e),
+                    **build_metadata(
+                        has_full_access, error=RESTError.FATAL_UNDEFINED_ERROR
+                    ),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def get_data(self, has_full_access):
+        """
+        Get data for use
+        """
+        user_name = self.request.data.get("user_name")
+
+        if not user_name:
+            return (
+                None,
+                None,
+                Response(
+                    {
+                        "message": "Failure. No username defined.",
+                        **build_metadata(
+                            has_full_access,
+                            error=RESTError.FATAL_NO_USERNAME_DEFINED,
+                        ),
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                ),
+            )
+
+        user_agent = self.request.data.get("user_agent")
+
+        if not user_agent:
+            return (
+                None,
+                None,
+                Response(
+                    {
+                        "message": "Failure. No user agent defined.",
+                        **build_metadata(
+                            has_full_access,
+                            error=RESTError.FATAL_NO_USER_AGENT_DEFINED,
+                        ),
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                ),
+            )
+
+        return user_name, user_agent, None

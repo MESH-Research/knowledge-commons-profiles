@@ -18,12 +18,18 @@ Including another URLconf
 from django.urls import path
 
 from knowledge_commons_profiles.rest_api.views import GroupDetailView
+from knowledge_commons_profiles.rest_api.views import LogoutView
 from knowledge_commons_profiles.rest_api.views import ProfileDetailView
 from knowledge_commons_profiles.rest_api.views import ProfileListView
 from knowledge_commons_profiles.rest_api.views import SubListView
 from knowledge_commons_profiles.rest_api.views import TokenPutView
 
 urlpatterns = [
+    path(
+        r"api/v1/actions/logout/",
+        LogoutView.as_view(),
+        name="tokens_put_view",
+    ),
     path(
         r"api/v1/subs/",
         SubListView.as_view(),
