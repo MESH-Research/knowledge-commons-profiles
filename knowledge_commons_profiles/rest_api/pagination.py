@@ -37,16 +37,3 @@ class ProfileCursorPagination(CursorPagination):
     page_size = 20
     ordering = "id"
     cursor_query_param = "cursor"
-
-    def get_paginated_response(self, data):
-        has_full_access = bool(self.request.auth)
-        # build_metadata returns a dict like {'has_full_access': True, …}
-        meta = build_metadata(has_full_access)
-        # add the DRF cursor links
-        meta.update(
-            {
-                "next": self.get_next_link(),
-                "previous": self.get_previous_link(),
-            }
-        )
-        return Response({"data": data, **meta})

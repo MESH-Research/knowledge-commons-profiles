@@ -87,6 +87,7 @@ THIRD_PARTY_APPS = [
     "tinymce",
     "django_select2",
     "authlib.integrations.django_client",
+    "drf_yasg",
 ]
 
 LOCAL_APPS = [

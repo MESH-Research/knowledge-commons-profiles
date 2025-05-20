@@ -7,6 +7,8 @@ import logging
 from django.conf import settings
 from django.http import Http404
 from django.urls import reverse
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -109,9 +111,13 @@ class ProfileDetailView(generics.RetrieveAPIView):
 
         serializer = self.get_serializer(instance)
         data = serializer.data
-        meta = build_metadata(has_full_access)
 
-        return Response({"data": data, **meta}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "results": data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class GroupDetailView(generics.RetrieveAPIView):
@@ -171,9 +177,13 @@ class GroupDetailView(generics.RetrieveAPIView):
 
         serializer = self.get_serializer(instance)
         data = serializer.data
-        meta = build_metadata(has_full_access)
 
-        return Response({"data": data, **meta}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "results": data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class TokenPutView(generics.CreateAPIView):
@@ -195,6 +205,36 @@ class LogoutView(generics.CreateAPIView):
     permission_classes = [HasStaticBearerToken]
     serializer_class = LogoutSerializer
 
+    @swagger_auto_schema(
+        request_body=LogoutSerializer,
+        responses={
+            200: openapi.Response(
+                "Success",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message": openapi.Schema(type=openapi.TYPE_STRING),
+                        "data": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "user_name": openapi.Schema(
+                                    type=openapi.TYPE_STRING
+                                ),
+                                "user_agent": openapi.Schema(
+                                    type=openapi.TYPE_STRING
+                                ),
+                                "url": openapi.Schema(
+                                    type=openapi.TYPE_STRING
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            ),
+            400: "Validation error",
+            401: "Unauthorized",
+        },
+    )
     def post(self, request, *args, **kwargs):
         # should always be true
         has_full_access = bool(self.request.auth)
@@ -209,8 +249,6 @@ class LogoutView(generics.CreateAPIView):
                 user_name=serializer.validated_data.get("user_name"),
                 user_agent=serializer.validated_data.get("user_agent"),
             )
-
-            meta = build_metadata(has_full_access)
 
             return Response(
                 {
@@ -230,7 +268,6 @@ class LogoutView(generics.CreateAPIView):
                         ),
                         "app": settings.CILOGON_APP_LIST,
                     },
-                    **meta,
                 },
                 status=status.HTTP_200_OK,
             )
