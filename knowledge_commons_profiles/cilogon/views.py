@@ -146,6 +146,13 @@ def app_logout(
         user_agent if user_agent else request.headers.get("user-agent", "")
     )
 
+    logger.debug(
+        "Logging out user %s with user agent %s on %s",
+        user_name,
+        user_agent,
+        apps,
+    )
+
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
         user_agent=user_agent,

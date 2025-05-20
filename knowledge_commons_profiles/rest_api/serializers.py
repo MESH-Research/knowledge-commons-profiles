@@ -224,3 +224,12 @@ class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = TokenUserAgentAssociations
         fields = "__all__"
+
+
+class LogoutSerializer(serializers.Serializer):
+    """
+    Serializer for the Logout view
+    """
+
+    user_name = serializers.CharField()
+    user_agent = serializers.CharField()

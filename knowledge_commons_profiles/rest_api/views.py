@@ -6,6 +6,7 @@ import logging
 
 from django.conf import settings
 from django.http import Http404
+from django.urls import reverse
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -33,6 +34,7 @@ from knowledge_commons_profiles.rest_api.pagination import (
 from knowledge_commons_profiles.rest_api.serializers import (
     GroupDetailSerializer,
 )
+from knowledge_commons_profiles.rest_api.serializers import LogoutSerializer
 from knowledge_commons_profiles.rest_api.serializers import (
     ProfileDetailSerializer,
 )
@@ -191,25 +193,21 @@ class LogoutView(generics.CreateAPIView):
 
     authentication_classes = [StaticBearerAuthentication]
     permission_classes = [HasStaticBearerToken]
-    serializer_class = TokenSerializer
+    serializer_class = LogoutSerializer
 
     def post(self, request, *args, **kwargs):
         # should always be true
         has_full_access = bool(self.request.auth)
 
         try:
-            user_name, user_agent, error = self.get_data(
-                has_full_access=has_full_access
-            )
-
-            if error:
-                return error
+            serializer = self.serializer_class(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
             app_logout(
                 request=self.request,
                 redirect_behaviour=RedirectBehaviour.NO_REDIRECT,
-                user_name=user_name,
-                user_agent=user_agent,
+                user_name=serializer.validated_data.get("user_name"),
+                user_agent=serializer.validated_data.get("user_agent"),
             )
 
             meta = build_metadata(has_full_access)
@@ -218,8 +216,18 @@ class LogoutView(generics.CreateAPIView):
                 {
                     "message": "Action successfully triggered.",
                     "data": {
-                        "user_name": user_name,
-                        "user_agent": user_agent,
+                        "user": {
+                            "user": serializer.validated_data.get("user_name"),
+                            "url": reverse(
+                                "profiles_detail_view",
+                                args=[
+                                    serializer.validated_data.get("user_name")
+                                ],
+                            ),
+                        },
+                        "user_agent": serializer.validated_data.get(
+                            "user_agent"
+                        ),
                         "app": settings.CILOGON_APP_LIST,
                     },
                     **meta,
