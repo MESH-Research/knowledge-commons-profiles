@@ -17,13 +17,22 @@ class SubAssociation(models.Model):
 
 class TokenUserAgentAssociations(models.Model):
     """
-    Associates the most recent token with a user agent and an app, allowing
+    Associates a token with a user agent and an app, allowing
     single-service logout
     """
 
     user_agent = models.CharField(max_length=255)
-    token = models.TextField()
+    access_token = models.TextField(blank=True, null=True)
+    refresh_token = models.TextField(blank=True, null=True)
     app = models.CharField(max_length=255)
+    user_name = models.CharField(max_length=255, default="")
+
+    # auto date field updated at time of creation
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.app} - {self.token} - {self.user_agent}"
+        return (
+            f"{self.app} - [REFRESH] {self.refresh_token} [ACCESS] "
+            f"{self.access_token} for {self.user_agent} "
+            f"({self.created_at})"
+        )

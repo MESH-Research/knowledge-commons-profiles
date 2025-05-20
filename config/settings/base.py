@@ -147,6 +147,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
 ]
 
@@ -253,12 +254,12 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
     },
-    "root": {"level": "DEBUG", "handlers": ["console"]},
+    "root": {"level": "DEBUG" if DEBUG else "INFO", "handlers": ["console"]},
 }
 
 # Your stuff...
@@ -416,3 +417,4 @@ CILOGON_DISCOVERY_URL = "https://cilogon.org/.well-known/openid-configuration"
 CILOGON_SCOPE = "openid email profile org.cilogon.userinfo offline_access"
 CILOGON_REFRESH_TOKEN_TIMEOUT = 300
 CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
+CILOGON_TOKEN_CLEAROUT_DAYS = 4

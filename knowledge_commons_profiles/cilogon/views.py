@@ -3,10 +3,9 @@ Views for CILogon
 
 """
 
-import contextlib
-import json
 import logging
 
+import requests
 import sentry_sdk
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
@@ -17,10 +16,12 @@ from django.urls import reverse
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
+from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import forward_url
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
+from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,9 @@ def app_logout(request):
     :param request:
     :return:
     """
+    # An important note: CILogon does not support the end_session_endpoint
+    # hence we have to revoke keys manually to do full federated logout
+
     # 1. Pull off the ID Token so we can hint it to CILogon
     token = request.session.get("oidc_token", {})
 
@@ -115,65 +119,68 @@ def app_logout(request):
     request.session["hard_refresh"] = True
     request.session.save()
 
+    # get current username
+    user_name = request.user.username
+
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
-        user_agent=request.headers["user-agent"],
+        user_agent=request.headers.get("user-agent"),
         app="Profiles",
+        user_name=user_name,
     )
 
-    with contextlib.suppress(OAuthError):
+    if token_associations.exists():
         # for each relevant token, revoke on CILogon
         for token_association in token_associations:
-            token_revoke = json.loads(token_association.token)
+            # for each relevant token, revoke on CILogon, with this token
+            # last
+            try:
+                revoke_token(
+                    client=client,
+                    revocation_url=end_session,
+                    token_with_privilege=token,
+                    token_revoke={
+                        "refresh_token": token_association.refresh_token,
+                        "access_token": token_association.access_token,
+                    },
+                )
+            except (
+                TypeError,
+                KeyError,
+                ValueError,
+                OAuthError,
+                requests.RequestException,
+            ):
+                logger.warning(
+                    "Unable to revoke token %s",
+                    token_association,
+                )
 
-            # for each relevant token, revoke on CILogon, with this token last
-            client.post(
-                end_session,
-                data={
-                    "token": token_revoke.get("refresh_token"),
-                    "token_type_hint": "refresh_token",
-                },
-                auth=(client.client_id, client.client_secret),
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                token=token,
-            )
-
-            client.post(
-                end_session,
-                data={
-                    "token": token_revoke.get("access_token"),
-                    "token_type_hint": "access_token",
-                },
-                auth=(client.client_id, client.client_secret),
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                token=token,
-            )
-
-        # delete these token associations that have now been revoked
-        token_associations.delete()
+            # delete these token associations that have now been revoked
+            delete_associations(token_associations)
 
         # now revoke our token, in case it wasn't in the list
-        client.post(
-            end_session,
-            data={
-                "token": token.get("refresh_token"),
-                "token_type_hint": "refresh_token",
-            },
-            auth=(client.client_id, client.client_secret),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            token=token,
-        )
-
-        client.post(
-            end_session,
-            data={
-                "token": token.get("access_token"),
-                "token_type_hint": "access_token",
-            },
-            auth=(client.client_id, client.client_secret),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            token=token,
-        )
+        try:
+            revoke_token(
+                client=client,
+                revocation_url=end_session,
+                token_with_privilege=token,
+                token_revoke={
+                    "refresh_token": token.get("refresh_token", ""),
+                    "access_token": token.get("access_token", ""),
+                },
+            )
+        except (
+            TypeError,
+            KeyError,
+            ValueError,
+            OAuthError,
+            requests.RequestException,
+        ):
+            logger.warning(
+                "Unable to revoke token %s",
+                token,
+            )
 
     # Kill the local Django session immediately
     # logout(request)

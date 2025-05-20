@@ -17,6 +17,10 @@ from authlib.oidc.core import CodeIDToken
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.models import User
+from django.db import DatabaseError
+from django.db import IntegrityError
+from django.db import OperationalError
+from django.db.models import ProtectedError
 from django.shortcuts import redirect
 from idna import IDNAError
 
@@ -91,6 +95,9 @@ def pack_state(next_url):
 
 
 def forward_url(request):
+    """
+    Forward the code to the next URL (return a redirect) or return None
+    """
     # attempt to decode state to see if there is a next URL
     # if there is, we want to forward the code to the next URL for it to decode
     # If there is no next URL, we want to decode the code here and login
@@ -127,7 +134,7 @@ def forward_url(request):
 
 def store_session_variables(request, token):
     """
-    Store session variables
+    Store session variables "userinfo" and "oidc_token"
     """
     logger.info("Storing new token")
 
@@ -189,3 +196,78 @@ def token_expired(token, user):
         )
         return False
     return True
+
+
+def revoke_token(
+    client,
+    revocation_url,
+    token_with_privilege,
+    token_revoke,
+    token_type_hints=None,
+):
+    """
+    Revoke a token
+    :param client: the client
+    :param revocation_url: the revocation url
+    :param token_with_privilege: the token with permission to revoke
+    :param token_revoke: the token to revoke
+    :param token_type_hints: the types of token
+    :return:
+    """
+
+    if token_type_hints is None:
+        token_type_hints = ["refresh_token", "access_token"]
+
+    if token_revoke is None:
+        token_revoke = {}
+
+    for token_type_hint in token_type_hints:
+        client.post(
+            revocation_url,
+            data={
+                "token": token_revoke[token_type_hint],
+                "token_type_hint": token_type_hint,
+            },
+            auth=(client.client_id, client.client_secret),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            token=token_with_privilege,
+        )
+
+
+def delete_associations(associations):
+    """
+    Delete a set of TokenUserAgentAssociations
+    """
+    try:
+        # delete these tokens
+        associations.delete()
+    except ProtectedError:
+        logger.warning(
+            "Unable to delete tokens for user agents during garbage "
+            "collection due to PROTECT foreign key"
+        )
+        sentry_sdk.capture_exception()
+    except IntegrityError:
+        logger.warning(
+            "Unable to delete tokens for user agents during garbage "
+            "collection due to database integrity issue"
+        )
+        sentry_sdk.capture_exception()
+    except DatabaseError:
+        logger.warning(
+            "Unable to delete tokens for user agents during garbage "
+            "collection due to unknown database error"
+        )
+        sentry_sdk.capture_exception()
+    except OperationalError:
+        logger.warning(
+            "Unable to delete tokens for user agents during garbage "
+            "collection due to unknown database operational error"
+        )
+        sentry_sdk.capture_exception()
+    except Exception:
+        logger.exception(
+            "Unable to delete tokens for user agents during garbage "
+            "collection due to unknown other error"
+        )
+        sentry_sdk.capture_exception()
