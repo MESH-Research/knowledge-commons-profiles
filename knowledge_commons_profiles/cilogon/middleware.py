@@ -14,11 +14,11 @@ from django.contrib.auth import logout
 from django.core.cache import cache
 from django.core.exceptions import FieldError
 from django.db import DatabaseError
+from django.db import OperationalError
 from django.db.models import Q
 from django.db.models.enums import IntEnum
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
-from psycopg import OperationalError
 
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import delete_associations

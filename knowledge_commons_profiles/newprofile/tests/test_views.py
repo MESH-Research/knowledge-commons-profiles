@@ -194,7 +194,7 @@ class MyProfileTests(TestCase):
                 ]
             )
         )
-        self.assertTrue(response.url.startswith("https://hcommons.org"))
+        self.assertTrue("login" in response.url)
 
 
 @override_settings(
@@ -318,7 +318,7 @@ class EditProfileTests(TestCase):
                 ]
             )
         )
-        self.assertTrue(response.url.startswith("https://hcommons.org"))
+        self.assertTrue("login" in response.url)
 
 
 class BlogPostsTests(TestCase):

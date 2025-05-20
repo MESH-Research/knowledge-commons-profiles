@@ -4,11 +4,13 @@ Views for CILogon
 """
 
 import logging
+from enum import IntEnum
 
 import requests
 import sentry_sdk
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
+from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -27,13 +29,22 @@ from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 logger = logging.getLogger(__name__)
 
 
+class RedirectBehaviour(IntEnum):
+    """
+    Enum for redirect behaviour
+    """
+
+    REDIRECT = 1
+    NO_REDIRECT = 2
+
+
 def cilogon_login(request):
     """
     The login redirect for OAuth
     :param request: the request
     """
-
     # flush the session
+    app_logout(request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT)
     request.session.flush()
 
     # can use this to pass a next_url if we wish
@@ -61,7 +72,7 @@ def callback(request):
     # no "next" was found or was valid, so we will decode the result here
     try:
         token = oauth.cilogon.authorize_access_token(
-            request, prompt="none", claims_cls=ORCIDHandledToken
+            request, claims_cls=ORCIDHandledToken
         )
     except OAuthError as e:
         # send to Sentry if there are errors that are not just the user
@@ -80,7 +91,7 @@ def callback(request):
     # our linking logic:
     # see whether we have a sub object
     sub_association = SubAssociation.objects.filter(
-        sub=userinfo["sub"]
+        sub=userinfo.get("sub", "")
     ).first()
 
     # do we have a sub->profile?
@@ -95,10 +106,13 @@ def callback(request):
         return redirect(reverse("my_profile"))
 
     # no, no user. Redirect to the profile association page
+    # TODO: redirect to the profile association page
     return None
 
 
-def app_logout(request):
+def app_logout(
+    request, redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT
+):
     """
     Log the user out of all sessions sharing this user agent
     :param request:
@@ -183,8 +197,11 @@ def app_logout(request):
             )
 
     # Kill the local Django session immediately
-    # logout(request)
+    logout(request)
 
-    # redirect the user to the home page
-    # TODO: proper redirect
-    return redirect("/")
+    if redirect_behaviour == RedirectBehaviour.REDIRECT:
+        # redirect the user to the home page
+        # TODO: proper redirect
+        return redirect("/")
+
+    return None
