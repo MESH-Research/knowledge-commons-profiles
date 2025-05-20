@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 USE_DOCKER=yes
 IPYTHONDIR=/app/.ipython
-REDIS_SERVER=redis://todo:6379
+REDIS_SERVER=redis://redis:6379
 SAML2_METADATA_LOCAL_FILE_PATH=/home/martin/Documents/Programming/MESH/newprofile/keys/metadata.xml
 SAML2_PRIVATE_KEY_FILE=/home/martin/Documents/Programming/MESH/newprofile/keys/private.key
 SAML2_CERT_FILE=/home/martin/Documents/Programming/MESH/newprofile/keys/public.crt

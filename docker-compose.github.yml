@@ -12,6 +12,7 @@ services:
     container_name: knowledge_commons_profiles_github_django
     depends_on:
       - postgres
+      - redis
     volumes:
       - .:/app:z
     env_file:
@@ -32,3 +33,6 @@ services:
       - knowledge_commons_profiles_github_postgres_data_backups:/backups
     env_file:
       - ./.envs/.github/.postgres
+
+  redis:
+    image: docker.io/redis:6
