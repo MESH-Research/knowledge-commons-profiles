@@ -57,7 +57,7 @@ urlpatterns = [
     path(
         r"api/v1/actions/logout/",
         LogoutView.as_view(),
-        name="tokens_put_view",
+        name="actions_post_view",
     ),
     path(
         r"api/v1/subs/",

@@ -250,6 +250,8 @@ class LogoutView(generics.CreateAPIView):
                 user_agent=serializer.validated_data.get("user_agent"),
             )
 
+            # TODO: ping all applications with a logout request
+
             return Response(
                 {
                     "message": "Action successfully triggered.",
