@@ -19,6 +19,7 @@ class Command(BaseCommand):
     help = "Test the MLA API"
 
     def handle(self, *args, **options):
+        # cache.clear()
         mla = MLA()
         response: SearchApiResponse = mla.search("kfitz@kfitz.info")
 
@@ -26,6 +27,6 @@ class Command(BaseCommand):
             response.meta.status == "success"
             and response.data[0].total_num_results > 0
         ):
-            mla_id = response.data[0].search_results[0].get_user_info
+            mla_id = response.data[0].search_results[0].id
 
             logging.info(mla.is_member(mla_id))

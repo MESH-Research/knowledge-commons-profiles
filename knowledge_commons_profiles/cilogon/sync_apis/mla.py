@@ -9,23 +9,29 @@ import logging
 import time
 from datetime import UTC
 from datetime import datetime
+from http import HTTPMethod
 from typing import Literal
 from urllib import parse
 from urllib.parse import urlencode
 
 import requests
 import sentry_sdk
+from dateutil import parser
 from django.conf import settings
 from django.core.cache import cache
 from pydantic import BaseModel
 from pydantic import TypeAdapter
 from pydantic import ValidationError
+from requests.adapters import HTTPAdapter
 from starlette.status import HTTP_200_OK
+from urllib3.util.retry import Retry
 
 from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 
 logger = logging.getLogger(__name__)
+
+MEMBERS_URL = "members"
 
 
 class CommonMeta(BaseModel):
@@ -63,7 +69,7 @@ class SimpleGeneralInfo(BaseModel):
     last_name: str
     suffix: str | None = None
     email: str | None = ""
-    email_visible: Literal["Y", "N"] | None = None
+    email_visible: Literal["Y", "N", ""] | None = None
     email_shareable: str | None = None
     phone: str | None = ""
     web_site: str | None = ""
@@ -322,54 +328,84 @@ class MLA(SyncClass):
         Constructor
         """
         self.base_url = "https://api.mla.org/2/"
+        self.session = requests.Session()
 
-    @staticmethod
-    def _make_rest_request(url, http_method="GET", params=None):
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[500, 502, 503, 504],
+            backoff_factor=1,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("https://", adapter)
+
+    def _make_rest_request(self, url, http_method=HTTPMethod.GET, params=None):
         """
         Make a request to the MLA API
         """
         timeout = 30
         headers = {"Content-Type": "application/json"}
 
-        response = requests.request(
+        response = self.session.request(
             method=http_method,
             url=url,
             headers=headers,
             params=params,
             timeout=timeout,
-            verify=False,  # Disable SSL verification
+            verify=True,
         )
         response.raise_for_status()
 
-        return {
-            "status": response.status_code,
-            "body": response.text,
-            "response_object": response,
-        }
+        return response
 
-    def _query_mla_api(self, attributes, suffix=None):
+    def _query_mla_api(
+        self,
+        attributes: dict[str, str],
+        suffix: str | None = None,
+        cache_key: str | None = None,
+    ):
         """
         Query the MLA API
         :param attributes:
         :return:
         """
-        suffix = suffix if suffix else "members"
+        if cache_key:
+            cached_response = cache.get(cache_key, version=VERSION)
+
+            if cached_response is not None:
+                return cached_response
+
+        suffix = suffix if suffix else MEMBERS_URL
         url = self.base_url + suffix
 
-        self._sign_request("GET", attributes, suffix=suffix)
+        # copy so as not to mutate the original dictionary
+        signed_attributes = attributes.copy()
+        signed_attributes["signature"] = self._get_signature(
+            HTTPMethod.GET, attributes, suffix=suffix
+        )
 
         try:
-            response = self._make_rest_request(url, "GET", attributes)
+            response = self._make_rest_request(
+                url, HTTPMethod.GET, signed_attributes
+            )
+
+            if cache_key:
+                cache.set(
+                    cache_key,
+                    response.content,
+                    timeout=settings.MLA_CACHE_TIMEOUT,
+                    version=VERSION,
+                )
+
         except requests.exceptions.RequestException as e:
             message = f"Request to MLA API failed: {e}"
             logger.exception(message)
             return {}
 
-        if response["status"] == HTTP_200_OK:
-            logger.debug("MLA response: %s", response["body"])
-            return response["body"]
+        if response.status_code == HTTP_200_OK:
+            logger.debug("MLA response: %s", response.content)
+            return response.content
 
-        message = f"Received {response['status']} response"
+        message = f"Received {response.status_code} response"
         logger.error(message)
         return {}
 
@@ -388,16 +424,16 @@ class MLA(SyncClass):
             # parse response.data[0].membership.expiring_date into a date
             # and check if it is in the future
             try:
-                expiring_date = datetime.strptime(
-                    response.data[0].membership.expiring_date,
-                    "%d/%m/%Y",
+                expiring_date = parser.parse(
+                    response.data[0].membership.expiring_date
                 ).astimezone(UTC)
                 today = datetime.now(tz=UTC)
 
                 if expiring_date > today:
                     return True
-            except ValueError:
-                pass
+            except (ValueError, IndexError, AttributeError):
+                logger.exception("Error parsing date in MLA response")
+                return False
 
             return True
 
@@ -408,11 +444,7 @@ class MLA(SyncClass):
         Search for a user
         :param email: the email to search for
         """
-        cache_key = f"mla_search_{email}"
-        cached_response = cache.get(cache_key, version=VERSION)
-
-        if cached_response is not None:
-            return cached_response
+        cache_key = f"MLA_api_search_{email}"
 
         search_params = {
             "email": email,
@@ -421,25 +453,32 @@ class MLA(SyncClass):
             "key": settings.MLA_API_KEY,
         }
 
-        result = self._query_mla_api(search_params)
+        result = self._query_mla_api(search_params, cache_key=cache_key)
 
+        if not result:
+            return {}
+
+        return self._process_adapter(SearchApiResponse, result)
+
+    @staticmethod
+    def _process_adapter(type_adapter, result):
+        """
+        Process the response
+        """
         try:
-            adapter = TypeAdapter(SearchApiResponse)
-            response = adapter.validate_python(json.loads(result))
-
-            cache.set(
-                key=cache_key,
-                value=response,
-                timeout=settings.MLA_CACHE_TIMEOUT,
-                version=VERSION,
-            )
+            adapter = TypeAdapter(type_adapter)
+            response = adapter.validate_json(result)
 
         except ValidationError:
             logger.exception("Error parsing MLA search response")
             sentry_sdk.capture_exception()
             return {}
-        else:
-            return response
+        except json.JSONDecodeError:
+            logger.exception("Invalid JSON response from MLA API")
+            sentry_sdk.capture_exception()
+            return {}
+
+        return response
 
     def get_user_info(
         self, mla_id: str | int
@@ -453,59 +492,42 @@ class MLA(SyncClass):
             logger.exception("Invalid MLA ID (must be string or int)")
             return {}
 
-        cache_key = f"mla_user_info_{mla_id}"
-        cached_response = cache.get(cache_key, version=VERSION)
-
-        if cached_response is not None:
-            return cached_response
+        cache_key = f"MLA_api_user_info_{mla_id}"
 
         search_params = {
             "timestamp": time.time(),
             "key": settings.MLA_API_KEY,
         }
 
-        result = self._query_mla_api(search_params, suffix=f"members/{mla_id}")
+        result = self._query_mla_api(
+            search_params,
+            suffix=f"{MEMBERS_URL}/{mla_id}",
+            cache_key=cache_key,
+        )
 
-        try:
-            adapter = TypeAdapter(MemberResponse)
-            response = adapter.validate_python(json.loads(result))
-
-            cache.set(
-                key=cache_key,
-                value=response,
-                timeout=settings.MLA_CACHE_TIMEOUT,
-                version=VERSION,
-            )
-
-        except ValidationError:
-            logger.exception("Error parsing MLA ID response")
-            sentry_sdk.capture_exception()
+        if not result:
             return {}
 
-        else:
-            return response
+        return self._process_adapter(MemberResponse, result)
 
-    def _sign_request(self, http_method, params, suffix=None):
+    def _get_signature(self, http_method, params, suffix=None):
         """
         Append signature to input "params"
         """
-        suffix = suffix if suffix else "members"
+        suffix = suffix if suffix else MEMBERS_URL
 
         url = self.base_url + suffix + "?" + urlencode(params)
         logger.debug("Building signature for %s", url)
 
         base_string = f"{http_method}&{parse.quote(url, safe='')}"
 
-        api_signature = hmac.new(
+        return hmac.new(
             settings.MLA_API_SECRET.encode(),
             base_string.encode(),
             hashlib.sha256,
         ).hexdigest()
 
-        params["signature"] = api_signature
-        return api_signature
-
-    def groups(self, user_id) -> list[str]:
+    def groups(self, user_id: str | int) -> list[str]:
         """
         Get a user's groups
         """
