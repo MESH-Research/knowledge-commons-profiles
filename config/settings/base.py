@@ -423,3 +423,6 @@ CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
 
 MLA_API_KEY = env("MLA_API_KEY", default="")
 MLA_API_SECRET = env("MLA_API_SECRET", default="")
+MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
+
+EXTERNAL_SYNC_CLASSES: list[str] = ["MLA"]

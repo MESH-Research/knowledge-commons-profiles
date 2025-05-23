@@ -472,6 +472,10 @@ class Profile(models.Model):
         choices=CITATION_STYLE_CHOICES,
     )
 
+    external_sync_ids = models.TextField(blank=True, null=True)
+    is_member_of = models.TextField(blank=True, null=True)
+    in_membership_groups = models.TextField(blank=True, null=True)
+
     def __str__(self):
         """
         Return a human-readable representation of the Profile model instance

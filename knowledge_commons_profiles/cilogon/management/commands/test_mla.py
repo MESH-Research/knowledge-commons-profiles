@@ -3,6 +3,8 @@ Store stats in the DB
 
 """
 
+import logging
+
 from django.core.management.base import BaseCommand
 
 from knowledge_commons_profiles.cilogon.sync_apis.mla import MLA
@@ -18,12 +20,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         mla = MLA()
-        response: SearchApiResponse = mla.search("martin@eve.gd")
+        response: SearchApiResponse = mla.search("kfitz@kfitz.info")
 
         if (
             response.meta.status == "success"
             and response.data[0].total_num_results > 0
         ):
-            mla_id = response.data[0].search_results[0].id
+            mla_id = response.data[0].search_results[0].get_user_info
 
-            response = mla.id(mla_id)
+            logging.info(mla.is_member(mla_id))

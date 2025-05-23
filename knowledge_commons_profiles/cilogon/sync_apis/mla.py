@@ -7,6 +7,8 @@ import hmac
 import json
 import logging
 import time
+from datetime import UTC
+from datetime import datetime
 from typing import Literal
 from urllib import parse
 from urllib.parse import urlencode
@@ -14,10 +16,14 @@ from urllib.parse import urlencode
 import requests
 import sentry_sdk
 from django.conf import settings
+from django.core.cache import cache
 from pydantic import BaseModel
 from pydantic import TypeAdapter
 from pydantic import ValidationError
 from starlette.status import HTTP_200_OK
+
+from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 
 logger = logging.getLogger(__name__)
 
@@ -302,9 +308,13 @@ SearchApiResponse = SimpleSuccessResponse | CommonErrorResponse
 MemberResponse = MemberResponseSuccess | CommonErrorResponse
 
 
-class MLA:
+class MLA(SyncClass):
     """
-    The MLA API
+    The MLA API.
+
+    The API has several methods: search (will find a record by email),
+    get_user_info (will find a record by id), is_member (returns a boolean of
+    whether the user is a member) and groups (returns a user's groups).
     """
 
     def __init__(self):
@@ -356,17 +366,54 @@ class MLA:
             return {}
 
         if response["status"] == HTTP_200_OK:
+            logger.debug("MLA response: %s", response["body"])
             return response["body"]
 
         message = f"Received {response['status']} response"
         logger.error(message)
         return {}
 
-    def search(self, email):
+    def is_member(self, user_id: str | int) -> bool:
+        """
+        Check if a user is a member
+        """
+        response: MemberResponse | CommonErrorResponse | dict = (
+            self.get_user_info(user_id)
+        )
+
+        if (
+            getattr(response, "meta", None) is not None
+            and response.meta.status == "success"
+        ):
+            # parse response.data[0].membership.expiring_date into a date
+            # and check if it is in the future
+            try:
+                expiring_date = datetime.strptime(
+                    response.data[0].membership.expiring_date,
+                    "%d/%m/%Y",
+                ).astimezone(UTC)
+                today = datetime.now(tz=UTC)
+
+                if expiring_date > today:
+                    return True
+            except ValueError:
+                pass
+
+            return True
+
+        return False
+
+    def search(self, email) -> SearchApiResponse | CommonErrorResponse | dict:
         """
         Search for a user
         :param email: the email to search for
         """
+        cache_key = f"mla_search_{email}"
+        cached_response = cache.get(cache_key, version=VERSION)
+
+        if cached_response is not None:
+            return cached_response
+
         search_params = {
             "email": email,
             "membership_status": "ALL",
@@ -378,14 +425,25 @@ class MLA:
 
         try:
             adapter = TypeAdapter(SearchApiResponse)
-            return adapter.validate_python(json.loads(result))
+            response = adapter.validate_python(json.loads(result))
+
+            cache.set(
+                key=cache_key,
+                value=response,
+                timeout=settings.MLA_CACHE_TIMEOUT,
+                version=VERSION,
+            )
 
         except ValidationError:
             logger.exception("Error parsing MLA search response")
             sentry_sdk.capture_exception()
             return {}
+        else:
+            return response
 
-    def id(self, mla_id: str | int):
+    def get_user_info(
+        self, mla_id: str | int
+    ) -> MemberResponse | CommonErrorResponse | dict:
         """
         Search for a user
         """
@@ -394,6 +452,12 @@ class MLA:
         except ValueError:
             logger.exception("Invalid MLA ID (must be string or int)")
             return {}
+
+        cache_key = f"mla_user_info_{mla_id}"
+        cached_response = cache.get(cache_key, version=VERSION)
+
+        if cached_response is not None:
+            return cached_response
 
         search_params = {
             "timestamp": time.time(),
@@ -404,12 +468,22 @@ class MLA:
 
         try:
             adapter = TypeAdapter(MemberResponse)
-            return adapter.validate_python(json.loads(result))
+            response = adapter.validate_python(json.loads(result))
+
+            cache.set(
+                key=cache_key,
+                value=response,
+                timeout=settings.MLA_CACHE_TIMEOUT,
+                version=VERSION,
+            )
 
         except ValidationError:
             logger.exception("Error parsing MLA ID response")
             sentry_sdk.capture_exception()
             return {}
+
+        else:
+            return response
 
     def _sign_request(self, http_method, params, suffix=None):
         """
@@ -430,3 +504,9 @@ class MLA:
 
         params["signature"] = api_signature
         return api_signature
+
+    def groups(self, user_id) -> list[str]:
+        """
+        Get a user's groups
+        """
+        return []

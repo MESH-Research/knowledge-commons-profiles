@@ -43,6 +43,7 @@ from knowledge_commons_profiles.rest_api.serializers import (
 from knowledge_commons_profiles.rest_api.serializers import ProfileSerializer
 from knowledge_commons_profiles.rest_api.serializers import SubProfileSerializer
 from knowledge_commons_profiles.rest_api.serializers import TokenSerializer
+from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import build_metadata
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,8 @@ class ProfileDetailView(generics.RetrieveAPIView):
 
         try:
             instance = self.get_object()
+            # update the instance's sync IDs
+            ExternalSync.sync(profile=instance)
         except Http404:
             meta = build_metadata(
                 has_full_access, error=RESTError.FATAL_USER_NOT_FOUND

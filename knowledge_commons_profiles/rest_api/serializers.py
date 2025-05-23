@@ -3,6 +3,8 @@ Serializers for the REST API
 
 """
 
+import json
+
 from nameparser import HumanName
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -127,6 +129,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     )
     academic_interests = AcademicInterestSerializer(many=True, read_only=True)
     groups = serializers.SerializerMethodField()
+    external_sync_memberships = serializers.SerializerMethodField()
+    external_group_sync = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
@@ -151,7 +155,43 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             "orcid",
             "academic_interests",
             "groups",
+            "external_sync_memberships",
+            "external_group_sync",
         ]
+
+    def get_external_sync_memberships(self, obj):
+        """
+        Check if a user is a member of an external organisation
+        """
+        user_id = obj.username
+        request = self.context.get("request")
+
+        if not user_id:
+            return []
+
+        # create an API object
+        api = API(request, user_id, use_wordpress=False)
+        return json.loads(api.profile.is_member_of)
+
+    def get_external_group_sync(self, obj):
+        """
+        Check if a user is a member of an external organisation
+        """
+        request = self.context.get("request")
+        has_full_access = bool(request.auth)
+
+        if not has_full_access:
+            return []
+
+        user_id = obj.username
+        request = self.context.get("request")
+
+        if not user_id:
+            return []
+
+        # create an API object
+        api = API(request, user_id, use_wordpress=False)
+        return json.loads(api.profile.is_member_of)
 
     def get_groups(self, obj):
         """
