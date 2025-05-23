@@ -19,3 +19,5 @@ CILOGON_CLIENT_SECRET=client_secret
 STATIC_API_BEARER=static_bearer
 WP_MEDIA_URL=https://hcommons.org/app/uploads
 WP_MEDIA_ROOT=/home/martin/sixteenTB/uploads/
+MLA_API_SECRET=123
+MLA_API_KEY=akey

@@ -419,5 +419,7 @@ CILOGON_SCOPE = "openid email profile org.cilogon.userinfo offline_access"
 CILOGON_REFRESH_TOKEN_TIMEOUT = 300
 CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
 CILOGON_TOKEN_CLEAROUT_DAYS = 4
-
 CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
+
+MLA_API_KEY = env("MLA_API_KEY", default="")
+MLA_API_SECRET = env("MLA_API_SECRET", default="")
