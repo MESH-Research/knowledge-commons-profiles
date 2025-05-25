@@ -1,5 +1,5 @@
 """
-The MLA API for sunchronising user data
+The MLA API for synchronising user data
 """
 
 import hashlib
