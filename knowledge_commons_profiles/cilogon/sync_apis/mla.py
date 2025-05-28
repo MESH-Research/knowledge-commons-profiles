@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import time
 from datetime import UTC
 from datetime import datetime
@@ -19,6 +20,7 @@ import sentry_sdk
 from dateutil import parser
 from django.conf import settings
 from django.core.cache import cache
+from django.core.validators import validate_email
 from pydantic import BaseModel
 from pydantic import TypeAdapter
 from pydantic import ValidationError
@@ -27,11 +29,15 @@ from starlette.status import HTTP_200_OK
 from urllib3.util.retry import Retry
 
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.cilogon.sync_apis.sync_class import APIError
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
+from knowledge_commons_profiles.cilogon.sync_apis.sync_class import rate_limit
 
 logger = logging.getLogger(__name__)
 
 MEMBERS_URL = "members"
+MAX_CALLS = 100
+MAX_CALL_PERIOD = 60
 
 
 class CommonMeta(BaseModel):
@@ -335,9 +341,15 @@ class MLA(SyncClass):
             status_forcelist=[500, 502, 503, 504],
             backoff_factor=1,
         )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
+        adapter = HTTPAdapter(
+            max_retries=retry_strategy,
+            pool_connections=10,
+            pool_maxsize=10,
+            pool_block=False,
+        )
         self.session.mount("https://", adapter)
 
+    @rate_limit(max_calls=MAX_CALLS, period=MAX_CALL_PERIOD)
     def _make_rest_request(self, url, http_method=HTTPMethod.GET, params=None):
         """
         Make a request to the MLA API
@@ -388,18 +400,28 @@ class MLA(SyncClass):
                 url, HTTPMethod.GET, signed_attributes
             )
 
+            cache_timeout = settings.MLA_CACHE_TIMEOUT
+
+            if "Cache-Control" in response.headers:
+                # Parse max-age from Cache-Control header
+                match = re.search(
+                    r"max-age=(\d+)", response.headers["Cache-Control"]
+                )
+                if match:
+                    cache_timeout = min(int(match.group(1)), cache_timeout)
+
             if cache_key:
                 cache.set(
                     cache_key,
                     response.content,
-                    timeout=settings.MLA_CACHE_TIMEOUT,
+                    timeout=cache_timeout,
                     version=VERSION,
                 )
 
         except requests.exceptions.RequestException as e:
             message = f"Request to MLA API failed: {e}"
             logger.exception(message)
-            return {}
+            raise APIError(message) from e
 
         if response.status_code == HTTP_200_OK:
             logger.debug("MLA response: %s", response.content)
@@ -407,7 +429,7 @@ class MLA(SyncClass):
 
         message = f"Received {response.status_code} response"
         logger.error(message)
-        return {}
+        raise APIError(message)
 
     def is_member(self, user_id: str | int) -> bool:
         """
@@ -429,13 +451,11 @@ class MLA(SyncClass):
                 ).astimezone(UTC)
                 today = datetime.now(tz=UTC)
 
-                if expiring_date > today:
-                    return True
             except (ValueError, IndexError, AttributeError):
                 logger.exception("Error parsing date in MLA response")
                 return False
-
-            return True
+            else:
+                return expiring_date > today
 
         return False
 
@@ -444,6 +464,12 @@ class MLA(SyncClass):
         Search for a user
         :param email: the email to search for
         """
+        try:
+            validate_email(email)
+        except ValidationError as ve:
+            message = f"Invalid email address: {email}"
+            raise ValueError(message) from ve
+
         cache_key = f"MLA_api_search_{email}"
 
         search_params = {
@@ -453,7 +479,10 @@ class MLA(SyncClass):
             "key": settings.MLA_API_KEY,
         }
 
-        result = self._query_mla_api(search_params, cache_key=cache_key)
+        try:
+            result = self._query_mla_api(search_params, cache_key=cache_key)
+        except APIError:
+            return {}
 
         if not result:
             return {}
@@ -499,11 +528,14 @@ class MLA(SyncClass):
             "key": settings.MLA_API_KEY,
         }
 
-        result = self._query_mla_api(
-            search_params,
-            suffix=f"{MEMBERS_URL}/{mla_id}",
-            cache_key=cache_key,
-        )
+        try:
+            result = self._query_mla_api(
+                search_params,
+                suffix=f"{MEMBERS_URL}/{mla_id}",
+                cache_key=cache_key,
+            )
+        except APIError:
+            return {}
 
         if not result:
             return {}
