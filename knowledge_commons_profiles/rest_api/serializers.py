@@ -71,6 +71,9 @@ class GroupDetailSerializer(serializers.Serializer):
 
 
 class AcademicInterestSerializer(serializers.ModelSerializer):
+    """
+    Serializer for AcademicInterest model
+    """
 
     class Meta:
         model = AcademicInterest
@@ -78,6 +81,10 @@ class AcademicInterestSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Profile model
+    """
+
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
     institutional_affiliation = serializers.CharField(
@@ -100,6 +107,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     class Meta:
+        """
+        Meta class
+        """
+
         model = Profile
         fields = [
             "username",
@@ -138,6 +149,10 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Profile model
+    """
+
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
     institutional_affiliation = serializers.CharField(
@@ -160,6 +175,10 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     class Meta:
+        """
+        Meta class
+        """
+
         model = Profile
         fields = [
             "username",
@@ -251,9 +270,15 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         ).data
 
     def get_first_name(self, obj):
+        """
+        Get the first name
+        """
         return utils.get_first_name(obj, logger)
 
     def get_last_name(self, obj):
+        """
+        Get the last name
+        """
         return utils.get_last_name(obj, logger)
 
 
@@ -269,6 +294,10 @@ class SubProfileSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     class Meta:
+        """
+        Meta class
+        """
+
         model = SubAssociation
         fields = ["sub", "profile"]
 
@@ -287,6 +316,10 @@ class TokenSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
+        """
+        Meta class
+        """
+
         model = TokenUserAgentAssociations
         fields = "__all__"
 
