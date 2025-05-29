@@ -8,6 +8,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.shortcuts import redirect
 from django.test import RequestFactory
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 
 from knowledge_commons_profiles.cilogon.views import RedirectBehaviour
@@ -68,6 +69,9 @@ class CILogonViewTests(TestCase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/somewhere")
 
+    @override_settings(
+        EXTERNAL_SYNC_CLASSES=[],
+    )
     def test_callback_logs_in_user_and_redirects(self):
         request = self.factory.get("/auth/callback/")
         request.user = self.user

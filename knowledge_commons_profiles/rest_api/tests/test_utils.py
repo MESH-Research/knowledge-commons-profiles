@@ -6,7 +6,6 @@ import requests
 from django.test import TestCase
 from django.test import override_settings
 
-# Assuming your functions are in knowledge_commons_profiles.rest_api.utils
 from knowledge_commons_profiles.rest_api.utils import build_metadata
 from knowledge_commons_profiles.rest_api.utils import get_first_name
 from knowledge_commons_profiles.rest_api.utils import get_last_name
