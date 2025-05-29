@@ -2,6 +2,7 @@
 Utility functions
 """
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 
@@ -10,6 +11,7 @@ from django.conf import settings
 from nameparser import HumanName
 from rest_framework.status import HTTP_400_BAD_REQUEST
 
+from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import Profile
 
 
@@ -97,3 +99,29 @@ def logout_all_endpoints_sync():
         }
 
         return [future.result() for future in as_completed(future_to_endpoint)]
+
+
+def get_external_memberships(obj: Profile, logger, request):
+    """
+    Check if a user is a member of an external organisation
+    """
+    if not obj.username or not request:
+        return []
+
+    try:
+        api = API(request, obj.username, use_wordpress=False)
+
+        # Handle case where is_member_of might be None or empty
+        member_data = api.profile.is_member_of
+        if not member_data:
+            return []
+
+        return json.loads(member_data)
+    except (json.JSONDecodeError, AttributeError, Exception) as e:
+        message = (
+            f"Failed to get external sync memberships "
+            f"for {obj.username}: {e}"
+        )
+        if logger:
+            logger.warning(message)
+        return []

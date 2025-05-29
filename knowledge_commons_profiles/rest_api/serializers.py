@@ -17,6 +17,7 @@ from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.rest_api import utils
+from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
 logger = logging.getLogger(__name__)
 
@@ -198,26 +199,9 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         """
         Check if a user is a member of an external organisation
         """
-        if not obj.username:
-            return []
-
-        try:
-            request = self.context.get("request")
-            api = API(request, obj.username, use_wordpress=False)
-
-            # Handle case where is_member_of might be None or empty
-            member_data = api.profile.is_member_of
-            if not member_data:
-                return []
-
-            return json.loads(member_data)
-        except (json.JSONDecodeError, AttributeError, Exception) as e:
-            message = (
-                f"Failed to get external sync memberships "
-                f"for {obj.username}: {e}"
-            )
-            logger.warning(message)
-            return []
+        return get_external_memberships(
+            obj, logger, self.context.get("request")
+        )
 
     def get_external_group_sync(self, obj: Profile):
         """

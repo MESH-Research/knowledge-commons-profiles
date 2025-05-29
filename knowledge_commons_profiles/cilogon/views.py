@@ -25,6 +25,7 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ def callback(request):
 
     # our linking logic:
     # see whether we have a sub object
-    sub_association = SubAssociation.objects.filter(
+    sub_association: SubAssociation = SubAssociation.objects.filter(
         sub=userinfo.get("sub", "")
     ).first()
 
@@ -100,7 +101,7 @@ def callback(request):
         find_user_and_login(request, sub_association)
 
         # update user network affiliations
-        # TODO: update user network affiliations
+        ExternalSync.sync(profile=sub_association.profile)
 
         # return to the profile page
         return redirect(reverse("my_profile"))
