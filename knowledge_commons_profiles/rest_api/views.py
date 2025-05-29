@@ -13,7 +13,9 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.views import RedirectBehaviour
@@ -124,68 +126,73 @@ class ProfileDetailView(generics.RetrieveAPIView):
         )
 
 
-class GroupDetailView(generics.RetrieveAPIView):
+class GroupDetailView(APIView):
     """
-    Retrieve a Group
+    Retrieve a Group with improved error handling
     """
 
     authentication_classes = [StaticBearerAuthentication]
     permission_classes = [AllowAny]
-    serializer_class = GroupDetailSerializer
-    lookup_field = "id"
-    lookup_url_kwarg = "pk"
-    request = None
 
-    def get_object(self, *args, **kwargs):
-        self.api = API(self.request, None, use_wordpress=True)
-        has_full_access = bool(self.request.auth)
+    def get_object(
+        self,
+        request: Request,
+        pk: str | None = None,
+        slug: str | None = None,
+    ):
+        """Get group object with proper error handling"""
+        api = API(request, None, use_wordpress=True)
+        has_full_access = bool(request.auth)
 
-        # build the access level for group permissions
-        # it's either "public" or all the others
-        group_status = (
-            None if not has_full_access else WpBpGroup.STATUS_CHOICES
-        )
-
-        pk = kwargs.get("pk")
-        slug = kwargs.get("slug")
+        # Build access level - restrict to public if no auth
+        group_status = WpBpGroup.STATUS_CHOICES if has_full_access else None
 
         if not pk and not slug:
-            raise ValueError
+            message = "Either 'pk' or 'slug' must be provided"
+            raise ValidationError(message)
 
-        return self.api.get_group(
+        return api.get_group(
             group_id=pk,
             slug=slug,
             status_choices=group_status,
         )
 
-    def retrieve(self, request, *args, **kwargs):
-        """
-        Retrieve a group
-
-        """
-        self.request = request
-        has_full_access = bool(self.request.auth)
+    def get(
+        self,
+        request: Request,
+        pk: str | None = None,
+        slug: str | None = None,
+    ) -> Response:
+        """Enhanced retrieve method"""
+        has_full_access = bool(request.auth)
 
         try:
-            instance = self.get_object(*args, **kwargs)
+            instance = self.get_object(request, pk, slug)
         except (Http404, WpBpGroup.DoesNotExist):
             meta = build_metadata(
                 has_full_access, error=RESTError.FATAL_GROUP_NOT_FOUND
             )
             return Response(meta, status=status.HTTP_404_NOT_FOUND)
-        except ValueError:
+        except ValidationError as e:
             meta = build_metadata(
                 has_full_access, error=RESTError.FATAL_NO_GROUP_ID_OR_SLUG
             )
+            return Response(
+                {**meta, "detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            message = f"Unexpected error retrieving group: {e}"
+            logger.exception(message)
+            meta = build_metadata(
+                has_full_access, error=RESTError.FATAL_UNDEFINED_ERROR
+            )
             return Response(meta, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        serializer = self.get_serializer(instance)
-        data = serializer.data
-
+        serializer = GroupDetailSerializer(
+            instance, context={"request": request}
+        )
         return Response(
-            {
-                "results": data,
-            },
+            {"results": serializer.data},
             status=status.HTTP_200_OK,
         )
 
