@@ -4,8 +4,9 @@ Serializers for the REST API
 """
 
 import json
+import logging
+from typing import Any
 
-from nameparser import HumanName
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
@@ -15,6 +16,9 @@ from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.rest_api import utils
+
+logger = logging.getLogger(__name__)
 
 
 class GroupMembershipSerializer(serializers.Serializer):
@@ -27,13 +31,27 @@ class GroupMembershipSerializer(serializers.Serializer):
     role = serializers.CharField()
     url = serializers.SerializerMethodField()
 
-    def get_url(self, obj):
+    def get_url(self, obj: dict[str, Any]) -> str:
         """
         Build the URL for the group's API view
+
+        Args:
+            obj: Dict containing group data with keys: id, group_name, role
         """
-        # obj is a dict { "id": ..., "group_name": ..., "role": ... }
         request = self.context.get("request")
-        return reverse("groups_detail_view", args=[obj["id"]], request=request)
+        if not request:
+            return ""
+
+        try:
+            return reverse(
+                "groups_detail_view", args=[obj["id"]], request=request
+            )
+        except Exception as e:  # noqa: BLE001
+            message = (
+                f"Failed to build group URL for group {obj.get('id')}: {e}"
+            )
+            logger.warning(message)
+            return ""
 
 
 class GroupDetailSerializer(serializers.Serializer):
@@ -71,11 +89,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
         try:
-            logged_in = bool(kwargs["context"]["request"].auth)
-        except KeyError:
+            request = self.context.get("request")
+            logged_in = bool(request and request.auth)
+        except (KeyError, AttributeError):
             logged_in = False
 
-        if not logged_in:
+        if not logged_in and "email" in self.fields:
             del self.fields["email"]
 
         super().__init__(*args, **kwargs)
@@ -94,31 +113,28 @@ class ProfileSerializer(serializers.ModelSerializer):
             "url",
         ]
 
-    def get_url(self, obj):
-        """
-        Build the URL for the group's API view
-        """
-        # obj is a dict { "id": ..., "group_name": ..., "role": ... }
+    def get_url(self, obj: Profile) -> str:
+        """Build the URL for the profile's API view"""
         request = self.context.get("request")
-        return reverse(
-            "profiles_detail_view", args=[obj.username], request=request
-        )
+        if not request:
+            return ""
 
-    def get_first_name(self, obj):
-        """
-        Formats the first name
-        """
-        name = HumanName(obj.name or "")
+        try:
+            return reverse(
+                "profiles_detail_view", args=[obj.username], request=request
+            )
+        except Exception as e:  # noqa: BLE001
+            message = f"Failed to build profile URL for {obj.username}: {e}"
+            logger.warning(message)
+            return ""
 
-        # include middle if present
-        parts = [name.first, name.middle]
-        return " ".join(p for p in parts if p)
+    def get_first_name(self, obj: Profile) -> str:
+        """Extract and format the first name"""
+        return utils.get_first_name(obj, logger)
 
-    def get_last_name(self, obj):
-        """
-        Formats the last name
-        """
-        return HumanName(obj.name or "").last
+    def get_last_name(self, obj: Profile) -> str:
+        """Extract and format the last name"""
+        return utils.get_last_name(obj, logger)
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
@@ -134,7 +150,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
-        request = self._kwargs.get("context", {}).get("request")
+        request = kwargs.get("context", {}).get("request")
 
         logged_in = False if not request else bool(request.auth)
 
@@ -159,21 +175,32 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             "external_group_sync",
         ]
 
-    def get_external_sync_memberships(self, obj):
+    def get_external_sync_memberships(self, obj: Profile):
         """
         Check if a user is a member of an external organisation
         """
-        user_id = obj.username
-        request = self.context.get("request")
-
-        if not user_id:
+        if not obj.username:
             return []
 
-        # create an API object
-        api = API(request, user_id, use_wordpress=False)
-        return json.loads(api.profile.is_member_of)
+        try:
+            request = self.context.get("request")
+            api = API(request, obj.username, use_wordpress=False)
 
-    def get_external_group_sync(self, obj):
+            # Handle case where is_member_of might be None or empty
+            member_data = api.profile.is_member_of
+            if not member_data:
+                return []
+
+            return json.loads(member_data)
+        except (json.JSONDecodeError, AttributeError, Exception) as e:
+            message = (
+                f"Failed to get external sync memberships "
+                f"for {obj.username}: {e}"
+            )
+            logger.warning(message)
+            return []
+
+    def get_external_group_sync(self, obj: Profile):
         """
         Check if a user is a member of an external organisation
         """
@@ -193,7 +220,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         api = API(request, user_id, use_wordpress=False)
         return json.loads(api.profile.is_member_of)
 
-    def get_groups(self, obj):
+    def get_groups(self, obj: Profile) -> list[dict[str, Any]]:
         """
         Query the WP DB for this user's confirmed group memberships,
         then serialize them with your existing GroupMembershipSerializer.
@@ -224,12 +251,10 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         ).data
 
     def get_first_name(self, obj):
-        name = HumanName(obj.name or "")
-        parts = [name.first, name.middle]
-        return " ".join(p for p in parts if p)
+        return utils.get_first_name(obj, logger)
 
     def get_last_name(self, obj):
-        return HumanName(obj.name or "").last
+        return utils.get_last_name(obj, logger)
 
 
 class SubProfileSerializer(serializers.ModelSerializer):
@@ -273,3 +298,19 @@ class LogoutSerializer(serializers.Serializer):
 
     user_name = serializers.CharField()
     user_agent = serializers.CharField()
+
+    def validate_user_name(self, value: str) -> str:
+        """Validate username format"""
+        value = value.strip()
+        if not value:
+            message = "Username cannot be empty"
+            raise serializers.ValidationError(message)
+        return value
+
+    def validate_user_agent(self, value: str) -> str:
+        """Validate user agent string"""
+        value = value.strip()
+        if not value:
+            message = "User agent cannot be empty"
+            raise serializers.ValidationError(message)
+        return value

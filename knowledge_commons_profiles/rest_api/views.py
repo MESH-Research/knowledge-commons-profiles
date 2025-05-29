@@ -5,6 +5,7 @@ The REST API for the profile app
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.http import Http404
 from django.urls import reverse
 from drf_yasg import openapi
@@ -277,55 +278,31 @@ class LogoutView(generics.CreateAPIView):
                 status=status.HTTP_200_OK,
             )
 
-        except Exception as e:  # noqa:BLE001
+        except ValidationError as e:
+            message = f"Validation error in logout: {e}"
+            logger.warning(message)
+
             return Response(
                 {
-                    "error": str(e),
+                    "error": "Validation failed",
+                    "details": e.detail if hasattr(e, "detail") else str(e),
+                    **build_metadata(
+                        has_full_access, error=RESTError.FATAL_UNDEFINED_ERROR
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+            message = f"Unexpected error in logout: {e}"
+            logger.exception(message)
+
+            return Response(
+                {
+                    "error": "An unexpected error occurred",
                     **build_metadata(
                         has_full_access, error=RESTError.FATAL_UNDEFINED_ERROR
                     ),
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-    def get_data(self, has_full_access):
-        """
-        Get data for use
-        """
-        user_name = self.request.data.get("user_name")
-
-        if not user_name:
-            return (
-                None,
-                None,
-                Response(
-                    {
-                        "message": "Failure. No username defined.",
-                        **build_metadata(
-                            has_full_access,
-                            error=RESTError.FATAL_NO_USERNAME_DEFINED,
-                        ),
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ),
-            )
-
-        user_agent = self.request.data.get("user_agent")
-
-        if not user_agent:
-            return (
-                None,
-                None,
-                Response(
-                    {
-                        "message": "Failure. No user agent defined.",
-                        **build_metadata(
-                            has_full_access,
-                            error=RESTError.FATAL_NO_USER_AGENT_DEFINED,
-                        ),
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ),
-            )
-
-        return user_name, user_agent, None
