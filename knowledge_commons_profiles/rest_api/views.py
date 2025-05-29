@@ -48,6 +48,7 @@ from knowledge_commons_profiles.rest_api.serializers import SubProfileSerializer
 from knowledge_commons_profiles.rest_api.serializers import TokenSerializer
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import build_metadata
+from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
 
 logger = logging.getLogger(__name__)
 
@@ -261,7 +262,8 @@ class LogoutView(generics.CreateAPIView):
                 user_agent=serializer.validated_data.get("user_agent"),
             )
 
-            # TODO: ping all applications with a logout request
+            # send the logout request to all endpoints
+            logout_all_endpoints_sync()
 
             return Response(
                 {
