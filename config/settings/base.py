@@ -393,16 +393,16 @@ ROR_THRESHOLD = 0.6
 
 EXCLUDE_STATS_EMAILS = ["gmail.com", "yahoo.com", "hotmail.com"]
 
-CILOGON_CLIENT_ID = env("CILOGON_CLIENT_ID")
-CILOGON_CLIENT_SECRET = env("CILOGON_CLIENT_SECRET")
+CILOGON_CLIENT_ID = env("CILOGON_CLIENT_ID", default="")
+CILOGON_CLIENT_SECRET = env("CILOGON_CLIENT_SECRET", default="")
 
 
 OIDC_CALLBACK = "cilogon/callback/"
 
-STATIC_API_BEARER = env("STATIC_API_BEARER")
+STATIC_API_BEARER = env("STATIC_API_BEARER", default="")
 
-WP_MEDIA_ROOT = env("WP_MEDIA_ROOT")
-WP_MEDIA_URL = env("WP_MEDIA_URL")
+WP_MEDIA_ROOT = env("WP_MEDIA_ROOT", default="")
+WP_MEDIA_URL = env("WP_MEDIA_URL", default="")
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",

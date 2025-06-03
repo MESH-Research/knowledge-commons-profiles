@@ -24,4 +24,5 @@ urlpatterns = [
     path("login/", views.cilogon_login, name="login"),
     path("logout/", views.app_logout, name="logout"),
     path(settings.OIDC_CALLBACK, views.callback, name="oidc_callback"),
+    path("associate/", views.association, name="associate"),
 ]

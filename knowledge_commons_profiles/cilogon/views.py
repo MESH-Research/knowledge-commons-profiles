@@ -5,6 +5,7 @@ Views for CILogon
 
 import logging
 from enum import IntEnum
+from uuid import uuid4
 
 import requests
 import sentry_sdk
@@ -15,6 +16,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 
+from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
@@ -25,6 +27,7 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 logger = logging.getLogger(__name__)
@@ -107,8 +110,7 @@ def callback(request):
         return redirect(reverse("my_profile"))
 
     # no, no user. Redirect to the profile association page
-    # TODO: redirect to the profile association page
-    return None
+    return redirect(reverse("associate"))
 
 
 def app_logout(
@@ -223,3 +225,49 @@ def app_logout(
         return redirect("/")
 
     return None
+
+
+def association(request):
+    """
+    The association view
+    :param request: the request
+    """
+
+    # first, see whether we have an unassociated user
+    token = request.session.get("oidc_token")
+    userinfo = request.session.get("oidc_userinfo", {})
+    if not token or not userinfo:
+        return redirect(reverse("cilogon_login"))
+
+    # check the user is not properly logged in and redirect if so
+    user = request.user
+    if user.is_authenticated:
+        return redirect(reverse("my_profile"))
+
+    # check if we have an email POSTed
+    if request.method == "POST":
+        email = request.POST.get("email")
+        if email:
+            # search for a Profile with this email
+            profile = Profile.objects.filter(email=email).first()
+
+            # if we have a profile, generate a UUID4
+            if profile:
+                uuid = uuid4().hex
+
+                # delete any existing EmailVerification entries
+                EmailVerification.objects.filter(profile=profile).delete()
+
+                # create a new EmailVerification entry
+                EmailVerification.objects.create(
+                    secret_uuid=uuid,
+                    profile=profile,
+                    sub=userinfo.get("sub", ""),
+                )
+
+                # send an email
+                # TODO: send the email to the user with the secret UUID
+
+    context = {}
+
+    return render(request, "cilogon/association.html", context)

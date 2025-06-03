@@ -21,3 +21,5 @@ WP_MEDIA_URL=https://hcommons.org/app/uploads
 WP_MEDIA_ROOT=/home/martin/sixteenTB/uploads/
 MLA_API_SECRET=123
 MLA_API_KEY=akey
+SPARKPOST_API_KEY=abc_easy_as_123
+SPARKPOST_API_URL=https://api.sparkpost.com/api/v1
