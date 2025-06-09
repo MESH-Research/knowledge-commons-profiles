@@ -61,7 +61,11 @@ def cilogon_login(request):
     # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
     state = pack_state("")
 
-    redirect_uri = request.build_absolute_uri("/" + settings.OIDC_CALLBACK)
+    # we need to redirect to https here because the load balancer operates
+    # behind the scenes on http, which is not the external URL we want
+    redirect_uri = request.build_absolute_uri(
+        "/" + settings.OIDC_CALLBACK
+    ).replace("http://", "https://")
 
     return oauth.cilogon.authorize_redirect(request, redirect_uri, state=state)
 
