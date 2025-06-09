@@ -166,8 +166,6 @@ def find_user_and_login(request, sub_association):
         )
     else:
         # there is no user at the moment, so create one
-        # note: this is an odd situation as the user has a Profile
-        # but not a User
         user = User.objects.create(
             username=sub_association.profile.username,
             email=sub_association.profile.email,

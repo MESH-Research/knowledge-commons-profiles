@@ -12,6 +12,7 @@ import sentry_sdk
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
 from django.contrib.auth import logout
+from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -27,6 +28,7 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.common.email import send_knowledge_commons_email
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
@@ -244,6 +246,8 @@ def association(request):
     if user.is_authenticated:
         return redirect(reverse("my_profile"))
 
+    context = {"cilogon_sub": userinfo.get("sub", "")}
+
     # check if we have an email POSTed
     if request.method == "POST":
         email = request.POST.get("email")
@@ -266,8 +270,38 @@ def association(request):
                 )
 
                 # send an email
-                # TODO: send the email to the user with the secret UUID
+                send_knowledge_commons_email(
+                    recipient_email=email,
+                    context_data={"uuid": uuid},
+                    template_file="mail/associate.html",
+                )
 
-    context = {}
+                # render to the login page
+                return redirect(reverse("my_profile"))
+        else:
+            context.update({"error": "No email provided"})
 
     return render(request, "cilogon/association.html", context)
+
+
+def activate(request, verification_id: int, secret_key: str):
+    """
+    The activation view clicked by a user from email
+    """
+
+    # get the verification and secret key or 404
+    verify = get_object_or_404(
+        EmailVerification, secret_uuid=secret_key, id=verification_id
+    )
+
+    # create a sub association
+    SubAssociation.objects.create(
+        sub=verify.sub,
+        profile=verify.profile,
+    )
+
+    # delete the verification as it's no longer needed
+    verify.delete()
+
+    # redirect the user to their Profile page
+    return redirect(reverse("my_profile"))

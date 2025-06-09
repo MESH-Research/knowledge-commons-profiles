@@ -8,11 +8,20 @@ class SubAssociation(models.Model):
     A model that associates a CI Logon sub with a profile
     """
 
-    sub = models.CharField(max_length=255)
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True)
+    sub = models.CharField(max_length=255, verbose_name="CI Logon ID")
+    profile = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        null=True,
+        verbose_name="Associated KC Profile",
+    )
+
+    class Meta:
+        verbose_name = "CI Logon Association"
+        verbose_name_plural = "CI Logon Associations"
 
     def __str__(self):
-        return self.sub
+        return self.profile.username + " (" + self.sub + ")"
 
 
 class TokenUserAgentAssociations(models.Model):

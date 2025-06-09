@@ -133,7 +133,7 @@ class CILogonViewTests(TestCase):
             ) as sub_filter,
         ):
             sub_filter.return_value.first.return_value = None
-            self.assertIsNone(callback(request))
+            self.assertIsNotNone(callback(request))
 
     def test_app_logout_revokes_tokens_and_redirects(self):
         request = self.factory.get("/logout/", **self.headers)
