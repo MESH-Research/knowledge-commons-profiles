@@ -25,7 +25,7 @@ from pydantic import BaseModel
 from pydantic import TypeAdapter
 from pydantic import ValidationError
 from requests.adapters import HTTPAdapter
-from starlette.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK
 from urllib3.util.retry import Retry
 
 from knowledge_commons_profiles.__version__ import VERSION
