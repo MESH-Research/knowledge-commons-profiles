@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Account Association
+{% endblock title %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="h1-associate">Welcome to Knowledge Commons...</h1>
+        <h3 class="h3-associate">We need to finish setting up your account for the first time.</h3>
+        <div>
+          <ol class="ol-associate">
+            <li>If you already have an account, please enter your existing commons email below; if you don't, you can create one now. You will only need to do this once.</li>
+            <div>
+              <form class="form-associate" action="{% url 'associate' %}" method="post">
+                {% csrf_token %}
+                <input type="email" name="email" id="email" placeholder="you@email.com" required />
+                <input type="submit" value="Associate >>" />
+              </form>
+            </div>
+            <li>If you don't already have an account, please sign up now! You will only need to do this once.</li>
+            <div>
+              <form class="form-associate" action="{% url 'associate' %}" method="post">
+                {% csrf_token %}
+                <input type="submit" value="Sign Up >>" />
+              </form>
+            </div>
+            <li>For any other problems, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a>, if you need help. Please make sure to include this identifier: {{ cilogon_sub }}</li>
+          </ol>
+        </div>
+
+      </div>
+    </div>
+  </div>
+{% endblock content %}

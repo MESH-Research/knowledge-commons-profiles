@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Server Error
+{% endblock title %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1>Authentication Error</h1>
+        <p>&nbsp;</p>
+        <h3>We were unable to log you in.</h3>
+        <p>&nbsp;</p>
+        <p>
+          The server reported: "{{ exception }}" Please contact <a href="mailto:hello@hcommons.org">hello@hcommons.org</a>, quoting this error, if you need help.
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

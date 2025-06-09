@@ -403,8 +403,8 @@ class Profile(models.Model):
     affiliation = models.CharField(max_length=255, null=True)
     twitter = models.CharField(max_length=255, blank=True)
     github = models.CharField(max_length=255, blank=True)
-    email = models.EmailField(blank=True)
-    orcid = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True, db_index=True)
+    orcid = models.CharField(max_length=255, blank=True, db_index=True)
     mastodon = models.CharField(max_length=255, blank=True)
     bluesky = models.CharField(max_length=255, blank=True)
     profile_image = models.URLField(blank=True)
@@ -471,6 +471,10 @@ class Profile(models.Model):
         default="MHRA",
         choices=CITATION_STYLE_CHOICES,
     )
+
+    external_sync_ids = models.TextField(blank=True, null=True)
+    is_member_of = models.TextField(blank=True, null=True)
+    in_membership_groups = models.TextField(blank=True, null=True)
 
     def __str__(self):
         """
@@ -552,11 +556,40 @@ class WpBpGroupMember(models.Model):
         return str(self.user) + " in " + str(self.group)
 
 
+class WpBpGroupsGroupmeta(models.Model):
+    """
+    Mirrors the BuddyPress `wp_bp_groups_groupmeta` table.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    group = models.ForeignKey(
+        "WpBpGroup",
+        on_delete=models.DO_NOTHING,
+        db_column="group_id",
+        related_name="meta",
+    )
+    meta_key = models.CharField(max_length=255)
+    meta_value = models.TextField()
+
+    class Meta:
+        db_table = "wp_bp_groups_groupmeta"
+        managed = False
+
+    def __str__(self):
+        """
+        String representation of the WpBpGroupsGroupmeta model
+        """
+        return str(self.group)
+
+
 class WpBpGroup(models.Model):
     """
     A model for a WordPress group
     """
 
+    # NOTE: the ordering here is important. Public must be first.
+    # See get_groups in api.py to see why.
+    # In fact, don't change this. It will break things.
     STATUS_CHOICES = (
         ("public", "Public"),
         ("private", "Private"),

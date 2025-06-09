@@ -9,7 +9,7 @@ import django
 import redis
 from basicauth.decorators import basic_auth_required
 from django.conf import settings
-from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import connections
 from django.http import Http404
@@ -17,15 +17,11 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.api import API
-from knowledge_commons_profiles.newprofile.custom_login import login_required
-from knowledge_commons_profiles.newprofile.custom_login import wp_create_nonce
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import UserStats
@@ -125,18 +121,6 @@ def mastodon_feed(request, username):
     )
 
 
-def logout_view(request):
-    """
-    A view to log out the current user.
-
-    This view logs out the current user and redirects them to the login page.
-
-    :param request: The request object.
-    :type request: django.http.HttpRequest
-    """
-    logout(request)
-
-
 def profile(request, user=""):
     """
     The main page of the site.
@@ -198,52 +182,6 @@ def my_profile(request):
     """
     # we call with create because this user is logged in and needs a profile
     return profile(request, user=request.user.username)
-
-
-class ProfileView(APIView):
-    """
-    A REST view for retrieving and updating user profile information
-    """
-
-    def get(self, request, *args, **kw):
-        """
-        Return a JSON response containing the user's profile information,
-        academic interests, education, a short string about the user,
-        their latest blog posts, their latest Mastodon posts (if they have
-        a Mastodon account), and a string representing their works.
-
-        The response is returned with a status of 200 OK.
-
-        :param request: The request object.
-        :type request: django.http.HttpRequest
-        :param args: Additional positional arguments.
-        :type args: list
-        :param kw: Additional keyword arguments.
-        :type kw: dict
-        :return: A JSON response containing the user's profile information.
-        :rtype: django.http.JsonResponse
-        """
-
-        user = kw.get("user_name", "")
-
-        api = API(request, user, use_wordpress=True)
-
-        profile_info_obj = api.get_profile_info()
-
-        context = {
-            "profile_info": profile_info_obj,
-            "education": api.get_education(),
-            "about_user": api.get_about_user(),
-            "mastodon_posts": (
-                api.mastodon_posts.latest_posts
-                if profile_info_obj["mastodon"]
-                else []
-            ),
-            # "groups": api.get_groups(),
-            "memberships": api.get_memberships(),
-        }
-
-        return Response(context, status=status.HTTP_200_OK)
 
 
 @login_required
@@ -419,10 +357,7 @@ def header_bar(request):
             ),
             "short_notifications": notifications,
             "notification_count": (len(notifications) if notifications else 0),
-            "logout_url": f"https://hcommons.org/wp-login.php?"
-            f"action=logout&"
-            f"_wpnonce={wp_create_nonce(request=request)}&"
-            f"redirect_to={request.build_absolute_uri()}",
+            "logout_url": reverse("logout"),
             "logged_in_profile_image": (
                 api_me.get_profile_photo() if api_me else None
             ),
@@ -508,10 +443,7 @@ def mysql_data(request, username):
                     if profile_info_obj["profile"].show_recent_activity
                     else None
                 ),
-                "logout_url": f"https://hcommons.org/wp-login.php?"
-                f"action=logout&"
-                f"_wpnonce={wp_create_nonce(request=request)}&"
-                f"redirect_to={request.build_absolute_uri()}",
+                "logout_url": reverse("logout"),
                 "profile": profile_info_obj,
                 "show_commons_groups": profile_info_obj[
                     "profile"

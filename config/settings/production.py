@@ -130,8 +130,11 @@ INSTALLED_APPS += ["anymail"]
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 # https://anymail.readthedocs.io/en/stable/installation/#anymail-settings-reference
 # https://anymail.readthedocs.io/en/stable/esps/amazon_ses/
-EMAIL_BACKEND = "anymail.backends.amazon_ses.EmailBackend"
-ANYMAIL = {}
+EMAIL_BACKEND = "anymail.backends.sparkpost.EmailBackend"
+ANYMAIL = {
+    "SPARKPOST_API_KEY": env("SPARKPOST_API_KEY", default=""),
+    "SPARKPOST_API_URL": "https://api.sparkpost.com/api/v1",
+}
 
 # Collectfasta
 # ------------------------------------------------------------------------------

@@ -31,7 +31,7 @@ jobs:
           ref: dev
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -39,7 +39,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@f9441e51686002eb8c6f13bdda4d6a2ef947cc77
+        uses: aws-actions/amazon-ecr-login@0c34de44d8307420346b69e34e659f539e021dba
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image

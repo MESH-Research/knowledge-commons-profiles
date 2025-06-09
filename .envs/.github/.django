@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 USE_DOCKER=yes
 IPYTHONDIR=/app/.ipython
-REDIS_SERVER=redis://todo:6379
+REDIS_SERVER=redis://redis:6379
 SAML2_METADATA_LOCAL_FILE_PATH=/home/martin/Documents/Programming/MESH/newprofile/keys/metadata.xml
 SAML2_PRIVATE_KEY_FILE=/home/martin/Documents/Programming/MESH/newprofile/keys/private.key
 SAML2_CERT_FILE=/home/martin/Documents/Programming/MESH/newprofile/keys/public.crt
@@ -14,3 +14,12 @@ WORDPRESS_DATABASE_URL=mysql://todo:todo@mysql:3306/database_name
 DATABASE_URL="postgres://bQKTlJuHOdWNSyQjwVpMGQQjydnqMSEE:PbHi5FVc8hhpe8uY5mMEu496UL7V5UuEpXdlVeavUGyofwMXvqXwargpKAuresI7@postgres:5432/knowledge_commons_profiles"
 DJANGO_SETTINGS_MODULE=config.settings.local
 STATS_PASSWORD=github_stats
+CILOGON_CLIENT_ID=cilogon:/client_id/1234
+CILOGON_CLIENT_SECRET=client_secret
+STATIC_API_BEARER=static_bearer
+WP_MEDIA_URL=https://hcommons.org/app/uploads
+WP_MEDIA_ROOT=/home/martin/sixteenTB/uploads/
+MLA_API_SECRET=123
+MLA_API_KEY=akey
+SPARKPOST_API_KEY=abc_easy_as_123
+SPARKPOST_API_URL=https://api.sparkpost.com/api/v1

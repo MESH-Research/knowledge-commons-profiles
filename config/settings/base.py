@@ -84,13 +84,16 @@ THIRD_PARTY_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "rest_framework",
-    "django_saml2_auth",
     "tinymce",
     "django_select2",
+    "authlib.integrations.django_client",
+    "drf_yasg",
 ]
 
 LOCAL_APPS = [
+    "knowledge_commons_profiles.cilogon.apps.CILogonConfig",
     "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
+    "knowledge_commons_profiles.rest_api.apps.RestAPIConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -145,7 +148,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "knowledge_commons_profiles.newprofile.middleware.WordPressAuthMiddleware",
+    "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
+    "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
 ]
 
 # STATIC
@@ -251,12 +255,12 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
+            "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
     },
-    "root": {"level": "INFO", "handlers": ["console"]},
+    "root": {"level": "DEBUG" if DEBUG else "INFO", "handlers": ["console"]},
 }
 
 # Your stuff...
@@ -333,7 +337,6 @@ SAML2_AUTH = {
 
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
-LOGIN_URL = "https://hcommons.org/wp-login.php"
 REDIRECT_FIELD_NAME = "redirect_to"
 
 PROFILE_FIELDS_LEFT = [
@@ -352,6 +355,8 @@ PROFILE_FIELDS_RIGHT = [
     "commons_activity",
     "commons_sites",
 ]
+
+LOGIN_URL = "/login/"
 
 CITATION_STYLES = {
     "ACM": "styles/association-for-computing-machinery.csl",
@@ -387,3 +392,39 @@ ZENODO_TIMEOUT = 10
 ROR_THRESHOLD = 0.6
 
 EXCLUDE_STATS_EMAILS = ["gmail.com", "yahoo.com", "hotmail.com"]
+
+CILOGON_CLIENT_ID = env("CILOGON_CLIENT_ID", default="")
+CILOGON_CLIENT_SECRET = env("CILOGON_CLIENT_SECRET", default="")
+
+
+OIDC_CALLBACK = "cilogon/callback/"
+
+STATIC_API_BEARER = env("STATIC_API_BEARER", default="")
+
+WP_MEDIA_ROOT = env("WP_MEDIA_ROOT", default="")
+WP_MEDIA_URL = env("WP_MEDIA_URL", default="")
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
+    "PAGE_SIZE": 50,
+}
+
+ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
+    "ALLOWED_CILOGON_FORWARDING_DOMAINS",
+    default=["hcommons.org", "msu.edu", "localhost"],
+)
+
+CILOGON_DISCOVERY_URL = "https://cilogon.org/.well-known/openid-configuration"
+CILOGON_SCOPE = "openid email profile org.cilogon.userinfo offline_access"
+CILOGON_REFRESH_TOKEN_TIMEOUT = 300
+CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
+CILOGON_TOKEN_CLEAROUT_DAYS = 4
+CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
+
+MLA_API_KEY = env("MLA_API_KEY", default="")
+MLA_API_SECRET = env("MLA_API_SECRET", default="")
+MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
+
+EXTERNAL_SYNC_CLASSES: list[str] = ["MLA"]
+
+LOGOUT_ENDPOINTS = []

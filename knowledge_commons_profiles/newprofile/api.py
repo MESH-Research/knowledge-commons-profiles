@@ -5,15 +5,23 @@ A class of API calls for user details
 import hashlib
 import logging
 import re
+from enum import Enum
 from functools import cached_property
 from operator import itemgetter
+from pathlib import Path
 from urllib.parse import urlencode
 
 import django
 import phpserialize
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connections
+from django.db.models import Case
+from django.db.models import CharField
+from django.db.models import F
+from django.db.models import Value
+from django.db.models import When
 from django.http import Http404
 
 from knowledge_commons_profiles.__version__ import VERSION
@@ -22,7 +30,9 @@ from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
 from knowledge_commons_profiles.newprofile.models import WpBpActivity
 from knowledge_commons_profiles.newprofile.models import WpBpFollow
+from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpGroupMember
+from knowledge_commons_profiles.newprofile.models import WpBpGroupsGroupmeta
 from knowledge_commons_profiles.newprofile.models import WpBpNotification
 from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
 from knowledge_commons_profiles.newprofile.models import WpPostSubTable
@@ -41,6 +51,11 @@ DOMAIN_PATTERN = (
     r"([a-z0-9][a-z0-9\-]{0,60}|[a-z0-9-]{1,30}\.[a-z]{2,})$"
 )
 DOMAIN_REGEX = re.compile(DOMAIN_PATTERN, re.IGNORECASE)
+
+
+class ErrorModel(Enum):
+    RAISE = 1
+    RETURN = 2
 
 
 class API:
@@ -496,20 +511,156 @@ class API:
         """
         return self.profile.education
 
-    def get_groups(self):
+    def get_group_avatar_url(self, group_id: int) -> str:
+        """
+        Replicates BP's groups_avatar_upload_dir() logic and
+        returns the full URL to the first “-bpfull” avatar image,
+        or an empty string if none is found.
+        """
+        # 1) Your WP uploads root on disk, e.g.
+        # '/var/www/html/wp-content/uploads'
+        uploads_root = settings.WP_MEDIA_ROOT
+        # 2) The corresponding URL prefix,
+        # e.g. 'https://hcommons.org/app/uploads'
+        uploads_url = settings.WP_MEDIA_URL
+
+        # 3) Build the group-avatar directory path
+        avatar_dir = Path(uploads_root) / Path("group-avatars") / str(group_id)
+
+        # 4) Look for any “full” avatar file (e.g. 196c1430...-bpfull.png)
+        matches = avatar_dir.glob("*-bpfull.*")
+
+        for file in matches:
+            return f"{uploads_url}/group-avatars/{group_id}/{file.name}"
+
+        return ""
+
+    def get_group(self, group_id, slug="", status_choices=None):
+        """
+        Get a group with a list of allowed status choices
+
+        """
+        # default to [("public","Public")]
+        if status_choices is None:
+            status_choices = WpBpGroup.STATUS_CHOICES[:1]
+
+        # status_choices is either "public" or all the others
+        status_keys = [key for key, label in status_choices]
+
+        if len(status_keys) > 1:
+            logging.info(
+                "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
+            )
+
+        # Try to fetch the group (or bail out with exception)
+        if slug:
+            grp = WpBpGroup.objects.get(slug=slug, status__in=status_keys)
+        else:
+            grp = WpBpGroup.objects.get(id=group_id, status__in=status_keys)
+
+        # TODO: build the canonical URL
+        url = f"/groups/{grp.slug}/"
+
+        # Grab any avatar meta (your meta_key may be different)
+        avatar_path = self.get_group_avatar_url(group_id=group_id)
+        avatar = avatar_path if avatar_path else ""
+
+        # Grab the groupblog ID → turn it into a blog URL
+        blog_id = (
+            WpBpGroupsGroupmeta.objects.filter(group=grp, meta_key="blog_id")
+            .values_list("meta_value", flat=True)
+            .first()
+        )
+        if blog_id:
+            try:
+                blog = WpBlog.objects.get(blog_id=blog_id)
+                group_blog = f"https://{blog.domain}{blog.path}"
+            except WpBlog.DoesNotExist:
+                group_blog = ""
+        else:
+            group_blog = ""
+
+        # Static arrays for upload/ moderate permissions
+        upload_roles = ["member", "moderator", "administrator"]
+        moderate_roles = ["moderator", "administrator"]
+
+        return {
+            "id": grp.id,
+            "name": grp.name,
+            "slug": grp.slug,
+            "url": url,
+            "visibility": grp.status,
+            "description": grp.description or "",
+            "avatar": avatar,
+            "groupblog": group_blog,
+            "upload_roles": upload_roles,
+            "moderate_roles": moderate_roles,
+        }
+
+    def get_groups(
+        self, status_choices=None, on_error: ErrorModel = ErrorModel.RAISE
+    ):
         """
         Return a list of groups that the user is a member of
         :return:
         """
-        return (
-            WpBpGroupMember.objects.filter(
-                user_id=self.wp_user.id,
-                is_confirmed=True,
-                group__status="public",
+        # default to [("public","Public")]
+        if status_choices is None:
+            status_choices = WpBpGroup.STATUS_CHOICES[:1]
+
+        # status_choices is either "public" or all the others
+        status_keys = [key for key, label in status_choices]
+
+        if len(status_keys) > 1:
+            logging.info(
+                "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
             )
-            .prefetch_related("group")
-            .order_by("group__name")
-        )
+
+        try:
+            group_member = (
+                WpBpGroupMember.objects.filter(
+                    user_id=self.wp_user.id,
+                    is_confirmed=True,
+                    group__status__in=status_keys,
+                )
+                .select_related("group")
+                .annotate(
+                    gid=F("group__id"),
+                    # rename group__name → group_name
+                    group_name=F("group__name"),
+                    # compute “role” based on is_admin / is_mod
+                    role=Case(
+                        When(is_admin=True, then=Value("administrator")),
+                        When(is_mod=True, then=Value("moderator")),
+                        default=Value("member"),
+                        output_field=CharField(),
+                    ),
+                )
+                .order_by("group_name")
+                .values_list("gid", "group_name", "role")
+            )
+
+            return_value = [
+                {"id": gid, "group_name": name, "role": role}
+                for gid, name, role in group_member
+            ]
+
+        except django.db.utils.OperationalError as oe:
+            logging.warning(
+                "Unable to connect to MySQL, fast-failing group data."
+            )
+
+            if on_error == ErrorModel.RAISE:
+                raise
+
+            return [], oe
+
+        else:
+            return (
+                (return_value, None)
+                if on_error == ErrorModel.RETURN
+                else return_value
+            )
 
     def get_cover_image(self):
         """
