@@ -1,3 +1,9 @@
+## 2.18.2 (2025-06-09)
+
+### Fix
+
+- **cilogon**: change schema to https
+
 ## 2.18.1 (2025-06-09)
 
 ### Fix
