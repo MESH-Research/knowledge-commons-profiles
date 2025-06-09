@@ -52,7 +52,9 @@ class CILogonViewTests(TestCase):
                 request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT
             )
             redirect_mock.assert_called_once_with(
-                request, redirect_uri, state="abc123"
+                request,
+                redirect_uri.replace("http://", "https://"),
+                state="abc123",
             )
 
     def test_callback_forwards_if_forwarding_url_present(self):
