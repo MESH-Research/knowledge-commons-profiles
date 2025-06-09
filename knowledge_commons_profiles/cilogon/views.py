@@ -28,7 +28,9 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
-from knowledge_commons_profiles.common.email import send_knowledge_commons_email
+from knowledge_commons_profiles.common.profiles_email import (
+    send_knowledge_commons_email,
+)
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
