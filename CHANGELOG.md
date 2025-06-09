@@ -1,3 +1,9 @@
+## 2.18.1 (2025-06-09)
+
+### Fix
+
+- **cilogon**: fix missing requirement
+
 ## 2.18.0 (2025-06-09)
 
 ### Feat
