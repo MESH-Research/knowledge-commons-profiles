@@ -1,3 +1,42 @@
+## 2.18.0 (2025-06-09)
+
+### Feat
+
+- **cilogon**: further work on association service
+- **association**: initial work on association service
+- **cilogon**: re-sync external memberships on login
+- **rest-api**: add mla member status to api
+- **mla-api**: add mla api functionality
+- **rest-api**: add swagger docs
+- **rest-api**: add options support for logout
+- **rest-api**: add logout endpoint
+- **cilogon**: add tokens api endpoint and token revocation on logout
+- **cilogon**: add validation of next_url to constrained whitelist
+- **rest-api**: add subs endpoint
+- **rest-api**: add group endpoint
+- **REST-API**: new rest api application and authentication system
+- **oauth**: add basic cilogon code as part of idms2
+
+### Fix
+
+- **cilogon**: move email module
+- **rest-api**: fix rest api group detail view error
+- **rest-api**: change hidden group to display 404 to non-authorized user
+- **rest-api**: change all rest urls to be consistent. refactor
+- **oauth**: further cilogon integrations
+- **rest-api**: hide email to unathenticated api users
+- **rest-api**: additional work on the rest api
+
+### Refactor
+
+- **rest-api**: improvements to rest api
+- **mla-sync**: clean up and refactor mla sync class
+- **cilogon**: add todos
+- **cilogon**: major refactor and rework of middleware and logout logic
+- **cilogon**: refactor views for readability
+- **rest-api**: refactor to use native drf style
+- **rest-api**: many tidy-ups to rest api
+
 ## 2.17.0 (2025-04-24)
 
 ### Feat
