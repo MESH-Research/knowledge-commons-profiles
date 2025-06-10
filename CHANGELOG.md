@@ -1,3 +1,9 @@
+## 2.18.7 (2025-06-10)
+
+### Fix
+
+- **cilogon**: change next parameter to callback_next
+
 ## 2.18.6 (2025-06-10)
 
 ### Fix
