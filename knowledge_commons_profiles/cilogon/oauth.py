@@ -120,9 +120,12 @@ def forward_url(request):
                 ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
                     logger.info("Forwarding CILogon code to %s", next_url)
                     return redirect(str(urlparse.urlunparse(url_parts)))
-                logger.warning(
-                    "Disallowed CILogon code forwarding URL: %s", next_url
+                message = (
+                    f"Disallowed CILogon code forwarding URL: "
+                    f"{next_url} with parts: "
+                    f"{extract_result.domain + "." + extract_result.suffix}"
                 )
+                logger.warning(message)
             except (ValueError, IDNAError, UnicodeDecodeError, OSError) as e:
                 sentry_sdk.capture_exception(e)
                 logger.exception(
