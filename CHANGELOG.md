@@ -1,3 +1,9 @@
+## 2.18.5 (2025-06-10)
+
+### Fix
+
+- **cilogon**: fix to redirect logic
+
 ## 2.18.4 (2025-06-10)
 
 ### Fix
