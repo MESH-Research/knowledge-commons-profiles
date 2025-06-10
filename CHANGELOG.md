@@ -1,3 +1,9 @@
+## 2.18.4 (2025-06-10)
+
+### Fix
+
+- **oauth**: fix forwarding logging
+
 ## 2.18.3 (2025-06-10)
 
 ### Fix
