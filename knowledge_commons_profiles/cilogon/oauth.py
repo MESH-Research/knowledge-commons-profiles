@@ -117,7 +117,7 @@ def forward_url(request):
                 # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
                 domain_to_check = (
                     (extract_result.domain + "." + extract_result.suffix)
-                    if extract_result.suffix
+                    if extract_result.suffix and extract_result.suffix != ""
                     else extract_result.domain
                 )
                 if (
