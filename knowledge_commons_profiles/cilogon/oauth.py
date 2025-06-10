@@ -78,7 +78,7 @@ def extract_code_next_url(request):
     data = json.loads(base64.urlsafe_b64decode(b64).decode())
 
     # see if we have a forwarding URL
-    next_url = data.get("next")
+    next_url = data.get("callback_next")
     code = request.GET.get("code")
 
     return code, next_url
@@ -90,7 +90,7 @@ def pack_state(next_url):
     """
     # Pack next_url into state and b64 encode
     return base64.urlsafe_b64encode(
-        json.dumps({"next": next_url}).encode()
+        json.dumps({"callback_next": next_url}).encode()
     ).decode()
 
 
