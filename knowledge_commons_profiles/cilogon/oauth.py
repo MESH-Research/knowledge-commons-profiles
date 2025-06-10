@@ -115,15 +115,20 @@ def forward_url(request):
 
                 # validate that the next URL is in the allowed list
                 # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
+                domain_to_check = (
+                    (extract_result.domain + "." + extract_result.suffix)
+                    if extract_result.suffix
+                    else extract_result.domain
+                )
                 if (
-                    extract_result.domain + "." + extract_result.suffix
+                    domain_to_check
                 ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
                     logger.info("Forwarding CILogon code to %s", next_url)
                     return redirect(str(urlparse.urlunparse(url_parts)))
                 message = (
                     f"Disallowed CILogon code forwarding URL: "
                     f"{next_url} with parts: "
-                    f"{extract_result.domain + "." + extract_result.suffix}"
+                    f"{domain_to_check}"
                 )
                 logger.warning(message)
             except (ValueError, IDNAError, UnicodeDecodeError, OSError) as e:
