@@ -3,7 +3,6 @@ Views for CILogon
 
 """
 
-import json
 import logging
 from enum import IntEnum
 from uuid import uuid4
@@ -31,6 +30,9 @@ from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.cilogon.oauth import (
+    verify_and_decode_cilogon_jwt,
+)
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
 )
