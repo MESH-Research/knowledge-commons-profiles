@@ -3,6 +3,7 @@ Views for CILogon
 
 """
 
+import json
 import logging
 from enum import IntEnum
 from uuid import uuid4
