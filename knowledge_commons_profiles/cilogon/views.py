@@ -3,6 +3,7 @@ Views for CILogon
 
 """
 
+import json
 import logging
 from enum import IntEnum
 from uuid import uuid4
@@ -244,8 +245,28 @@ def association(request):
     # first, see whether we have an unassociated user
     token = request.session.get("oidc_token")
     userinfo = request.session.get("oidc_userinfo", {})
+    stashed = False
+
     if not token or not userinfo:
-        return redirect(reverse("cilogon_login"))
+        # see whether we have a securely signed userinfo passed
+        userinfo_signed = request.GET.get("userinfo")
+
+        try:
+            if userinfo:
+                userinfo_decoded = oauth.verify_and_decode_cilogon_jwt(
+                    userinfo_signed,
+                )
+                userinfo = json.loads(userinfo_decoded)
+
+                if "sub" in userinfo:
+                    stashed = True
+
+        except Exception:
+            message = "Failed to verify and decode CILogon userinfo"
+            logger.exception(message)
+
+        if not stashed:
+            return redirect(reverse("cilogon_login"))
 
     # check the user is not properly logged in and redirect if so
     user = request.user
