@@ -1,3 +1,9 @@
+## 2.20.0 (2025-06-11)
+
+### Feat
+
+- **cilogon**: fix JWTClaims checking
+
 ## 2.19.0 (2025-06-11)
 
 ### Feat
