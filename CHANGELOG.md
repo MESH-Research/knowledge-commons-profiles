@@ -1,3 +1,9 @@
+## 2.19.0 (2025-06-11)
+
+### Feat
+
+- **cilogon**: add ability to decode passed userinfo
+
 ## 2.18.7 (2025-06-10)
 
 ### Fix
