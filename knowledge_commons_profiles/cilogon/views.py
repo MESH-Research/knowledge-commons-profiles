@@ -3,7 +3,6 @@ Views for CILogon
 
 """
 
-import json
 import logging
 from enum import IntEnum
 from uuid import uuid4
@@ -29,6 +28,9 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.cilogon.oauth import (
+    verify_and_decode_cilogon_jwt,
+)
 from knowledge_commons_profiles.common.profiles_email import (
     send_knowledge_commons_email,
 )
@@ -252,13 +254,14 @@ def association(request):
         userinfo_signed = request.GET.get("userinfo")
 
         try:
-            if userinfo:
-                userinfo_decoded = oauth.verify_and_decode_cilogon_jwt(
+            if userinfo_signed:
+                userinfo_decoded = verify_and_decode_cilogon_jwt(
                     userinfo_signed,
                 )
-                userinfo = json.loads(userinfo_decoded)
 
-                if "sub" in userinfo:
+                sub = userinfo_decoded.get("sub", None)
+
+                if sub:
                     stashed = True
 
         except Exception:
@@ -266,7 +269,7 @@ def association(request):
             logger.exception(message)
 
         if not stashed:
-            return redirect(reverse("cilogon_login"))
+            return redirect(reverse("login"))
 
     # check the user is not properly logged in and redirect if so
     user = request.user
