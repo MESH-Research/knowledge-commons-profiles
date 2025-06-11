@@ -9,14 +9,17 @@ import time
 import urllib.parse as urlparse
 from urllib.parse import urlencode
 
+import requests
 import sentry_sdk
 import tldextract
 from authlib.integrations.django_client import OAuth
+from authlib.jose import jwt
 from authlib.jose.errors import InvalidClaimError
 from authlib.oidc.core import CodeIDToken
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import DatabaseError
 from django.db import IntegrityError
 from django.db import OperationalError
@@ -125,6 +128,7 @@ def forward_url(request):
                 ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
                     logger.info("Forwarding CILogon code to %s", next_url)
                     return redirect(str(urlparse.urlunparse(url_parts)))
+
                 message = (
                     f"Disallowed CILogon code forwarding URL: "
                     f"{next_url} with parts: "
@@ -137,6 +141,8 @@ def forward_url(request):
                     "Exception parsing and validating next_url: %s", next_url
                 )
 
+    message = "Unspecified error parsing CILogon state"
+    logger.warning(message)
     return None
 
 
@@ -277,3 +283,49 @@ def delete_associations(associations):
             "collection due to unknown other error"
         )
         sentry_sdk.capture_exception()
+
+
+def get_cilogon_jwks():
+    """
+    Fetch and cache CILogon's JWKS
+    """
+    cache_key = "cilogon_jwks"
+    jwks = cache.get(cache_key)
+
+    if not jwks:
+        try:
+            response = requests.get(
+                "https://cilogon.org/oauth2/certs", timeout=10
+            )
+            response.raise_for_status()
+            jwks = response.json()
+            # Cache for 1 hour
+            cache.set(cache_key, jwks, 3600)
+        except requests.RequestException:
+            message = "Failed to fetch JWKS"
+            logger.exception(message)
+            raise
+
+    return jwks
+
+
+# Alternative approach if you want more control over validation
+def verify_and_decode_cilogon_jwt(id_token):
+    """
+    Manual verification approach with Authlib
+    """
+    jwks = get_cilogon_jwks()
+
+    # Verify and decode
+    return jwt.decode(
+        id_token,
+        jwks,
+        claims_options={
+            "iss": {"essential": True, "value": "https://cilogon.org"},
+            "aud": {
+                "essential": False,
+                "value": settings.CILOGON_CLIENT_ID,
+            },
+            "exp": {"essential": True},
+        },
+    )
