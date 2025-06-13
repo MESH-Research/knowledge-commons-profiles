@@ -1,3 +1,9 @@
+## 2.21.0 (2025-06-13)
+
+### Feat
+
+- **cilogon**: add secure aes-encrypted exchange of userinfo
+
 ## 2.20.1 (2025-06-13)
 
 ### Refactor
