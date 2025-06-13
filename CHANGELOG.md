@@ -1,3 +1,9 @@
+## 2.22.0 (2025-06-13)
+
+### Feat
+
+- **association-service**: add new confirmation page and fix email logic
+
 ## 2.21.0 (2025-06-13)
 
 ### Feat
