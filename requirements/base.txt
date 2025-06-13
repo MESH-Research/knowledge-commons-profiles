@@ -32,7 +32,7 @@ pylint==3.3.6
 rich==14.0.0
 sqloxide==0.1.54
 smart-open[aws]==7.1.0
-pydantic==2.11.4
+pydantic==2.11.5
 httpx==0.28.1
 tenacity==9.1.2
 pandas==2.2.3
