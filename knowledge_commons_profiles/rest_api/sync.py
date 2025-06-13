@@ -8,6 +8,9 @@ from django.conf import settings
 
 from knowledge_commons_profiles.cilogon.sync_apis import mla
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
+from knowledge_commons_profiles.common.profiles_email import (
+    sanitize_email_for_dev,
+)
 from knowledge_commons_profiles.newprofile import models
 
 CLASS_LOOKUPS: dict[str, SyncClass] = {"MLA": mla.MLA()}
@@ -57,11 +60,7 @@ class ExternalSync:
                 if not sync_id:
                     # see whether we can find a sync ID for this user
                     search_by_email = class_to_use.search(
-                        email=(
-                            profile.email
-                            if profile.email != "martin@martineve.com"
-                            else "martin@eve.gd"
-                        )
+                        email=sanitize_email_for_dev(profile.email)
                     )
 
                     if search_by_email.meta.status == "success":

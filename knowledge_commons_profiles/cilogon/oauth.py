@@ -329,3 +329,32 @@ def verify_and_decode_cilogon_jwt(id_token):
             "exp": {"essential": True},
         },
     )
+
+
+def get_token_and_userinfo(request):
+    """
+    Get the token and userinfo
+    """
+    token = request.session.get("oidc_token")
+    userinfo = request.session.get("oidc_userinfo", {})
+    stashed = False
+
+    if not token or not userinfo:
+        # see whether we have a securely signed userinfo passed
+        userinfo_signed = request.GET.get("userinfo")
+
+        try:
+            if userinfo_signed:
+                userinfo = verify_and_decode_cilogon_jwt(
+                    userinfo_signed,
+                )
+
+                # if we have a sub, we have a user
+                if userinfo.get("sub", None):
+                    stashed = True
+
+        except Exception:
+            message = "Failed to verify and decode CILogon userinfo"
+            logger.exception(message)
+
+    return stashed, userinfo
