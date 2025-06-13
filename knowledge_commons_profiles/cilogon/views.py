@@ -24,12 +24,13 @@ from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import forward_url
+from knowledge_commons_profiles.cilogon.oauth import get_token_and_userinfo
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
-from knowledge_commons_profiles.cilogon.oauth import (
-    verify_and_decode_cilogon_jwt,
+from knowledge_commons_profiles.common.profiles_email import (
+    sanitize_email_for_dev,
 )
 from knowledge_commons_profiles.common.profiles_email import (
     send_knowledge_commons_email,
@@ -245,35 +246,14 @@ def association(request):
     """
 
     # first, see whether we have an unassociated user
-    token = request.session.get("oidc_token")
-    userinfo = request.session.get("oidc_userinfo", {})
-    stashed = False
+    stashed, userinfo = get_token_and_userinfo(request)
 
-    if not token or not userinfo:
-        # see whether we have a securely signed userinfo passed
-        userinfo_signed = request.GET.get("userinfo")
-
-        try:
-            if userinfo_signed:
-                userinfo_decoded = verify_and_decode_cilogon_jwt(
-                    userinfo_signed,
-                )
-
-                sub = userinfo_decoded.get("sub", None)
-
-                if sub:
-                    stashed = True
-
-        except Exception:
-            message = "Failed to verify and decode CILogon userinfo"
-            logger.exception(message)
-
-        if not stashed:
-            return redirect(reverse("login"))
+    if not stashed:
+        return redirect(reverse("login"))
 
     # check the user is not properly logged in and redirect if so
     user = request.user
-    if user.is_authenticated:
+    if user and user.is_authenticated:
         return redirect(reverse("my_profile"))
 
     context = {"cilogon_sub": userinfo.get("sub", "")}
@@ -299,6 +279,9 @@ def association(request):
                     sub=userinfo.get("sub", ""),
                 )
 
+                # replace the email for testing purposes
+                email = sanitize_email_for_dev(email)
+
                 # send an email
                 send_knowledge_commons_email(
                     recipient_email=email,
@@ -308,6 +291,7 @@ def association(request):
 
                 # render to the login page
                 return redirect(reverse("my_profile"))
+            context.update({"error": "No profile found with that email"})
         else:
             context.update({"error": "No email provided"})
 

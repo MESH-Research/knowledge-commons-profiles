@@ -25,6 +25,9 @@ from django.db.models import When
 from django.http import Http404
 
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.common.profiles_email import (
+    sanitize_email_for_dev,
+)
 from knowledge_commons_profiles.newprofile import mastodon
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
@@ -692,11 +695,8 @@ class API:
             return profile_image.full
 
         # Fall back to Gravatar
-        email = (
-            self.profile.email
-            if self.profile.email != "martin@martineve.com"
-            else "martin@eve.gd"
-        )
+        email = sanitize_email_for_dev(self.profile.email)
+
         size = 150
 
         # Encode the email to lowercase and then to bytes

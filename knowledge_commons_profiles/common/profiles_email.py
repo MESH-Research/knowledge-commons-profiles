@@ -97,3 +97,12 @@ def send_knowledge_commons_email(
         success = False
 
     return success
+
+
+def sanitize_email_for_dev(email):
+    """
+    Sanitize email by replacing martin@martineve.com with martin@eve.gd
+    :param email: the input email
+    :return: a replaced email
+    """
+    return email.replace("martin@martineve.com", "martin@eve.gd")
