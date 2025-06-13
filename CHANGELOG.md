@@ -1,3 +1,9 @@
+## 2.20.1 (2025-06-13)
+
+### Refactor
+
+- **cilogon**: refactor code for fetching userinfo
+
 ## 2.20.0 (2025-06-11)
 
 ### Feat
