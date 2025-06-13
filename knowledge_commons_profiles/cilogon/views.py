@@ -24,7 +24,7 @@ from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import forward_url
-from knowledge_commons_profiles.cilogon.oauth import get_token_and_userinfo
+from knowledge_commons_profiles.cilogon.oauth import get_secure_userinfo
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
@@ -248,7 +248,7 @@ def association(request):
     # first, see whether we have an unassociated user
     userinfo_is_valid: bool
     userinfo: dict | None
-    userinfo_is_valid, userinfo = get_token_and_userinfo(request)
+    userinfo_is_valid, userinfo = get_secure_userinfo(request)
 
     if not userinfo_is_valid:
         return redirect(reverse("login"))
@@ -291,13 +291,21 @@ def association(request):
                     template_file="mail/associate.html",
                 )
 
-                # render to the login page
-                return redirect(reverse("my_profile"))
+                # render to the confirm page
+                return redirect(reverse("confirm"))
             context.update({"error": "No profile found with that email"})
         else:
             context.update({"error": "No email provided"})
 
     return render(request, "cilogon/association.html", context)
+
+
+def confirm(request):
+    """
+    The confirmation of email view
+    :param request: the request
+    """
+    return render(request, "cilogon/confirm.html", {})
 
 
 def activate(request, verification_id: int, secret_key: str):
