@@ -153,18 +153,23 @@ def forward_url(request):
     return None
 
 
-def store_session_variables(request, token):
+def store_session_variables(request, token, userinfo_input=None):
     """
     Store session variables "userinfo" and "oidc_token"
     """
     logger.info("Storing new token")
 
-    request.session["oidc_token"] = token
+    userinfo = userinfo_input
 
-    userinfo = request.session.get("oidc_userinfo", {})
+    if not userinfo:
+        userinfo = request.session.get("oidc_userinfo", None)
 
-    if "userinfo" in token:
-        userinfo = token["userinfo"]
+    if token:
+        request.session["oidc_token"] = token
+        if "userinfo" in token:
+            userinfo = token["userinfo"]
+
+    if userinfo:
         request.session["oidc_userinfo"] = userinfo
 
     return userinfo
@@ -392,23 +397,27 @@ class SecureParamEncoder:
         return json.loads(json_data.decode())
 
 
-def get_token_and_userinfo(request) -> tuple[bool, dict | None]:
+def get_secure_userinfo(request) -> tuple[bool, dict | None]:
     """
     Get the token and userinfo with proper validation
     """
     # First try session data
-    token = request.session.get("oidc_token")
     userinfo = request.session.get("oidc_userinfo", {})
 
     # Validate session data
-    if token and userinfo and userinfo.get("sub"):
+    if userinfo and userinfo.get("sub"):
         return True, userinfo
 
     # Fallback to signed userinfo from GET parameter
     encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
 
-    # decode the GET parameter with secure userinfo
+    # decode the GET parameter with secure userinfo on AES
     try:
+        userinfo_querystring = request.GET.get("userinfo", None)
+
+        if not userinfo_querystring:
+            return False, None
+
         userinfo_signed = encoder.decode(request.GET.get("userinfo"))
     except Exception:
         message = "Failed to decrypt userinfo"
@@ -423,6 +432,11 @@ def get_token_and_userinfo(request) -> tuple[bool, dict | None]:
         userinfo = verify_and_decode_cilogon_jwt(
             userinfo_signed.get("userinfo")
         )
+
+        store_session_variables(
+            request=request, token=None, userinfo_input=userinfo
+        )
+
         if userinfo and userinfo.get("sub"):
             return True, userinfo
     except (InvalidTokenError, ValueError, Exception):
