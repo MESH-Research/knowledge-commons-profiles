@@ -3,8 +3,10 @@
 import base64
 import binascii
 import contextlib
+import hashlib
 import json
 import logging
+import os
 import time
 import urllib.parse as urlparse
 from urllib.parse import urlencode
@@ -16,6 +18,10 @@ from authlib.integrations.django_client import OAuth
 from authlib.jose import jwt
 from authlib.jose.errors import InvalidClaimError
 from authlib.oidc.core import CodeIDToken
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher
+from cryptography.hazmat.primitives.ciphers import algorithms
+from cryptography.hazmat.primitives.ciphers import modes
 from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.models import User
@@ -26,6 +32,7 @@ from django.db import OperationalError
 from django.db.models import ProtectedError
 from django.shortcuts import redirect
 from idna import IDNAError
+from jwt.exceptions import InvalidTokenError
 
 logger = logging.getLogger(__name__)
 
@@ -331,30 +338,96 @@ def verify_and_decode_cilogon_jwt(id_token):
     )
 
 
-def get_token_and_userinfo(request):
+class SecureParamEncoder:
     """
-    Get the token and userinfo
+    Encrypt and encode data for URL transmission
     """
+
+    def __init__(self, shared_secret: str):
+        # Derive a 32-byte key from any length secret
+        self.key = hashlib.sha256(shared_secret.encode()).digest()
+
+    def encode(self, data: dict) -> str:
+        """
+        Encrypt and encode data
+        :param data: a dictionary of querystring parameters
+        """
+        json_data = json.dumps(data).encode()
+
+        # Generate random IV
+        iv = os.urandom(16)
+
+        # Pad data to block size
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(json_data) + padder.finalize()
+
+        # Encrypt
+        cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv))
+        encryptor = cipher.encryptor()
+        encrypted = encryptor.update(padded_data) + encryptor.finalize()
+
+        # Combine IV + encrypted data
+        result = iv + encrypted
+        return base64.urlsafe_b64encode(result).decode()
+
+    def decode(self, encrypted_param: str) -> dict:
+        """
+        Decode and decrypt data
+        """
+        data = base64.urlsafe_b64decode(encrypted_param.encode())
+
+        # Extract IV and encrypted data
+        iv = data[:16]
+        encrypted = data[16:]
+
+        # Decrypt
+        cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded_data = decryptor.update(encrypted) + decryptor.finalize()
+
+        # Remove padding
+        unpadder = padding.PKCS7(128).unpadder()
+        json_data = unpadder.update(padded_data) + unpadder.finalize()
+
+        return json.loads(json_data.decode())
+
+
+def get_token_and_userinfo(request) -> tuple[bool, dict | None]:
+    """
+    Get the token and userinfo with proper validation
+    """
+    # First try session data
     token = request.session.get("oidc_token")
     userinfo = request.session.get("oidc_userinfo", {})
-    stashed = False
 
-    if not token or not userinfo:
-        # see whether we have a securely signed userinfo passed
-        userinfo_signed = request.GET.get("userinfo")
+    # Validate session data
+    if token and userinfo and userinfo.get("sub"):
+        return True, userinfo
 
-        try:
-            if userinfo_signed:
-                userinfo = verify_and_decode_cilogon_jwt(
-                    userinfo_signed,
-                )
+    # Fallback to signed userinfo from GET parameter
+    encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
 
-                # if we have a sub, we have a user
-                if userinfo.get("sub", None):
-                    stashed = True
+    # decode the GET parameter with secure userinfo
+    try:
+        userinfo_signed = encoder.decode(request.GET.get("userinfo"))
+    except Exception:
+        message = "Failed to decrypt userinfo"
+        logger.exception(message)
+        return False, None
 
-        except Exception:
-            message = "Failed to verify and decode CILogon userinfo"
-            logger.exception(message)
+    if not userinfo_signed:
+        return False, None
 
-    return stashed, userinfo
+    # now check signature on GET parameter
+    try:
+        userinfo = verify_and_decode_cilogon_jwt(
+            userinfo_signed.get("userinfo")
+        )
+        if userinfo and userinfo.get("sub"):
+            return True, userinfo
+    except (InvalidTokenError, ValueError, Exception):
+        message = "Failed to verify and decode CILogon userinfo"
+        logger.exception(message)
+        sentry_sdk.capture_exception()
+
+    return False, None
