@@ -246,9 +246,11 @@ def association(request):
     """
 
     # first, see whether we have an unassociated user
-    stashed, userinfo = get_token_and_userinfo(request)
+    userinfo_is_valid: bool
+    userinfo: dict | None
+    userinfo_is_valid, userinfo = get_token_and_userinfo(request)
 
-    if not stashed:
+    if not userinfo_is_valid:
         return redirect(reverse("login"))
 
     # check the user is not properly logged in and redirect if so
