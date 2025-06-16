@@ -1,3 +1,9 @@
+## 2.22.3 (2025-06-16)
+
+### Fix
+
+- **email**: fix email host string and inject request object into context
+
 ## 2.22.2 (2025-06-16)
 
 ### Fix
