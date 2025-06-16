@@ -1,3 +1,11 @@
+## 2.22.1 (2025-06-16)
+
+### Fix
+
+- **email**: fix sparkpost url mangling
+- **email**: fix to sparkpost url mangling
+- **association-service**: change image url src to s3 rather than local static url
+
 ## 2.22.0 (2025-06-13)
 
 ### Feat
