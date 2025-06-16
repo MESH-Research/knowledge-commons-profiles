@@ -290,6 +290,7 @@ def association(request):
                     context_data={
                         "uuid": uuid,
                         "verification_id": email_verification.id,
+                        "request": request,
                     },
                     template_file="mail/associate.html",
                 )
