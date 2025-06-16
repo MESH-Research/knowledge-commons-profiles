@@ -1,3 +1,9 @@
+## 2.22.2 (2025-06-16)
+
+### Fix
+
+- **email**: fix cilogon association email
+
 ## 2.22.1 (2025-06-16)
 
 ### Fix
