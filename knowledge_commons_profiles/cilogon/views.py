@@ -275,7 +275,7 @@ def association(request):
                 EmailVerification.objects.filter(profile=profile).delete()
 
                 # create a new EmailVerification entry
-                EmailVerification.objects.create(
+                email_verification = EmailVerification.objects.create(
                     secret_uuid=uuid,
                     profile=profile,
                     sub=userinfo.get("sub", ""),
@@ -287,7 +287,10 @@ def association(request):
                 # send an email
                 send_knowledge_commons_email(
                     recipient_email=email,
-                    context_data={"uuid": uuid},
+                    context_data={
+                        "uuid": uuid,
+                        "verification_id": email_verification.id,
+                    },
                     template_file="mail/associate.html",
                 )
 
