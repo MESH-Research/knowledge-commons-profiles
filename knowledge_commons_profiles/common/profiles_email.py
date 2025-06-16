@@ -59,11 +59,11 @@ def send_knowledge_commons_email(
     # disable spark post tracking and manging of URLS
     msg.extra_headers = {
         "X-MSYS-API": '{"options": '
-                      '{'
-                      '"click_tracking": false, '
-                      '"open_tracking": false '
-                      '}'
-                      '}'
+        "{"
+        '"click_tracking": false, '
+        '"open_tracking": false '
+        "}"
+        "}"
     }
 
     # Send the email
