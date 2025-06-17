@@ -1,3 +1,9 @@
+## 2.22.4 (2025-06-17)
+
+### Fix
+
+- **rest-api**: fixes to email visibility and serialization
+
 ## 2.22.3 (2025-06-16)
 
 ### Fix
