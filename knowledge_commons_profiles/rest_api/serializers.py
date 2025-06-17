@@ -7,6 +7,7 @@ import json
 import logging
 from typing import Any
 
+from django.db import OperationalError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
@@ -221,7 +222,9 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 
         # create an API object
         api = API(request, user_id, use_wordpress=False)
-        return json.loads(api.profile.is_member_of)
+        return json.loads(
+            api.profile.is_member_of if api.profile.is_member_of else "[]"
+        )
 
     def get_groups(self, obj: Profile) -> list[dict[str, Any]]:
         """
@@ -242,16 +245,20 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             return []
 
         # create a skeleton API object
-        api = API(request, user_id, use_wordpress=True)
+        try:
+            api = API(request, user_id, use_wordpress=True)
 
-        # serialize into the same shape you already have
-        return GroupMembershipSerializer(
-            api.get_groups(
-                status_choices=group_status,
-            ),
-            many=True,
-            context=self.context,
-        ).data
+            # serialize into the same shape you already have
+            return GroupMembershipSerializer(
+                api.get_groups(
+                    status_choices=group_status,
+                ),
+                many=True,
+                context=self.context,
+            ).data
+        except OperationalError:
+            # if there's no WordPress database access, return an empty list
+            return []
 
     def get_first_name(self, obj):
         """
@@ -271,7 +278,7 @@ class SubProfileSerializer(serializers.ModelSerializer):
     Serializer for the SubAssociation model
     """
 
-    profile = ProfileSerializer()
+    profile = ProfileDetailSerializer()
     sub = serializers.CharField()
 
     def __init__(self, *args, **kwargs):
@@ -288,7 +295,7 @@ class SubProfileSerializer(serializers.ModelSerializer):
     def get_fields(self):
         fields = super().get_fields()
         # rebuild 'profile' with the current context
-        fields["profile"] = ProfileSerializer(
+        fields["profile"] = ProfileDetailSerializer(
             context=self.context, read_only=True
         )
         return fields
