@@ -80,7 +80,7 @@ class ProfileListView(generics.ListAPIView):
     """
 
     authentication_classes = [StaticBearerAuthentication]
-    permission_classes = [AllowAny]
+    permission_classes = [HasStaticBearerToken]
     queryset = (
         Profile.objects.all()
         .prefetch_related("academic_interests")
