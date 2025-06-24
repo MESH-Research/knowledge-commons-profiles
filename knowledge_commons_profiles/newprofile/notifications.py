@@ -6,6 +6,8 @@ from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpNotification
 from knowledge_commons_profiles.newprofile.models import WpUser
 
+# ruff: noqa: PLC0415
+
 
 class BuddyPressNotification:
     """

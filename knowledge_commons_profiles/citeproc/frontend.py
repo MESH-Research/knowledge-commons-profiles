@@ -26,9 +26,9 @@ class CitationStylesXML:
             remove_comments=True, encoding="UTF-8", no_network=True
         )
         self.parser.set_element_class_lookup(lookup)
-        self.xml = etree.parse(f, self.parser)  # noqa: S320
+        self.xml = etree.parse(f, self.parser)
         if validate:
-            self.schema = etree.RelaxNG(etree.parse(SCHEMA_PATH))  # noqa: S320
+            self.schema = etree.RelaxNG(etree.parse(SCHEMA_PATH))
             if not self.schema.validate(self.xml):
                 err = self.schema.error_log
                 msg = f"XML file didn't pass schema validation:\n{err}"

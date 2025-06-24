@@ -22,7 +22,7 @@ from .string import join
 ORDINAL_THRESHOLD = 10
 AD_THRESHOLD = 1000
 
-
+# ruff: noqa: PLC0415 RUF005
 class SomewhatObjectifiedElement(etree.ElementBase):
     nsmap = {
         "cs": "http://purl.org/net/xbiblio/csl",

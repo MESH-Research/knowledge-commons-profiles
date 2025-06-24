@@ -20,6 +20,7 @@ from knowledge_commons_profiles.newprofile.works import WorksApiError
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 
+# ruff: noqa: PLC0415
 @override_settings(
     CACHES={
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}

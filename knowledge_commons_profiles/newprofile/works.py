@@ -7,8 +7,6 @@ import json
 import logging
 from collections import defaultdict
 from enum import Enum
-
-# ruff: noqa: PLC0206
 from pathlib import Path
 from typing import Any
 
