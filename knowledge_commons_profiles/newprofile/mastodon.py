@@ -16,6 +16,7 @@ from knowledge_commons_profiles.__version__ import VERSION
 logger = logging.getLogger(__name__)
 
 
+
 class MastodonFeed:
     """
     Fetches Mastodon feed latest and handles caching
@@ -86,7 +87,7 @@ class MastodonFeed:
 
         # Parse XML
         try:
-            root = etree.fromstring(response.content)  # noqa: S320
+            root = etree.fromstring(response.content)
             posts = root.findall(".//item")
         except (etree.XMLSyntaxError, AttributeError):
             logger.exception("Error parsing XML from %s", self.api_url)

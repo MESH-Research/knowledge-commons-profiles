@@ -165,6 +165,10 @@ class DateRange(DateBase):
         # TODO: for sorting
         raise NotImplementedError
 
+    def __hash__(self):
+        # TODO: for sorting
+        raise NotImplementedError
+
 
 class Citation(CustomDict):
     def __init__(self, cites, **kwargs):

@@ -24,6 +24,8 @@ from knowledge_commons_profiles.newprofile.tests.model_factories import (
     UserFactory,
 )
 
+# ruff: noqa: PLC0415
+
 
 def set_up_api_instance():
     """

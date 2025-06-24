@@ -1,4 +1,4 @@
-# ruff: noqa: ERA001, E501
+# ruff: noqa: E501
 """Base settings to build other settings files upon."""
 
 from pathlib import Path
@@ -428,3 +428,7 @@ MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
 EXTERNAL_SYNC_CLASSES: list[str] = ["MLA"]
 
 LOGOUT_ENDPOINTS = []
+
+WORKS_UPDATE_ENDPOINTS = ["https://localhost/"]
+
+WEBHOOK_TOKEN = env("WEBHOOK_TOKEN", default="")

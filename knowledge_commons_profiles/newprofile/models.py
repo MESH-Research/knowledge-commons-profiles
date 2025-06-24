@@ -26,6 +26,7 @@ HTTP_200_OK = 200
 CITATION_STYLE_CHOICES = [(key, key) for key in settings.CITATION_STYLES]
 
 
+# ruff: noqa: PLC0415
 class ProfileBleachField(BleachField):
     """An override of BleachField to avoid casting SafeString from db
     Bleachfield automatically casts the default return type (string) into
