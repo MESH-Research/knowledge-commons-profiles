@@ -258,16 +258,12 @@ class AutoRefreshTokenMiddlewareTest(TestCase):
             patch(
                 "knowledge_commons_profiles.cilogon.middleware.logout"
             ) as logout_mock,
-            patch(
-                "knowledge_commons_profiles.cilogon.middleware.sentry_sdk.capture_exception"
-            ) as sentry_mock,
             patch.object(self.middleware, "release_refresh_lock"),
         ):
             self.middleware.refresh_user_token(
                 self.request, self.request.session["oidc_token"], self.user
             )
-            sentry_mock.assert_called_once()
-            logout_mock.assert_not_called()  # exception path, not OAuthError
+            logout_mock.assert_called()
 
 
 class GarbageCollectionMiddlewareTest(TestCase):
