@@ -1,3 +1,9 @@
+## 2.23.1 (2025-06-25)
+
+### Fix
+
+- **cilogon**: handle arbitrary failures in refresh token middleware
+
 ## 2.23.0 (2025-06-25)
 
 ### Feat
