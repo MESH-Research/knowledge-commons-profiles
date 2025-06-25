@@ -186,7 +186,7 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
                 "Unable to hard refresh token for user %s for unknown reason",
                 user,
             )
-            sentry_sdk.capture_exception()
+            logout(request)
         else:
             if refresh_behavior == RefreshBehavior.CLEAR:
                 request.session["hard_refresh"] = False
