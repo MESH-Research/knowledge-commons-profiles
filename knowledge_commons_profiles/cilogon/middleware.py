@@ -180,12 +180,20 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
             # user has an invalid refresh token
             # has been revoked centrally at CILogon
             logger.debug("Login token for user %s expired. Logging out.", user)
+
+            del request.session["oidc_token"]
+            del request.session["oidc_userinfo"]
+
             logout(request)
         except Exception:
             logger.exception(
                 "Unable to hard refresh token for user %s for unknown reason",
                 user,
             )
+
+            del request.session["oidc_token"]
+            del request.session["oidc_userinfo"]
+
             logout(request)
         else:
             if refresh_behavior == RefreshBehavior.CLEAR:
