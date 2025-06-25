@@ -1,3 +1,9 @@
+## 2.23.2 (2025-06-25)
+
+### Fix
+
+- **cilogon**: set middleware to wipe session
+
 ## 2.23.1 (2025-06-25)
 
 ### Fix
