@@ -2,6 +2,7 @@
 Middleware for profiles
 """
 
+import contextlib
 import logging
 from datetime import timedelta
 
@@ -191,8 +192,9 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
                 user,
             )
 
-            del request.session["oidc_token"]
-            del request.session["oidc_userinfo"]
+            with contextlib.suppress(KeyError):
+                del request.session["oidc_token"]
+                del request.session["oidc_userinfo"]
 
             logout(request)
         else:

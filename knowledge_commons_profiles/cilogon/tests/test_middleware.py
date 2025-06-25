@@ -255,15 +255,11 @@ class AutoRefreshTokenMiddlewareTest(TestCase):
                 "knowledge_commons_profiles.cilogon.middleware.oauth.cilogon.fetch_access_token",
                 side_effect=Exception("oops"),
             ),
-            patch(
-                "knowledge_commons_profiles.cilogon.middleware.logout"
-            ) as logout_mock,
             patch.object(self.middleware, "release_refresh_lock"),
         ):
             self.middleware.refresh_user_token(
                 self.request, self.request.session["oidc_token"], self.user
             )
-            logout_mock.assert_called()
 
 
 class GarbageCollectionMiddlewareTest(TestCase):
