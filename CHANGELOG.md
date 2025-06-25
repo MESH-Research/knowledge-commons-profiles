@@ -1,3 +1,9 @@
+## 2.23.4 (2025-06-25)
+
+### Fix
+
+- **cilogon**: attempt to fix refresh token bug
+
 ## 2.23.3 (2025-06-25)
 
 ### Fix
