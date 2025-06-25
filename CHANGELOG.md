@@ -1,3 +1,13 @@
+## 2.23.0 (2025-06-25)
+
+### Feat
+
+- **webhook**: more work on webhook polling
+
+### Fix
+
+- **cilogon**: fix middleware access to non-existent member
+
 ## 2.22.4 (2025-06-17)
 
 ### Fix
