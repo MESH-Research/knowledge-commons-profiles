@@ -184,6 +184,11 @@ class APIClient:
         :param user_updates: the user updates
         :return: the response
         """
+        if not settings.WEBHOOK_TOKEN:
+            message = "Missing webhook token"
+            logger.error(message)
+            raise ValueError(message)
+
         try:
             # Send updates
             response = self.send_updates(
@@ -202,8 +207,6 @@ class APIClient:
             else:
                 message = "Success! Raw response: %s"
                 logger.info(message, response.raw_response)
-
-
 
         except ValueError:
             message = "Validation error: %s"

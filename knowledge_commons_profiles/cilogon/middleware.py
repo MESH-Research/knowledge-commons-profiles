@@ -16,6 +16,7 @@ from django.core.exceptions import FieldError
 from django.db import DatabaseError
 from django.db import OperationalError
 from django.db.models import Q
+from django.db.models import QuerySet
 from django.db.models.enums import IntEnum
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
@@ -237,7 +238,11 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
         delete_associations(associations)
 
     def revoke_token_set(
-        self, associations, client, revocation_endpoint, token
+        self,
+        associations: QuerySet[TokenUserAgentAssociations],
+        client,
+        revocation_endpoint: str,
+        token,
     ):
         """
         Revoke tokens
@@ -245,7 +250,7 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
         for association in associations:
             logger.debug(
                 "Revoking token for user %s and user agent %s on app Profiles",
-                association.user,
+                association.user_name,
                 association.user_agent,
             )
 

@@ -431,4 +431,4 @@ LOGOUT_ENDPOINTS = []
 
 WORKS_UPDATE_ENDPOINTS = ["https://localhost/"]
 
-WEBHOOK_TOKEN = env("WEBHOOK_TOKEN", default="")
+WEBHOOK_TOKEN = env("WEBHOOK_TOKEN")
