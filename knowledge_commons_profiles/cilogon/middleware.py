@@ -188,10 +188,7 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
 
             logout(request)
         except Exception:  # noqa: BLE001
-            logger.warning(
-                "Unable to hard refresh token for user %s for unknown reason",
-                user,
-            )
+            logger.warning("Unable to hard refresh token for unknown reason")
 
             with contextlib.suppress(KeyError):
                 del request.session["oidc_token"]
