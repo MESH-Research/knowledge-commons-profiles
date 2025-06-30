@@ -31,6 +31,9 @@ from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
+from knowledge_commons_profiles.rest_api.idms_api import (
+    send_webhook_user_update,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -258,6 +261,13 @@ def edit_profile(request):
         form = ProfileForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
+
+            # now trigger the webhook that sends updates to the system
+
+            # Prepare updates using Pydantic models and send an update command
+            # to third-party systems via webhook
+            send_webhook_user_update(user.username)
+
             return redirect("profile", user=user.username)
     else:
         form = ProfileForm(instance=user)

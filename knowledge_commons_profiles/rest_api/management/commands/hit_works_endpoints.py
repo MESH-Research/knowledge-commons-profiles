@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
             # Prepare updates using Pydantic models
             user_updates = [
-                UserUpdate(id="myusername", event=EventType.UPDATED),
+                UserUpdate(id="martin_eve", event=EventType.UPDATED),
                 UserUpdate(id="anotherusername", event=EventType.CREATED),
             ]
 

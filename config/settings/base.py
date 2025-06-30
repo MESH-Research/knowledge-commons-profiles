@@ -260,6 +260,26 @@ LOGGING = {
             "formatter": "verbose",
         },
     },
+    "loggers": {
+        "inotify_buffer": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "watchdog": {
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "watchdog.observers": {
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "debug_toolbar": {
+            "level": "WARNING",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+    },
     "root": {"level": "DEBUG" if DEBUG else "INFO", "handlers": ["console"]},
 }
 
