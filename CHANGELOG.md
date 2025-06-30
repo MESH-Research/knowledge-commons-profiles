@@ -1,3 +1,9 @@
+## 2.24.0 (2025-06-30)
+
+### Feat
+
+- **debug**: add additional cilogon debug info
+
 ## 2.23.4 (2025-06-25)
 
 ### Fix
