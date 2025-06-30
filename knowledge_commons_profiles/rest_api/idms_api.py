@@ -24,6 +24,7 @@ class EventType(str, Enum):
     CREATED = "created"
     UPDATED = "updated"
     DELETED = "deleted"
+    ASSOCIATED = "associated"
 
 
 class UserUpdate(BaseModel):
@@ -49,6 +50,43 @@ class UserUpdate(BaseModel):
     )
 
 
+class AssociationUpdate(BaseModel):
+    """Model for association updates"""
+
+    id: str = Field(..., min_length=1, description="Sub identifier")
+    kc_id: str = Field(..., min_length=1, description="KC ID")
+    event: EventType = Field(..., description="Event type")
+
+    @field_validator("id")
+    @classmethod
+    def validate_id(cls, v: str) -> str:
+        """Ensure ID is not empty or just whitespace"""
+        if not v.strip():
+            message = "User ID cannot be empty or whitespace"
+            raise ValueError(message)
+        return v.strip()
+
+    @field_validator("kc_id")
+    @classmethod
+    def validate_kc_id(cls, v: str) -> str:
+        """Ensure KC ID is not empty or just whitespace"""
+        if not v.strip():
+            message = "KC ID cannot be empty or whitespace"
+            raise ValueError(message)
+        return v.strip()
+
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_schema_extra={
+            "example": {
+                "id": "http://cilogon.org/serverE/users/329380",
+                "kc_id": "martin_eve",
+                "event": "associated",
+            }
+        },
+    )
+
+
 class GroupUpdate(BaseModel):
     """Model for group updates"""
 
@@ -67,6 +105,50 @@ class GroupUpdate(BaseModel):
     model_config = ConfigDict(
         use_enum_values=True,
         json_schema_extra={"example": {"id": "1234", "event": "updated"}},
+    )
+
+
+class AssociationsPayload(BaseModel):
+    """Model for the complete associations payload"""
+
+    idp: str = Field(..., min_length=1, description="Identity provider")
+    associations: dict[str, list[dict[str, str]]] = Field(
+        ..., description="associations object"
+    )
+
+    @field_validator("idp")
+    @classmethod
+    def validate_idp(cls, v: str) -> str:
+        """Ensure IDP is not empty or just whitespace"""
+        if not v.strip():
+            message = "IDP cannot be empty or whitespace"
+            raise ValueError(message)
+        return v.strip()
+
+    @field_validator("associations")
+    @classmethod
+    def validate_updates(
+        cls, v: dict[str, list[dict[str, str]]]
+    ) -> dict[str, list[dict[str, str]]]:
+        """Ensure at least one update is provided"""
+        if not v or (not v.get("associations")):
+            message = "At least one association is required"
+            raise ValueError(message)
+        return v
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "idp": "cilogon",
+                "updates": {
+                    "users": [
+                        {"id": "myusername", "event": "updated"},
+                        {"id": "anotherusername", "event": "created"},
+                    ],
+                    "groups": [{"id": "1234", "event": "updated"}],
+                },
+            }
+        }
     )
 
 
@@ -101,7 +183,7 @@ class UpdatePayload(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "idp": "knowledgeCommons",
+                "idp": "cilogon",
                 "updates": {
                     "users": [
                         {"id": "myusername", "event": "updated"},
@@ -193,7 +275,7 @@ class APIClient:
             # Send updates
             response = self.send_updates(
                 endpoint="/api/webhooks/user_data_update",
-                idp="knowledgeCommons",
+                idp="cilogon",
                 users=user_updates,
                 groups=group_updates,
                 headers={
@@ -229,6 +311,100 @@ class APIClient:
 
         else:
             return response
+
+    def send_association(
+        self,
+        endpoint: str,
+        idp: str,
+        associations: list[AssociationUpdate] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> APIResponse:
+        """
+        Send an association to the API endpoint
+        """
+
+        # Validate endpoint
+        if not endpoint:
+            message = "Endpoint cannot be empty"
+            raise ValueError(message)
+
+        assoc_dict = {
+            "associations": [
+                association.model_dump() for association in associations
+            ]
+        }
+
+        # Create and validate payload
+        try:
+            payload = AssociationsPayload(idp=idp, associations=assoc_dict)
+        except ValueError:
+            message = "Payload validation failed"
+            logger.exception(message)
+            raise
+
+        # Prepare request
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        default_headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+        if headers:
+            default_headers.update(headers)
+
+        try:
+            # Log the request
+            logger.info("Sending POST request to %s", url)
+            logger.debug("Payload: %s", payload.model_dump_json(indent=2))
+
+            # Send request
+            response = self.session.post(
+                url,
+                json=payload.dict(),
+                headers=default_headers,
+                timeout=self.timeout,
+                verify=False,  # we don't want to validate certs when testing
+            )
+
+            # Check for HTTP errors
+            response.raise_for_status()
+
+            # Parse response
+            try:
+                response_data = response.json()
+                message = f"Request successful. Status: {response.status_code}"
+                logger.info(message)
+                return APIResponse(
+                    status_code=response.status_code, data=response_data
+                )
+            except json.JSONDecodeError:
+                message = "Failed to parse response JSON"
+                logger.exception(message)
+                return APIResponse(
+                    status_code=response.status_code,
+                    raw_response=response.text,
+                )
+
+        except requests.exceptions.ConnectionError:
+            message = "Connection error"
+            logger.exception(message)
+            raise
+        except requests.exceptions.Timeout:
+            message = "Request timed out"
+            logger.exception(message)
+            raise
+        except requests.exceptions.HTTPError:
+            message = "HTTP error"
+            logger.exception(message)
+            raise
+        except requests.exceptions.RequestException:
+            message = "Request failed"
+            logger.exception(message)
+            raise
+        except Exception:
+            message = "Unexpected error"
+            logger.exception(message)
+            raise
 
     def send_updates(
         self,
@@ -350,3 +526,37 @@ class APIClient:
         if groups:
             updates_dict["groups"] = [group.model_dump() for group in groups]
         return updates_dict
+
+
+def send_webhook_updates(
+    user_updates: list[UserUpdate] | None = None,
+    group_updates: list[GroupUpdate] | None = None,
+):
+    """
+    Send updates to the webhook endpoint.
+    :param user_updates: the users and their operations
+    :param group_updates: the groups and their operations
+    :return: the API response
+    """
+    for base_endpoint in settings.WORKS_UPDATE_ENDPOINTS:
+        config = APIClientConfig(
+            base_url=base_endpoint,
+            timeout=30,
+            max_retries=3,
+            backoff_factor=0.5,
+        )
+        client = APIClient(config)
+
+        client.post_webhook(group_updates, user_updates)
+
+
+def send_webhook_user_update(user_name: str):
+    """
+    Send updates to the webhook endpoint for one user.
+    :param user_name: the user name to send an update for
+    """
+    user_updates = [
+        UserUpdate(id=user_name, event=EventType.UPDATED),
+    ]
+    group_updates = []
+    send_webhook_updates(user_updates, group_updates)

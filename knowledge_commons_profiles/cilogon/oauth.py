@@ -2,7 +2,6 @@
 
 import base64
 import binascii
-import contextlib
 import hashlib
 import json
 import logging
@@ -111,9 +110,7 @@ def forward_url(request):
     # attempt to decode state to see if there is a next URL
     # if there is, we want to forward the code to the next URL for it to decode
     # If there is no next URL, we want to decode the code here and login
-    with contextlib.suppress(
-        json.JSONDecodeError, TypeError, binascii.Error, ValueError
-    ):
+    try:
         code, next_url = extract_code_next_url(request)
 
         if next_url and next_url != "":
@@ -148,8 +145,13 @@ def forward_url(request):
                     "Exception parsing and validating next_url: %s", next_url
                 )
 
-    message = "Unspecified error parsing CILogon state"
-    logger.warning(message)
+    except (json.JSONDecodeError, TypeError, binascii.Error, ValueError):
+        message = (
+            f"Unspecified error parsing CILogon state: "
+            f"{request.GET.get("state")}"
+        )
+        logger.exception(message)
+
     return None
 
 
