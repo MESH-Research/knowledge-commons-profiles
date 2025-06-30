@@ -1,3 +1,9 @@
+## 2.24.1 (2025-06-30)
+
+### Fix
+
+- **cilogon**: handle unicodedecodeerror
+
 ## 2.24.0 (2025-06-30)
 
 ### Feat
