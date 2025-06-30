@@ -154,13 +154,13 @@ force-single-line = true
 
 [project]
 name = "newprofile"
-version = "2.24.0"
+version = "2.24.1"
 description = "The profiles system for Knowledge Commons"
 readme = "README.md"
 requires-python = ">=3.12"
 
 [tool.commitizen]
-version = "2.24.0"
+version = "2.24.1"
 version_files = [
     "knowledge_commons_profiles/__version__.py",
     "pyproject.toml:version"
