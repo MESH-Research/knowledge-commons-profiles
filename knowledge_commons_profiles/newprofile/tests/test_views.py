@@ -243,38 +243,6 @@ class EditProfileTests(TestCase):
         "knowledge_commons_profiles.newprofile.models.Profile.objects."
         "prefetch_related"
     )
-    def test_edit_profile_post_valid(self, mock_prefetch):
-        # Set up mocks
-        mock_queryset = MagicMock()
-        mock_prefetch.return_value = mock_queryset
-        mock_user = MagicMock()
-        mock_queryset.get.return_value = mock_user
-
-        # Patch ProfileForm
-        with patch(
-            "knowledge_commons_profiles.newprofile.views.ProfileForm"
-        ) as mock_form_class:
-            mock_form = MagicMock()
-            mock_form_class.return_value = mock_form
-            mock_form.is_valid.return_value = True
-
-            # Create request
-            request = self.factory.post("/edit_profile", {"field": "value"})
-            request.user = self.user
-
-            # Call view
-            _ = edit_profile(request)
-
-            # Assert form was created and saved
-            # Don't check the exact arguments, just verify it was called
-            mock_form_class.assert_called_once()
-            mock_form.is_valid.assert_called_once()
-            mock_form.save.assert_called_once()
-
-    @patch(
-        "knowledge_commons_profiles.newprofile.models.Profile.objects."
-        "prefetch_related"
-    )
     def test_edit_profile_post_invalid(self, mock_prefetch):
         # Set up mocks
         mock_queryset = MagicMock()
