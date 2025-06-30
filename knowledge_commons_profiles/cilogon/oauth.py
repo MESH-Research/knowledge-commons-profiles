@@ -145,7 +145,13 @@ def forward_url(request):
                     "Exception parsing and validating next_url: %s", next_url
                 )
 
-    except (json.JSONDecodeError, TypeError, binascii.Error, ValueError):
+    except (
+        json.JSONDecodeError,
+        TypeError,
+        binascii.Error,
+        ValueError,
+        UnicodeDecodeError,
+    ):
         message = (
             f"Unspecified error parsing CILogon state: "
             f"{request.GET.get("state")}"
