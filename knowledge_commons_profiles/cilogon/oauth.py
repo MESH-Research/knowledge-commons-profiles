@@ -33,6 +33,11 @@ from django.shortcuts import redirect
 from idna import IDNAError
 from jwt.exceptions import InvalidTokenError
 
+from knowledge_commons_profiles.rest_api.idms_api import APIClient
+from knowledge_commons_profiles.rest_api.idms_api import APIClientConfig
+from knowledge_commons_profiles.rest_api.idms_api import AssociationUpdate
+from knowledge_commons_profiles.rest_api.idms_api import EventType
+
 logger = logging.getLogger(__name__)
 
 oauth = OAuth()
@@ -453,3 +458,71 @@ def get_secure_userinfo(request) -> tuple[bool, dict | None]:
         sentry_sdk.capture_exception()
 
     return False, None
+
+
+def send_association_message(sub: str, kc_id: str):
+    """
+    Send an association message to the webhook
+    :param sub: the subject
+    :param kc_id: the kc id
+    """
+
+    for base_endpoint in settings.WORKS_UPDATE_ENDPOINTS:
+
+        config = APIClientConfig(
+            base_url=base_endpoint,
+            timeout=30,
+            max_retries=3,
+            backoff_factor=0.5,
+        )
+        client = APIClient(config)
+
+        association_updates = [
+            AssociationUpdate(
+                id=sub,
+                kc_id=kc_id,
+                event=EventType.ASSOCIATED,
+            ),
+        ]
+
+        try:
+            # Send updates
+            response = client.send_association(
+                endpoint="/api/webhooks/user_data_update",
+                idp="cilogon",
+                associations=association_updates,
+                headers={
+                    "Authorization": "Bearer " + settings.WEBHOOK_TOKEN,
+                },
+            )
+
+            if response.data:
+                message = "Success! Response: %s"
+                logger.info(message, json.dumps(response.data, indent=2))
+            else:
+                message = "Success! Raw response: %s"
+                logger.info(message, response.raw_response)
+
+        except ValueError:
+            message = "Validation error: %s"
+            logger.exception(message)
+        except requests.exceptions.ConnectionError:
+            message = "Failed to connect to the API server"
+            logger.exception(message)
+        except requests.exceptions.Timeout:
+            message = "Request timed out"
+            logger.exception(message)
+        except requests.exceptions.HTTPError:
+            message = "HTTP error occurred"
+            logger.exception(message)
+        except requests.exceptions.RequestException:
+            message = "Request failed"
+            logger.exception(message)
+        except Exception:
+            message = "Unexpected error"
+            logger.exception(message)
+
+        else:
+            return
+
+    return
