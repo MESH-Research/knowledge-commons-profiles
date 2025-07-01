@@ -1,3 +1,9 @@
+## 2.25.0 (2025-07-01)
+
+### Feat
+
+- **webhook**: add webhook into association flow
+
 ## 2.24.1 (2025-06-30)
 
 ### Fix
