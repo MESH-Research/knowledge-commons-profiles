@@ -28,6 +28,7 @@ from knowledge_commons_profiles.cilogon.oauth import get_secure_userinfo
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
+from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
@@ -318,7 +319,7 @@ def activate(request, verification_id: int, secret_key: str):
     """
 
     # get the verification and secret key or 404
-    verify = get_object_or_404(
+    verify: EmailVerification = get_object_or_404(
         EmailVerification, secret_uuid=secret_key, id=verification_id
     )
 
@@ -330,6 +331,9 @@ def activate(request, verification_id: int, secret_key: str):
 
     # delete the verification as it's no longer needed
     verify.delete()
+
+    # send a message to the webhooks
+    send_association_message(sub=verify.sub, kc_id=verify.profile.username)
 
     # redirect the user to their Profile page
     return redirect(reverse("my_profile"))

@@ -449,6 +449,8 @@ EXTERNAL_SYNC_CLASSES: list[str] = ["MLA"]
 
 LOGOUT_ENDPOINTS = []
 
-WORKS_UPDATE_ENDPOINTS = ["https://localhost/"]
+WORKS_UPDATE_ENDPOINTS = [
+    "https://localhost/" if DEBUG else "https://works.hcommons.org/"
+]
 
 WEBHOOK_TOKEN = env("WEBHOOK_TOKEN")
