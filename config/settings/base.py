@@ -431,7 +431,7 @@ REST_FRAMEWORK = {
 
 ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
     "ALLOWED_CILOGON_FORWARDING_DOMAINS",
-    default=["hcommons.org", "msu.edu", "localhost", "wordpress-ci-logon.lndo.site"],
+    default=["hcommons.org", "msu.edu", "localhost", "lndo.site"],
 )
 
 CILOGON_DISCOVERY_URL = "https://cilogon.org/.well-known/openid-configuration"
