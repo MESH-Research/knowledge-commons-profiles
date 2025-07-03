@@ -10,7 +10,9 @@ class SubAssociation(models.Model):
     A model that associates a CI Logon sub with a profile
     """
 
-    sub = models.CharField(max_length=255, verbose_name="CI Logon ID")
+    sub = models.CharField(
+        max_length=255, verbose_name="CI Logon ID", unique=True
+    )
     profile = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
