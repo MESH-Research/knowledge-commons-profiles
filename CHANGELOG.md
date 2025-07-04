@@ -1,3 +1,9 @@
+## 2.25.2 (2025-07-04)
+
+### Fix
+
+- **cilogon**: check session after get parameter for new signup
+
 ## 2.25.1 (2025-07-03)
 
 ### Fix
