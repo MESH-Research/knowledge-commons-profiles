@@ -410,18 +410,30 @@ class SecureParamEncoder:
         return json.loads(json_data.decode())
 
 
+def check_for_sub_or_return_negative(
+    userinfo_session: dict,
+) -> tuple[bool, dict | None]:
+    """
+    This function checks if there is a session variable containing a
+    CILogon sub. If so, it returns True and the dictionary. If not, False
+    and None.
+    :param userinfo_session: the session variable
+    """
+    if userinfo_session and userinfo_session.get("sub"):
+        return True, userinfo_session
+
+    return False, None
+
+
 def get_secure_userinfo(request) -> tuple[bool, dict | None]:
     """
     Get the token and userinfo with proper validation
     """
-    # First try session data
-    userinfo = request.session.get("oidc_userinfo", {})
 
-    # Validate session data
-    if userinfo and userinfo.get("sub"):
-        return True, userinfo
+    # First get the session data
+    userinfo_session = request.session.get("oidc_userinfo", {})
 
-    # Fallback to signed userinfo from GET parameter
+    # Now we try external parameters
     encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
 
     # decode the GET parameter with secure userinfo on AES
@@ -429,35 +441,41 @@ def get_secure_userinfo(request) -> tuple[bool, dict | None]:
         userinfo_querystring = request.GET.get("userinfo", None)
 
         if not userinfo_querystring:
-            return False, None
+            return check_for_sub_or_return_negative(userinfo_session)
 
         userinfo_signed = encoder.decode(request.GET.get("userinfo"))
     except Exception:
         message = "Failed to decrypt userinfo"
         logger.exception(message)
-        return False, None
+
+        return check_for_sub_or_return_negative(userinfo_session)
 
     if not userinfo_signed:
-        return False, None
+        # if signing failed, look at the session data instead and return on
+        # that
+        return check_for_sub_or_return_negative(userinfo_session)
 
     # now check signature on GET parameter
     try:
-        userinfo = verify_and_decode_cilogon_jwt(
+        userinfo_verified = verify_and_decode_cilogon_jwt(
             userinfo_signed.get("userinfo")
         )
 
         store_session_variables(
-            request=request, token=None, userinfo_input=userinfo
+            request=request, token=None, userinfo_input=userinfo_verified
         )
 
-        if userinfo and userinfo.get("sub"):
-            return True, userinfo
+        # we don't want to return a negative response even if we don't have
+        # a sub
+        if userinfo_verified and userinfo_verified.get("sub"):
+            return True, userinfo_verified
     except (InvalidTokenError, ValueError, Exception):
         message = "Failed to verify and decode CILogon userinfo"
         logger.exception(message)
         sentry_sdk.capture_exception()
 
-    return False, None
+    # Validate session data
+    return check_for_sub_or_return_negative(userinfo_session)
 
 
 def send_association_message(sub: str, kc_id: str):
