@@ -17,7 +17,7 @@
       <h3 class="card-title">Commons Groups</h3>
       {% for group in groups %}
       <div class="commons-group">
-          <a class="interest-link" href="https://hcommons.org/groups/{{ group.group.slug }}/">{{ group.group.name }}</a>
+          <a class="interest-link" href="https://hcommons.org/groups/{{ group.slug }}/">{{ group.group_name }}</a>
       </div>
       {% endfor %}
   </div>

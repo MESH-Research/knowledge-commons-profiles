@@ -1386,7 +1386,7 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.select_related.return_value = mock_qs
         mock_qs.annotate.return_value = mock_qs
         mock_qs.order_by.return_value = mock_qs
-        mock_qs.values_list.return_value = [[1, "G1", "member"]]
+        mock_qs.values_list.return_value = [[1, "G1", "member", "slug"]]
 
         result = self.service.get_groups()
 
@@ -1398,10 +1398,11 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.annotate.assert_called_once()
         mock_qs.order_by.assert_called_once_with("group_name")
         mock_qs.values_list.assert_called_once_with(
-            "gid", "group_name", "role"
+            "gid", "group_name", "role", "slug"
         )
         self.assertEqual(
-            result, [{"id": 1, "group_name": "G1", "role": "member"}]
+            result,
+            [{"id": 1, "group_name": "G1", "role": "member", "slug": "slug"}],
         )
 
     @patch(
@@ -1416,8 +1417,8 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.annotate.return_value = mock_qs
         mock_qs.order_by.return_value = mock_qs
         mock_qs.values_list.return_value = [
-            [2, "G2", "administrator"],
-            [3, "G3", "moderator"],
+            [2, "G2", "administrator", "slug1"],
+            [3, "G3", "moderator", "slug2"],
         ]
 
         result = self.service.get_groups(status_choices=choices)
