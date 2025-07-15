@@ -1,3 +1,9 @@
+## 2.26.0 (2025-07-15)
+
+### Feat
+
+- **logging**: structured logging for all apps
+
 ## 2.25.2 (2025-07-04)
 
 ### Fix
