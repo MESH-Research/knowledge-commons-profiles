@@ -1,3 +1,8 @@
+import logging.config
+from pathlib import Path
+
+import yaml
+
 from .base import *  # noqa: F403
 from .base import INSTALLED_APPS
 from .base import MIDDLEWARE
@@ -94,3 +99,8 @@ INSTALLED_APPS += ["django_extensions", "sslserver"]
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+with Path("log_config/local.yaml").open(
+    "r", errors="ignore", encoding="utf-8"
+) as f:
+    config = yaml.safe_load(f.read())
+    logging.config.dictConfig(config)

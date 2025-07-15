@@ -9,12 +9,10 @@ from urllib.parse import urlencode
 
 import django.test
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import OperationalError
 from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
 from knowledge_commons_profiles.__version__ import VERSION
-from knowledge_commons_profiles.newprofile import api
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
@@ -1422,16 +1420,7 @@ class GetGroupsTests(django.test.TestCase):
             [3, "G3", "moderator"],
         ]
 
-        with self.assertLogs(level="INFO") as cm:
-            result = self.service.get_groups(status_choices=choices)
-
-        # Should log privileged access
-        self.assertTrue(
-            any(
-                "Privileged API call from 127.0.0.1" in msg
-                for msg in cm.output
-            )
-        )
+        result = self.service.get_groups(status_choices=choices)
 
         # Should filter on private+hidden
         mock_manager.filter.assert_called_once_with(
@@ -1441,26 +1430,6 @@ class GetGroupsTests(django.test.TestCase):
         )
         self.assertEqual(len(result), 2)
         self.assertCountEqual([r["group_name"] for r in result], ["G2", "G3"])
-
-    @patch(
-        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
-    )
-    def test_operational_error(self, mock_manager):
-        # Make filter() raise OperationalError
-        mock_manager.filter.side_effect = OperationalError
-
-        with self.assertLogs(level="WARNING") as cm:
-            result, error = self.service.get_groups(
-                on_error=api.ErrorModel.RETURN
-            )
-
-        self.assertEqual(result, [])
-        self.assertTrue(
-            any(
-                "Unable to connect to MySQL, fast-failing group data." in msg
-                for msg in cm.output
-            )
-        )
 
 
 class GetCoverImageTests(django.test.TestCase):

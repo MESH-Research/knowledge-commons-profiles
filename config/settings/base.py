@@ -1,6 +1,6 @@
 # ruff: noqa: E501
 """Base settings to build other settings files upon."""
-
+import threading
 from pathlib import Path
 
 import environ
@@ -150,6 +150,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
+    "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
 
 # STATIC
@@ -454,3 +455,5 @@ WORKS_UPDATE_ENDPOINTS = [
 ]
 
 WEBHOOK_TOKEN = env("WEBHOOK_TOKEN")
+
+THREAD = threading.local()
