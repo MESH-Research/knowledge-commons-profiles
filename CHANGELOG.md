@@ -1,3 +1,9 @@
+## 2.26.1 (2025-07-15)
+
+### Fix
+
+- **api**: add slug and name to groups api call to fix groups list
+
 ## 2.26.0 (2025-07-15)
 
 ### Feat
