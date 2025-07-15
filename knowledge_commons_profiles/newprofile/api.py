@@ -631,6 +631,7 @@ class API:
                 .select_related("group")
                 .annotate(
                     gid=F("group__id"),
+                    slug=F("group__slug"),
                     # rename group__name → group_name
                     group_name=F("group__name"),
                     # compute “role” based on is_admin / is_mod
@@ -642,12 +643,12 @@ class API:
                     ),
                 )
                 .order_by("group_name")
-                .values_list("gid", "group_name", "role")
+                .values_list("gid", "group_name", "role", "slug")
             )
 
             return_value = [
-                {"id": gid, "group_name": name, "role": role}
-                for gid, name, role in group_member
+                {"id": gid, "group_name": name, "role": role, "slug": slug}
+                for gid, name, role, slug in group_member
             ]
 
         except django.db.utils.OperationalError as oe:
