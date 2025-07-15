@@ -44,6 +44,8 @@ from knowledge_commons_profiles.newprofile.models import WpUserMeta
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
+logger = logging.getLogger(__name__)
+
 User = get_user_model()
 
 MASTODON_MIN_SIGNS = 1
@@ -251,7 +253,7 @@ class API:
 
         # test if it's a string
         if not isinstance(mastodon_field, str):
-            logging.log(
+            logger.log(
                 logging.INFO,
                 "Unable to parse %s as a Mastodon profile",
                 self.profile.mastodon,
@@ -261,7 +263,7 @@ class API:
         # if the number of @ signs is not 2, we have a problem
         at_count = mastodon_field.count("@")
         if at_count < MASTODON_MIN_SIGNS or at_count > MASTODON_MAX_SIGNS:
-            logging.log(
+            logger.log(
                 logging.INFO,
                 "%s is not a valid Mastodon profile",
                 self.profile.mastodon,
@@ -293,7 +295,7 @@ class API:
             )
 
             if not is_domain:
-                logging.log(
+                logger.log(
                     logging.INFO,
                     "%s is not a valid domain in Mastodon parsing",
                     self.mastodon_server,
@@ -551,7 +553,7 @@ class API:
         status_keys = [key for key, label in status_choices]
 
         if len(status_keys) > 1:
-            logging.info(
+            logger.info(
                 "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
             )
 
@@ -615,7 +617,7 @@ class API:
         status_keys = [key for key, label in status_choices]
 
         if len(status_keys) > 1:
-            logging.info(
+            logger.info(
                 "Privileged API call from %s", self.request.META["REMOTE_ADDR"]
             )
 
@@ -649,7 +651,7 @@ class API:
             ]
 
         except django.db.utils.OperationalError as oe:
-            logging.warning(
+            logger.warning(
                 "Unable to connect to MySQL, fast-failing group data."
             )
 
@@ -771,7 +773,7 @@ class API:
                 WpBpFollow.objects.filter(follower=self.wp_user).count(),
             )
         except django.db.utils.OperationalError:
-            logging.warning(
+            logger.warning(
                 "Unable to connect to MySQL, fast-failing profile data."
             )
             return False, None

@@ -1,0 +1,43 @@
+version: 1
+disable_existing_loggers: True
+
+formatters:
+  json_formatter:
+    (): log_config.error_formatter.StructuredExceptionJsonFormatter
+    format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+    rename_fields:
+      levelname: level
+      asctime: time
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: json_formatter
+    level: DEBUG
+    filters: [add_context]
+
+filters:
+  add_context:  # register the filter
+    (): log_config.log_context.ContextFilter
+
+loggers:
+  knowledge_commons_profiles:
+    handlers: [console]
+    level: DEBUG
+    propagate: False
+  django.db.backends:
+    handlers: [console]
+    level: ERROR
+    propagate: False
+  sentry_sdk:
+    handlers: [console]
+    level: ERROR
+    propagate: False
+  django.security.DisallowedHost:
+    handlers: [console]
+    level: ERROR
+    propagate: False
+
+root:
+  handlers: [console]
+  level: WARNING

@@ -2,6 +2,11 @@
 With these settings, tests run faster.
 """
 
+import logging.config
+from pathlib import Path
+
+import yaml
+
 from .base import *  # noqa: F403
 from .base import TEMPLATES
 from .base import env
@@ -36,3 +41,9 @@ TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 MEDIA_URL = "http://media.testserver/"
 # Your stuff...
 # -----------------------------------------------------------------------------
+
+with Path("log_config/local.yaml").open(
+    "r", errors="ignore", encoding="utf-8"
+) as f:
+    config = yaml.safe_load(f.read())
+    logging.config.dictConfig(config)

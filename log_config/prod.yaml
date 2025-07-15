@@ -1,0 +1,31 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+  json_formatter:
+    (): log_config.error_formatter.StructuredExceptionJsonFormatter
+    format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+    rename_fields:
+      levelname: level
+      asctime: time
+
+filters:
+  add_context:  # register the filter
+    (): log_config.log_context.ContextFilter
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: json_formatter
+    level: DEBUG
+    filters: [add_context]
+
+loggers:
+  knowledge_commons_profiles:
+    handlers: [console]
+    level: DEBUG
+    propagate: False
+
+root:
+  handlers: [console]
+  level: INFO

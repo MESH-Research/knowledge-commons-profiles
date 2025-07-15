@@ -1,7 +1,10 @@
 # ruff: noqa: E501
 import logging
+import logging.config
+from pathlib import Path
 
 import sentry_sdk
+import yaml
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -147,23 +150,9 @@ INSTALLED_APPS = ["collectfasta", *INSTALLED_APPS]
 # See https://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    "formatters": {
-        "verbose": {
-            "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-    },
-    "root": {"level": "INFO", "handlers": ["console"]},
-}
+with Path("log_config/prod.yaml").open("r", encoding="utf-8") as f:
+    config = yaml.safe_load(f.read())
+    logging.config.dictConfig(config)
 
 # Sentry
 # ------------------------------------------------------------------------------
