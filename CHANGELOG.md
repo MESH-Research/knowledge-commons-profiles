@@ -1,3 +1,9 @@
+## 2.27.1 (2025-07-16)
+
+### Fix
+
+- **logging**: change level of citeproc warning to debug
+
 ## 2.27.0 (2025-07-16)
 
 ### Feat
