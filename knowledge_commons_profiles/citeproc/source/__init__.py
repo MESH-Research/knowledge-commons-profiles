@@ -40,7 +40,7 @@ class CustomDict(dict):
             cls_name = self.__class__.__name__
             msg = (f"The following arguments for {cls_name} "
                    f"are unsupported: " + ", ".join(unsupported))
-            logger.warning(
+            logger.debug(
                 msg,
                 stacklevel=2,
             )
