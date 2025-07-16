@@ -1,7 +1,9 @@
 import contextlib
-from warnings import warn
+import logging
 
 from knowledge_commons_profiles.citeproc import VARIABLES
+
+logger = logging.getLogger(__name__)
 
 
 # http://sourceforge.net/mailarchive/message.php?msg_id=25355232
@@ -36,9 +38,10 @@ class CustomDict(dict):
         )
         if unsupported:
             cls_name = self.__class__.__name__
-            warn(
-                f"The following arguments for {cls_name} "
-                f"are unsupported: " + ", ".join(unsupported),
+            msg = (f"The following arguments for {cls_name} "
+                   f"are unsupported: " + ", ".join(unsupported))
+            logger.warning(
+                msg,
                 stacklevel=2,
             )
         self.update(args)
