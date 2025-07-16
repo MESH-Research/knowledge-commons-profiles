@@ -1,3 +1,9 @@
+## 2.27.0 (2025-07-16)
+
+### Feat
+
+- **logging**: try sentry logging feature
+
 ## 2.26.1 (2025-07-15)
 
 ### Fix
