@@ -1,3 +1,9 @@
+## 2.27.2 (2025-07-17)
+
+### Fix
+
+- **logging**: add debug logging throughout views
+
 ## 2.27.1 (2025-07-16)
 
 ### Fix
