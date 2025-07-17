@@ -44,6 +44,7 @@ def profile_info(request, username):
     """
     Get profile info via HTMX
     """
+    logger.debug("Getting profile info for %s", username)
     api = API(request, username, use_wordpress=False, create=False)
 
     context = {
@@ -64,6 +65,8 @@ def works_deposits(request, username, style=None):
     """
     Get profile info via HTMX
     """
+    logger.debug("Getting works deposits for %s", username)
+
     api = API(
         request,
         username,
@@ -96,6 +99,7 @@ def mastodon_feed(request, username):
     """
     Get a mastodon feed via HTMX
     """
+    logger.debug("Getting mastodon feed for %s", username)
     api = API(request, username, use_wordpress=False, create=False)
 
     profile_info_obj = api.get_profile_info()
@@ -130,7 +134,7 @@ def profile(request, user=""):
 
     This view renders the main page of the site.
     """
-
+    logger.debug("Getting profile for %s", user)
     if not profile_exists_or_has_been_created(user):
         raise Http404
 
@@ -183,6 +187,8 @@ def my_profile(request):
     :param request: The request object.
     :type request: django.http.HttpRequest
     """
+    logger.debug("Getting 'my profile' for %s", request.user)
+
     # we call with create because this user is logged in and needs a profile
     return profile(request, user=request.user.username)
 
@@ -193,6 +199,8 @@ def works_deposits_edit(request):
     """
     A view for logged-in users to edit their works.
     """
+
+    logger.debug("Editing works for %s", request.user)
 
     # get id_reference_style from POST
     id_reference_style = request.POST.get("reference_style", "")
@@ -253,6 +261,8 @@ def edit_profile(request):
     :rtype: django.http.HttpResponse
     """
 
+    logger.debug("Editing profile for %s", request.user)
+
     user = Profile.objects.prefetch_related("academic_interests").get(
         username=request.user
     )
@@ -300,6 +310,8 @@ def blog_posts(request, username):
     """
     Get blog posts via HTMX
     """
+
+    logger.debug("Getting blog posts for %s via HTMX", username)
     try:
         api = API(request, username, use_wordpress=True, create=False)
 
@@ -334,6 +346,8 @@ def cover_image(request, username):
     """
     Load the cover image via HTMX
     """
+    logger.debug("Getting cover image for %s via HTMX", username)
+
     api = API(request, username, use_wordpress=True, create=False)
 
     return render(
@@ -344,6 +358,11 @@ def cover_image(request, username):
 
 
 def header_bar(request):
+    """
+    Get the header bar for the logged-in user via HTMX
+    """
+    logger.debug("Getting header bar for %s via HTMX", request.user)
+
     if request.user.is_authenticated:
         api_me = (
             API(
@@ -400,6 +419,8 @@ def mysql_data(request, username):
     """
     Get WordPress data via HTMX
     """
+    logger.debug("Getting MySQL data for %s via HTMX", username)
+
     try:
         api = API(request, username, use_wordpress=True, create=False)
 
@@ -517,8 +538,9 @@ def mysql_data(request, username):
 
 def profile_image(request, username):
     """
-    Load the profile image
+    Load the profile image via HTMX
     """
+    logger.debug("Getting profile image for %s via HTMX", username)
     api = API(request, username, use_wordpress=True, create=False)
 
     return render(
@@ -537,6 +559,9 @@ def save_works_visibility(request):
     """
     Save the visibility of the user's Works headings via AJAX
     """
+
+    logger.debug("Saving works visibility for %s", request.user)
+
     try:
         # Parse the JSON data from the request
         data = json.loads(request.body)
@@ -579,6 +604,9 @@ def save_works_order(request):
     """
     Save the ordering of the user's Works via AJAX
     """
+
+    logger.debug("Saving works order for %s", request.user)
+
     try:
         # Parse the JSON data from the request
         data = json.loads(request.body)
@@ -616,6 +644,9 @@ def save_profile_order(request, side):
     """
     Save the ordering of the user's profile via AJAX
     """
+
+    logger.debug("Saving profile order for %s", request.user)
+
     try:
         # Parse the JSON data from the request
         data = json.loads(request.body)
@@ -688,6 +719,8 @@ def health(request):
 
     health_result["VERSION"] = VERSION
 
+    logger.debug(health_result)
+
     return JsonResponse(health_result, status=200 if not fail else 500)
 
 
@@ -696,6 +729,8 @@ def stats_board(request):
     """
     The stats dashboard
     """
+
+    logger.debug("Getting stats dashboard for %s", request.user)
 
     stats = UserStats.objects.all().first()
 
@@ -725,6 +760,8 @@ def stats_download(request):
     The stats CSV download
     """
 
+    logger.debug("Downloading stats for %s", request.user)
+
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="users.csv"'
 
@@ -738,6 +775,8 @@ def stats_table(request):
     """
     The stats table
     """
+
+    logger.debug("Getting stats table for %s", request.user)
 
     users = WpUser.get_user_data(limit=-1)
 
