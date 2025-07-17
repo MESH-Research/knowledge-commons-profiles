@@ -34,9 +34,6 @@ from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
 )
 from knowledge_commons_profiles.common.profiles_email import (
-    sanitize_email_for_dev,
-)
-from knowledge_commons_profiles.common.profiles_email import (
     send_knowledge_commons_email,
 )
 from knowledge_commons_profiles.newprofile.models import Profile
