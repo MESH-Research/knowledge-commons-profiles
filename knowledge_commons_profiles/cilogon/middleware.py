@@ -109,6 +109,12 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
         # determine whether token is expired
         if not token_expired(token, user):
             # token is still valid
+            logger.debug(
+                "Token is still valid, not refreshing for user %s "
+                "and user agent %s",
+                user,
+                user_agent,
+            )
             return
 
         self.refresh_user_token(request, token)
