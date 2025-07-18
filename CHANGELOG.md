@@ -1,3 +1,46 @@
+## 2.29.0 (2025-07-18)
+
+### Feat
+
+- **logging**: try sentry logging feature
+- **logging**: structured logging for all apps
+- **webhook**: add webhook into association flow
+- **debug**: add additional cilogon debug info
+- **webhook**: more work on webhook polling
+- **association-service**: add new confirmation page and fix email logic
+- **cilogon**: add secure aes-encrypted exchange of userinfo
+- **cilogon**: fix JWTClaims checking
+- **cilogon**: add ability to decode passed userinfo
+
+### Fix
+
+- **logging**: add debug logging throughout views
+- **logging**: change level of citeproc warning to debug
+- **api**: add slug and name to groups api call to fix groups list
+- **cilogon**: check session after get parameter for new signup
+- **cilogon**: make sub unique
+- **cilogon**: handle unicodedecodeerror
+- **cilogon**: attempt to fix refresh token bug
+- **cilogon**: attempt fix for refresh bug
+- **cilogon**: set middleware to wipe session
+- **cilogon**: handle arbitrary failures in refresh token middleware
+- **cilogon**: fix middleware access to non-existent member
+- **rest-api**: fixes to email visibility and serialization
+- **email**: fix email host string and inject request object into context
+- **email**: fix cilogon association email
+- **email**: fix sparkpost url mangling
+- **email**: fix to sparkpost url mangling
+- **association-service**: change image url src to s3 rather than local static url
+- **cilogon**: change next parameter to callback_next
+- **cilogon**: fix redirect logic
+- **cilogon**: fix to redirect logic
+- **oauth**: fix forwarding logging
+- **logging**: change loglevel
+
+### Refactor
+
+- **cilogon**: refactor code for fetching userinfo
+
 ## 2.28.0 (2025-07-17)
 
 ### Feat
