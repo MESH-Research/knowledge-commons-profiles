@@ -1,3 +1,14 @@
+## 2.28.0 (2025-07-17)
+
+### Feat
+
+- **cilogon**: fix JWTClaims checking
+- **cilogon**: add ability to decode passed userinfo
+
+### Refactor
+
+- **cilogon**: refactor code for fetching userinfo
+
 ## 2.27.2 (2025-07-17)
 
 ### Fix
