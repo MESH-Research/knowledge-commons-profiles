@@ -719,8 +719,6 @@ def health(request):
 
     health_result["VERSION"] = VERSION
 
-    logger.debug(health_result)
-
     return JsonResponse(health_result, status=200 if not fail else 500)
 
 
