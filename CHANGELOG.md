@@ -1,3 +1,9 @@
+## 2.29.2 (2025-07-21)
+
+### Fix
+
+- **health-check**: remove debug log
+
 ## 2.29.1 (2025-07-21)
 
 ### Fix
