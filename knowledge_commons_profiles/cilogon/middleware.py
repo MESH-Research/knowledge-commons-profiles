@@ -19,6 +19,8 @@ from django.db import OperationalError
 from django.db.models import Q
 from django.db.models import QuerySet
 from django.db.models.enums import IntEnum
+from django.http import HttpRequest
+from django.urls import resolve
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
@@ -34,7 +36,16 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-def should_run_middleware(request, key: str, interval: int = 10) -> bool:
+def should_run_middleware(
+    request: HttpRequest, key: str, interval: int = 10
+) -> bool:
+    # if this is the health endpoint, identified by name "healthcheck" in
+    # urls/request, return false
+    if resolve(request.path_info).url_name == "healthcheck":
+        # this ensures that we don't touch the REDIS cache on the healthcheck
+        # as it can be down
+        return False
+
     now = timezone.now()
 
     cache_key = f"{key}-{request.user.id if request.user.is_authenticated
