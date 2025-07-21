@@ -1,3 +1,9 @@
+## 2.29.1 (2025-07-21)
+
+### Fix
+
+- **health-check**: stop middleware running on healthcheck, as this relies on the cache
+
 ## 2.29.0 (2025-07-18)
 
 ### Feat
