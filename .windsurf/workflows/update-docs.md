@@ -2,7 +2,7 @@
 description: Update the docs files to reflect latest content
 ---
 
-Update the files in docs/cilogon, /docs/newprofile, and any .md files in /docs. These should be changed to retain their basic structure, but to update their content against the repository as a whole. Do not get rid of sections that explore background contexts, such as the bit on Sentry in the logging and observability guide. If the version hasn't changed, then don't update any files.
+Update the markdown files in /docs and all subfolders (except README.md, for which there are instructions later). These should be changed to retain their basic structure, but to update their content against the repository as a whole. Do not get rid of sections that explore background contexts, such as the bit on Sentry in the logging and observability guide. If the version hasn't changed, then don't update any files. Differences should be minor in every case and I do not expect rewrites of these files; just augmentations and edits.
 
 Do not put code line numbers into these files at any point. Also, do not use terms like "comprehensive" or "seamlessly" -- these are technical documents, not sales pitches.
 

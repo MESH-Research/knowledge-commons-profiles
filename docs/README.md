@@ -18,9 +18,17 @@ This documentation provides technical guides for developers, system administrato
 
 - **[Profiles App Technical Guide](newprofile/profiles_app_technical_guide.md)** - Technical documentation for the core profile management system, covering data models, views, API layer, forms, and integration points with WordPress and external services.
 
+### Configuration and Environment
+
+- **[Environment Variables Guide](environment_variables_guide.md)** - Application startup and configuration variables
+
 ### Operations and Monitoring
 
 - **[Logging and Observability Guide](logging_and_observability_guide.md)** - Documentation of the logging and observability infrastructure, including structured JSON logging, Sentry error monitoring, AWS CloudWatch integration, and troubleshooting guides.
+
+### Deployment and Infrastructure
+
+- **[Docker Deployment Guide](docker_deployment_guide.md)** - Docker configuration and deployment documentation covering multi-stage builds, environment-specific configurations, container orchestration, security considerations, and troubleshooting for local, development, and production environments.
 
 ## Getting Started
 
