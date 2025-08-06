@@ -41,36 +41,36 @@ graph TB
     WPDB[(🗄️ WordPress DB<br/>wordpress_dev)]
     
     %% Flow 1: Initial Login
-    Browser -->|1. Login Request| LoginView
-    LoginView -->|2. OAuth Authorization| CILogon
-    CILogon -->|3. Authorization Code| CallbackView
-    CallbackView -->|4. Exchange Code for Tokens| OAuthClient
-    OAuthClient -->|5. Get User Info| CILogon
+    Browser -->|1 Login Request| LoginView
+    LoginView -->|2 OAuth Authorization| CILogon
+    CILogon -->|3 Authorization Code| CallbackView
+    CallbackView -->|4 Exchange Code for Tokens| OAuthClient
+    OAuthClient -->|5 Get User Info| CILogon
     
     %% Flow 2: User Registration/Association
-    CallbackView -->|6a. New User| RegisterView
-    CallbackView -->|6b. Existing User| Profile
-    RegisterView -->|7. Create Profile & User| Profile
+    CallbackView -->|6a New User| RegisterView
+    CallbackView -->|6b Existing User| Profile
+    RegisterView -->|7 Create Profile & User| Profile
     RegisterView --> DjangoUser
-    RegisterView -->|8. Link CILogon Identity| SubAssoc
+    RegisterView -->|8 Link CILogon Identity| SubAssoc
     
     %% Flow 3: Token Management
-    OAuthClient -->|9. Store Tokens| TokenManager
-    RefreshMiddleware -->|10. Auto-refresh| TokenManager
-    GCMiddleware -->|11. Cleanup Expired| TokenManager
+    OAuthClient -->|9 Store Tokens| TokenManager
+    RefreshMiddleware -->|10 Auto-refresh| TokenManager
+    GCMiddleware -->|11 Cleanup Expired| TokenManager
     
     %% Flow 4: External System Integration
-    SubAssoc -->|12. Association Event| Webhook
-    Webhook -->|13. Notify KC Works| Works
-    Webhook -->|14. Notify WordPress| WordPress
+    SubAssoc -->|12 Association Event| Webhook
+    Webhook -->|13 Notify KC Works| Works
+    Webhook -->|14 Notify WordPress| WordPress
     
     %% Flow 5: WordPress Data Access
-    Profile -->|15. Read WP Data| WPDB
+    Profile -->|15 Read WP Data| WPDB
     
     %% Flow 6: Multi-App Logout
-    LogoutView -->|16. Revoke All Tokens| CILogon
-    LogoutView -->|17. Clear Works Session| Works
-    LogoutView -->|18. Clear WordPress Session| WordPress
+    LogoutView -->|16 Revoke All Tokens| CILogon
+    LogoutView -->|17 Clear Works Session| Works
+    LogoutView -->|18 Clear WordPress Session| WordPress
     
     %% Styling
     classDef userStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
