@@ -12,4 +12,4 @@ Every document should have a note of the version to which the docmentation appli
 
 The version number should be fetched from [project] version in pyproject.toml. You can use this to determine whether the version has changed and, therefore, whether you should change any files or not.
 
-Finally, always create a file README.md in the root of /docs that serves as an index to the documentation. This should have relative links to all the files that will be browsable when uploaded to GitHub, explaining what the files document.
+Finally, create a file README.md in the root of /docs that serves as an index to the documentation. This should have relative links to all the files that will be browsable when uploaded to GitHub, explaining what the files document. This should include a paragraph at the top about the application, adhering to the rules above on not using terms like "comprehensive" and "seamlessly". You should always create this README.md file if it doesn't exist. If it does exist, but is for the current version, it should be regenerated if there are files not included in it from the /docs folder and its subfolders.
