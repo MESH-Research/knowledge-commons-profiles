@@ -35,7 +35,7 @@ smart-open[aws]==7.3.0.post1
 pydantic==2.11.7
 httpx==0.28.1
 tenacity==9.1.2
-pandas==2.2.3
+pandas==2.3.1
 altair==5.5.0
 django-basicauth==0.5.3
 Authlib==1.6.1
