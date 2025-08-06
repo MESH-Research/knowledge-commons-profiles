@@ -1,5 +1,8 @@
 # CILogon OAuth Flow Architecture Diagram
 
+> **Note**: This documentation refers to knowledge-commons-profiles version 2.30.0
+
+
 ```mermaid
 graph TB
     %% User and Browser
