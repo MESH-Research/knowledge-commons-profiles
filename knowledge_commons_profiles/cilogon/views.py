@@ -11,7 +11,10 @@ import requests
 import sentry_sdk
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -240,6 +243,108 @@ def app_logout(
     return None
 
 
+def register(request):
+    # first, see whether we have an unassociated user
+    userinfo_is_valid: bool
+    userinfo: dict | None
+    userinfo_is_valid, userinfo = get_secure_userinfo(request)
+
+    # if the userinfo is not valid, redirect to login
+    if not userinfo_is_valid:
+        return redirect(reverse("login"))
+
+    # check the user is not properly logged in and redirect if so
+    user = request.user
+    if user and user.is_authenticated:
+        return redirect(reverse("my_profile"))
+
+    context = {"cilogon_sub": userinfo.get("sub", "")}
+
+    # Check that we have a valid cilogon_sub before proceeding
+    if not context["cilogon_sub"]:
+        logger.error("The sub was not passed to the register view")
+        return render(request, "cilogon/registration_error.html")
+
+    if request.method == "POST":
+        email, full_name, username = extract_form_data(
+            context, request, userinfo
+        )
+
+        errored = False
+        errored = validate_form(email, errored, full_name, request, username)
+
+        if errored:
+            return render(request, "cilogon/new_user.html", context)
+
+        # Create the Profile object
+        profile = Profile.objects.create(
+            name=full_name,
+            username=username,
+            email=email
+        )
+
+        # Create the corresponding Django User
+        user = User.objects.create(
+            username=username,
+            email=email
+        )
+
+        # Log the user in
+        login(request, user)
+
+        # Create the SubAssociation with the cilogon sub
+        SubAssociation.objects.create(
+            sub=context["cilogon_sub"],
+            profile=profile
+        )
+
+        # Redirect to my_profile page
+        return redirect(reverse("my_profile"))
+
+    return render(request, "cilogon/new_user.html", context)
+
+
+def extract_form_data(context, request, userinfo):
+    # get the form data
+    email = request.POST.get("email", None)
+    username = request.POST.get("username", None)
+    full_name = request.POST.get("full_name", None)
+    try:
+        first_name = full_name.split(" ")[0]
+        last_name = " ".join(full_name.split(" ")[1:])
+    except IndexError:
+        first_name = None
+        last_name = full_name
+    context.update(
+        {
+            "email": request.POST.get("email", userinfo.get("email", "")),
+            "first_name": first_name,
+            "last_name": last_name,
+            "username": username,
+            "userinfo": userinfo,
+        }
+    )
+    return email, full_name, username
+
+
+def validate_form(email, errored, full_name, request, username):
+    # check none of these are blank
+    if not email or not username or not full_name:
+        errored = True
+        messages.error(request, "Please fill in all fields")
+    # check whether this email already exists
+    profile = Profile.objects.filter(email=email).first()
+    if profile:
+        errored = True
+        messages.error(request, "This email already exists")
+    # check whether this username already exists
+    profile = Profile.objects.filter(username=username).first()
+    if profile:
+        errored = True
+        messages.error(request, "This username already exists")
+    return errored
+
+
 def association(request):
     """
     The association view
@@ -251,6 +356,7 @@ def association(request):
     userinfo: dict | None
     userinfo_is_valid, userinfo = get_secure_userinfo(request)
 
+    # if the userinfo is not valid, redirect to login
     if not userinfo_is_valid:
         return redirect(reverse("login"))
 
@@ -261,6 +367,11 @@ def association(request):
 
     context = {"cilogon_sub": userinfo.get("sub", "")}
 
+    # Check that we have a valid cilogon_sub before proceeding
+    if not context["cilogon_sub"]:
+        logger.error("The sub was not passed to the association view")
+        return render(request, "cilogon/registration_error.html")
+
     # check if we have an email POSTed
     if request.method == "POST":
         email = request.POST.get("email")
@@ -270,39 +381,50 @@ def association(request):
 
             # if we have a profile, generate a UUID4
             if profile:
-                uuid = uuid4().hex
-
-                # delete any existing EmailVerification entries
-                EmailVerification.objects.filter(profile=profile).delete()
-
-                # create a new EmailVerification entry
-                email_verification = EmailVerification.objects.create(
-                    secret_uuid=uuid,
-                    profile=profile,
-                    sub=userinfo.get("sub", ""),
+                associate_with_existing_profile(
+                    email, profile, request, userinfo
                 )
-
-                # replace the email for testing purposes
-                email = sanitize_email_for_dev(email)
-
-                # send an email
-                send_knowledge_commons_email(
-                    recipient_email=email,
-                    context_data={
-                        "uuid": uuid,
-                        "verification_id": email_verification.id,
-                        "request": request,
-                    },
-                    template_file="mail/associate.html",
-                )
-
                 # render to the confirm page
                 return redirect(reverse("confirm"))
             context.update({"error": "No profile found with that email"})
         else:
-            context.update({"error": "No email provided"})
+            # if we get here, this is a new user
+            context.update(
+                {
+                    "email": userinfo.get("email", ""),
+                    "first_name": userinfo.get("given_name", ""),
+                    "last_name": userinfo.get("family_name", ""),
+                    "userinfo": userinfo,
+                }
+            )
+
+            return render(request, "cilogon/new_user.html", context)
 
     return render(request, "cilogon/association.html", context)
+
+
+def associate_with_existing_profile(email, profile, request, userinfo):
+    uuid = uuid4().hex
+    # delete any existing EmailVerification entries
+    EmailVerification.objects.filter(profile=profile).delete()
+    # create a new EmailVerification entry
+    email_verification = EmailVerification.objects.create(
+        secret_uuid=uuid,
+        profile=profile,
+        sub=userinfo.get("sub", ""),
+    )
+    # replace the email for testing purposes
+    email = sanitize_email_for_dev(email)
+    # send an email
+    send_knowledge_commons_email(
+        recipient_email=email,
+        context_data={
+            "uuid": uuid,
+            "verification_id": email_verification.id,
+            "request": request,
+        },
+        template_file="mail/associate.html",
+    )
 
 
 def confirm(request):

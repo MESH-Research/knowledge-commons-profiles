@@ -1035,7 +1035,7 @@ div {
             font-size: 1.1rem;
         }
 
-        .form-associate input[type="email"] {
+        .form-associate input {
             padding: 15px 20px;
             border: 2px solid #18453B;
             border-radius: 10px;
@@ -1045,7 +1045,7 @@ div {
             max-width: 25%;
         }
 
-        .form-associate input[type="email"]:focus {
+        .form-associate input:focus {
             outline: none;
             border-color: #18453B;
             box-shadow: 0 0 0 3px rgba(9, 25, 23, 0.3);

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}
+  User Registration
+{% endblock title %}
+
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <!-- Toast container -->
+        {% if messages %}
+          <!-- djlint:off -->
+          <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+            <!-- djlint:on -->
+            {% for message in messages %}
+              <div class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+                <div class="d-flex">
+                  <div class="toast-body">
+                    {{ message }}
+                  </div>
+                  <button type="button" class="btn-close btn-close-black me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <h1 class="h1-associate">Welcome to Knowledge Commons...</h1>
+        <h3 class="h3-associate">Please complete your registration by providing the following information.</h3>
+        <div>
+          <form class="form-associate" action="{% url 'user_registration' %}" method="post">
+            {% csrf_token %}
+            <ol class="ol-associate">
+              <li>
+                Enter your desired username below. This will be used to identify your account.
+                <div>
+                  <input type="text" name="username" id="username" value="{{ username }}" placeholder="your_username" required />
+                </div>
+              </li>
+              <li>
+                Please provide your full name as you would like it to appear on your profile.
+                <div>
+                  <input type="text" value="{{ first_name }}{% if first_name %} {% endif %}{{ last_name }}" name="full_name" id="full_name" placeholder="Your Full Name" required />
+                </div>
+              </li>
+              <li>
+                Enter your email address. This will be used for account notifications and communication.
+                <div>
+                  <input type="email" name="email" id="email" placeholder="you@email.com" value="{{ email }}" required />
+                </div>
+              </li>
+              <li>
+                <input type="submit" value="Register" />
+              </li>
+              <li>For any problems, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a> if you need help.</li>
+            </ol>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize and show all toasts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+      var toastList = toastElList.map(function(toastEl) {
+        return new bootstrap.Toast(toastEl);
+      });
+
+      // Show all toasts
+      toastList.forEach(function(toast) {
+        toast.show();
+      });
+    });
+  </script>
+{% endblock content %}

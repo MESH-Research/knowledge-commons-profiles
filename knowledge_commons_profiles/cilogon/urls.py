@@ -25,6 +25,7 @@ urlpatterns = [
     path("logout/", views.app_logout, name="logout"),
     path(settings.OIDC_CALLBACK, views.callback, name="oidc_callback"),
     path("associate/", views.association, name="associate"),
+    path("register/", views.register, name="user_registration"),
     path("confirm/", views.confirm, name="confirm"),
     path(
         "activate/<int:verification_id>/<str:secret_key>/",
