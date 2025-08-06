@@ -1,3 +1,9 @@
+## 2.30.0 (2025-08-06)
+
+### Feat
+
+- **registration**: add registration form
+
 ## 2.29.2 (2025-07-21)
 
 ### Fix
