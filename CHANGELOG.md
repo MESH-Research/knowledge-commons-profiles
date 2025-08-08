@@ -1,3 +1,12 @@
+## 2.30.1 (2025-08-08)
+
+### Fix
+
+- **mastodon**: fix mastodon formatting and add nocache option for debugging
+- **citeproc**: remove unnecessary logging
+- **base-template**: change base to load bootstrap first in order to fix the override resetting all colors
+- **mysql**: add further handling in case mysql database is down
+
 ## 2.30.0 (2025-08-06)
 
 ### Feat
