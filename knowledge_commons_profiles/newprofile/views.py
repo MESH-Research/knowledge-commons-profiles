@@ -45,20 +45,47 @@ def profile_info(request, username):
     Get profile info via HTMX
     """
     logger.debug("Getting profile info for %s", username)
-    api = API(request, username, use_wordpress=False, create=False)
 
-    context = {
-        "profile_info": api.get_profile_info(),
-        "academic_interests": api.get_academic_interests(),
-        "education": api.get_education(),
-        "about_user": api.get_about_user(),
-        "show_education": api.profile.show_education,
-        "show_publications": api.profile.show_publications,
-        "show_projects": api.profile.show_projects,
-        "show_academic_interests": api.profile.show_academic_interests,
-    }
+    try:
+        api = API(request, username, use_wordpress=False, create=False)
 
-    return render(request, "newprofile/partials/profile_info.html", context)
+        context = {
+            "profile_info": api.get_profile_info(),
+            "academic_interests": api.get_academic_interests(),
+            "education": api.get_education(),
+            "about_user": api.get_about_user(),
+            "show_education": api.profile.show_education,
+            "show_publications": api.profile.show_publications,
+            "show_projects": api.profile.show_projects,
+            "show_academic_interests": api.profile.show_academic_interests,
+        }
+
+        return render(
+            request, "newprofile/partials/profile_info.html", context
+        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for profile info: %s", ex
+        )
+        # Return safe fallback context
+        context = {
+            "profile_info": {
+                "name": "",
+                "username": username,
+                "profile": None,
+            },
+            "academic_interests": [],
+            "education": "",
+            "about_user": "",
+            "show_education": False,
+            "show_publications": False,
+            "show_projects": False,
+            "show_academic_interests": False,
+        }
+        return render(
+            request, "newprofile/partials/profile_info.html", context
+        )
 
 
 def works_deposits(request, username, style=None):
@@ -67,65 +94,98 @@ def works_deposits(request, username, style=None):
     """
     logger.debug("Getting works deposits for %s", username)
 
-    api = API(
-        request,
-        username,
-        use_wordpress=False,
-        create=False,
-        works_citation_style=style,
-    )
+    try:
+        api = API(
+            request,
+            username,
+            use_wordpress=False,
+            create=False,
+            works_citation_style=style,
+        )
 
-    api.works_citation_style = (
-        api.profile.reference_style if style is None else style
-    )
+        api.works_citation_style = (
+            api.profile.reference_style if style is None else style
+        )
 
-    # Get the works deposits for this username
-    user_works_deposits = api.works_html if api.profile.show_works else []
+        # Get the works deposits for this username
+        user_works_deposits = api.works_html if api.profile.show_works else []
 
-    return render(
-        request,
-        "newprofile/partials/works_deposits.html",
-        {
-            "works_headings_ordered": user_works_deposits,
-            "works_html": user_works_deposits,
-            "profile": api.profile,
-            "show_works": api.profile.show_works,
-            "chart": api.works_chart_json,
-        },
-    )
+        return render(
+            request,
+            "newprofile/partials/works_deposits.html",
+            {
+                "works_headings_ordered": user_works_deposits,
+                "works_html": user_works_deposits,
+                "profile": api.profile,
+                "show_works": api.profile.show_works,
+                "chart": api.works_chart_json,
+            },
+        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for works deposits: %s", ex
+        )
+        # Return safe fallback context
+        context = {
+            "works_headings_ordered": [],
+            "works_html": [],
+            "profile": None,
+            "show_works": False,
+            "chart": "{}",
+        }
+        return render(
+            request, "newprofile/partials/works_deposits.html", context
+        )
 
 
 def mastodon_feed(request, username):
     """
     Get a mastodon feed via HTMX
     """
-    logger.debug("Getting mastodon feed for %s", username)
-    api = API(request, username, use_wordpress=False, create=False)
+    logger.debug("Getting mastodon feed for %s via HTMX", username)
 
-    profile_info_obj = api.get_profile_info()
+    try:
+        api = API(request, username, use_wordpress=False, create=False)
 
-    # Get the mastodon posts for this username
-    mastodon_posts = (
-        (
-            api.mastodon_posts.latest_posts
-            if api.profile_info["mastodon"]
+        profile_info_obj = api.get_profile_info()
+
+        # Get the mastodon posts for this username
+        user_mastodon_posts = (
+            (
+                api.mastodon_posts.latest_posts
+                if api.profile_info["mastodon"]
+                else []
+            )
+            if profile_info_obj["profile"].show_mastodon_feed
             else []
         )
-        if profile_info_obj["profile"].show_mastodon_feed
-        else []
-    )
 
-    return render(
-        request,
-        "newprofile/partials/mastodon_feed.html",
-        {
-            "mastodon_posts": mastodon_posts,
-            "profile": profile_info_obj,
-            "show_mastodon_feed": profile_info_obj[
-                "profile"
-            ].show_mastodon_feed,
-        },
-    )
+        return render(
+            request,
+            "newprofile/partials/mastodon_feed.html",
+            {
+                "mastodon_posts": user_mastodon_posts,
+                "profile": profile_info_obj,
+                "show_mastodon_feed": profile_info_obj[
+                    "profile"
+                ].show_mastodon_feed,
+            },
+        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for mastodon feed: %s", ex
+        )
+        # Return safe fallback context
+        context = {
+            "mastodon_posts": [],
+            "profile": {"profile": None},
+            "show_mastodon_feed": False,
+        }
+        return render(
+            request, "newprofile/partials/mastodon_feed.html", context
+        )
 
 
 def profile(request, user=""):
@@ -138,42 +198,66 @@ def profile(request, user=""):
     if not profile_exists_or_has_been_created(user):
         raise Http404
 
-    api: API = API(request, user, use_wordpress=False, create=False)
+    try:
+        api: API = API(request, user, use_wordpress=False, create=False)
 
-    profile_obj: Profile = api.profile
+        profile_obj: Profile = api.profile
 
-    # if the logged-in user is the same as the requested profile they are
-    # viewing, we should show the edit navigation
-    logged_in_user_is_profile: bool = request.user.username == user
+        # if the logged-in user is the same as the requested profile they are
+        # viewing, we should show the edit navigation
+        logged_in_user_is_profile: bool = request.user.username == user
 
-    left_order: list = (
-        json.loads(profile_obj.left_order) if profile_obj.left_order else []
-    )
-    right_order: list = (
-        json.loads(profile_obj.right_order) if profile_obj.right_order else []
-    )
+        left_order: list = (
+            json.loads(profile_obj.left_order)
+            if profile_obj.left_order
+            else []
+        )
+        right_order: list = (
+            json.loads(profile_obj.right_order)
+            if profile_obj.right_order
+            else []
+        )
 
-    left_order_final, right_order_final = process_orders(
-        left_order, right_order
-    )
+        left_order_final, right_order_final = process_orders(
+            left_order, right_order
+        )
 
-    del left_order
-    del right_order
+        del left_order
+        del right_order
 
-    return render(
-        request=request,
-        context={
-            "username": user,
-            "logged_in_user_is_profile": logged_in_user_is_profile,
-            "profile": profile_obj,
-            "left_order": left_order_final,
-            "right_order": right_order_final,
-            # "works_headings_ordered": works_headings,
-            # "works_show_map": works_show_map,
-            # "works_work_show_map": works_work_show_map,
-        },
-        template_name="newprofile/profile.html",
-    )
+        return render(
+            request=request,
+            context={
+                "username": user,
+                "logged_in_user_is_profile": logged_in_user_is_profile,
+                "profile": profile_obj,
+                "left_order": left_order_final,
+                "right_order": right_order_final,
+                # "works_headings_ordered": works_headings,
+                # "works_show_map": works_show_map,
+                # "works_work_show_map": works_work_show_map,
+            },
+            template_name="newprofile/profile.html",
+        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for main profile view: %s", ex
+        )
+        # Return a minimal profile view that will still load
+        # The HTMX endpoints will handle their own failures gracefully
+        return render(
+            request=request,
+            context={
+                "username": user,
+                "logged_in_user_is_profile": request.user.username == user,
+                "profile": None,
+                "left_order": [],
+                "right_order": [],
+                "database_error": True,  # Flag to indicate DB is down
+            },
+            template_name="newprofile/profile.html",
+        )
 
 
 @login_required
@@ -333,13 +417,16 @@ def blog_posts(request, username):
                 "show_blog_posts": profile_info_obj["profile"].show_blog_posts,
             },
         )
-    except django.db.utils.OperationalError:
-        logger.warning("Unable to connect to MySQL database for blogs")
-        return render(
-            request,
-            "newprofile/partials/blog_posts.html",
-            {"blog_posts": ""},
-        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning("Unable to connect to database for blog posts: %s", ex)
+        # Return safe fallback context
+        context = {
+            "blog_posts": None,
+            "profile": {"profile": None},
+            "show_blog_posts": False,
+        }
+        return render(request, "newprofile/partials/blog_posts.html", context)
 
 
 def cover_image(request, username):
@@ -348,13 +435,22 @@ def cover_image(request, username):
     """
     logger.debug("Getting cover image for %s via HTMX", username)
 
-    api = API(request, username, use_wordpress=True, create=False)
+    try:
+        api = API(request, username, use_wordpress=True, create=False)
 
-    return render(
-        request,
-        "newprofile/partials/cover_image.html",
-        {"cover_image": api.get_cover_image()},
-    )
+        return render(
+            request,
+            "newprofile/partials/cover_image.html",
+            {"cover_image": api.get_cover_image()},
+        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning("Unable to connect to database for cover image: %s", ex)
+        # Return safe fallback context
+        context = {
+            "cover_image": None,
+        }
+        return render(request, "newprofile/partials/cover_image.html", context)
 
 
 def header_bar(request):
@@ -364,55 +460,79 @@ def header_bar(request):
     logger.debug("Getting header bar for %s via HTMX", request.user)
 
     if request.user.is_authenticated:
-        api_me = (
-            API(
-                request,
-                request.user.username,
-                use_wordpress=True,
-                create=False,
+        try:
+            api_me = (
+                API(
+                    request,
+                    request.user.username,
+                    use_wordpress=True,
+                    create=False,
+                )
+                if request.user.is_authenticated
+                else None
             )
-            if request.user.is_authenticated
-            else None
-        )
 
-        my_profile_info = api_me.get_profile_info() if api_me else None
-        notifications = api_me.get_short_notifications() if api_me else None
+            my_profile_info = api_me.get_profile_info() if api_me else None
+            notifications = (
+                api_me.get_short_notifications() if api_me else None
+            )
 
+            context = {
+                "username": request.user.username,
+                "logged_in_profile": my_profile_info,
+                "logged_in_user": (
+                    request.user if request.user.is_authenticated else None
+                ),
+                "short_notifications": notifications,
+                "notification_count": (
+                    len(notifications) if notifications else 0
+                ),
+                "logout_url": reverse("logout"),
+                "logged_in_profile_image": (
+                    api_me.get_profile_photo() if api_me else None
+                ),
+            }
+
+            return render(
+                request,
+                "newprofile/partials/header_bar.html",
+                context=context,
+            )
+
+        except django.db.utils.OperationalError as ex:
+            logger.warning(
+                "Unable to connect to database for header bar: %s", ex
+            )
+            # Return safe fallback context
+            context = {
+                "username": request.user.username,
+                "logged_in_profile": None,
+                "logged_in_user": (
+                    request.user if request.user.is_authenticated else None
+                ),
+                "short_notifications": None,
+                "notification_count": 0,
+            }
+            return render(
+                request,
+                "newprofile/partials/mysql_data.html",
+                context=context,
+            )
+    else:
         context = {
             "username": request.user.username,
-            "logged_in_profile": my_profile_info,
+            "logged_in_profile": None,
             "logged_in_user": (
                 request.user if request.user.is_authenticated else None
             ),
-            "short_notifications": notifications,
-            "notification_count": (len(notifications) if notifications else 0),
-            "logout_url": reverse("logout"),
-            "logged_in_profile_image": (
-                api_me.get_profile_photo() if api_me else None
-            ),
+            "short_notifications": None,
+            "notification_count": 0,
         }
-
         return render(
             request,
-            "newprofile/partials/header_bar.html",
+            "newprofile/partials/mysql_data.html",
             context=context,
         )
-
-    context = {
-        "username": request.user.username,
-        "logged_in_profile": None,
-        "logged_in_user": (
-            request.user if request.user.is_authenticated else None
-        ),
-        "short_notifications": None,
-        "notification_count": 0,
-    }
-
-    return render(
-        request,
-        "newprofile/partials/mysql_data.html",
-        context=context,
-    )
 
 
 def mysql_data(request, username):
@@ -515,9 +635,10 @@ def mysql_data(request, username):
         )
 
     except django.db.utils.OperationalError as ex:
-        logger.warning("Unable to connect to MySQL database: %s", ex)
+        logger.warning("Unable to connect to database for MySQL data: %s", ex)
+        # Return safe fallback context
         context = {
-            "username": None,
+            "username": username,
             "cover_image": None,
             "profile_image": None,
             "groups": None,
@@ -533,7 +654,7 @@ def mysql_data(request, username):
             "logout_url": None,
             "profile": None,
         }
-        return render(request, "newprofile/partials/mysql_data.html", {})
+        return render(request, "newprofile/partials/mysql_data.html", context)
 
 
 def profile_image(request, username):
@@ -541,16 +662,31 @@ def profile_image(request, username):
     Load the profile image via HTMX
     """
     logger.debug("Getting profile image for %s via HTMX", username)
-    api = API(request, username, use_wordpress=True, create=False)
 
-    return render(
-        request,
-        "newprofile/partials/profile_image.html",
-        {
-            "profile_image": api.get_profile_photo(),
+    try:
+        api = API(request, username, use_wordpress=True, create=False)
+
+        return render(
+            request,
+            "newprofile/partials/profile_image.html",
+            {
+                "profile_image": api.get_profile_photo(),
+                "username": username,
+            },
+        )
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for profile image: %s", ex
+        )
+        # Return safe fallback context
+        context = {
+            "profile_image": None,
             "username": username,
-        },
-    )
+        }
+        return render(
+            request, "newprofile/partials/profile_image.html", context
+        )
 
 
 @login_required
@@ -592,6 +728,11 @@ def save_works_visibility(request):
 
         return JsonResponse({"success": True})
 
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for saving works visibility: %s", ex
+        )
+        return JsonResponse({"success": False, "error": str(ex)}, status=400)
     except Exception as e:  # noqa: BLE001
         # Log the error for debugging
         logging.warning("Error saving profile order: %s", e)
@@ -632,6 +773,11 @@ def save_works_order(request):
 
         return JsonResponse({"success": True})
 
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for saving works order: %s", ex
+        )
+        return JsonResponse({"success": False, "error": str(ex)}, status=400)
     except Exception as e:  # noqa: BLE001
         # Log the error for debugging
         logging.warning("Error saving profile order: %s", e)
@@ -673,6 +819,11 @@ def save_profile_order(request, side):
 
         return JsonResponse({"success": True})
 
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for saving profile order: %s", ex
+        )
+        return JsonResponse({"success": False, "error": str(ex)}, status=400)
     except Exception as e:  # noqa: BLE001
         # Log the error for debugging
         logging.warning("Error saving profile order: %s", e)
