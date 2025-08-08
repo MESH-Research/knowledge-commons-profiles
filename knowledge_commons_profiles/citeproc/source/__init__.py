@@ -33,17 +33,7 @@ class CustomDict(dict):
                     "Require at least one of: " + ", ".join(required_options)
                 )
             required_or_merged |= required_options
-        unsupported = (
-            passed_keywords - required - optional - required_or_merged
-        )
-        if unsupported:
-            cls_name = self.__class__.__name__
-            msg = (f"The following arguments for {cls_name} "
-                   f"are unsupported: " + ", ".join(unsupported))
-            logger.debug(
-                msg,
-                stacklevel=2,
-            )
+
         self.update(args)
 
     def __setattr__(self, name, value):
