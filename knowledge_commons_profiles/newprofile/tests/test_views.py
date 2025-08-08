@@ -121,7 +121,10 @@ class MastodonFeedTests(TestCase):
         api_instance = MagicMock()
         mock_api.return_value = api_instance
         api_instance.profile_info = {"mastodon": "mastodon-handle"}
-        api_instance.mastodon_posts.latest_posts = ["Post1", "Post2"]
+        api_instance.mastodon_posts.latest_posts.return_value = [
+            "Post1",
+            "Post2",
+        ]
 
         # Create request
         request = self.factory.get("/profile/testuser/mastodon")

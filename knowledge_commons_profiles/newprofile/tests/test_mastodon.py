@@ -75,8 +75,8 @@ class MastodonFeedTests(TestCase):
         ]
         self.mock_cache_get.return_value = cached_posts
 
-        # Call the property
-        result = self.mastodon_feed.latest_posts
+        # Call the method
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that cache.get was called with the correct key
         self.mock_cache_get.assert_called_once_with(
@@ -124,8 +124,8 @@ xmlns:media="http://search.yahoo.com/mrss/">
         """
         self.mock_response.content = xml_content.encode("utf-8")
 
-        # Call the property
-        result = self.mastodon_feed.latest_posts
+        # Call the method
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that requests.get was called with the correct URL and timeout
         self.mock_requests_get.assert_called_once_with(
@@ -181,7 +181,7 @@ xmlns:media="http://search.yahoo.com/mrss/">
         )
 
         # Call the method
-        result = self.mastodon_feed.latest_posts
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that logger.exception was called
         self.mock_logger.exception.assert_called_once_with(
@@ -200,7 +200,7 @@ xmlns:media="http://search.yahoo.com/mrss/">
         self.mock_response.content = b"This is not valid XML"
 
         # Call the method
-        result = self.mastodon_feed.latest_posts
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that logger.exception was called
         self.mock_logger.exception.assert_called_once_with(
@@ -255,8 +255,8 @@ xmlns:media="http://search.yahoo.com/mrss/">
         """
         self.mock_response.content = xml_content.encode("utf-8")
 
-        # Call the property
-        result = self.mastodon_feed.latest_posts
+        # Call the method
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that only max_posts (4) posts are returned
         self.assertEqual(len(result), 4)
@@ -291,8 +291,8 @@ xmlns:media="http://search.yahoo.com/mrss/">
         """
         self.mock_response.content = xml_content.encode("utf-8")
 
-        # Call the property
-        result = self.mastodon_feed.latest_posts
+        # Call the method
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that only the valid post is returned
         self.assertEqual(len(result), 1)
@@ -324,8 +324,8 @@ xmlns:media="http://search.yahoo.com/mrss/">
         """
         self.mock_response.content = xml_content.encode("utf-8")
 
-        # Call the property
-        result = self.mastodon_feed.latest_posts
+        # Call the method
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that the post is returned with created_at as None
         self.assertEqual(len(result), 1)
@@ -357,8 +357,8 @@ xmlns:media="http://search.yahoo.com/mrss/">
         """
         self.mock_response.content = xml_content.encode("utf-8")
 
-        # Call the property
-        result = self.mastodon_feed.latest_posts
+        # Call the method
+        result = self.mastodon_feed.latest_posts()
 
         # Assert that the post is returned with empty content
         self.assertEqual(len(result), 1)
@@ -391,8 +391,8 @@ xmlns:media="http://search.yahoo.com/mrss/">
             "_parse_post",
             side_effect=Exception("Unexpected error"),
         ):
-            # Call the property
-            result = self.mastodon_feed.latest_posts
+            # Call the method
+            result = self.mastodon_feed.latest_posts()
 
             # Assert that logger.exception was called
             self.mock_logger.exception.assert_called_once_with(
@@ -401,3 +401,63 @@ xmlns:media="http://search.yahoo.com/mrss/">
 
             # Assert the result is an empty list
             self.assertEqual(result, [])
+
+    def test_latest_posts_nocache_bypass(self):
+        """Test that latest_posts bypasses cache when nocache=True."""
+        # Set up cached posts
+        cached_posts = [
+            {
+                "id": "cached_post",
+                "url": "https://mastodon.social/@testuser/cached",
+                "content": "Cached post",
+                "created_at": datetime.datetime.now(tz=datetime.UTC),
+                "reblogs_count": 0,
+                "favourites_count": 0,
+                "reblogged": False,
+            }
+        ]
+        self.mock_cache_get.return_value = cached_posts
+
+        # Prepare XML response for fresh fetch
+        xml_content = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:webfeeds="http://webfeeds.org/rss/1.0"
+xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Test User</title>
+    <description>Public posts from @testuser@mastodon.social</description>
+    <link>https://mastodon.social/@testuser</link>
+    <lastBuildDate>Tue, 11 Mar 2025 11:22:29 +0000</lastBuildDate>
+    <generator>Mastodon v4.2.10</generator>
+    <item>
+      <guid isPermaLink="true">fresh_post_guid</guid>
+      <link>https://mastodon.social/@testuser/fresh</link>
+      <pubDate>Tue, 11 Mar 2025 11:22:29 +0000</pubDate>
+      <description>Fresh post content</description>
+    </item>
+  </channel>
+</rss>
+        """
+        self.mock_response.content = xml_content.encode("utf-8")
+
+        # Call the method with nocache=True
+        result = self.mastodon_feed.latest_posts(nocache=True)
+
+        # Assert that cache.get was NOT called (cache bypassed)
+        self.mock_cache_get.assert_not_called()
+
+        # Assert that requests.get was called (fresh fetch)
+        self.mock_requests_get.assert_called_once_with(
+            self.mastodon_feed.api_url, timeout=self.mastodon_feed.timeout
+        )
+
+        # Assert that cache.set was called to cache the fresh results
+        self.mock_cache_set.assert_called_once()
+        self.assertEqual(
+            self.mock_cache_set.call_args[0][0],
+            f"{self.username}_{self.server}_latest_posts",
+        )
+
+        # Verify the fresh post was returned (not cached post)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "fresh_post_guid")
+        self.assertEqual(result[0]["content"], "Fresh post content")
