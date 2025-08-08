@@ -150,10 +150,13 @@ def mastodon_feed(request, username):
 
         profile_info_obj = api.get_profile_info()
 
+        # Check for nocache parameter in querystring
+        nocache = request.GET.get("nocache", "").lower() in ("true", "1", "yes")
+
         # Get the mastodon posts for this username
         user_mastodon_posts = (
             (
-                api.mastodon_posts.latest_posts
+                api.mastodon_posts.latest_posts(nocache=nocache)
                 if api.profile_info["mastodon"]
                 else []
             )

@@ -7,6 +7,7 @@ Fetches Mastodon feed latest and handles caching
 import logging
 from datetime import datetime
 
+import bleach
 import requests
 from django.core.cache import cache
 from lxml import etree
@@ -15,6 +16,71 @@ from knowledge_commons_profiles.__version__ import VERSION
 
 logger = logging.getLogger(__name__)
 
+
+def clean_mastodon_html(html_content):
+    """
+    Clean Mastodon HTML content by removing unwanted classes and attributes.
+
+    This function:
+    - Replaces </p> tags with <br/> tags for better formatting
+    - Removes <p> opening tags
+    - Strips all attributes from span elements (removing ellipsis, invisible
+    classes)
+    - Preserves necessary attributes on anchor elements (href, target, rel,
+    translate)
+    - Allows common HTML tags for content formatting
+
+    Args:
+        html_content (str): Raw HTML content from Mastodon RSS feed
+
+    Returns:
+        str: Cleaned HTML content safe for display
+    """
+    if not html_content:
+        return ""
+
+    # First, replace <p> tags with <br/> for better formatting
+    # Replace closing </p> tags with <br/> and remove opening <p> tags
+    html_content = html_content.replace("</p>", "<br/>")
+    html_content = html_content.replace("<p>", "")
+
+    # Define allowed tags and their permitted attributes
+    allowed_tags = [
+        "a",
+        "br",
+        "span",
+        "strong",
+        "em",
+        "b",
+        "i",
+        "u",
+        "blockquote",
+        "ul",
+        "ol",
+        "li",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+    ]
+
+    allowed_attributes = {
+        "a": ["href", "target", "rel", "translate"],
+        # Explicitly allow no attributes for spans to strip all classes
+        "span": [],
+        # Allow no attributes for other tags by default
+    }
+
+    # Clean the HTML using Bleach
+    return bleach.clean(
+        html_content,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        strip=True,  # Strip disallowed tags instead of escaping them
+        strip_comments=True,
+    )
 
 
 class MastodonFeed:
@@ -36,13 +102,15 @@ class MastodonFeed:
         self.max_posts = 4  # Maximum posts to return
         self.cache_time = 1800  # Cache time in seconds (30 minutes)
 
-    @property
-    def latest_posts(self):
+    def latest_posts(self, nocache=False):
         """
         Fetches and parses the latest posts in the Mastodon feed.
 
         This method fetches the latest posts from the Mastodon API,
         parses them and returns them in a structured format.
+
+        Args:
+            nocache (bool): If True, bypass cache and fetch fresh data
 
         Returns a list of dictionaries, each containing the following
         keys:
@@ -56,6 +124,26 @@ class MastodonFeed:
         - reblogged: Whether the post is a reblog or not
         """
         cache_key = f"{self.username}_{self.server}_latest_posts"
+
+        # If nocache is True, skip cache retrieval and force fresh fetch
+        if nocache:
+            logger.debug(
+                "Bypassing cache for Mastodon feed: %s@%s",
+                self.username,
+                self.server,
+            )
+            latest_posts = self._fetch_and_parse_posts()
+            # Still cache the fresh results for future requests
+            if latest_posts:
+                cache.set(
+                    cache_key,
+                    latest_posts,
+                    self.cache_time,
+                    version=VERSION,
+                )
+            return latest_posts
+
+        # Normal cached behavior
         latest_posts = cache.get(cache_key, version=VERSION)
 
         if latest_posts is None:
@@ -129,11 +217,12 @@ class MastodonFeed:
             # Handle description
             description_elem = post.find("description")
             description = ""
+
             if description_elem is not None and description_elem.text:
-                description = description_elem.text.replace("<p>", "").replace(
-                    "</p>",
-                    "",
-                )
+                description = description_elem.text
+
+            # Clean the HTML content
+            description = clean_mastodon_html(description)
 
             # Parse date
             pub_date_elem = post.find("pubDate")
