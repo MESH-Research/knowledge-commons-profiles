@@ -153,6 +153,9 @@ class CallbackTests(CILogonTestBase):
         middleware.process_request(request)
         request.session.save()
 
+    @override_settings(
+        EXTERNAL_SYNC_CLASSES=[],
+    )
     def test_callback_successful_existing_user(self):
         """Test successful callback for existing user"""
         # Create proper state parameter (base64 encoded JSON)
@@ -194,6 +197,7 @@ class CallbackTests(CILogonTestBase):
             session_mock.return_value = {
                 "sub": "cilogon_sub_123",
                 "email": "test@example.com",
+                "meta": {"status": "success"},
             }
 
             response = callback(request)
