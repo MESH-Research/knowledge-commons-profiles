@@ -16,7 +16,6 @@ from knowledge_commons_profiles.cilogon.middleware import (
     GarbageCollectionMiddleware,
 )
 from knowledge_commons_profiles.cilogon.middleware import RefreshBehavior
-from knowledge_commons_profiles.cilogon.middleware import RefreshTokenStatus
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 
 from .test_base import CILogonTestBase
@@ -42,7 +41,7 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             return_value=False,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIs(response, RefreshTokenStatus.MIDDLEWARE_SKIPPED)
+            self.assertIsNone(response)
 
     def test_skips_if_no_token(self):
         with patch(
@@ -50,7 +49,7 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             return_value=True,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIs(response, RefreshTokenStatus.NO_TOKEN)
+            self.assertIsNone(response)
 
     def test_skips_if_user_not_authenticated(self):
         self.request.user = AnonymousUser()
@@ -63,7 +62,7 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             return_value=True,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIs(response, RefreshTokenStatus.NO_USER)
+            self.assertIsNone(response)
 
     def test_creates_token_user_agent_association(self):
         self.request.session["oidc_token"] = {
@@ -284,7 +283,7 @@ class GarbageCollectionMiddlewareTest(CILogonTestBase):
             return_value=False,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIs(response, RefreshTokenStatus.MIDDLEWARE_SKIPPED)
+            self.assertIsNone(response)
 
     def test_skips_if_no_token_in_session(self):
         with patch(
@@ -292,7 +291,7 @@ class GarbageCollectionMiddlewareTest(CILogonTestBase):
             return_value=True,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIs(response, RefreshTokenStatus.NO_TOKEN)
+            self.assertIsNone(response)
 
     def test_does_nothing_if_no_associations(self):
         self.request.session["oidc_token"] = {

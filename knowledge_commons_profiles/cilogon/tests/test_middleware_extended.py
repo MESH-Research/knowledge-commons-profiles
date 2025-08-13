@@ -22,7 +22,6 @@ from knowledge_commons_profiles.cilogon.middleware import (
     GarbageCollectionMiddleware,
 )
 from knowledge_commons_profiles.cilogon.middleware import RefreshBehavior
-from knowledge_commons_profiles.cilogon.middleware import RefreshTokenStatus
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 
 from .test_base import CILogonTestBase
@@ -92,7 +91,7 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle network timeout gracefully
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
 
     def test_token_refresh_with_invalid_response(self):
         """Test token refresh with invalid response from OAuth provider"""
@@ -122,7 +121,7 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle invalid response gracefully
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
 
     def test_token_refresh_concurrent_requests(self):
         """Test token refresh behavior with concurrent requests"""
@@ -163,8 +162,8 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             response2 = self.middleware.process_request(self.request)
 
             # Both should complete without error
-            self.assertIs(response1, RefreshTokenStatus.REFRESHED)
-            self.assertIs(response2, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response1)
+            self.assertIsNone(response2)
 
     def test_token_refresh_session_corruption(self):
         """Test token refresh with corrupted session data"""
@@ -210,7 +209,7 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle revoked refresh token gracefully
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
 
     @override_settings(DEBUG=True)
     def test_token_refresh_debug_mode_logging(self):
@@ -288,7 +287,7 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should not refresh when token is valid (default behavior)
-            self.assertIs(response, RefreshTokenStatus.TOKEN_STILL_VALID)
+            self.assertIsNone(response)
 
     def test_never_refresh_behavior(self):
         """Test middleware with no refresh behavior"""
@@ -315,7 +314,7 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should attempt to refresh expired token (default behavior)
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
 
 
 class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
@@ -397,7 +396,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle large number of associations
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
             # delete_associations should be called with the old associations
             delete_mock.assert_called_once()
             # Verify the queryset passed to delete_associations is our
@@ -434,7 +433,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
 
             # Should skip garbage collection when revocation
             # endpoint unavailable
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_with_partial_revocation_failures(self):
         """Test garbage collection with some token revocations failing"""
@@ -515,7 +514,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle partial revocation failures gracefully
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
             # delete_associations should still be called even if
             # revocation fails
             delete_mock.assert_called_once()
@@ -557,7 +556,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle constraint violations gracefully
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_with_session_corruption_during_processing(self):
         """Test garbage collection when session gets corrupted during
@@ -602,7 +601,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle session corruption gracefully
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_with_concurrent_modifications(self):
         """Test garbage collection with concurrent database modifications"""
@@ -642,7 +641,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle concurrent modifications gracefully
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_middleware_ordering_dependency(self):
         """Test garbage collection middleware ordering with other middleware"""
@@ -682,8 +681,8 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
             response2 = middleware2.process_request(self.request)
 
             # Both should complete without interference
-            self.assertIs(response1, RefreshTokenStatus.NO_GARBAGE)
-            self.assertIs(response2, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response1)
+            self.assertIsNone(response2)
 
 
 class MiddlewareIntegrationTests(CILogonTestBase):
@@ -793,8 +792,8 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response2 = gc_middleware.process_request(self.request)
 
             # Both should return None (no early response)
-            self.assertIs(response1, RefreshTokenStatus.TOKEN_STILL_VALID)
-            self.assertIs(response2, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response1)
+            self.assertIsNone(response2)
 
             # delete_associations should be called with the old associations
             delete_mock.assert_called_once()
@@ -819,7 +818,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response = auto_refresh_middleware.process_request(self.request)
 
             # Should skip processing for anonymous user
-            self.assertIs(response, RefreshTokenStatus.NO_TOKEN)
+            self.assertIsNone(response)
 
     def test_middleware_with_session_timeout(self):
         """Test middleware behavior with session timeout"""
@@ -837,7 +836,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response = auto_refresh_middleware.process_request(self.request)
 
             # Should handle expired session gracefully
-            self.assertIs(response, RefreshTokenStatus.NO_TOKEN)
+            self.assertIsNone(response)
 
     @override_settings(DEBUG=False)
     def test_middleware_production_error_handling(self):
@@ -874,7 +873,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
 
             # Should log warning and continue gracefully
             warning_mock.assert_called()
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
 
     def test_middleware_performance_under_load(self):
         """Test middleware performance characteristics under load"""
@@ -913,7 +912,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
 
             # All should complete successfully
             for response in responses:
-                self.assertIs(response, RefreshTokenStatus.TOKEN_STILL_VALID)
+                self.assertIsNone(response)
 
     def test_gc_with_revocation_endpoint_unavailable(self):
         """Test garbage collection when revocation endpoint is unavailable"""
@@ -944,7 +943,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
 
             # Should skip garbage collection when revocation
             # endpoint unavailable
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_with_partial_revocation_failures(self):
         """Test garbage collection with some token revocations failing"""
@@ -1033,7 +1032,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle partial revocation failures gracefully
-            self.assertIs(response, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response)
             # delete_associations should still be called even if
             # revocation fails
             delete_mock.assert_called_once()
@@ -1075,7 +1074,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle constraint violations gracefully
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_with_concurrent_modifications(self):
         """Test garbage collection with concurrent database modifications"""
@@ -1115,7 +1114,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response = self.middleware.process_request(self.request)
 
             # Should handle concurrent modifications gracefully
-            self.assertIs(response, RefreshTokenStatus.NO_GARBAGE)
+            self.assertIsNone(response)
 
     def test_gc_middleware_ordering_dependency(self):
         """Test garbage collection middleware ordering with other middleware"""
@@ -1155,5 +1154,5 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             response2 = middleware2.process_request(self.request)
 
             # Both should complete without interference
-            self.assertIs(response1, RefreshTokenStatus.NO_GARBAGE)
-            self.assertIs(response2, RefreshTokenStatus.REFRESHED)
+            self.assertIsNone(response1)
+            self.assertIsNone(response2)
