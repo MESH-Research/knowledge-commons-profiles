@@ -66,4 +66,4 @@ class EmailVerification(models.Model):
     )
 
     def __str__(self):
-        return self.profile
+        return str(self.profile) + " (" + self.sub + ")"

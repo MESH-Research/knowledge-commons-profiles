@@ -65,6 +65,17 @@ class RefreshBehavior(IntEnum):
     IGNORE = 1
 
 
+class RefreshTokenStatus(IntEnum):
+    MIDDLEWARE_SKIPPED = 0
+    NO_TOKEN = 1
+    NO_USER = 2
+    HARD_REFRESH = 3
+    TOKEN_STILL_VALID = 4
+    REFRESHED = 5
+    NO_GARBAGE = 6
+    NO_ENDPOINT = 7
+
+
 class AutoRefreshTokenMiddleware(MiddlewareMixin):
     """
     Middleware to refresh tokens
@@ -72,19 +83,19 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         if not should_run_middleware(request, "auto-refresh"):
-            return
+            return RefreshTokenStatus.MIDDLEWARE_SKIPPED
 
         # Grab the stored token
         token = request.session.get("oidc_token")
         if not token:
             # could be during login cycle
-            return
+            return RefreshTokenStatus.NO_TOKEN
 
         # determine whether we have a user
         user = getattr(request, "user", None)
         if not user or not user.is_authenticated:
             # user is not logged in
-            return
+            return RefreshTokenStatus.NO_USER
 
         # get the user's browser user-agent
         user_agent = request.headers.get("user-agent", "")
@@ -115,7 +126,7 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
             self.refresh_user_token(
                 request, token, user, refresh_behavior=RefreshBehavior.CLEAR
             )
-            return
+            return RefreshTokenStatus.HARD_REFRESH
 
         # determine whether token is expired
         if not token_expired(token, user):
@@ -126,9 +137,10 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
                 user,
                 user_agent,
             )
-            return
+            return RefreshTokenStatus.TOKEN_STILL_VALID
 
         self.refresh_user_token(request, token)
+        return RefreshTokenStatus.REFRESHED
 
     def acquire_refresh_lock(self, user_id, timeout=10):
         """
@@ -222,14 +234,14 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
 
     def process_request(self, request):
         if not should_run_middleware(request, "garbage"):
-            return
+            return RefreshTokenStatus.MIDDLEWARE_SKIPPED
 
         # Grab the stored token
         token = request.session.get("oidc_token")
         if not token:
             # if there's no token, then do nothing as we can't do any
             # revocation
-            return
+            return RefreshTokenStatus.NO_TOKEN
 
         # get all TokenUserAgentAssociations with either a blank/null
         # creation date or a creation date that was created at least
@@ -241,7 +253,7 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
 
         if count == 0:
             logger.info("Garbage collection found nothing to clean")
-            return
+            return RefreshTokenStatus.NO_GARBAGE
 
         # set up a client
         client = oauth.cilogon
@@ -252,13 +264,14 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
             logger.warning(
                 "CILogon revocation endpoint not found in metadata; skipping GC"
             )
-            return
+            return RefreshTokenStatus.NO_ENDPOINT
 
         logger.info("Garbage collecting %s tokens", count)
 
         self.revoke_token_set(associations, client, revocation_endpoint, token)
 
         delete_associations(associations)
+        return RefreshTokenStatus.REFRESHED
 
     def revoke_token_set(
         self,

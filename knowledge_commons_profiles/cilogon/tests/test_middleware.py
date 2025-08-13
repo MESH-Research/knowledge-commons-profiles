@@ -8,7 +8,6 @@ from django.core.exceptions import FieldError
 from django.db.utils import DatabaseError
 from django.db.utils import OperationalError
 from django.test import RequestFactory
-from django.test import TestCase
 
 from knowledge_commons_profiles.cilogon.middleware import (
     AutoRefreshTokenMiddleware,
@@ -17,10 +16,13 @@ from knowledge_commons_profiles.cilogon.middleware import (
     GarbageCollectionMiddleware,
 )
 from knowledge_commons_profiles.cilogon.middleware import RefreshBehavior
+from knowledge_commons_profiles.cilogon.middleware import RefreshTokenStatus
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 
+from .test_base import CILogonTestBase
 
-class AutoRefreshTokenMiddlewareTest(TestCase):
+
+class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
     def setUp(self):
         self.factory = RequestFactory()
         self.middleware = AutoRefreshTokenMiddleware(get_response=MagicMock())
@@ -40,7 +42,7 @@ class AutoRefreshTokenMiddlewareTest(TestCase):
             return_value=False,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIsNone(response)
+            self.assertIs(response, RefreshTokenStatus.MIDDLEWARE_SKIPPED)
 
     def test_skips_if_no_token(self):
         with patch(
@@ -48,7 +50,7 @@ class AutoRefreshTokenMiddlewareTest(TestCase):
             return_value=True,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIsNone(response)
+            self.assertIs(response, RefreshTokenStatus.NO_TOKEN)
 
     def test_skips_if_user_not_authenticated(self):
         self.request.user = AnonymousUser()
@@ -61,7 +63,7 @@ class AutoRefreshTokenMiddlewareTest(TestCase):
             return_value=True,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIsNone(response)
+            self.assertIs(response, RefreshTokenStatus.NO_USER)
 
     def test_creates_token_user_agent_association(self):
         self.request.session["oidc_token"] = {
@@ -262,7 +264,7 @@ class AutoRefreshTokenMiddlewareTest(TestCase):
             )
 
 
-class GarbageCollectionMiddlewareTest(TestCase):
+class GarbageCollectionMiddlewareTest(CILogonTestBase):
     def setUp(self):
         self.factory = RequestFactory()
         self.middleware = GarbageCollectionMiddleware(get_response=MagicMock())
@@ -282,7 +284,7 @@ class GarbageCollectionMiddlewareTest(TestCase):
             return_value=False,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIsNone(response)
+            self.assertIs(response, RefreshTokenStatus.MIDDLEWARE_SKIPPED)
 
     def test_skips_if_no_token_in_session(self):
         with patch(
@@ -290,7 +292,7 @@ class GarbageCollectionMiddlewareTest(TestCase):
             return_value=True,
         ):
             response = self.middleware.process_request(self.request)
-            self.assertIsNone(response)
+            self.assertIs(response, RefreshTokenStatus.NO_TOKEN)
 
     def test_does_nothing_if_no_associations(self):
         self.request.session["oidc_token"] = {

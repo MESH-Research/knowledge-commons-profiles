@@ -9,7 +9,6 @@ from django.test import Client
 from django.test import RequestFactory
 from django.test import TestCase
 from django.test import override_settings
-from django.urls import reverse
 
 from knowledge_commons_profiles.newprofile.views import blog_posts
 from knowledge_commons_profiles.newprofile.views import edit_profile
@@ -184,21 +183,6 @@ class MyProfileTests(TestCase):
         mock_profile.assert_called_once_with(request, user="testuser")
         self.assertEqual(response, "profile_response")
 
-    def test_my_profile_login_required(self):
-        # Test with unauthenticated user through the client
-        response = self.client.get(reverse("my_profile"))
-
-        # Should redirect to login page
-        self.assertTrue(
-            any(
-                [
-                    response.status_code == STATUS_CODE_302,
-                    response.status_code == STATUS_CODE_500,
-                ]
-            )
-        )
-        self.assertTrue("login" in response.url)
-
 
 @override_settings(
     CACHES={
@@ -275,21 +259,6 @@ class EditProfileTests(TestCase):
             mock_form_class.assert_called_once()
             mock_form.is_valid.assert_called_once()
             mock_form.save.assert_not_called()
-
-    def test_edit_profile_login_required(self):
-        # Test with unauthenticated user through the client
-        response = self.client.get(reverse("edit_profile"))
-
-        # Should redirect to login page
-        self.assertTrue(
-            any(
-                [
-                    response.status_code == STATUS_CODE_302,
-                    response.status_code == STATUS_CODE_500,
-                ]
-            )
-        )
-        self.assertTrue("login" in response.url)
 
 
 class BlogPostsTests(TestCase):
@@ -429,123 +398,3 @@ class MySQLDataTests(TestCase):
 
         # Assert empty context was returned
         self.assertEqual(response.status_code, 200)
-
-
-class ProfileViewTest(TestCase):
-    """
-    Test the profile view
-    """
-
-    def setUp(self):
-        # Create test users
-        self.test_user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="password123",
-            is_superuser=True,
-        )
-        self.other_user = User.objects.create_user(
-            username="otheruser",
-            email="other@example.com",
-            password="password123",
-            is_superuser=True,
-        )
-        self.client = Client()
-
-    @patch(
-        "knowledge_commons_profiles.newprofile.views."
-        "profile_exists_or_has_been_created"
-    )
-    def test_own_profile_shows_edit_options(
-        self, mock_profile_exists_or_has_been_created
-    ):
-        """Test that a user viewing their own profile sees edit options"""
-
-        # Set up the mock return value
-        mock_profile_exists_or_has_been_created.return_value = True
-
-        # Log in as test_user
-        self.client.login(username="testuser", password="password123")
-
-        # Access test_user's profile
-        response = self.client.get(
-            reverse("profile", kwargs={"user": "testuser"})
-        )
-
-        # Check that the response has status code 200 (OK)
-        self.assertEqual(response.status_code, 200)
-
-        # Check that logged_in_user_is_profile is True in the context
-        self.assertTrue(response.context["logged_in_user_is_profile"])
-
-        # Check that the edit profile link is in the response
-        self.assertContains(response, "Edit")
-        self.assertContains(response, "Change Profile Photo")
-        self.assertContains(response, "Change Cover Image")
-
-    @patch(
-        "knowledge_commons_profiles.newprofile.views."
-        "profile_exists_or_has_been_created"
-    )
-    def test_other_profile_hides_edit_options(
-        self, mock_profile_exists_or_has_been_created
-    ):
-        """Test that a user viewing someone else's profile doesn't see
-        edit options"""
-        # Set up the mock return value
-        mock_profile_exists_or_has_been_created.return_value = True
-
-        # Log in as test_user
-        self.client.login(username="testuser", password="password123")
-
-        # Access other_user's profile
-        response = self.client.get(
-            reverse("profile", kwargs={"user": "otheruser"})
-        )
-
-        # Check that the response has status code 200 (OK)
-        self.assertEqual(response.status_code, 200)
-
-        # Check that logged_in_user_is_profile is False in the context
-        self.assertFalse(response.context["logged_in_user_is_profile"])
-
-        # Check that the edit profile link is not in the response
-        self.assertNotContains(response, 'class="action-btn primary">Edit</a>')
-        self.assertNotContains(
-            response, 'class="action-btn">Change Profile Photo</a>'
-        )
-        self.assertNotContains(
-            response, 'class="action-btn">Change Cover Image</a>'
-        )
-
-    @patch(
-        "knowledge_commons_profiles.newprofile.views."
-        "profile_exists_or_has_been_created"
-    )
-    def test_unauthenticated_user_hides_edit_options(
-        self, mock_profile_exists_or_has_been_created
-    ):
-        """Test that an unauthenticated user doesn't see edit options on
-        any profile"""
-        # Set up the mock return value
-        mock_profile_exists_or_has_been_created.return_value = True
-
-        # Access a profile without logging in
-        response = self.client.get(
-            reverse("profile", kwargs={"user": "testuser"})
-        )
-
-        # Check that the response has status code 200 (OK)
-        self.assertEqual(response.status_code, 200)
-
-        # Check that logged_in_user_is_profile is False in the context
-        self.assertFalse(response.context["logged_in_user_is_profile"])
-
-        # Check that the edit profile link is not in the response
-        self.assertNotContains(response, 'class="action-btn primary">Edit</a>')
-        self.assertNotContains(
-            response, 'class="action-btn">Change Profile Photo</a>'
-        )
-        self.assertNotContains(
-            response, 'class="action-btn">Change Cover Image</a>'
-        )

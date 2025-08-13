@@ -271,31 +271,31 @@ def register(request):
         )
 
         errored = False
-        errored = validate_form(email, errored, full_name, request, username)
+        errored = validate_form(email, full_name, request, username)
 
         if errored:
             return render(request, "cilogon/new_user.html", context)
 
+        # TODO: CRITICAL SECURITY BUG - Race condition in user registration
+        # This code creates Profile and User objects separately without
+        # transaction atomicity.
+        # If User creation fails after Profile creation, we get orphaned
+        # Profile objects.
+        # See docs/cilogon_security_issues.md for full details and fix.
         # Create the Profile object
         profile = Profile.objects.create(
-            name=full_name,
-            username=username,
-            email=email
+            name=full_name, username=username, email=email
         )
 
         # Create the corresponding Django User
-        user = User.objects.create(
-            username=username,
-            email=email
-        )
+        user = User.objects.create(username=username, email=email)
 
         # Log the user in
         login(request, user)
 
         # Create the SubAssociation with the cilogon sub
         SubAssociation.objects.create(
-            sub=context["cilogon_sub"],
-            profile=profile
+            sub=context["cilogon_sub"], profile=profile
         )
 
         # Redirect to my_profile page
@@ -327,7 +327,14 @@ def extract_form_data(context, request, userinfo):
     return email, full_name, username
 
 
-def validate_form(email, errored, full_name, request, username):
+def validate_form(email, full_name, request, username):
+    # TODO: SECURITY BUG - Missing username uniqueness validation
+    # Should check if username already exists before attempting
+    # User.objects.create()
+    # See docs/cilogon_security_issues.md for details
+
+    errored = False
+
     # check none of these are blank
     if not email or not username or not full_name:
         errored = True

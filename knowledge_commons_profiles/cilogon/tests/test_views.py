@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.shortcuts import redirect
 from django.test import RequestFactory
-from django.test import TestCase
 from django.test import override_settings
 from django.urls import reverse
 
@@ -16,8 +15,10 @@ from knowledge_commons_profiles.cilogon.views import app_logout
 from knowledge_commons_profiles.cilogon.views import callback
 from knowledge_commons_profiles.cilogon.views import cilogon_login
 
+from .test_base import CILogonTestBase
 
-class CILogonViewTests(TestCase):
+
+class CILogonViewTests(CILogonTestBase):
     def setUp(self):
         self.factory = RequestFactory()
         self.user = User.objects.create_user("testuser", password="pw")
@@ -135,7 +136,10 @@ class CILogonViewTests(TestCase):
             ) as sub_filter,
         ):
             sub_filter.return_value.first.return_value = None
-            self.assertIsNotNone(callback(request))
+
+            response = callback(request)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, reverse("associate"))
 
     def test_app_logout_revokes_tokens_and_redirects(self):
         request = self.factory.get("/logout/", **self.headers)

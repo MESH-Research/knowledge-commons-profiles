@@ -259,6 +259,11 @@ def revoke_token(
         token_revoke = {}
 
     for token_type_hint in token_type_hints:
+        message = (
+            f"Revoking {token_type_hint} {token_revoke[token_type_hint]} "
+            f"using {client}"
+        )
+        logger.debug(message)
         client.post(
             revocation_url,
             data={
@@ -334,26 +339,30 @@ def get_cilogon_jwks():
     return jwks
 
 
-# Alternative approach if you want more control over validation
 def verify_and_decode_cilogon_jwt(id_token):
     """
     Manual verification approach with Authlib
     """
-    jwks = get_cilogon_jwks()
+    try:
+        jwks = get_cilogon_jwks()
 
-    # Verify and decode
-    return jwt.decode(
-        id_token,
-        jwks,
-        claims_options={
-            "iss": {"essential": True, "value": "https://cilogon.org"},
-            "aud": {
-                "essential": False,
-                "value": settings.CILOGON_CLIENT_ID,
+        # Verify and decode
+        return jwt.decode(
+            id_token,
+            jwks,
+            claims_options={
+                "iss": {"essential": True, "value": "https://cilogon.org"},
+                "aud": {
+                    "essential": False,
+                    "value": settings.CILOGON_CLIENT_ID,
+                },
+                "exp": {"essential": True},
             },
-            "exp": {"essential": True},
-        },
-    )
+        )
+    except Exception:  # noqa: BLE001
+        # Return None for any JWT validation errors (invalid signature,
+        # malformed token, etc.)
+        return None
 
 
 class SecureParamEncoder:
@@ -420,7 +429,11 @@ def check_for_sub_or_return_negative(
     :param userinfo_session: the session variable
     """
     if userinfo_session and userinfo_session.get("sub"):
-        return True, userinfo_session
+        sub = userinfo_session.get("sub")
+        # Strict validation: sub must be a non-empty string with
+        # non-whitespace content
+        if isinstance(sub, str) and sub.strip():
+            return True, userinfo_session
 
     return False, None
 
