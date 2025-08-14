@@ -15,6 +15,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -243,6 +244,7 @@ def app_logout(
     return None
 
 
+@transaction.atomic
 def register(request):
     # first, see whether we have an unassociated user
     userinfo_is_valid: bool
@@ -276,12 +278,6 @@ def register(request):
         if errored:
             return render(request, "cilogon/new_user.html", context)
 
-        # TODO: CRITICAL SECURITY BUG - Race condition in user registration
-        # This code creates Profile and User objects separately without
-        # transaction atomicity.
-        # If User creation fails after Profile creation, we get orphaned
-        # Profile objects.
-        # See docs/cilogon_security_issues.md for full details and fix.
         # Create the Profile object
         profile = Profile.objects.create(
             name=full_name, username=username, email=email
