@@ -324,11 +324,6 @@ def extract_form_data(context, request, userinfo):
 
 
 def validate_form(email, full_name, request, username):
-    # TODO: SECURITY BUG - Missing username uniqueness validation
-    # Should check if username already exists before attempting
-    # User.objects.create()
-    # See docs/cilogon_security_issues.md for details
-
     errored = False
 
     # check none of these are blank
