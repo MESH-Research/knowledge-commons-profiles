@@ -1,3 +1,10 @@
+## 2.30.2 (2025-08-14)
+
+### Fix
+
+- **views**: remove erroneous security warning comment
+- **views**: add transaction atomiticy to avoid race condition
+
 ## 2.30.1 (2025-08-08)
 
 ### Fix
