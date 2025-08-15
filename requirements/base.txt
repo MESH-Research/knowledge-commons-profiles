@@ -15,7 +15,7 @@ django-redis==6.0.0  # https://github.com/jazzband/django-redis
 
 # App
 # ------------------------------------------------------------------------------
-djangorestframework==3.16.0  #
+djangorestframework==3.16.1  #
 grafana-django-saml2-auth==3.20.0
 django-tinymce==4.1.0
 django-select2==8.4.1
