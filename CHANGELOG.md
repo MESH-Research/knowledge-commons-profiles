@@ -1,3 +1,9 @@
+## 2.30.3 (2025-08-15)
+
+### Fix
+
+- **middleware/oauth**: fix security issues identified by llm
+
 ## 2.30.2 (2025-08-14)
 
 ### Fix
