@@ -17,7 +17,6 @@ from django.core.exceptions import FieldError
 from django.db import DatabaseError
 from django.db import OperationalError
 from django.db.models import Q
-from django.db.models import QuerySet
 from django.db.models.enums import IntEnum
 from django.http import HttpRequest
 from django.urls import resolve
@@ -70,21 +69,29 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
     Middleware to refresh tokens
     """
 
-    def process_request(self, request):
+    def fast_fail(self, request):
+        """
+        Determine whether we should run the middleware
+        """
         if not should_run_middleware(request, "auto-refresh"):
-            return
+            return True
 
         # Grab the stored token
         token = request.session.get("oidc_token")
         if not token:
             # could be during login cycle
-            return
+            return True
 
         # determine whether we have a user
         user = getattr(request, "user", None)
-        if not user or not user.is_authenticated:
-            # user is not logged in
+        return not user or not user.is_authenticated
+
+    def process_request(self, request):
+        if self.fast_fail(request):
             return
+
+        token = request.session.get("oidc_token")
+        user = getattr(request, "user", None)
 
         # get the user's browser user-agent
         user_agent = request.headers.get("user-agent", "")
@@ -117,83 +124,104 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
             )
             return
 
-        # determine whether token is expired
-        if not token_expired(token, user):
-            # token is still valid
+        # Use consistent cache key for locking
+        cache_key = self.get_cache_key(user, request)
+
+        # Acquire lock before checking token expiration to prevent race
+        # conditions
+        if not self.acquire_refresh_lock(cache_key):
             logger.debug(
-                "Token is still valid, not refreshing for user %s "
-                "and user agent %s",
+                "Token refresh lock in place for user %s; skipping "
+                "refresh check",
                 user,
-                user_agent,
             )
             return
 
-        self.refresh_user_token(request, token)
+        try:
+            # Re-check token from session in case another request refreshed it
+            current_token = request.session.get("oidc_token")
+            if not current_token:
+                return
+
+            # determine whether token is expired
+            if not token_expired(current_token, user):
+                # token is still valid (possibly refreshed by another request)
+                logger.debug(
+                    "Token is still valid, not refreshing for user %s "
+                    "and user agent %s",
+                    user,
+                    user_agent,
+                )
+                return
+
+            # Token is expired, refresh it
+            self.refresh_user_token(request, current_token, user, cache_key)
+        finally:
+            self.release_refresh_lock(cache_key)
+
         return
 
-    def acquire_refresh_lock(self, user_id, timeout=10):
+    def get_cache_key(self, user, request):
+        """
+        Get consistent cache key for locking
+        """
+        return user.id if user else request.META.get("REMOTE_ADDR", "unknown")
+
+    def acquire_refresh_lock(self, cache_key, timeout=10):
         """
         Attempt to acquire a refresh lock
         """
         return cache.add(
-            key=f"refresh-lock:{user_id}", value=True, timeout=timeout
+            key=f"refresh-lock:{cache_key}", value=True, timeout=timeout
         )
 
-    def release_refresh_lock(self, user_id):
+    def release_refresh_lock(self, cache_key):
         """
         Release a refresh lock
         """
-        cache.delete(f"refresh-lock:{user_id}")
+        cache.delete(f"refresh-lock:{cache_key}")
 
     def refresh_user_token(
         self,
         request,
         token,
         user: User = None,
+        cache_key=None,
         refresh_behavior: RefreshBehavior = RefreshBehavior.IGNORE,
     ):
         """
         Refresh and store the new token
+        Note: This method assumes the caller has already acquired the
+        refresh lock
         """
         try:
             logger.debug("Refreshing login token for user %s", user)
 
-            cache_key = user.id if user else request.META.get("REMOTE_ADDR")
+            refresh_token = token.get("refresh_token")
 
-            if self.acquire_refresh_lock(cache_key):
-                try:
-                    refresh_token = token.get("refresh_token")
-
-                    if not refresh_token:
-                        logger.warning(
-                            "Cannot refresh token for %s: no "
-                            "refresh_token present in session token",
-                            user,
-                        )
-                        logout(request)
-                        return
-
-                    new_token = oauth.cilogon.fetch_access_token(
-                        refresh_token=refresh_token,
-                        grant_type="refresh_token",
-                    )
-
-                    if "access_token" not in new_token:
-                        logger.warning(
-                            "Refreshed token for %s missing access_token",
-                            user,
-                        )
-                        logout(request)
-                        return
-
-                    store_session_variables(request, new_token)
-                finally:
-                    self.release_refresh_lock(cache_key)
-            else:
-                logger.debug(
-                    "Token refresh lock in place for user %s; skipping",
+            if not refresh_token:
+                logger.warning(
+                    "Cannot refresh token for %s: no "
+                    "refresh_token present in session token",
                     user,
                 )
+                logout(request)
+                return
+
+            new_token = oauth.cilogon.fetch_access_token(
+                refresh_token=refresh_token,
+                grant_type="refresh_token",
+            )
+
+            if "access_token" not in new_token:
+                logger.warning(
+                    "Refreshed token for %s missing access_token",
+                    user,
+                )
+                logout(request)
+                return
+
+            store_session_variables(request, new_token)
 
         except OAuthError:
             # user has an invalid refresh token
@@ -264,7 +292,7 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
 
     def revoke_token_set(
         self,
-        associations: QuerySet[TokenUserAgentAssociations],
+        associations,
         client,
         revocation_endpoint: str,
         token,

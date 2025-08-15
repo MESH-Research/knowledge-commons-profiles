@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 import requests
 import sentry_sdk
 import tldextract
+import validators
 from authlib.integrations.django_client import OAuth
 from authlib.jose import jwt
 from authlib.jose.errors import InvalidClaimError
@@ -102,6 +103,13 @@ def pack_state(next_url):
     """
     B64 encode a next URL
     """
+
+    # validate that the next_url is a valid URL
+    if next_url is not None and next_url != "":
+        if not validators.url(next_url):
+            message = "next_url is not a valid URL"
+            raise ValueError(message)
+
     # Pack next_url into state and b64 encode
     return base64.urlsafe_b64encode(
         json.dumps({"callback_next": next_url}).encode()

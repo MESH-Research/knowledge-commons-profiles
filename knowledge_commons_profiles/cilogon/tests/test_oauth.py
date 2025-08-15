@@ -153,6 +153,11 @@ class URLUtilityTests(CILogonTestBase):
         decoded_data = json.loads(decoded_json)
         self.assertEqual(decoded_data["callback_next"], "")
 
+    def test_pack_state_invalid_url(self):
+        """Test packing an invalid URL"""
+        with self.assertRaises(ValueError):
+            pack_state("jlsdlfd432324BLEURGH")
+
     def test_generate_next_url_with_existing_params(self):
         """Test generating next URL with existing query parameters"""
         request = self.factory.get("/callback?existing=param")
