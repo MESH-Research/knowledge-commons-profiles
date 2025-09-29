@@ -1,3 +1,9 @@
+## 2.30.4 (2025-09-29)
+
+### Fix
+
+- **stats**: relocate module after refactor
+
 ## 2.30.3 (2025-08-15)
 
 ### Fix
