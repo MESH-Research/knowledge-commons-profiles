@@ -175,6 +175,9 @@ typings/
 .idea/**/tasks.xml
 .idea/dictionaries
 
+.idea/misc.xml
+.idea/knowledge_commons_profiles.iml
+
 # Sensitive or high-churn files:
 .idea/**/dataSources/
 .idea/**/dataSources.ids

@@ -385,7 +385,7 @@ class WpUser(models.Model):
         """
         Return an annotated list of all users
         """
-        from knowledge_commons_profiles.newprofile.build_users_cache import (
+        from knowledge_commons_profiles.newprofile.stats_utils import (
             get_user_data,
         )
 
