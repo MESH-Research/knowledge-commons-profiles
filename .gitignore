@@ -175,6 +175,8 @@ typings/
 .idea/**/tasks.xml
 .idea/dictionaries
 
+.idea
+.idea/*
 .idea/misc.xml
 .idea/knowledge_commons_profiles.iml
 
