@@ -1,3 +1,9 @@
+## 2.30.5 (2025-10-07)
+
+### Fix
+
+- **oauth**: add additional logging to determine malfunction in PHP interaction
+
 ## 2.30.4 (2025-09-29)
 
 ### Fix
