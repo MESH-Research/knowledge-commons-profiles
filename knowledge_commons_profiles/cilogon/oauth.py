@@ -92,6 +92,8 @@ def extract_code_next_url(request):
     b64 = request.GET.get("state")
     data = json.loads(base64.urlsafe_b64decode(b64).decode())
 
+    logger.info("Data decoded was: %s", data)
+
     # see if we have a forwarding URL
     next_url = data.get("callback_next")
     code = request.GET.get("code")
@@ -126,8 +128,12 @@ def forward_url(request):
     try:
         code, next_url = extract_code_next_url(request)
 
+        logger.info("Code: %s and Next URL: %s", code, next_url)
+
         if next_url and next_url != "":
             url_parts = generate_next_url(code, next_url, request)
+
+            logger.info("URL parts: %s", url_parts)
 
             try:
                 # parse netloc into subdomain, base domain etc.
@@ -143,7 +149,8 @@ def forward_url(request):
                 if (
                     domain_to_check
                 ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
-                    logger.info("Forwarding CILogon code to %s", next_url)
+                    logger.info("Forwarding CILogon code to %s with "
+                                "state: %s", next_url, code)
                     return redirect(str(urlparse.urlunparse(url_parts)))
 
                 message = (
