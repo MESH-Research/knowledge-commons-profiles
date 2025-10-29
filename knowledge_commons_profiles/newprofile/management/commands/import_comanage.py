@@ -264,9 +264,9 @@ def _upsert_role(
     dry_run: bool = False,
 ) -> tuple[Role, bool]:
     if not dry_run:
-        person, _ = Person.objects.get_or_create(id=person.Id, user=profile)
+        person, _ = Person.objects.get_or_create(user=profile)
     else:
-        person = Person(id=person.Id, user=profile)
+        person = Person(user=profile)
 
     if not dry_run:
         co, _ = CO.objects.get_or_create(id=item.CouId)

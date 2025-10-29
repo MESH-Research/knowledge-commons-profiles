@@ -1286,7 +1286,7 @@ class Person(models.Model):
     )
 
     def __str__(self) -> str:
-        return self.display_name or self.email
+        return self.display_name
 
 
 class Role(models.Model):
