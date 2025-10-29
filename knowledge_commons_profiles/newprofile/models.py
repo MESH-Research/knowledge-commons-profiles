@@ -2,22 +2,30 @@
 A set of models for user profiles
 """
 
+# pylint: disable=too-few-public-methods,no-member, too-many-ancestors
+
+from __future__ import annotations
+
 import contextlib
 import logging
 import re
+import uuid
+
+# ruff: noqa: TC003
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import requests
 from django.conf import settings
-
-# pylint: disable=too-few-public-methods,no-member, too-many-ancestors
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django_bleach.models import BleachField
 from requests import Response
 
 if TYPE_CHECKING:
-    from _typeshed import SupportsWrite
     from django.db.models.query import QuerySet
+
 
 logger = logging.getLogger(__name__)
 
@@ -379,9 +387,7 @@ class WpUser(models.Model):
         return str(self.user_login)
 
     @staticmethod
-    def get_user_data(
-        output_stream: "SupportsWrite[str] | None" = None, limit: int = -1
-    ) -> "QuerySet[WpUser]":
+    def get_user_data(output_stream=None, limit: int = -1) -> QuerySet[WpUser]:
         """
         Return an annotated list of all users
         """
@@ -1076,7 +1082,7 @@ class RORLookup(models.Model):
         return text
 
     @staticmethod
-    def lookup(text: str) -> "RORLookup | None":
+    def lookup(text: str) -> RORLookup | None:
         # see if we have an existing match
         # if not, consult the ROR API to find one
 
@@ -1150,7 +1156,7 @@ class RORLookup(models.Model):
         return ror
 
     @staticmethod
-    def check_for_precise_ror(text: str) -> "RORLookup | None":
+    def check_for_precise_ror(text: str) -> RORLookup | None:
         """
         Check if we have a precise ROR and create a lookup
         """
@@ -1216,3 +1222,266 @@ class UserStats(models.Model):
             f"Stats(pk={self.pk}, users={self.user_count}, "
             f"active={self.user_count_active})"
         )
+
+
+# COManage Role models
+
+
+class RoleStatus(models.TextChoices):
+    # Common COmanage-like lifecycle states
+    ACTIVE = "active", "Active"
+    PENDING = "pending", "Pending"
+    PENDING_APPROVAL = "pending_approval", "Pending Approval"
+    PENDING_CONFIRM = "pending_confirmation", "Pending Confirmation"
+    GRACE_PERIOD = "grace_period", "Grace Period"
+    SUSPENDED = "suspended", "Suspended"
+    EXPIRED = "expired", "Expired"
+    DELETED = "deleted", "Deleted"
+
+
+class CO(models.Model):
+    """
+    Collaborative Organization (top-level).
+    """
+
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class COU(models.Model):
+    """
+    Collaborative Organization Unit (subdivision within a CO).
+    """
+
+    co = models.ForeignKey(CO, on_delete=models.CASCADE, related_name="cous")
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255)
+
+    class Meta:
+        unique_together = [("co", "slug")]
+        indexes = [
+            models.Index(fields=["co", "slug"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.co.slug}:{self.slug}"
+
+
+class Person(models.Model):
+    """
+    The people directory object.
+    """
+
+    display_name = models.CharField(max_length=255)
+
+    user = models.OneToOneField(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="person_profile",
+    )
+
+    def __str__(self) -> str:
+        return self.display_name or self.email
+
+
+class Role(models.Model):
+    """
+    A person's specific membership/position within a CO or COU.
+    Mirrors key fields from COmanage's CoPersonRole, plus a few
+    pragmatic additions.
+    """
+
+    # Identity & mapping
+    id = models.BigAutoField(primary_key=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    # Linkage
+    person = models.ForeignKey(
+        Person, on_delete=models.CASCADE, related_name="roles"
+    )
+    co = models.ForeignKey(CO, on_delete=models.CASCADE, related_name="roles")
+    cou = models.ForeignKey(
+        COU,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="roles",
+    )
+
+    # Organizational descriptors
+    affiliation = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=32, choices=RoleStatus.choices, default=RoleStatus.PENDING
+    )
+
+    title = models.CharField(
+        max_length=255, blank=True
+    )  # e.g., "Senior Engineer"
+    department = models.CharField(
+        max_length=255, blank=True
+    )  # maps loosely to 'ou'
+    organization = models.CharField(
+        max_length=255, blank=True, null=True
+    )  # maps loosely to 'o'
+
+    sponsor = models.ForeignKey(
+        Person,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sponsored_roles",
+        help_text="Person who sponsors this role (if any).",
+    )
+
+    # Validity window
+    valid_from = models.DateTimeField(null=True, blank=True)
+    valid_through = models.DateTimeField(null=True, blank=True)
+
+    # Enrollment / provenance
+    enrollment_flow = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Name/key of the enrollment flow that created/last "
+        "updated this role.",
+    )
+    source_system = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Upstream system of record (e.g., HR, admissions, manual).",
+    )
+    source_reference = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="External identifier from the source system.",
+    )
+
+    # Freeform metadata (safe place for extras from COmanage or
+    # downstream systems)
+    attributes = models.JSONField(default=dict, blank=True)
+
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Role"
+        verbose_name_plural = "Roles"
+        indexes = [
+            models.Index(fields=["person", "co"]),
+            models.Index(fields=["co", "cou"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["affiliation"]),
+            models.Index(fields=["valid_from", "valid_through"]),
+            models.Index(fields=["source_system", "source_reference"]),
+        ]
+        # Prevent exact duplicate active roles for same
+        # person/placement/affiliation window
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "person",
+                    "co",
+                    "cou",
+                    "affiliation",
+                    "status",
+                    "source_system",
+                    "source_reference",
+                ],
+                name="uniq_role_identity_status_source",
+                deferrable=models.Deferrable.DEFERRED,
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.person.user.username}: "
+            f"{self.title} and {self.affiliation} at {self.organization}: "
+            f"[{self.status}]"
+        )
+
+    # --------- Derived flags ---------
+
+    @property
+    def is_active_now(self) -> bool:
+        """
+        True if status is ACTIVE (or GRACE_PERIOD) AND within validity
+        window (if defined).
+        """
+        if self.status not in {RoleStatus.ACTIVE, RoleStatus.GRACE_PERIOD}:
+            return False
+        now = timezone.now()
+        if self.valid_from and now < self.valid_from:
+            return False
+        return not self.valid_through and now > self.valid_through
+
+    @property
+    def placement_label(self) -> str:
+        """
+        Human-friendly placement (CO[/COU]).
+        """
+        return f"{self.co.slug}" + (f"/{self.cou.slug}" if self.cou_id else "")
+
+    # --------- Lifecycle helpers ---------
+
+    def activate(
+        self, *, when: datetime | None = None, save: bool = True
+    ) -> None:
+        self.status = RoleStatus.ACTIVE
+        if when:
+            self.valid_from = when
+        if save:
+            self.full_clean()
+            self.save(update_fields=["status", "valid_from", "modified"])
+
+    def suspend(self, *, reason: str | None = None, save: bool = True) -> None:
+        self.status = RoleStatus.SUSPENDED
+        if reason:
+            self.attributes.setdefault("suspension_reason", reason)
+        if save:
+            self.full_clean()
+            self.save(update_fields=["status", "attributes", "modified"])
+
+    def expire(
+        self, *, when: datetime | None = None, save: bool = True
+    ) -> None:
+        self.status = RoleStatus.EXPIRED
+        if when:
+            self.valid_through = when
+        if save:
+            self.full_clean()
+            self.save(update_fields=["status", "valid_through", "modified"])
+
+    # --------- Validation ---------
+
+    def clean(self) -> None:
+        # COU must belong to the same CO
+        if self.cou_id and self.cou.co_id != self.co_id:
+            raise ValidationError(
+                {"cou": "COU must belong to the same CO as the role."}
+            )
+
+        # Validity window must make sense
+        if (
+            self.valid_from
+            and self.valid_through
+            and self.valid_from > self.valid_through
+        ):
+            raise ValidationError(
+                {"valid_through": "valid_through must be after valid_from."}
+            )
+
+        # Basic lifecycle sanity (example constraints; relax/tighten to taste)
+        terminal_statuses = {RoleStatus.EXPIRED, RoleStatus.DELETED}
+        if self.status in terminal_statuses and self.is_active_now:
+            raise ValidationError(
+                {
+                    "status": "Expired/Deleted roles cannot be "
+                    "active now by dates."
+                }
+            )

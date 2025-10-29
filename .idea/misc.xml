@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="cmdArguments" value="--line-length=79" />
+    <option name="cmdArguments" value="--line-length 79" />
     <option name="enabledOnReformat" value="true" />
     <option name="enabledOnSave" value="true" />
-    <option name="pathToExecutable" value="$USER_HOME$/.local/bin/black" />
-    <option name="sdkName" value="Python 3.12 (knowledge_commons_profiles)" />
+    <option name="sdkName" value="Python 3.12 virtualenv at ~/Documents/Programming/MESH/knowledge_commons_profiles/.venv" />
   </component>
   <component name="JavaScriptSettings">
     <option name="languageLevel" value="ES6" />

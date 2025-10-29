@@ -134,6 +134,7 @@ def forward_url(request):
             url_parts = generate_next_url(code, next_url, request)
 
             logger.info("URL parts: %s", url_parts)
+            logger.info("State: %s", request.GET.get("state"))
 
             try:
                 # parse netloc into subdomain, base domain etc.
