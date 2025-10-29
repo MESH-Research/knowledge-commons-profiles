@@ -1,3 +1,9 @@
+## 2.31.0 (2025-10-29)
+
+### Feat
+
+- **comanage**: write comanage import commands
+
 ## 2.30.5 (2025-10-07)
 
 ### Fix
