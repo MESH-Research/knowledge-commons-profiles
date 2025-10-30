@@ -1,3 +1,16 @@
+## 2.32.0 (2025-10-30)
+
+### Feat
+
+- **profiles**: add mla membership to profile page and sync on page load
+
+### Fix
+
+- **profiles**: change display of commons groups to align with academic interests
+- **profiles**: change pluralisation of "slides"
+- **sync**: update external sync logging in test command and Role str representatio
+- **comanage**: fix bug in import of duplicate primary keys
+
 ## 2.31.0 (2025-10-29)
 
 ### Feat
