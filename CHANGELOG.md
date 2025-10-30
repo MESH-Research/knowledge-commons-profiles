@@ -1,3 +1,9 @@
+## 2.33.0 (2025-10-30)
+
+### Feat
+
+- **sync**: allow mla search to use multiple emails from comanager
+
 ## 2.32.1 (2025-10-30)
 
 ### Fix
