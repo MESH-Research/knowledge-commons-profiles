@@ -1,3 +1,9 @@
+## 2.32.1 (2025-10-30)
+
+### Fix
+
+- **urls**: change member to members
+
 ## 2.32.0 (2025-10-30)
 
 ### Feat
