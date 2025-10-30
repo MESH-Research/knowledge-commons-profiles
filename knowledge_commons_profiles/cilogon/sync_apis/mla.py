@@ -459,6 +459,41 @@ class MLA(SyncClass):
 
         return False
 
+    def search_multiple(
+        self, emails
+    ) -> SearchApiResponse | CommonErrorResponse | dict:
+        """
+        Search for a user
+        :param emails: the emails to search for; first hit will be returned
+        """
+        for email in emails:
+            cache_key = f"MLA_api_search_{email}"
+
+            search_params = {
+                "email": email,
+                "membership_status": "ALL",
+                "timestamp": time.time(),
+                "key": settings.MLA_API_KEY,
+            }
+
+            try:
+                logger.info("Searching for %s in MLA", email)
+                result = self._query_mla_api(
+                    search_params, cache_key=cache_key
+                )
+
+                adapted = self._process_adapter(SearchApiResponse, result)
+
+                if (
+                    adapted.meta.status == "success"
+                    and adapted.data[0].total_num_results > 0
+                ):
+                    return adapted
+
+            except APIError:
+                continue
+        return {}
+
     def search(self, email) -> SearchApiResponse | CommonErrorResponse | dict:
         """
         Search for a user

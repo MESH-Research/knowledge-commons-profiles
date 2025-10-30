@@ -446,8 +446,8 @@ MLA_API_KEY = env("MLA_API_KEY", default="")
 MLA_API_SECRET = env("MLA_API_SECRET", default="")
 MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
 
-EXTERNAL_SYNC_CLASSES: list[tuple[str, str]] = [
-    ("MLA", "Modern Language Association")
+EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
+    ("MLA", ["Modern Language Association", "MLA"])
 ]
 
 LOGOUT_ENDPOINTS = []

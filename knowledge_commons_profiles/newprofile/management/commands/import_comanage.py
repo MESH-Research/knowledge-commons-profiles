@@ -17,6 +17,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Literal
 from urllib.parse import urljoin
 
 import requests
@@ -103,6 +104,29 @@ class CoPersonRolesResponse(BaseModel):
     CoPersonRoles: list[CoPersonRole]
 
 
+class EmailPerson(BaseModel):
+    Type: Literal["CO", "Dept", "Org", "Organization"]
+    Id: str
+
+
+class EmailAddress(BaseModel):
+    Version: str
+    Id: str
+    Mail: str
+    Type: str | None  # Type isn't fully specified, so allow free text
+    Description: str | None = None
+    Verified: bool
+    Person: EmailPerson
+    Created: str  # Could be datetime, but left as str based on the API
+    Modified: str
+
+
+class EmailAddressesResponse(BaseModel):
+    ResponseType: Literal["EmailAddresses"]
+    Version: str
+    EmailAddresses: list[EmailAddress]
+
+
 # =========================
 # HTTP client
 # =========================
@@ -111,7 +135,6 @@ class CoPersonRolesResponse(BaseModel):
 @dataclass
 class ClientConfig:
     base_url: str
-    token: str | None = None
     username: str | None = None
     password: str | None = None
     verify_ssl: bool = True
@@ -141,16 +164,10 @@ class COManageClient:
         self.session.mount("http://", adapter)
 
         headers = {"Accept": "application/json"}
-        if cfg.token:
-            logger.info("Using Bearer token for authentication")
-            headers["Authorization"] = f"Bearer {cfg.token}"
-        else:
-            logger.info("Using credentials for authentication")
+        logger.info("Using credentials for authentication")
         self.session.headers.update(headers)
 
     def _auth_kwargs(self) -> dict[str, Any]:
-        if self.cfg.token:
-            return {}
         if self.cfg.username and self.cfg.password:
             return {
                 "username": self.cfg.username,
@@ -195,7 +212,7 @@ class COManageClient:
         return payload
 
     def iter_roles(
-        self,
+        self, single_user: str | None = None
     ) -> Iterable[tuple[CoPersonRole, CoPerson, Profile]]:
         """
         Iterate through roles. Endpoint path and
@@ -204,8 +221,14 @@ class COManageClient:
         """
 
         # get all users from our database
-        logger.info("Fetching all users from the Profile database")
-        users = Profile.objects.all()
+        if single_user:
+            logger.info(
+                "Fetching user %s from the Profile database", single_user
+            )
+            users = Profile.objects.filter(username=single_user)
+        else:
+            logger.info("Fetching all users from the Profile database")
+            users = Profile.objects.all()
 
         # for each user, get their COmanage person
         logger.info("Fetching COmanage people")
@@ -225,6 +248,18 @@ class COManageClient:
                 continue
             msg = f"Processing user {co_person_obj.Id}"
             logger.info(msg)
+
+            # get email addresses
+            params = {"copersonid": co_person_obj.Id}
+            emails = self.get("email_addresses.json", params=params)
+            emails_obj = EmailAddressesResponse.model_validate(emails)
+
+            for email in emails_obj.EmailAddresses:
+                if email.Mail not in user.emails:
+                    user.emails.append(email.Mail)
+                logger.info("Found: %s", email)
+
+            user.save()
 
             # now get the roles
             params = {"copersonid": co_person_obj.Id}
@@ -310,12 +345,7 @@ def _upsert_role(
             "affiliation",
             "status",
             "title",
-            "department",
             "organization",
-            "sponsor",
-            "valid_from",
-            "valid_through",
-            "enrollment_flow",
         ):
             new_val = defaults[f]
             if getattr(role, f) != new_val:
@@ -345,9 +375,6 @@ class Command(BaseCommand):
             default="https://registry.hcommons.org/",
             help="Base URL for COmanage Registry API "
             "(e.g., https://registry.hcommons.org/)",
-        )
-        parser.add_argument(
-            "--token", default=None, help="Bearer token for API authentication"
         )
         parser.add_argument(
             "--username",
@@ -382,31 +409,29 @@ class Command(BaseCommand):
             help="Parse and log without writing to the database",
         )
         parser.add_argument(
-            "--limit",
-            type=int,
+            "--single-user",
+            type=str,
             default=None,
-            help="Import at most N roles (for testing)",
+            help="Just run on a single user",
         )
 
     def handle(self, *args, **options):
         base_url: str = options["base_url"]
-        token: str | None = options["token"]
         username: str | None = options["username"]
         password: str | None = options["password"]
         verify_ssl: bool = not options["no_verify_ssl"]
         dry_run: bool = options["dry_run"]
-        limit: int | None = options["limit"]
+        single_user: str | None = options["single_user"]
 
-        if not token and not (username and password):
+        if not (username and password):
             msg = (
-                "Provide either --token OR both --username and "
+                "Provide both --username and "
                 "--password for API authorization."
             )
             raise CommandError(msg)
 
         cfg = ClientConfig(
             base_url=base_url,
-            token=token,
             username=username,
             password=password,
             verify_ssl=verify_ssl,
@@ -422,7 +447,7 @@ class Command(BaseCommand):
 
         try:
             with ctx:
-                for item in client.iter_roles():
+                for item in client.iter_roles(single_user=single_user):
                     role: Role
                     role, created = _upsert_role(
                         item[0], item[1], item[2], dry_run=dry_run
@@ -439,9 +464,6 @@ class Command(BaseCommand):
 
                     if total % 100 == 0:
                         self.stdout.write(f"Processed {total} roles...")
-
-                    if limit and total >= limit:
-                        break
 
                 if dry_run:
                     self.stdout.write(

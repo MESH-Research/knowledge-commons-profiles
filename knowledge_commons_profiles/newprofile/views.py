@@ -50,6 +50,9 @@ def profile_info(request, username):
     try:
         api = API(request, username, use_wordpress=False, create=False)
 
+        # sync external memberships
+        ExternalSync.sync(profile=api.profile)
+
         context = {
             "profile_info": api.get_profile_info(),
             "academic_interests": api.get_academic_interests(),
@@ -216,9 +219,6 @@ def profile(request, user=""):
         api: API = API(request, user, use_wordpress=False, create=False)
 
         profile_obj: Profile = api.profile
-
-        # sync external memberships
-        ExternalSync.sync(profile=profile_obj)
 
         # if the logged-in user is the same as the requested profile they are
         # viewing, we should show the edit navigation

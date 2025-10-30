@@ -23,13 +23,31 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # cache.clear()
         user = Profile.objects.get(username="kfitz")
-        user.email = "kfitz@kfitz.info"
-        user.save()
         mla = MLA()
 
-        logging.info("Searching for: %s", user.email)
-        response: SearchApiResponse = mla.search(user.email)
+        email_list = [user.email, *user.emails]
 
+        logging.info("Searching for: %s", email_list)
+        response: SearchApiResponse = mla.search_multiple(email_list)
+
+        self.check_result(mla, response, user)
+
+        # check the comanage roles
+        roles = Role.objects.filter(person__user__username=user.username)
+
+        role: Role
+        for role in roles:
+            if role.organization is not None:
+                logging.info(role)
+
+        logging.info(user.is_member_of)
+
+    def check_result(
+        self,
+        mla: MLA,
+        response,
+        user: Profile,
+    ):
         if (
             response.meta.status == "success"
             and response.data[0].total_num_results > 0
@@ -42,13 +60,6 @@ class Command(BaseCommand):
             )
 
             logging.info(msg)
-
-        # check the comanage roles
-        roles = Role.objects.filter(person__user__username=user.username)
-
-        role: Role
-        for role in roles:
-            if role.organization is not None:
-                logging.info(role)
-
-        logging.info(user.is_member_of)
+            return True
+        logging.info("No account found on MLA server")
+        return False

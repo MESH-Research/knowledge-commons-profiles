@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 
 import requests
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -411,6 +412,9 @@ class Profile(models.Model):
     twitter = models.CharField(max_length=255, blank=True)
     github = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True, db_index=True)
+    emails = ArrayField(
+        models.CharField(max_length=254), default=list, blank=True
+    )
     orcid = models.CharField(max_length=255, blank=True, db_index=True)
     mastodon = models.CharField(max_length=255, blank=True)
     bluesky = models.CharField(max_length=255, blank=True)
@@ -1406,13 +1410,13 @@ class Role(models.Model):
         ) or (self.organization is None and self.title == ""):
             return (
                 f"{self.person.user.username}: "
-                "{self.affiliation} at Unknown Organization: "
+                f"{self.affiliation} at Unknown Organization: "
                 f"[{self.status}]"
             )
         if self.organization is None:
             return (
                 f"{self.person.user.username}: "
-                "{self.title} and {self.affiliation} at Unknown Organization: "
+                f"{self.title} and {self.affiliation} at Unknown Organization: "
                 f"[{self.status}]"
             )
         if self.title == "":

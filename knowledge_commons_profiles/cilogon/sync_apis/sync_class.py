@@ -47,6 +47,13 @@ class SyncClass(ABC):
         """
 
     @abstractmethod
+    def search_multiple(self, emails):
+        """
+        Search for a user
+        :param emails: the multiple emails to search for
+        """
+
+    @abstractmethod
     def get_user_info(self, user_id):
         """
         Get user info
