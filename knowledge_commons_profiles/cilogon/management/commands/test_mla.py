@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # cache.clear()
-        user = Profile.objects.get(username="kfitz")
+        user = Profile.objects.get(username="martin_eve")
         mla = MLA()
 
         email_list = [user.email, *user.emails]

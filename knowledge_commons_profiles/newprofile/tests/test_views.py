@@ -48,14 +48,15 @@ class ProfileInfoTests(TestCase):
         self.mock_profile.institutional_or_other_affiliation = (
             "Test Institution"
         )
+        self.mock_profile.external_sync_ids = "{}"
         self.mock_profile.is_member_of = '{"MLA": "True"}'
 
+    @patch("knowledge_commons_profiles.newprofile.views.ExternalSync.sync")
     @patch("knowledge_commons_profiles.newprofile.views.API")
-    def test_profile_info(self, mock_api):
+    def test_profile_info(self, mock_api, mock_sync):
         # Set up mock
         api_instance = MagicMock()
-        mock_api.return_value = api_instance
-
+        api_instance.profile = self.mock_profile
         api_instance.get_profile_info.return_value = self.mock_profile
         api_instance.get_academic_interests.return_value = [
             "Interest1",
@@ -63,6 +64,9 @@ class ProfileInfoTests(TestCase):
         ]
         api_instance.get_education.return_value = ["Education1"]
         api_instance.get_about_user.return_value = "About user text"
+
+        mock_api.return_value = api_instance
+        mock_sync.return_value = api_instance
 
         # Create request
         request = self.factory.get("/profile/testuser/profile_info")
