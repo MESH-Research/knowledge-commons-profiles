@@ -854,6 +854,7 @@ class GetProfileInfoTests(django.test.TestCase):
         self.mock_profile.institutional_or_other_affiliation = (
             "Test Institution"
         )
+        self.mock_profile.is_member_of = '{"MLA": "True"}'
 
         # Assign the mock profile to the model instance
         self.model_instance.profile = self.mock_profile

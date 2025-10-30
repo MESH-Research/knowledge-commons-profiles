@@ -1,3 +1,4 @@
+from unittest import mock
 from unittest.mock import MagicMock
 from unittest.mock import PropertyMock
 from unittest.mock import patch
@@ -29,12 +30,33 @@ class ProfileInfoTests(TestCase):
             username="testuser", password="testpass"
         )
 
+        self.mock_profile = mock.MagicMock()
+        self.mock_profile.name = "Test User"
+        self.mock_profile.username = "testuser"
+        self.mock_profile.title = "Professor"
+        self.mock_profile.affiliation = "Test University"
+        self.mock_profile.twitter = "@testuser"
+        self.mock_profile.github = "testuser"
+        self.mock_profile.email = "test@example.com"
+        self.mock_profile.orcid = "0000-0000-0000-0000"
+        self.mock_profile.mastodon = "@testuser@mastodon.social"
+        self.mock_profile.profile_image = "https://example.com/profile.jpg"
+        self.mock_profile.works_username = "works_testuser"
+        self.mock_profile.publications = "<p>Sample publication</p>"
+        self.mock_profile.projects = "Sample project"
+        self.mock_profile.memberships = "Sample membership"
+        self.mock_profile.institutional_or_other_affiliation = (
+            "Test Institution"
+        )
+        self.mock_profile.is_member_of = '{"MLA": "True"}'
+
     @patch("knowledge_commons_profiles.newprofile.views.API")
     def test_profile_info(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
         mock_api.return_value = api_instance
-        api_instance.get_profile_info.return_value = {"name": "Test User"}
+
+        api_instance.get_profile_info.return_value = self.mock_profile
         api_instance.get_academic_interests.return_value = [
             "Interest1",
             "Interest2",
@@ -56,7 +78,7 @@ class ProfileInfoTests(TestCase):
 
         # Assert template was rendered with correct context
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Test User", response.content)
+        self.assertIn(b"about user", response.content)
 
 
 class WorksDepositsTests(django.test.TransactionTestCase):
