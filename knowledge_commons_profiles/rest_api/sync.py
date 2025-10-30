@@ -62,22 +62,21 @@ class ExternalSync:
             try:
                 sync_id = sync_ids.get(class_name, None)
 
-                if not sync_id:
-                    email_list = [profile.email, *profile.emails]
+                email_list = [profile.email, *profile.emails]
 
-                    # see whether we can find a sync ID for this user
-                    search_by_email = class_to_use.search_multiple(
-                        emails=email_list
-                    )
+                # see whether we can find a sync ID for this user
+                search_by_email = class_to_use.search_multiple(
+                    emails=email_list
+                )
 
-                    if search_by_email.meta.status == "success":
-                        sync_id = search_by_email.data[0].search_results[0].id
+                if search_by_email.meta.status == "success":
+                    sync_id = search_by_email.data[0].search_results[0].id
 
-                        # save the sync ID for future use
-                        sync_ids[class_name] = sync_id
-                    else:
-                        # we can't find the user so move on
-                        continue
+                    # save the sync ID for future use
+                    sync_ids[class_name] = sync_id
+                else:
+                    # we can't find the user so move on
+                    continue
 
                 msg = (
                     f"Syncing {class_name} for {sync_id} on "
