@@ -23,7 +23,7 @@ from knowledge_commons_profiles.newprofile import views
 urlpatterns = [
     path("my-profile/", views.my_profile, name="my_profile"),
     path("edit-profile/", views.edit_profile, name="edit_profile"),
-    path("member/<str:user>/", views.profile, name="profile"),
+    path("members/<str:user>/", views.profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
     path("tinymce/", include("tinymce.urls")),
     path(

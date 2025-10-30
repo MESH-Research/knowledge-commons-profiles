@@ -75,7 +75,7 @@ The app uses a comprehensive URL structure supporting both traditional views and
 **Main Routes**
 - `/my-profile/` - Authenticated user profile access
 - `/edit-profile/` - Profile editing interface
-- `/member/<username>/` - Public profile display
+- `/members/<username>/` - Public profile display
 
 **HTMX Endpoints** (prefixed with `htmx/`)
 - Profile data: `/htmx/profile-info/<username>/`
