@@ -16,9 +16,9 @@
   <div class="content-card" id="commons-groups" hx-swap-oob="true">
       <h3 class="card-title">Commons Groups</h3>
       {% for group in groups %}
-      <div class="commons-group">
-          <a class="interest-link" href="https://hcommons.org/groups/{{ group.slug }}/">{{ group.group_name }}</a>
-      </div>
+      <ul class="interests-list">
+          <li class="interest-item"><a class="interest-link" href="https://hcommons.org/groups/{{ group.slug }}/">{{ group.group_name }}</a></li>
+      </ul>
       {% endfor %}
   </div>
 {% else %}
