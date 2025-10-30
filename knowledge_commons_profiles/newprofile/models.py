@@ -1399,6 +1399,29 @@ class Role(models.Model):
         ]
 
     def __str__(self):
+        if (
+            self.organization is None
+            and self.title == ""
+            and self.affiliation != ""
+        ) or (self.organization is None and self.title == ""):
+            return (
+                f"{self.person.user.username}: "
+                "{self.affiliation} at Unknown Organization: "
+                f"[{self.status}]"
+            )
+        if self.organization is None:
+            return (
+                f"{self.person.user.username}: "
+                "{self.title} and {self.affiliation} at Unknown Organization: "
+                f"[{self.status}]"
+            )
+        if self.title == "":
+            return (
+                f"{self.person.user.username}: "
+                f"{self.affiliation} at {self.organization}: "
+                f"[{self.status}]"
+            )
+
         return (
             f"{self.person.user.username}: "
             f"{self.title} and {self.affiliation} at {self.organization}: "

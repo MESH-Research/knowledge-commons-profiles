@@ -34,7 +34,8 @@ class ExternalSync:
         if not isinstance(class_list, list):
             class_list = [class_list]
 
-        for class_name in class_list:
+        # ruff: noqa: B007
+        for class_name, role_organization in class_list:
             class_to_use: SyncClass = CLASS_LOOKUPS[class_name]
 
             # see whether the Profile has an ID for this class
