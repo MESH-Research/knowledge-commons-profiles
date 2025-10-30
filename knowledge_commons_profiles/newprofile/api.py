@@ -3,6 +3,7 @@ A class of API calls for user details
 """
 
 import hashlib
+import json
 import logging
 import re
 from enum import Enum
@@ -379,6 +380,7 @@ class API:
                 self.profile.institutional_or_other_affiliation
             ),
             "profile": self.profile,
+            "is_member_of": json.loads(self.profile.is_member_of),
         }
 
         return self._profile_info

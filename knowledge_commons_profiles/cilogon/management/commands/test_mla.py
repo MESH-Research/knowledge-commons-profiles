@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand
 
 from knowledge_commons_profiles.cilogon.sync_apis.mla import MLA
 from knowledge_commons_profiles.cilogon.sync_apis.mla import SearchApiResponse
+from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 
 
@@ -21,8 +22,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # cache.clear()
+        user = Profile.objects.get(username="kfitz")
+        user.email = "kfitz@kfitz.info"
+        user.save()
         mla = MLA()
-        response: SearchApiResponse = mla.search("kfitz@kfitz.info")
+
+        logging.info("Searching for: %s", user.email)
+        response: SearchApiResponse = mla.search(user.email)
 
         if (
             response.meta.status == "success"
@@ -38,9 +44,11 @@ class Command(BaseCommand):
             logging.info(msg)
 
         # check the comanage roles
-        roles = Role.objects.filter(person__user__username="kfitz")
+        roles = Role.objects.filter(person__user__username=user.username)
 
         role: Role
         for role in roles:
             if role.organization is not None:
                 logging.info(role)
+
+        logging.info(user.is_member_of)

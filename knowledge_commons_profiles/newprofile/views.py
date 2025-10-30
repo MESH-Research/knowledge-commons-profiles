@@ -34,6 +34,7 @@ from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.rest_api.idms_api import (
     send_webhook_user_update,
 )
+from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,11 @@ def profile_info(request, username):
             "show_academic_interests": api.profile.show_academic_interests,
         }
 
+        context["MLA"] = (
+            "MLA" in context["profile_info"]["is_member_of"]
+            and context["profile_info"]["is_member_of"]["MLA"]
+        )
+
         return render(
             request, "newprofile/partials/profile_info.html", context
         )
@@ -82,6 +88,7 @@ def profile_info(request, username):
             "show_publications": False,
             "show_projects": False,
             "show_academic_interests": False,
+            "MLA": False,
         }
         return render(
             request, "newprofile/partials/profile_info.html", context
@@ -151,7 +158,11 @@ def mastodon_feed(request, username):
         profile_info_obj = api.get_profile_info()
 
         # Check for nocache parameter in querystring
-        nocache = request.GET.get("nocache", "").lower() in ("true", "1", "yes")
+        nocache = request.GET.get("nocache", "").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
 
         # Get the mastodon posts for this username
         user_mastodon_posts = (
@@ -205,6 +216,9 @@ def profile(request, user=""):
         api: API = API(request, user, use_wordpress=False, create=False)
 
         profile_obj: Profile = api.profile
+
+        # sync external memberships
+        ExternalSync.sync(profile=profile_obj)
 
         # if the logged-in user is the same as the requested profile they are
         # viewing, we should show the edit navigation
