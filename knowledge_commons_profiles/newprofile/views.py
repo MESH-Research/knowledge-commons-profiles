@@ -64,6 +64,11 @@ def profile_info(request, username):
             "show_academic_interests": api.profile.show_academic_interests,
         }
 
+        context["ARLISNA"] = (
+            "ARLISNA" in context["profile_info"]["is_member_of"]
+            and context["profile_info"]["is_member_of"]["ARLISNA"]
+        )
+
         context["MLA"] = (
             "MLA" in context["profile_info"]["is_member_of"]
             and context["profile_info"]["is_member_of"]["MLA"]

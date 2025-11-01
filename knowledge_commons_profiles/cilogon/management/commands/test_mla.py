@@ -22,7 +22,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # cache.clear()
-        user = Profile.objects.get(username="martin_eve")
+        # user = Profile.objects.get(username="martin_eve")
+        user = Profile.objects.get(username="pierrelandry")
+
         mla = MLA()
 
         email_list = [user.email, *user.emails]
@@ -48,8 +50,10 @@ class Command(BaseCommand):
         response,
         user: Profile,
     ):
+        response = response.get("MLA")
         if (
-            response.meta.status == "success"
+            response
+            and response.meta.status == "success"
             and response.data[0].total_num_results > 0
         ):
             mla_id = response.data[0].search_results[0].id

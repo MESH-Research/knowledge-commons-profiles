@@ -447,9 +447,16 @@ MLA_API_SECRET = env("MLA_API_SECRET", default="")
 MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
 MLA_API_BASE_URL = env("MLA_API_BASE_URL", default="https://api.mla.org/2/")
 
+ARLISNA_API_TOKEN = env("ARLISNA_API_TOKEN", default="")
+ARLISNA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
+ARLISNA_API_BASE_URL = env(
+    "ARLISNA_API_BASE_URL", default="https://www.arlisna.org/api/"
+)
+
 EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("MLA", ["Modern Language Association", "MLA"]),
     ("MSU", ["Michigan State University", "MSU"]),
+    ("ARLISNA", ["Art Libraries Society of North America", "ARLISNA"]),
 ]
 
 LOGOUT_ENDPOINTS = []

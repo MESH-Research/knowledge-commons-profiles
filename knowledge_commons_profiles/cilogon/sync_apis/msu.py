@@ -28,8 +28,15 @@ class MSU(SyncClass):
         """
         Check if a user is a member
         """
+        if isinstance(user_id, list):
+            return any(
+                user_id.lower().endswith(self.search_url.lower())
+                for user_id in user_id
+            )
         return (
-            True if user_id.lower().endswith(self.search_url.lower()) else None
+            True
+            if user_id.lower().endswith(self.search_url.lower())
+            else None
         )
 
     def search_multiple(self, emails) -> dict:

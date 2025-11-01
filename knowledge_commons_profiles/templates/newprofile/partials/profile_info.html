@@ -53,6 +53,17 @@
     <a href="#" class="hide" id="orcid" hx-swap-oob="true"></a>
 {% endif %}
 
+<!-- ARLISNA -->
+{% if ARLISNA is True %}
+  <a href="https://arlisna.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="arlisna" hx-swap-oob="true">
+          <img src="{% static "img/ARLISNA.png" %}" alt="ARLISNA" class="social-icon"  />
+          <span>ARLIS/NA</span>
+  </a>
+  {% else %}
+    <a href="#" class="hide" id="arlisna" hx-swap-oob="true"></a>
+{% endif %}
+
+
 <!-- MLA -->
 {% if MLA is True %}
   <a href="https://mla.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="mla" hx-swap-oob="true">
@@ -63,7 +74,7 @@
     <a href="#" class="hide" id="mla" hx-swap-oob="true"></a>
 {% endif %}
 
-<!-- MLA -->
+<!-- MSU -->
 {% if MSU is True %}
   <a href="https://commons.msu.edu/members/{{ profile_info.profile.username }}" class="social-link" id="msu" hx-swap-oob="true">
           <img src="{% static "img/MSU.png" %}" alt="MSU" class="social-icon"  />

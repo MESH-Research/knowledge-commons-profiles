@@ -1,29 +1,29 @@
 """
-The MLA API for synchronising user data
+The ARLISNA API for synchronising user data
 """
 
-import hashlib
-import hmac
+from __future__ import annotations
+
 import json
 import logging
 import re
-import time
 from datetime import UTC
 from datetime import datetime
 from http import HTTPMethod
-from typing import Literal
-from urllib import parse
-from urllib.parse import urlencode
+from typing import TYPE_CHECKING
 
+import dateutil
 import requests
 import sentry_sdk
-from dateutil import parser
 from django.conf import settings
 from django.core.cache import cache
 from django.core.validators import validate_email
 from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
 from pydantic import TypeAdapter
 from pydantic import ValidationError
+from pydantic import model_validator
 from requests.adapters import HTTPAdapter
 from rest_framework.status import HTTP_200_OK
 from urllib3.util.retry import Retry
@@ -33,296 +33,185 @@ from knowledge_commons_profiles.cilogon.sync_apis.sync_class import APIError
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import rate_limit
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from decimal import Decimal
+
 
 MEMBERS_URL = "members"
 MAX_CALLS = 100
 MAX_CALL_PERIOD = 60
 
+logger = logging.getLogger(__name__)
 
-class CommonMeta(BaseModel):
+
+class _BaseModel(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _empty_strings_to_none(cls, value):
+        def transform(v):
+            if isinstance(v, dict):
+                return {k: transform(vv) for k, vv in v.items()}
+            if isinstance(v, list):
+                return [transform(vv) for vv in v]
+            if v == "":
+                return None
+            return v
+
+        return transform(value)
+
+
+class Address(_BaseModel):
+    Address1: str | None = None
+    Address2: str | None = None
+    City: str | None = None
+    ZipCode: str | None = None
+    StateProvince: str | None = None
+    Country: str | None = None
+
+
+class MemberTypeInfo(_BaseModel):
+    UniqueID: str
+    Name: str
+    Description: str | None = None
+    ForCompanies: bool
+
+
+class CustomFieldEntry(_BaseModel):
+    CustomerUniqueID: str
+    CustomFieldUniqueID: str
+    CustomFieldName: str
+    Value: str | None = None
+    IsSumOfChildren: bool
+
+
+class GroupMembership(_BaseModel):
+    GroupUniqueID: str
+    GroupName: str
+    InheritingMember: bool
+    JoinDate: datetime | None = None
+
+
+class MemberResult(_BaseModel):
+    # Identifiers & names
+    UniqueID: str
+    ImportID: str | None = None
+    InternalIdentifier: int | None = None
+    ParentCustomerUniqueID: str | None = None
+    ParentMemberName: str | None = None
+    Name: str | None = None
+    FirstName: str | None = None
+    MiddleName: str | None = None
+    LastName: str | None = None
+    Suffix: str | None = None
+
+    # Status
+    Active: bool | None = None
+    Approved: bool | None = None
+    CustomerType: str | None = None
+    MemberStatus: str | None = None
+    MemberSubStatus: str | None = None
+    IsInstructor: bool | None = None
+    IncompleteSignup: bool | None = None
+    FeaturedDirectoryListing: bool | None = None
+    HideOnWebsite: bool | None = None
+    HideContactInformation: bool | None = None
+    ManagementAccessForCompanies: list[str] = Field(default_factory=list)
+
+    # Contact
+    Email: str | None = None
+    AccountEmail: str | None = None
+    Phone: str | None = None
+    Mobile: str | None = None
+    Fax: str | None = None
+    Website: str | None = None
+    County: str | None = None
+
+    # Addresses
+    BillingAddress: Address | None = None
+    ShippingAddress: Address | None = None
+    PersonalEmail: str | None = None
+    PersonalPhone: str | None = None
+    PersonalMobile: str | None = None
+    PersonalAddress: Address | None = None
+
+    # Social / profile
+    FacebookUrl: str | None = None
+    LinkedInUrl: str | None = None
+    InstagramHandle: str | None = None
+    TwitterHandle: str | None = None
+    MemberProfile: str | None = None
+    JobTitle: str | None = None
+    Image: str | None = None
+    Credentials: str | None = None
+    Title: str | None = None
+    Notes: str | None = None
+
+    # Membership dates
+    OriginalJoinDate: datetime | None = None
+    MemberSince: datetime | None = None
+    MembershipExpires: datetime | None = None
+
+    # Dues / billing
+    DuesPayerUniqueID: str | None = None
+    UseParentBilling: bool | None = None
+    UseParentShipping: bool | None = None
+    UnsubscribeFromEmails: bool | None = None
+    UnsubscribeFromSignupEmails: bool | None = None
+    AutoRenew: bool | None = None
+    AutoPay: bool | None = None
+    QuickBooksID: str | None = None
+    Taxable: bool | None = None
+    TaxExemptionReason: str | None = None
+    ProhibitInvoicing: bool | None = None
+    OpenDuesBalance: Decimal | None = None
+    OverdueDuesBalance: Decimal | None = None
+    DefaultDuesPayerOverride: str | None = None
+
+    # Member type(s)
+    MemberType: MemberTypeInfo | None = None
+    EffectiveMemberType: MemberTypeInfo | None = None
+
+    # Custom fields
+    CustomFields: dict[str, CustomFieldEntry] = Field(default_factory=dict)
+
+    # System/meta
+    SpecifiedSystemFields: list[str] = Field(default_factory=list)
+    FamilyTreeUniqueID: str | None = None
+    PrimaryContactUniqueId: str | None = None
+    BillingContactUniqueId: str | None = None
+    CreatedDate: datetime | None = None
+    LastUpdatedDate: datetime | None = None
+    LastSegmentUpdatedDate: datetime | None = None
+
+    # NPS
+    AverageNpsScore: float | None = None
+    LastNpsScore: float | None = None
+    LastNpsScoreDate: datetime | None = None
+    LastNpsFeedback: str | None = None
+
+    # Collections
+    DirectoryGallery: list[str] = Field(default_factory=list)
+    Awards: list[str] = Field(default_factory=list)
+    VolunteerWorks: list[str] = Field(default_factory=list)
+    Education: list[str] = Field(default_factory=list)
+    Groups: list[GroupMembership] = Field(default_factory=list)
+    Committees: list[str] = Field(default_factory=list)
+
+
+class MembersSearchResponse(_BaseModel):
+    TotalCount: int
+    Results: list[MemberResult]
+
+
+MemberResult.model_rebuild()
+MembersSearchResponse.model_rebuild()
+
+
+class ARLISNA(SyncClass):
     """
-    Common metadata
-    """
-
-    status: Literal["success", "error"]
-    code: str
-    message: str | None
-
-
-class SimpleAddress(BaseModel):
-    """
-    Simple address returned by search
-    """
-
-    type: str
-    rank: str | None = None
-    institution: str | None = None
-    city: str
-    state: str | None = None
-    zip: str | None = None
-    country: str
-    address1: str | None = None
-
-
-class SimpleGeneralInfo(BaseModel):
-    """
-    Simple general info returned by search
-    """
-
-    title: str
-    first_name: str
-    last_name: str
-    suffix: str | None = None
-    email: str | None = ""
-    email_visible: Literal["Y", "N", ""] | None = None
-    email_shareable: str | None = None
-    phone: str | None = ""
-    web_site: str | None = ""
-    addresses: list[SimpleAddress]
-
-
-class SimpleMembershipInfo(BaseModel):
-    """
-    Simple membership info returned by search
-    """
-
-    class_code: str
-    year_joined: str
-    membership_years: str
-
-
-class SimpleSearchResult(BaseModel):
-    """
-    Simple search result
-    """
-
-    id: str
-    membership: SimpleMembershipInfo
-    general: SimpleGeneralInfo
-
-
-class SimpleDataBlock(BaseModel):
-    """
-    Simple data block
-    """
-
-    total_num_results: int
-    search_results: list[SimpleSearchResult]
-
-
-class SimpleSuccessResponse(BaseModel):
-    """
-    Simple success response
-    """
-
-    meta: CommonMeta
-    data: list[SimpleDataBlock]
-
-
-class DetailedAddress(BaseModel):
-    """
-    Detailed address returned by id
-    """
-
-    id: str | None = None
-    type: str
-    hidden: str | None = None
-    send_mail: str | None = None
-    affiliation: str | None = None
-    ringgold_id: str | None = None
-    display_affil: str | None = None
-    department: str | None = None
-    other_dept: str | None = None
-    department_other: str | None = None
-    rank: str | None = None
-    display_rank: str | None = None
-    line1: str | None = None
-    line2: str | None = None
-    line3: str | None = None
-    city: str | None = None
-    state: str | None = None
-    zip: str | None = None
-    country: str | None = None
-    country_code: str | None = None
-
-
-class DetailedGeneralInfo(BaseModel):
-    """
-    Detailed general info returned by id
-    """
-
-    title: str | None = None
-    first_name: str | None = None
-    last_name: str | None = None
-    suffix: str | None = None
-    email: str | None = None
-    email_visible: str | None = None
-    email_shareable: str | None = None
-    email_digest: str | None = None
-    email_convention: str | None = None
-    email_unsubscribe: str | None = None
-    online_newsletter: str | None = None
-    phone: str | None = None
-    web_site: str | None = None
-    joined_commons: str | None = None
-    donor_exclude: str | None = None
-    orcid: str | None = None
-    new_mbr: str | None = None
-
-
-class DetailedMembershipInfo(BaseModel):
-    """
-    Detailed membership info returned by id
-    """
-
-    class_code: str
-    year_joined: str | None = None
-    starting_date: str | None = None
-    expiring_date: str | None = None
-    membership_years: str | None = None
-    arb_status: str | None = None
-    arb_bill_date: str | None = None
-
-
-class Authentication(BaseModel):
-    """
-    Authentication returned by id
-    """
-
-    username: str
-    password: str
-    membership_status: str
-
-
-class PublicationAccessEntry(BaseModel):
-    """
-    Publication access returned by id
-    """
-
-    type: str
-    access: dict[str, str]
-
-
-class PublicationHistoryEntry(BaseModel):
-    """
-    Publication history returned by id
-    """
-
-    year: str
-    pub_code: str
-    name: str
-    price: str
-
-
-class Pmla(BaseModel):
-    """
-    PMLA returned by id
-    """
-
-    pmla_sub: str | None = None
-    end_date: str | None = None
-    may_renew_on: str | None = None
-    renewal_price: str | None = None
-
-
-class Organization(BaseModel):
-    """
-    Organization returned by id
-    """
-
-    id: str
-    name: str
-    convention_code: str
-    position: str
-    type: str
-    exclude_from_commons: str | None = None
-    primary: str | None = None
-
-
-class DuesHistoryEntry(BaseModel):
-    """
-    Dues history returned by id
-    """
-
-    class_code: str
-    name: str
-    starting_date: str
-    expiring_date: str
-    date_paid: str
-    joint_mem_id: str | None = None
-    joint_name: str | None = None
-    dues_paid: str
-    joint_sub_cls_code: str | None = None
-
-
-class ContributionHistoryEntry(BaseModel):
-    """
-    Contribution history returned by id
-    """
-
-    type: str
-    contribution_year: str
-    fund_code: str
-    name: str
-    amount: str
-    date_paid: str
-
-
-class Language(BaseModel):
-    """
-    Language returned by id
-    """
-
-    code: str
-    name: str
-    primary: str | None = None
-
-
-class MemberProfile(BaseModel):
-    """
-    Member profile returned by id
-    """
-
-    id: str
-    authentication: Authentication
-    membership: DetailedMembershipInfo
-    general: DetailedGeneralInfo
-    addresses: list[DetailedAddress]
-    publications_access: list[PublicationAccessEntry]
-    publications_history: list[PublicationHistoryEntry]
-    pmla: Pmla
-    organizations: list[Organization]
-    dues_history: list[DuesHistoryEntry]
-    contributions_history: list[ContributionHistoryEntry]
-    languages: list[Language]
-
-
-class MemberResponseSuccess(BaseModel):
-    """
-    Success response
-    """
-
-    meta: CommonMeta
-    data: list[MemberProfile]
-
-
-class CommonErrorResponse(BaseModel):
-    """
-    Common error response
-    """
-
-    meta: CommonMeta
-    data: list = []
-
-
-SearchApiResponse = SimpleSuccessResponse | CommonErrorResponse
-MemberResponse = MemberResponseSuccess | CommonErrorResponse
-
-
-class MLA(SyncClass):
-    """
-    The MLA API.
+    The ARLISNA API.
 
     The API has several methods: search (will find a record by email),
     get_user_info (will find a record by id), is_member (returns a boolean of
@@ -333,7 +222,7 @@ class MLA(SyncClass):
         """
         Constructor
         """
-        self.base_url = "https://api.mla.org/2/"
+        self.base_url = settings.ARLISNA_API_BASE_URL
         self.session = requests.Session()
 
         retry_strategy = Retry(
@@ -352,10 +241,13 @@ class MLA(SyncClass):
     @rate_limit(max_calls=MAX_CALLS, period=MAX_CALL_PERIOD)
     def _make_rest_request(self, url, http_method=HTTPMethod.GET, params=None):
         """
-        Make a request to the MLA API
+        Make a request to the ARLISNA API
         """
         timeout = 30
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Basic " + settings.ARLISNA_API_TOKEN,
+        }
 
         response = self.session.request(
             method=http_method,
@@ -369,17 +261,18 @@ class MLA(SyncClass):
 
         return response
 
-    def _query_mla_api(
+    def _query_arlisna_api(
         self,
         attributes: dict[str, str],
         suffix: str | None = None,
         cache_key: str | None = None,
     ):
         """
-        Query the MLA API
+        Query the ARLISNA API
         :param attributes:
         :return:
         """
+
         if cache_key:
             cached_response = cache.get(cache_key, version=VERSION)
 
@@ -389,18 +282,12 @@ class MLA(SyncClass):
         suffix = suffix if suffix else MEMBERS_URL
         url = self.base_url + suffix
 
-        # copy so as not to mutate the original dictionary
-        signed_attributes = attributes.copy()
-        signed_attributes["signature"] = self._get_signature(
-            HTTPMethod.GET, attributes, suffix=suffix
-        )
-
         try:
             response = self._make_rest_request(
-                url, HTTPMethod.GET, signed_attributes
+                url, HTTPMethod.GET, params=attributes
             )
 
-            cache_timeout = settings.MLA_CACHE_TIMEOUT
+            cache_timeout = settings.ARLISNA_CACHE_TIMEOUT
 
             if "Cache-Control" in response.headers:
                 # Parse max-age from Cache-Control header
@@ -419,92 +306,81 @@ class MLA(SyncClass):
                 )
 
         except requests.exceptions.RequestException as e:
-            message = f"Request to MLA API failed: {e}"
+            message = f"Request to ARLISNA API failed: {e}"
             logger.exception(message)
             raise APIError(message) from e
 
         if response.status_code == HTTP_200_OK:
-            logger.debug("MLA response: %s", response.content)
+            logger.debug("ARLISNA response: %s", response.content)
             return response.content
 
         message = f"Received {response.status_code} response"
         logger.error(message)
         raise APIError(message)
 
-    def is_member(self, user_id: str | int) -> bool:
+    def is_member(self, user_id: str) -> bool:
         """
         Check if a user is a member
         """
-        response: MemberResponse | CommonErrorResponse | dict = (
-            self.get_user_info(user_id)
-        )
+        response: MembersSearchResponse | dict = self.get_user_info(user_id)
 
-        if (
-            getattr(response, "meta", None) is not None
-            and response.meta.status == "success"
-        ):
+        if response.TotalCount > 0:
             # parse response.data[0].membership.expiring_date into a date
             # and check if it is in the future
             try:
-                expiring_date = parser.parse(
-                    response.data[0].membership.expiring_date
-                ).astimezone(UTC)
+                expiring_date = dateutil.parser.parse(
+                    str(response.Results[0].MembershipExpires)
+                ).astimezone(tz=UTC)
                 today = datetime.now(tz=UTC)
 
             except (ValueError, IndexError, AttributeError):
-                logger.exception("Error parsing date in MLA response")
+                logger.exception("Error parsing date in ARLISNA response")
                 return False
             else:
                 return expiring_date > today
 
         return False
 
-    def search_multiple(
-        self, emails
-    ) -> SearchApiResponse | CommonErrorResponse | dict:
+    def search_multiple(self, emails) -> MembersSearchResponse | dict:
         """
         Search for a user
         :param emails: the emails to search for; first hit will be returned
         """
         for email in emails:
-            cache_key = f"MLA_api_search_{email}"
+            cache_key = f"ARLISNA_api_search_{email}"
 
             search_params = {
                 "email": email,
-                "membership_status": "ALL",
-                "timestamp": time.time(),
-                "key": settings.MLA_API_KEY,
             }
 
             try:
-                logger.info("Searching for %s in MLA", email)
-                result = self._query_mla_api(
+                logger.info("Searching for %s in ARLISNA", email)
+                result = self._query_arlisna_api(
                     search_params, cache_key=cache_key
                 )
 
-                adapted = self._process_adapter(SearchApiResponse, result)
+                adapted: MembersSearchResponse = self._process_adapter(
+                    MembersSearchResponse, result
+                )
 
-                if (
-                    adapted.meta.status == "success"
-                    and adapted.data[0].total_num_results > 0
-                ):
-                    return {"MLA": adapted}
+                if adapted.TotalCount > 0:
+                    return {"ARLISNA": adapted}
 
             except APIError:
                 continue
-        return {"MLA": None}
+        return {"ARLISNA": None}
 
-    def get_sync_id(self, response):
+    def get_sync_id(self, response: MembersSearchResponse):
         """
         Get a sync ID from the api response
         :param response: the response from the API
         """
 
-        if response:
-            return response.data[0].search_results[0].id
+        if response and response.TotalCount > 0:
+            return response.Results[0].Email
         return None
 
-    def search(self, email) -> SearchApiResponse | CommonErrorResponse | dict:
+    def search(self, email) -> MembersSearchResponse | dict:
         """
         Search for a user
         :param email: the email to search for
@@ -515,24 +391,23 @@ class MLA(SyncClass):
             message = f"Invalid email address: {email}"
             raise ValueError(message) from ve
 
-        cache_key = f"MLA_api_search_{email}"
+        cache_key = f"ARLISNA_api_search_{email}"
 
         search_params = {
             "email": email,
-            "membership_status": "ALL",
-            "timestamp": time.time(),
-            "key": settings.MLA_API_KEY,
         }
 
         try:
-            result = self._query_mla_api(search_params, cache_key=cache_key)
+            result = self._query_arlisna_api(
+                search_params, cache_key=cache_key
+            )
         except APIError:
             return {}
 
         if not result:
             return {}
 
-        return self._process_adapter(SearchApiResponse, result)
+        return self._process_adapter(MembersSearchResponse, result)
 
     @staticmethod
     def _process_adapter(type_adapter, result):
@@ -544,39 +419,36 @@ class MLA(SyncClass):
             response = adapter.validate_json(result)
 
         except ValidationError:
-            logger.exception("Error parsing MLA search response")
+            logger.exception("Error parsing ARLISNA search response")
             sentry_sdk.capture_exception()
             return {}
         except json.JSONDecodeError:
-            logger.exception("Invalid JSON response from MLA API")
+            logger.exception("Invalid JSON response from ARLISNA API")
             sentry_sdk.capture_exception()
             return {}
 
         return response
 
     def get_user_info(
-        self, mla_id: str | int
-    ) -> MemberResponse | CommonErrorResponse | dict:
+        self, arlisna_id: str | int
+    ) -> MembersSearchResponse | dict:
         """
         Search for a user
         """
         try:
-            mla_id = str(mla_id)
+            arlisna_id = str(arlisna_id)
         except ValueError:
-            logger.exception("Invalid MLA ID (must be string or int)")
+            logger.exception("Invalid ARLISNA ID (must be string or int)")
             return {}
 
-        cache_key = f"MLA_api_user_info_{mla_id}"
+        cache_key = f"ARLISNA_api_user_info_{arlisna_id}"
 
-        search_params = {
-            "timestamp": time.time(),
-            "key": settings.MLA_API_KEY,
-        }
+        search_params = {"email": arlisna_id}
 
         try:
-            result = self._query_mla_api(
+            result = self._query_arlisna_api(
                 search_params,
-                suffix=f"{MEMBERS_URL}/{mla_id}",
+                suffix="members",
                 cache_key=cache_key,
             )
         except APIError:
@@ -585,24 +457,7 @@ class MLA(SyncClass):
         if not result:
             return {}
 
-        return self._process_adapter(MemberResponse, result)
-
-    def _get_signature(self, http_method, params, suffix=None):
-        """
-        Append signature to input "params"
-        """
-        suffix = suffix if suffix else MEMBERS_URL
-
-        url = self.base_url + suffix + "?" + urlencode(params)
-        logger.debug("Building signature for %s", url)
-
-        base_string = f"{http_method}&{parse.quote(url, safe='')}"
-
-        return hmac.new(
-            settings.MLA_API_SECRET.encode(),
-            base_string.encode(),
-            hashlib.sha256,
-        ).hexdigest()
+        return self._process_adapter(MembersSearchResponse, result)
 
     def groups(self, user_id: str | int) -> list[str]:
         """

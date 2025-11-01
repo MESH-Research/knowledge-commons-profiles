@@ -7,6 +7,7 @@ import logging
 
 from django.conf import settings
 
+from knowledge_commons_profiles.cilogon.sync_apis import arlisna
 from knowledge_commons_profiles.cilogon.sync_apis import mla
 from knowledge_commons_profiles.cilogon.sync_apis import msu
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
@@ -14,7 +15,11 @@ from knowledge_commons_profiles.newprofile import models
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.newprofile.models import RoleStatus
 
-CLASS_LOOKUPS: dict[str, SyncClass] = {"MLA": mla.MLA(), "MSU": msu.MSU()}
+CLASS_LOOKUPS: dict[str, SyncClass] = {
+    "MLA": mla.MLA(),
+    "MSU": msu.MSU(),
+    "ARLISNA": arlisna.ARLISNA(),
+}
 
 logger = logging.getLogger(__name__)
 
@@ -75,26 +80,20 @@ class ExternalSync:
                 # save the sync ID for future use
                 sync_ids[class_name] = sync_id
 
-                msg = (
-                    f"Syncing {class_name} for {sync_id} on "
-                    f"{profile.username}"
-                )
-                logger.info(msg)
-
-                # so by this point, sync_id should be set, either by retrieval
-                # or by search on the MLA API
                 if sync_id:
+                    msg = (
+                        f"Syncing {class_name} for {sync_id} on "
+                        f"{profile.username}"
+                    )
+                    logger.info(msg)
+
                     is_member_of[class_name] = class_to_use.is_member(sync_id)
                     in_membership_groups[class_name] = class_to_use.groups(
                         sync_id
                     )
                 else:
-                    is_member_of[class_name] = class_to_use.is_member(
-                        email_list
-                    )
-                    in_membership_groups[class_name] = class_to_use.groups(
-                        email_list
-                    )
+                    is_member_of[class_name] = False
+                    in_membership_groups[class_name] = []
 
                 # now update roles
                 roles = Role.objects.filter(
@@ -122,3 +121,5 @@ class ExternalSync:
                 profile.is_member_of = json.dumps(is_member_of)
                 profile.in_membership_groups = json.dumps(in_membership_groups)
                 profile.save()
+
+        logger.info("Roles are now %s", profile.is_member_of)

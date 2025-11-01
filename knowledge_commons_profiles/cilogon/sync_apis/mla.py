@@ -333,7 +333,7 @@ class MLA(SyncClass):
         """
         Constructor
         """
-        self.base_url = settings.MLA_BASE_URL
+        self.base_url = settings.MLA_API_BASE_URL
         self.session = requests.Session()
 
         retry_strategy = Retry(
@@ -485,7 +485,8 @@ class MLA(SyncClass):
                 adapted = self._process_adapter(SearchApiResponse, result)
 
                 if (
-                    adapted.meta.status == "success"
+                    hasattr(adapted, "meta")
+                    and adapted.meta.status == "success"
                     and adapted.data[0].total_num_results > 0
                 ):
                     return {"MLA": adapted}
@@ -499,7 +500,7 @@ class MLA(SyncClass):
         Get a sync ID from the api response
         :param response: the response from the API
         """
-
+        logger.info("MLA sync_id response: %s", response)
         if response:
             return response.data[0].search_results[0].id
         return None
