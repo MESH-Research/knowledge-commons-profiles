@@ -445,6 +445,7 @@ CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
 MLA_API_KEY = env("MLA_API_KEY", default="")
 MLA_API_SECRET = env("MLA_API_SECRET", default="")
 MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
+MLA_API_BASE_URL = env("MLA_API_BASE_URL", default="https://api.mla.org/2/")
 
 EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("MLA", ["Modern Language Association", "MLA"]),

@@ -333,7 +333,7 @@ class MLA(SyncClass):
         """
         Constructor
         """
-        self.base_url = settings.MLA_BASE_URL
+        self.base_url = "https://api.mla.org/2/"
         self.session = requests.Session()
 
         retry_strategy = Retry(
