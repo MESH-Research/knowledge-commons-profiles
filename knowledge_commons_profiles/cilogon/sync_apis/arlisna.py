@@ -9,8 +9,10 @@ import logging
 import re
 from datetime import UTC
 from datetime import datetime
+
+# ruff: noqa: TC003
+from decimal import Decimal
 from http import HTTPMethod
-from typing import TYPE_CHECKING
 
 import dateutil
 import requests
@@ -32,10 +34,6 @@ from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import APIError
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import rate_limit
-
-if TYPE_CHECKING:
-    from decimal import Decimal
-
 
 MEMBERS_URL = "members"
 MAX_CALLS = 100
