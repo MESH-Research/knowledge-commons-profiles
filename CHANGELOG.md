@@ -1,3 +1,14 @@
+## 2.34.0 (2025-11-01)
+
+### Feat
+
+- **profiles**: add msu detection
+
+### Fix
+
+- **mla**: put mla credentials in a secret
+- **sync**: update sync_ids every time, rather than relying on database, in case recinded
+
 ## 2.33.0 (2025-10-30)
 
 ### Feat
