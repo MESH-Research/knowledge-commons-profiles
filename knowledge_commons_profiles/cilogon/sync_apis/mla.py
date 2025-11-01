@@ -488,11 +488,21 @@ class MLA(SyncClass):
                     adapted.meta.status == "success"
                     and adapted.data[0].total_num_results > 0
                 ):
-                    return adapted
+                    return {"MLA": adapted}
 
             except APIError:
                 continue
-        return {}
+        return {"MLA": None}
+
+    def get_sync_id(self, response):
+        """
+        Get a sync ID from the api response
+        :param response: the response from the API
+        """
+
+        if response:
+            return response.data[0].search_results[0].id
+        return None
 
     def search(self, email) -> SearchApiResponse | CommonErrorResponse | dict:
         """

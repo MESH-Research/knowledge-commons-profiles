@@ -8,12 +8,13 @@ import logging
 from django.conf import settings
 
 from knowledge_commons_profiles.cilogon.sync_apis import mla
+from knowledge_commons_profiles.cilogon.sync_apis import msu
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 from knowledge_commons_profiles.newprofile import models
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.newprofile.models import RoleStatus
 
-CLASS_LOOKUPS: dict[str, SyncClass] = {"MLA": mla.MLA()}
+CLASS_LOOKUPS: dict[str, SyncClass] = {"MLA": mla.MLA(), "MSU": msu.MSU()}
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +70,10 @@ class ExternalSync:
                     emails=email_list
                 )
 
-                if search_by_email.meta.status == "success":
-                    sync_id = search_by_email.data[0].search_results[0].id
+                sync_id = class_to_use.get_sync_id(search_by_email[class_name])
 
-                    # save the sync ID for future use
-                    sync_ids[class_name] = sync_id
-                else:
-                    # we can't find the user so move on
-                    continue
+                # save the sync ID for future use
+                sync_ids[class_name] = sync_id
 
                 msg = (
                     f"Syncing {class_name} for {sync_id} on "
@@ -86,8 +83,18 @@ class ExternalSync:
 
                 # so by this point, sync_id should be set, either by retrieval
                 # or by search on the MLA API
-                is_member_of[class_name] = class_to_use.is_member(sync_id)
-                in_membership_groups[class_name] = class_to_use.groups(sync_id)
+                if sync_id:
+                    is_member_of[class_name] = class_to_use.is_member(sync_id)
+                    in_membership_groups[class_name] = class_to_use.groups(
+                        sync_id
+                    )
+                else:
+                    is_member_of[class_name] = class_to_use.is_member(
+                        email_list
+                    )
+                    in_membership_groups[class_name] = class_to_use.groups(
+                        email_list
+                    )
 
                 # now update roles
                 roles = Role.objects.filter(

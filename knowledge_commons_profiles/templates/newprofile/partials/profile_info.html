@@ -63,6 +63,16 @@
     <a href="#" class="hide" id="mla" hx-swap-oob="true"></a>
 {% endif %}
 
+<!-- MLA -->
+{% if MSU is True %}
+  <a href="https://commons.msu.edu/members/{{ profile_info.profile.username }}" class="social-link" id="msu" hx-swap-oob="true">
+          <img src="{% static "img/MSU.png" %}" alt="MSU" class="social-icon"  />
+          <span>MSU</span>
+  </a>
+  {% else %}
+    <a href="#" class="hide" id="msu" hx-swap-oob="true"></a>
+{% endif %}
+
 <!-- Education -->
 {% if education and profile_info.profile.show_education %}
   <div class="content-card" id="education" hx-swap-oob="true">

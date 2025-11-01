@@ -73,3 +73,10 @@ class SyncClass(ABC):
         Get a user's groups
         :param user_id: the user ID
         """
+
+    @abstractmethod
+    def get_sync_id(self, response):
+        """
+        Get a sync ID from the api response
+        :param response: the response from the API
+        """

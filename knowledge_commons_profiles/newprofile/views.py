@@ -69,6 +69,11 @@ def profile_info(request, username):
             and context["profile_info"]["is_member_of"]["MLA"]
         )
 
+        context["MSU"] = (
+            "MSU" in context["profile_info"]["is_member_of"]
+            and context["profile_info"]["is_member_of"]["MSU"]
+        )
+
         return render(
             request, "newprofile/partials/profile_info.html", context
         )
