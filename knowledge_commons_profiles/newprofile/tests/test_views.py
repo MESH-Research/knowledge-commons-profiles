@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from unittest.mock import PropertyMock
 from unittest.mock import patch
 
-import django
+import django.db
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.test import Client
@@ -11,13 +11,23 @@ from django.test import RequestFactory
 from django.test import TestCase
 from django.test import override_settings
 
-from knowledge_commons_profiles.newprofile.views import blog_posts
-from knowledge_commons_profiles.newprofile.views import edit_profile
-from knowledge_commons_profiles.newprofile.views import mastodon_feed
-from knowledge_commons_profiles.newprofile.views import my_profile
-from knowledge_commons_profiles.newprofile.views import mysql_data
-from knowledge_commons_profiles.newprofile.views import profile_info
-from knowledge_commons_profiles.newprofile.views import works_deposits
+from knowledge_commons_profiles.newprofile.views.profile.htmx import blog_posts
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    mastodon_feed,
+)
+from knowledge_commons_profiles.newprofile.views.profile.htmx import mysql_data
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    profile_info,
+)
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    works_deposits,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    edit_profile,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    my_profile,
+)
 
 STATUS_CODE_500 = 500
 STATUS_CODE_302 = 302
@@ -51,8 +61,10 @@ class ProfileInfoTests(TestCase):
         self.mock_profile.external_sync_ids = "{}"
         self.mock_profile.is_member_of = '{"MLA": "True"}'
 
-    @patch("knowledge_commons_profiles.newprofile.views.ExternalSync.sync")
-    @patch("knowledge_commons_profiles.newprofile.views.API")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.htmx.ExternalSync.sync"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     def test_profile_info(self, mock_api, mock_sync):
         # Set up mock
         api_instance = MagicMock()
@@ -92,7 +104,7 @@ class WorksDepositsTests(django.test.TransactionTestCase):
             username="testuser", password="testpass"
         )
 
-    @patch("knowledge_commons_profiles.newprofile.views.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     async def test_works_deposits(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
@@ -140,7 +152,7 @@ class MastodonFeedTests(TestCase):
             username="testuser", password="testpass"
         )
 
-    @patch("knowledge_commons_profiles.newprofile.views.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     def test_mastodon_feed_with_mastodon(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
@@ -166,7 +178,7 @@ class MastodonFeedTests(TestCase):
         # Assert template was rendered with correct context
         self.assertEqual(response.status_code, 200)
 
-    @patch("knowledge_commons_profiles.newprofile.views.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     def test_mastodon_feed_without_mastodon(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
@@ -193,7 +205,9 @@ class MyProfileTests(TestCase):
         )
         self.client = Client()
 
-    @patch("knowledge_commons_profiles.newprofile.views.profile")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.profile"
+    )
     def test_my_profile_authenticated(self, mock_profile):
         # Set up mock
         mock_profile.return_value = "profile_response"
@@ -231,7 +245,9 @@ class EditProfileTests(TestCase):
         "knowledge_commons_profiles.newprofile.models.Profile.objects."
         "prefetch_related"
     )
-    @patch("knowledge_commons_profiles.newprofile.views.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.render"
+    )
     def test_edit_profile_get(self, mock_render, mock_prefetch):
         # Set up mock
         mock_queryset = MagicMock()
@@ -267,7 +283,8 @@ class EditProfileTests(TestCase):
 
         # Patch ProfileForm
         with patch(
-            "knowledge_commons_profiles.newprofile.views.ProfileForm"
+            "knowledge_commons_profiles.newprofile."
+            "views.profile.profile.ProfileForm"
         ) as mock_form_class:
             mock_form = MagicMock()
             mock_form_class.return_value = mock_form
@@ -294,7 +311,7 @@ class BlogPostsTests(TestCase):
             username="testuser", password="testpass"
         )
 
-    @patch("knowledge_commons_profiles.newprofile.views.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     def test_blog_posts_success(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
@@ -317,7 +334,7 @@ class BlogPostsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     @patch(
-        "knowledge_commons_profiles.newprofile.views.API",
+        "knowledge_commons_profiles.newprofile.views.profile.htmx.API",
         side_effect=django.db.utils.OperationalError,
     )
     def test_blog_posts_db_error(self, mock_api):
@@ -340,8 +357,8 @@ class MySQLDataTests(TestCase):
             username="testuser", password="testpass"
         )
 
-    @patch("knowledge_commons_profiles.newprofile.views.API")
-    @patch("knowledge_commons_profiles.newprofile.views.render")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.render")
     def test_mysql_data_success(self, mock_render, mock_api):
         # Set up mock
         mock_render = MagicMock()  # noqa: F841
@@ -379,7 +396,7 @@ class MySQLDataTests(TestCase):
             request, "testuser", use_wordpress=True, create=False
         )
 
-    @patch("knowledge_commons_profiles.newprofile.views.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     def test_mysql_data_unauthenticated(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
@@ -411,7 +428,7 @@ class MySQLDataTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     @patch(
-        "knowledge_commons_profiles.newprofile.views.API",
+        "knowledge_commons_profiles.newprofile.views.profile.htmx.API",
         side_effect=django.db.utils.OperationalError,
     )
     def test_mysql_data_db_error(self, mock_api):

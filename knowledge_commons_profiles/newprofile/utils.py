@@ -2,12 +2,17 @@
 Utility functions
 """
 
+import hashlib
 import json
 import logging
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.db import OperationalError
 
+from knowledge_commons_profiles.common.profiles_email import (
+    sanitize_email_for_dev,
+)
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpUser
 
@@ -157,3 +162,30 @@ def get_visibilities(works_object, hidden_works):
         )
 
     return visibility, visibility_works
+
+
+def get_profile_photo(profile):
+    """
+    Return the path to the user's profile image
+    :return:
+    """
+
+    # see if we have a local entry
+    profile_image = profile.profileimage_set.first()
+    if profile_image:
+        return profile_image.full
+
+    # Fall back to Gravatar
+    email = sanitize_email_for_dev(profile.email)
+
+    size = 150
+
+    # Encode the email to lowercase and then to bytes
+    email_encoded = email.lower().encode("utf-8")
+
+    # Generate the SHA256 hash of the email
+    email_hash = hashlib.sha256(email_encoded).hexdigest()
+
+    # Construct the URL with encoded query parameters
+    query_params = urlencode({"s": str(size)})
+    return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"

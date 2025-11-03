@@ -5,14 +5,14 @@ from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 
-from knowledge_commons_profiles.newprofile import views
+from knowledge_commons_profiles.newprofile.views.health import health
 
 urlpatterns = [
     path("select2/", include("django_select2.urls")),
     path(settings.ADMIN_URL, admin.site.urls),
     path(
         "health/",
-        views.health,
+        health,
         name="healthcheck",
     ),
     path("", include("knowledge_commons_profiles.cilogon.urls")),

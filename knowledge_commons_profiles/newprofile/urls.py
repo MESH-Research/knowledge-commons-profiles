@@ -18,81 +18,121 @@ Including another URLconf
 from django.urls import include
 from django.urls import path
 
-from knowledge_commons_profiles.newprofile import views
+from knowledge_commons_profiles.newprofile.views.members import (
+    people_by_username,
+)
+from knowledge_commons_profiles.newprofile.views.profile.htmx import blog_posts
+from knowledge_commons_profiles.newprofile.views.profile.htmx import cover_image
+from knowledge_commons_profiles.newprofile.views.profile.htmx import header_bar
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    mastodon_feed,
+)
+from knowledge_commons_profiles.newprofile.views.profile.htmx import mysql_data
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    profile_image,
+)
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    profile_info,
+)
+from knowledge_commons_profiles.newprofile.views.profile.htmx import (
+    works_deposits,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    edit_profile,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    my_profile,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import profile
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    save_profile_order,
+)
+from knowledge_commons_profiles.newprofile.views.profile.works import (
+    save_works_order,
+)
+from knowledge_commons_profiles.newprofile.views.profile.works import (
+    save_works_visibility,
+)
+from knowledge_commons_profiles.newprofile.views.profile.works import (
+    works_deposits_edit,
+)
+from knowledge_commons_profiles.newprofile.views.stats import stats_board
+from knowledge_commons_profiles.newprofile.views.stats import stats_download
+from knowledge_commons_profiles.newprofile.views.stats import stats_table
 
 urlpatterns = [
-    path("my-profile/", views.my_profile, name="my_profile"),
-    path("edit-profile/", views.edit_profile, name="edit_profile"),
-    path("members/<str:user>/", views.profile, name="profile"),
+    path("my-profile/", my_profile, name="my_profile"),
+    path("edit-profile/", edit_profile, name="edit_profile"),
+    path("members/<str:user>/", profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
     path("tinymce/", include("tinymce.urls")),
     path(
         "htmx/mastodon-feed/<str:username>/",
-        views.mastodon_feed,
+        mastodon_feed,
         name="mastodon_feed",
     ),
     path(
         "htmx/blog-posts/<str:username>/",
-        views.blog_posts,
+        blog_posts,
         name="blog_posts",
     ),
     path(
         "htmx/works-deposits/<str:username>/",
-        views.works_deposits,
+        works_deposits,
         name="works_deposits",
     ),
     path(
         "htmx/works-deposits/<str:username>/<str:style>/",
-        views.works_deposits,
+        works_deposits,
         name="works_deposits_style",
     ),
     path(
         "htmx/profile-info/<str:username>/",
-        views.profile_info,
+        profile_info,
         name="profile_info",
     ),
     path(
         "htmx/mysql-data/<str:username>/",
-        views.mysql_data,
+        mysql_data,
         name="mysql_data",
     ),
     path(
         "htmx/cover-image/<str:username>/",
-        views.cover_image,
+        cover_image,
         name="cover_image",
     ),
     path(
         "htmx/profile-image/<str:username>/",
-        views.profile_image,
+        profile_image,
         name="profile_image",
     ),
     path(
         "htmx/header-bar/",
-        views.header_bar,
+        header_bar,
         name="header_bar",
     ),
     path(
         "save-profile-order/<str:side>/",
-        views.save_profile_order,
+        save_profile_order,
         name="save_profile_order",
     ),
     path(
         "save-works-order/",
-        views.save_works_order,
+        save_works_order,
         name="save_works_order",
     ),
     path(
         "save-works-visibility/",
-        views.save_works_visibility,
+        save_works_visibility,
         name="save_works_visibility",
     ),
     path(
         "works-deposits-edit/",
-        views.works_deposits_edit,
+        works_deposits_edit,
         name="works_deposits_edit",
     ),
-    path("stats/", views.stats_board, name="stats"),
-    path("stats/download/", views.stats_download, name="get_stats_csv"),
-    path("stats/table/", views.stats_table, name="stats_table"),
-    # oAuth views
+    path("stats/", stats_board, name="stats"),
+    path("stats/download/", stats_download, name="get_stats_csv"),
+    path("stats/table/", stats_table, name="stats_table"),
+    path("members/", people_by_username, name="members"),
 ]
