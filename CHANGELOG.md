@@ -1,3 +1,14 @@
+## 2.35.0 (2025-11-03)
+
+### Feat
+
+- **members-list**: add a /members/ page and refactor newprofile views into separate modules
+- **sync**: add arlisna sync and fix mla sync
+
+### Fix
+
+- **linting**: add noqa tc003 to decimal import
+
 ## 2.34.0 (2025-11-01)
 
 ### Feat
