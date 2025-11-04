@@ -648,23 +648,27 @@ class WorksDeposits:
 
         source = pd.DataFrame.from_dict(results)
 
-        return (
-            alt.Chart(
-                source,
-                width="container",
-                height=300,
-            )
-            .mark_bar(size=25)
-            .encode(
-                x=alt.X("Year:T", scale=alt.Scale(padding=25)),
-                y="sum(Publications)",
-                color=alt.Color(
-                    "Work Type",
-                    scale=alt.Scale(
-                        domain=sorted(work_type_list),
-                        range=color_list_extended,
+        # ruff: noqa: BLE001
+        try:
+            return (
+                alt.Chart(
+                    source,
+                    width="container",
+                    height=300,
+                )
+                .mark_bar(size=25)
+                .encode(
+                    x=alt.X("Year:T", scale=alt.Scale(padding=25)),
+                    y="sum(Publications)",
+                    color=alt.Color(
+                        "Work Type",
+                        scale=alt.Scale(
+                            domain=sorted(work_type_list),
+                            range=color_list_extended,
+                        ),
+                        legend=alt.Legend(title="Work Type"),
                     ),
-                    legend=alt.Legend(title="Work Type"),
-                ),
-            )
-        ).to_json()
+                )
+            ).to_json()
+        except Exception:
+            return {}

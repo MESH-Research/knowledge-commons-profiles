@@ -167,7 +167,7 @@ class ProfileForm(forms.ModelForm):
             "show_works": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_cv": forms.CheckboxInput(
@@ -176,61 +176,61 @@ class ProfileForm(forms.ModelForm):
             "show_blog_posts": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_mastodon_feed": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_commons_groups": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_projects": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_publications": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_education": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_academic_interests": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_recent_activity": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "show_commons_sites": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.5em;"
+                    "margin-top:-4em;"
                 },
             ),
             "reference_style": forms.Select(
                 attrs={
                     "style": "display: inline-block; float:right; "
-                    "margin-top:-4.6em; margin-right: 2em;",
+                    "margin-top:-3.9em; margin-right: 2em;",
                     "hx-trigger": "change",
                     "hx-post": "/works-deposits-edit/",  # NOTE: this is a hack
                     "hx-swap": "none",

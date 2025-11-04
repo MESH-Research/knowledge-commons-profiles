@@ -380,7 +380,11 @@ class API:
                 self.profile.institutional_or_other_affiliation
             ),
             "profile": self.profile,
-            "is_member_of": json.loads(self.profile.is_member_of),
+            "is_member_of": (
+                json.loads(self.profile.is_member_of)
+                if self.profile.is_member_of is not None
+                else {}
+            ),
         }
 
         return self._profile_info
