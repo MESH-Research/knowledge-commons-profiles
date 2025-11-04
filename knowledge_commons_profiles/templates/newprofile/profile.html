@@ -78,7 +78,7 @@
           <div class="profile-actions">
             <a href="{% url "edit_profile" %}"
                class="action-btn primary">Edit</a>
-            <a href="#" class="action-btn">Change Profile Photo</a>
+            <a href="#" data-bs-toggle="modal" data-bs-target="#avatarModal" class="action-btn">Change Profile Photo</a>
             <a href="#" class="action-btn">Change Cover Image</a>
           </div>
         </div>
@@ -105,4 +105,5 @@
   </div>
 </div>
 
+  {% include "newprofile/partials/change_profile_photo.html" %}
 {% endblock content %}

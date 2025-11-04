@@ -316,46 +316,6 @@ TINYMCE_DEFAULT_CONFIG = {
 
 SELECT2_CACHE_BACKEND = "select2"
 
-SAML2_AUTH = {
-    # Metadata is required, choose either remote url or local file path
-    "METADATA_LOCAL_FILE_PATH": env(
-        "SAML2_METADATA_LOCAL_FILE_PATH",
-        default="/home/martin/Documents/Programming/MESH/newprofile/keys/metadata.xml",
-    ),
-    "KEY_FILE": env(
-        "SAML2_PRIVATE_KEY_FILE",
-        default="/home/martin/Documents/Programming/MESH/newprofile/keys/private.key",
-    ),
-    "CERT_FILE": env(
-        "SAML2_CERT_FILE",
-        default="/home/martin/Documents/Programming/MESH/newprofile/keys/public.crt",
-    ),
-    "DEBUG": env("SAML2_DEBUG", default=False),
-    "LOGGING": LOGGING,
-    # Optional settings below
-    "DEFAULT_NEXT_URL": "/admin",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
-    "CREATE_USER": True,  # Create a new Django user when a new user logs in. Defaults to True.
-    "NEW_USER_PROFILE": {
-        "USER_GROUPS": [],  # The default group name when a new user logs in
-        "ACTIVE_STATUS": True,  # The default active status for new users
-        "STAFF_STATUS": False,  # The staff status for new users
-        "SUPERUSER_STATUS": False,  # The superuser status for new users
-    },
-    "ATTRIBUTES_MAP": {
-        "email": "urn:oid:0.9.2342.19200300.100.1.3",
-        "username": "urn:oid:2.16.840.1.113730.3.1.3",
-        # "first_name": "user.first_name",
-        # "last_name": "user.last_name",
-        # "token": "Token",
-        # "groups": "Groups",
-    },
-    "ASSERTION_URL": env("SAML2_ASSERTION_URL", default="http://localhost"),
-    "ENTITY_ID": env("SAML2_SSO_ACS_URL", default="http://localhost/sso/acs/"),
-    "WANT_RESPONSE_SIGNED": False,
-    "WANT_ASSERTION_SIGNED": True,
-    "TOKEN_REQUIRED": False,
-}
-
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
 REDIRECT_FIELD_NAME = "redirect_to"
@@ -468,3 +428,6 @@ WORKS_UPDATE_ENDPOINTS = [
 WEBHOOK_TOKEN = env("WEBHOOK_TOKEN")
 
 THREAD = threading.local()
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024

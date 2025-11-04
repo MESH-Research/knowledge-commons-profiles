@@ -91,7 +91,7 @@
             <h3 class="stat-header" id="following_edit">&nbsp;</h3>
             <div class="profile-actions">
               <input type="submit" class="action-btn primary" value="Save" id="save"/>
-              <a href="#" class="action-btn">Change Profile Photo</a>
+              <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#avatarModal">Change Profile Photo</a>
               <a href="#" class="action-btn">Change Cover Image</a>
             </div>
           </div>
@@ -122,4 +122,7 @@
 <input type="hidden" value="{% url "save_profile_order" "right" %}" id="save-profile-right"/>
 <input type="hidden" value="{% url "save_works_order" %}" id="save-works-order"/>
 <input type="hidden" value="{% url "save_works_visibility" %}" id="save-works-visibility"/>
+
+{% include "newprofile/partials/change_profile_photo.html" %}
+
 {% endblock content %}

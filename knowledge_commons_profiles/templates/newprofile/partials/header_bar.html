@@ -3,7 +3,7 @@
   <!-- user logged in section -->
   <div class="user-info" id="user-info" hx-swap-oob="true">
       <span class="user-name" id="logged-in-user">{{ logged_in_profile.name }}</span>
-      <img src="{{ logged_in_profile_image }}" alt="{{ logged_in_profile.name }}" />
+    <a data-bs-toggle="modal" data-bs-target="#avatarModal"><img src="{{ logged_in_profile_image }}" alt="{{ logged_in_profile.name }}" /></a>
   </div>
 
   <li class="sidebar-item" hx-swap-oob="true" id="logout">

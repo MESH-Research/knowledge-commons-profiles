@@ -21,6 +21,9 @@ from django.urls import path
 from knowledge_commons_profiles.newprofile.views.members import (
     people_by_username,
 )
+from knowledge_commons_profiles.newprofile.views.profile.avatars import (
+    upload_avatar,
+)
 from knowledge_commons_profiles.newprofile.views.profile.htmx import blog_posts
 from knowledge_commons_profiles.newprofile.views.profile.htmx import cover_image
 from knowledge_commons_profiles.newprofile.views.profile.htmx import header_bar
@@ -63,6 +66,7 @@ from knowledge_commons_profiles.newprofile.views.stats import stats_table
 urlpatterns = [
     path("my-profile/", my_profile, name="my_profile"),
     path("edit-profile/", edit_profile, name="edit_profile"),
+    path("edit-profile/upload-avatar/", upload_avatar, name="upload_avatar"),
     path("members/<str:user>/", profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
     path("tinymce/", include("tinymce.urls")),

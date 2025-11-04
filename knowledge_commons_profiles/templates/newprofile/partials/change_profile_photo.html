@@ -1,0 +1,140 @@
+<script src="https://unpkg.com/cropperjs@2/dist/cropper.js"></script>
+<!-- Modal -->
+<div class="modal fade" id="avatarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form id="avatarForm" class="modal-content" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Upload & Crop Avatar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="file" id="avatarInput" name="image" accept="image/*" class="form-control mb-3" required/>
+
+        <!-- Cropper container where v2 injects its template -->
+        <div id="cropperContainer" class="border rounded cropper-image-div"></div>
+
+        <!-- Hidden fields populated from <cropper-selection> change event -->
+        <input type="hidden" name="x" id="cropX"/>
+        <input type="hidden" name="y" id="cropY"/>
+        <input type="hidden" name="width" id="cropW"/>
+        <input type="hidden" name="height" id="cropH"/>
+        <input type="hidden" name="rotate" id="cropRotate" value="0"/>
+        <input type="hidden" name="scaleX" id="cropScaleX" value="1"/>
+        <input type="hidden" name="scaleY" id="cropScaleY" value="1"/>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  let cropper = null;
+  let cropperSelection = null;
+  let cropperImage = null;
+
+  const inputEl = document.getElementById('avatarInput');
+  const containerSel = '#cropperContainer';
+
+  // Create/replace the image inside the Cropper when a file is chosen
+  inputEl.addEventListener('change', async (e) => {
+    const [file] = e.target.files || [];
+    if (!file) return;
+
+    // Clean up old instance
+    if (cropper) {
+      // Remove the previous container contents so a new template is built
+      document.querySelector(containerSel).innerHTML = '';
+      cropper = null;
+      cropperSelection = null;
+      cropperImage = null;
+    }
+
+    // Create a temporary <img> for v2 constructor (it will inject the default template into container)
+    const img = new Image();
+    img.alt = 'Avatar source';
+    img.src = URL.createObjectURL(file);
+
+    // Wait for the image to load to avoid zero-size issues
+    await img.decode().catch(() => { /* ignore */ });
+
+    const CropperCtor = (window.Cropper && window.Cropper.default) || window.Cropper;
+
+    cropper = new CropperCtor(img, { container: containerSel });
+
+    // Access the v2 elements (canvas/image/selection)
+    const canvasEl = cropper.getCropperCanvas();
+    cropperImage = cropper.getCropperImage();
+    cropperSelection = cropper.getCropperSelection();
+
+    // Constrain to square and allow user drag/resize (v2 properties)
+    if (cropperSelection) {
+      cropperSelection.movable = true;
+      cropperSelection.resizable = true;
+      cropperSelection.aspectRatio = 1;     // force 1:1 box
+      cropperSelection.initialCoverage = 0.6; // nice default
+      cropperSelection.outlined = true;
+
+      // Listen for selection changes and push into hidden inputs
+      // event.detail is a { x, y, width, height } object in canvas coords
+      cropperSelection.addEventListener('change', (event) => {
+        const sel = event.detail;
+        document.getElementById('cropX').value = sel.x;
+        document.getElementById('cropY').value = sel.y;
+        document.getElementById('cropW').value = sel.width;
+        document.getElementById('cropH').value = sel.height;
+      }, { passive: true });
+    }
+
+    // Optional: track image transforms (rotate/scale) if you expose UI for them
+    // These map to server-side rotate/scale
+    if (cropperImage) {
+      cropperImage.rotatable = true;
+      cropperImage.scalable = true;
+      cropperImage.addEventListener('transform', (event) => {
+        const { rotate = 0, scaleX = 1, scaleY = 1 } = event.detail;
+        document.getElementById('cropRotate').value = rotate;
+        document.getElementById('cropScaleX').value = scaleX;
+        document.getElementById('cropScaleY').value = scaleY;
+      }, { passive: true });
+    }
+
+    // Ensure the canvas area is visible height-wise
+    if (canvasEl) {
+      canvasEl.style.height = '360px';
+    }
+  });
+
+  // Submit via fetch; Django view returns { ok: True, url: "/media/..." }
+  document.getElementById('avatarForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sel = cropper.getCropperSelection();
+    const canvas = await sel.$toCanvas({ width: 150, height: 150 }); // v2 replacement for getCroppedCanvas
+    await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));     // get Blob
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+    const fd = new FormData();
+    fd.append('image', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
+
+    const resp = await fetch("{% url 'upload_avatar' %}", {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+    });
+    if (!resp.ok) {
+      alert("Upload failed."); return;
+    }
+    const data = await resp.json();
+    if (data.ok) {
+      const avatar = document.getElementById('currentAvatar');
+      if (avatar) avatar.src = data.url + "?t=" + Date.now();
+      const modalEl = document.getElementById('avatarModal');
+      bootstrap.Modal.getInstance(modalEl).hide();
+    }
+  });
+})();
+</script>

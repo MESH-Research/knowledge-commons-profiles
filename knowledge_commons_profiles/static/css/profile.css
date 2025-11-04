@@ -1250,3 +1250,8 @@ div {
             border-radius: 50px;
             padding: 5px;
         }
+
+        .cropper-image-div {
+          min-height:360px;
+          overflow:hidden;
+        }

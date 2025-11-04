@@ -246,3 +246,11 @@ class ProfileForm(forms.ModelForm):
                 attrs={"cols": 80, "rows": 20, "promotion": "false"}
             ),
         }
+
+
+class AvatarUploadForm(forms.Form):
+    """
+    Form for uploading an avatar image
+    """
+
+    image = forms.ImageField(required=True)

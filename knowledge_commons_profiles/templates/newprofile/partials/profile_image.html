@@ -1,6 +1,6 @@
 {% if username %}
   <!-- profile image -->
-  <a href="#">
+  <a href="#" data-bs-toggle="modal" {% if request.user.is_authenticated %}data-bs-target="#avatarModal" {% endif %}>
     <img src="{{ profile_image }}"
          alt="Profile image"
          class="profile-image" />

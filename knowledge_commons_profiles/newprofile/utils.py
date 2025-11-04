@@ -171,6 +171,12 @@ def get_profile_photo(profile):
     """
 
     # see if we have a local entry
+    try:
+        if profile.profile_image.startswith("/media/"):
+            return profile.profile_image
+    except AttributeError:
+        pass
+
     profile_image = profile.profileimage_set.first()
     if profile_image:
         return profile_image.full

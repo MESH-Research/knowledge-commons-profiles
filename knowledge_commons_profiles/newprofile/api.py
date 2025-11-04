@@ -2,7 +2,6 @@
 A class of API calls for user details
 """
 
-import hashlib
 import json
 import logging
 import re
@@ -10,7 +9,6 @@ from enum import Enum
 from functools import cached_property
 from operator import itemgetter
 from pathlib import Path
-from urllib.parse import urlencode
 
 import django
 import phpserialize
@@ -26,9 +24,6 @@ from django.db.models import When
 from django.http import Http404
 
 from knowledge_commons_profiles.__version__ import VERSION
-from knowledge_commons_profiles.common.profiles_email import (
-    sanitize_email_for_dev,
-)
 from knowledge_commons_profiles.newprofile import mastodon
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
@@ -697,26 +692,11 @@ class API:
         Return the path to the user's profile image
         :return:
         """
+        from knowledge_commons_profiles.newprofile.utils import (
+            get_profile_photo as gpp,
+        )
 
-        # see if we have a local entry
-        profile_image = self.profile.profileimage_set.first()
-        if profile_image:
-            return profile_image.full
-
-        # Fall back to Gravatar
-        email = sanitize_email_for_dev(self.profile.email)
-
-        size = 150
-
-        # Encode the email to lowercase and then to bytes
-        email_encoded = email.lower().encode("utf-8")
-
-        # Generate the SHA256 hash of the email
-        email_hash = hashlib.sha256(email_encoded).hexdigest()
-
-        # Construct the URL with encoded query parameters
-        query_params = urlencode({"s": str(size)})
-        return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
+        return gpp(self.profile)
 
     def get_memberships(self):
         """
