@@ -1,3 +1,13 @@
+## 2.36.0 (2025-11-04)
+
+### Feat
+
+- **profiles**: add ability to change user profile picture
+
+### Fix
+
+- **profile**: add various bugfixes to profile display
+
 ## 2.35.0 (2025-11-03)
 
 ### Feat
