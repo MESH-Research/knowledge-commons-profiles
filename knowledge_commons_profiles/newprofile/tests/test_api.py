@@ -1619,6 +1619,7 @@ class GetProfilePhotoTests(django.test.TestCase):
             new_callable=mock.PropertyMock,
         )
         self.mock_profile = self.profile_patcher.start()
+        self.mock_profile.profile_image = ""
 
         # Create a mock profile object
         self.profile_obj = mock.MagicMock()
@@ -1638,6 +1639,7 @@ class GetProfilePhotoTests(django.test.TestCase):
     def test_get_profile_photo_with_local_image(self):
         """Test when the user has a local profile image."""
         # Set up mock profile image
+        self.profile_obj.profile_image = ""
         mock_profile_image = mock.MagicMock()
         mock_profile_image.full = "/path/to/local/profile.jpg"
         self.mock_profileimage_set.first.return_value = mock_profile_image
@@ -1656,6 +1658,7 @@ class GetProfilePhotoTests(django.test.TestCase):
         to Gravatar."""
         # Set up mock to return no local profile image
         self.mock_profileimage_set.first.return_value = None
+        self.profile_obj.profile_image = ""
 
         # Set email for gravatar generation
         email = "test@example.com"
@@ -1685,6 +1688,7 @@ class GetProfilePhotoTests(django.test.TestCase):
 
         # Set mixed-case email for gravatar generation
         self.profile_obj.email = "Test@Example.COM"
+        self.profile_obj.profile_image = ""
         size = 150
 
         # Manually calculate the expected gravatar URL with lowercase email
@@ -1706,6 +1710,7 @@ class GetProfilePhotoTests(django.test.TestCase):
         """Test behavior when the profile has no email."""
         # Set up mock to return no local profile image
         self.mock_profileimage_set.first.return_value = None
+        self.profile_obj.profile_image = ""
 
         # Set empty email
         self.profile_obj.email = ""
@@ -1729,6 +1734,7 @@ class GetProfilePhotoTests(django.test.TestCase):
         """Test behavior when the profile has no email attribute."""
         # Set up mock to return no local profile image
         self.mock_profileimage_set.first.return_value = None
+        self.profile_obj.profile_image = ""
 
         # Remove email attribute
         delattr(self.profile_obj, "email")
