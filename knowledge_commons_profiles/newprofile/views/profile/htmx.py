@@ -49,6 +49,11 @@ def profile_info(request, username):
             and context["profile_info"]["is_member_of"]["MSU"]
         )
 
+        context["UP"] = (
+            "UP" in context["profile_info"]["is_member_of"]
+            and context["profile_info"]["is_member_of"]["UP"]
+        )
+
         return render(
             request, "newprofile/partials/profile_info.html", context
         )
@@ -72,6 +77,9 @@ def profile_info(request, username):
             "show_projects": False,
             "show_academic_interests": False,
             "MLA": False,
+            "UP": False,
+            "ARLISNA": False,
+            "MSU": False,
         }
         return render(
             request, "newprofile/partials/profile_info.html", context

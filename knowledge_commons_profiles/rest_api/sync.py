@@ -10,6 +10,7 @@ from django.conf import settings
 from knowledge_commons_profiles.cilogon.sync_apis import arlisna
 from knowledge_commons_profiles.cilogon.sync_apis import mla
 from knowledge_commons_profiles.cilogon.sync_apis import msu
+from knowledge_commons_profiles.cilogon.sync_apis import up
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 from knowledge_commons_profiles.newprofile import models
 from knowledge_commons_profiles.newprofile.models import Role
@@ -19,6 +20,7 @@ CLASS_LOOKUPS: dict[str, SyncClass] = {
     "MLA": mla.MLA(),
     "MSU": msu.MSU(),
     "ARLISNA": arlisna.ARLISNA(),
+    "UP": up.UP(),
 }
 
 logger = logging.getLogger(__name__)

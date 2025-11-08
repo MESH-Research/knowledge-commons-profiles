@@ -413,10 +413,18 @@ ARLISNA_API_BASE_URL = env(
     "ARLISNA_API_BASE_URL", default="https://www.arlisna.org/api/"
 )
 
+UP_API_TOKEN = env("UP_API_TOKEN", default="")
+UP_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
+UP_API_BASE_URL = env("UP_API_BASE_URL", default="https://www.up.org/api/")
+UP_CLIENT_ID = env("UP_CLIENT_ID", default="")
+UP_CLIENT_SECRET = env("UP_CLIENT_SECRET", default="")
+UP_REFRESH_TOKEN = env("UP_REFRESH_TOKEN", default="")
+
 EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("MLA", ["Modern Language Association", "MLA"]),
     ("MSU", ["Michigan State University", "MSU"]),
     ("ARLISNA", ["Art Libraries Society of North America", "ARLISNA"]),
+    ("UP", ["Association of American University Presses"]),
 ]
 
 LOGOUT_ENDPOINTS = []
