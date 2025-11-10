@@ -150,8 +150,11 @@ def forward_url(request):
                 if (
                     domain_to_check
                 ) in settings.ALLOWED_CILOGON_FORWARDING_DOMAINS:
-                    logger.info("Forwarding CILogon code to %s with "
-                                "state: %s", next_url, code)
+                    logger.info(
+                        "Forwarding CILogon code to %s with state: %s",
+                        next_url,
+                        code,
+                    )
                     return redirect(str(urlparse.urlunparse(url_parts)))
 
                 message = (
@@ -228,6 +231,8 @@ def find_user_and_login(request, sub_association):
 
     # log the user in
     login(request, user)
+
+    return user
 
 
 def token_expired(token, user):
