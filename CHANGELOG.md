@@ -1,3 +1,9 @@
+## 2.39.0 (2025-11-10)
+
+### Feat
+
+- **rest-api**: add emails field to rest response
+
 ## 2.38.0 (2025-11-10)
 
 ### Feat
