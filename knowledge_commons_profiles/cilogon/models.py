@@ -20,6 +20,8 @@ class SubAssociation(models.Model):
         verbose_name="Associated KC Profile",
     )
 
+    idp_name = models.TextField(verbose_name="IDP Name", blank=True, null=True)
+
     class Meta:
         verbose_name = "CI Logon Association"
         verbose_name_plural = "CI Logon Associations"

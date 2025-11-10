@@ -117,6 +117,10 @@ def callback(request):
 
     # do we have a sub->profile?
     if sub_association:
+        # update the sub with an idp_name
+        sub_association.idp_name = userinfo.get("idp_name", "")
+        sub_association.save()
+
         # yes, found a sub->profile, log them in
         find_user_and_login(request, sub_association)
 

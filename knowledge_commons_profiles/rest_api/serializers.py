@@ -293,7 +293,7 @@ class SubProfileSerializer(serializers.ModelSerializer):
         """
 
         model = SubAssociation
-        fields = ["sub", "profile"]
+        fields = ["sub", "profile", "idp_name"]
 
     def get_fields(self):
         fields = super().get_fields()
@@ -321,7 +321,7 @@ class SingleSubProfileSerializer(serializers.ModelSerializer):
         """
 
         model = SubAssociation
-        fields = ["sub", "profile"]
+        fields = ["sub", "profile", "idp_name"]
 
     def get_fields(self):
         fields = super().get_fields()
