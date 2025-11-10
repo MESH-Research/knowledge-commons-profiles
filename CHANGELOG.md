@@ -1,3 +1,9 @@
+## 2.41.0 (2025-11-10)
+
+### Feat
+
+- **cilogon**: harvest name of idp on login
+
 ## 2.40.0 (2025-11-10)
 
 ### Feat
