@@ -25,6 +25,7 @@ from knowledge_commons_profiles.rest_api.views import LogoutView
 from knowledge_commons_profiles.rest_api.views import ProfileDetailView
 from knowledge_commons_profiles.rest_api.views import ProfileListView
 from knowledge_commons_profiles.rest_api.views import SubListView
+from knowledge_commons_profiles.rest_api.views import SubSingleView
 from knowledge_commons_profiles.rest_api.views import TokenPutView
 
 SchemaView = get_schema_view(
@@ -63,6 +64,11 @@ urlpatterns = [
         r"api/v1/subs/",
         SubListView.as_view(),
         name="subs_list_view",
+    ),
+    path(
+        r"api/v1/subs/<str:username>/",
+        SubSingleView.as_view(),
+        name="single_subs_list_view",
     ),
     path(
         r"api/v1/tokens/",

@@ -44,6 +44,9 @@ from knowledge_commons_profiles.rest_api.serializers import (
     ProfileDetailSerializer,
 )
 from knowledge_commons_profiles.rest_api.serializers import ProfileSerializer
+from knowledge_commons_profiles.rest_api.serializers import (
+    SingleSubProfileSerializer,
+)
 from knowledge_commons_profiles.rest_api.serializers import SubProfileSerializer
 from knowledge_commons_profiles.rest_api.serializers import TokenSerializer
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
@@ -72,6 +75,30 @@ class SubListView(generics.ListAPIView):
             raise Http404
 
         return SubAssociation.objects.filter(sub=sub)
+
+
+class SubSingleView(generics.ListAPIView):
+    """
+    List subs for an account
+    """
+
+    authentication_classes = [StaticBearerAuthentication]
+    permission_classes = [HasStaticBearerToken]
+    queryset = SubAssociation.objects.select_related("profile")
+
+    lookup_field = "profile__username"
+    lookup_url_kwarg = "username"
+
+    serializer_class = SingleSubProfileSerializer
+    pagination_class = SubProfileCursorPagination
+
+    def get_queryset(self):
+        # select_related avoids an extra query when touching profile
+        return SubAssociation.objects.select_related("profile")
+
+    def get_object(self):
+        username = self.kwargs[self.lookup_url_kwarg]
+        return SubAssociation.objects.filter(profile__username=username)
 
 
 class ProfileListView(generics.ListAPIView):

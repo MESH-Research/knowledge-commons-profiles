@@ -304,6 +304,34 @@ class SubProfileSerializer(serializers.ModelSerializer):
         return fields
 
 
+class SingleSubProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for a single SubAssociation model
+    """
+
+    profile = ProfileDetailSerializer()
+    sub = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        """
+        Meta class
+        """
+
+        model = SubAssociation
+        fields = ["sub", "profile"]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        # rebuild 'profile' with the current context
+        fields["profile"] = ProfileDetailSerializer(
+            context=self.context, read_only=True
+        )
+        return fields
+
+
 class TokenSerializer(serializers.ModelSerializer):
     """
     Serializer for the TokenUserAgentAssociations model
