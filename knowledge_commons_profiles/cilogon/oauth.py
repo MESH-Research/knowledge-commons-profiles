@@ -232,8 +232,6 @@ def find_user_and_login(request, sub_association):
     # log the user in
     login(request, user)
 
-    return user
-
 
 def token_expired(token, user):
     """
