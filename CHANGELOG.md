@@ -1,3 +1,10 @@
+## 2.40.0 (2025-11-10)
+
+### Feat
+
+- **cilogon**: harvest email addresses from incoming userinfo
+- **rest-api**: add fetch of sub by username lookup
+
 ## 2.39.0 (2025-11-10)
 
 ### Feat
