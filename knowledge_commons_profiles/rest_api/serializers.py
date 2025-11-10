@@ -117,6 +117,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = [
             "username",
             "email",
+            "emails",
             "name",
             "first_name",
             "last_name",
@@ -173,6 +174,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
 
         if not logged_in:
             del self.fields["email"]
+            del self.fields["emails"]
 
         super().__init__(*args, **kwargs)
 
@@ -185,6 +187,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         fields = [
             "username",
             "email",
+            "emails",
             "name",
             "first_name",
             "last_name",
