@@ -1,3 +1,13 @@
+## 2.38.0 (2025-11-10)
+
+### Feat
+
+- **cilogon**: allow redirect to staging site
+
+### Fix
+
+- **comanage**: add recovery from error in comanage import
+
 ## 2.37.0 (2025-11-08)
 
 ### Feat
