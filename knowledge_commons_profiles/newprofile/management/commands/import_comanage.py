@@ -202,7 +202,8 @@ class COManageClient:
                 f"Non-JSON response from {url}: HTTP {resp.status_code} "
                 f"{resp.text[:500]}"
             )
-            raise CommandError(msg) from ve
+            logger.exception(msg, exc_info=ve)
+            return {}
         if resp.status_code >= HTTPStatus.BAD_REQUEST:
             msg = (
                 f"Error from {url}: HTTP {resp.status_code} "
