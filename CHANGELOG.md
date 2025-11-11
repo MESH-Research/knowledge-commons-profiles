@@ -1,3 +1,10 @@
+## 2.42.0 (2025-11-11)
+
+### Feat
+
+- **manage_login**: new facility to add and remove secondary email addresses
+- **login_management**: add system for users to manage their login accounts
+
 ## 2.41.0 (2025-11-10)
 
 ### Feat
