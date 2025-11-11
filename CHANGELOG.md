@@ -1,3 +1,17 @@
+## 2.43.0 (2025-11-11)
+
+### Feat
+
+- **manage_logins**: allow user to assign email as primary
+
+### Fix
+
+- **manage_logins**: fix remove email option
+
+### Refactor
+
+- **mla_sync**: refactor mla sync to handle edge cases
+
 ## 2.42.0 (2025-11-11)
 
 ### Feat
