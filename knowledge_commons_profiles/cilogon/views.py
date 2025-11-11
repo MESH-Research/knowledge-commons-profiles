@@ -264,6 +264,25 @@ def app_logout(
 @login_required
 def manage_login(request, user_name):
     if request.method == "POST":
+
+        # remove a secondary email
+        if request.POST.get("email"):
+            email = request.POST.get("email", "")
+            profile = Profile.objects.get(username=request.user.username)
+            profile.emails.remove(email)
+            profile.save()
+            return redirect(reverse("manage_login", args=[user_name]))
+
+        # add a new secondary email
+        if request.POST.get("new_email"):
+            email = request.POST.get("new_email", "")
+            profile = Profile.objects.get(username=request.user.username)
+            if email not in profile.emails:
+                profile.emails.append(email)
+                profile.save()
+            return redirect(reverse("manage_login", args=[user_name]))
+
+        # remove an IDP owned by the user
         idp_id = request.POST.get("idp_id")
         sas = SubAssociation.objects.filter(
             id=idp_id, profile__username=request.user.username

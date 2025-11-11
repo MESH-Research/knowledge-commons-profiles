@@ -48,9 +48,18 @@
         {% if profile.emails|length > 0 %}<p>Other emails:</p>{% endif %}
         <ul>
           {% for email in profile.emails %}
-            <li>{{ email }}</li>
+            <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="email" value="{{ profile.email }}" />
+              <li>{{ email }} (<input onclick="return confirm('Are you sure you want to remove the email \'{{ email }}\'? It may be re-added if you use it to login using a new login method.');" type="submit" value="remove" class="link-button" />)</li>
+            </form>
           {% endfor %}
         </ul>
+        <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          Add an email: <input type="email" name="new_email" id="email" placeholder="you@email.com" value="" required /> <input type="submit" value="Add" />
+        </form>
+        <br/>
         <h2>Your Account</h2>
         <p>You can request a copy of your personal data by contacting us at <a href="mailto:hello@hcommons.org">hello@hcommons.org</a>.</p>
         <p>If you wish to close your account, please contact us at <a href="mailto:hello@hcommons.org">hello@hcommons.org</a>.</p>
