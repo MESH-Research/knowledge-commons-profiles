@@ -266,8 +266,8 @@ def manage_login(request, user_name):
     if request.method == "POST":
 
         # remove a secondary email
-        if request.POST.get("email"):
-            email = request.POST.get("email", "")
+        if request.POST.get("email_remove"):
+            email = request.POST.get("email_remove", "")
             profile = Profile.objects.get(username=request.user.username)
             profile.emails.remove(email)
             profile.save()

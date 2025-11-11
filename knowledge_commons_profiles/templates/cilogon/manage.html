@@ -50,7 +50,7 @@
           {% for email in profile.emails %}
             <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <input type="hidden" name="email" value="{{ profile.email }}" />
+            <input type="hidden" name="email_remove" value="{{ email }}" />
               <li>{{ email }} (<input onclick="return confirm('Are you sure you want to remove the email \'{{ email }}\'? It may be re-added if you use it to login using a new login method.');" type="submit" value="remove" class="link-button" />)</li>
             </form>
           {% endfor %}
