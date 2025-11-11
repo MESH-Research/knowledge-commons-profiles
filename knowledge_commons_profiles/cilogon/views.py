@@ -6,6 +6,7 @@ Views for CILogon
 import json
 import logging
 from enum import IntEnum
+from typing import Any
 from uuid import uuid4
 
 import requests
@@ -263,23 +264,28 @@ def app_logout(
 
 @login_required
 def manage_login(request, user_name):
-    if request.method == "POST":
 
+    # first, get a profile object
+    try:
+        profile = Profile.objects.get(username=request.user.username)
+    except Profile.DoesNotExist:
+        profile = None
+
+    # handle POST options
+    if request.method == "POST":
         # remove a secondary email
         if request.POST.get("email_remove"):
-            email = request.POST.get("email_remove", "")
-            profile = Profile.objects.get(username=request.user.username)
-            profile.emails.remove(email)
-            profile.save()
+            _remove_secondary_email(profile, request)
             return redirect(reverse("manage_login", args=[user_name]))
 
         # add a new secondary email
         if request.POST.get("new_email"):
-            email = request.POST.get("new_email", "")
-            profile = Profile.objects.get(username=request.user.username)
-            if email not in profile.emails:
-                profile.emails.append(email)
-                profile.save()
+            _add_secondary_email(profile, request)
+            return redirect(reverse("manage_login", args=[user_name]))
+
+        # make an email primary
+        if request.POST.get("email_primary"):
+            _make_email_primary(profile, request)
             return redirect(reverse("manage_login", args=[user_name]))
 
         # remove an IDP owned by the user
@@ -296,13 +302,20 @@ def manage_login(request, user_name):
 
     # get orgs from is_member_of
 
-    # first, get a profile object
-    try:
-        profile = Profile.objects.get(username=request.user.username)
-    except Profile.DoesNotExist:
-        profile = None
+    # build the organizations, after syncing the profile
+    final_orgs = _build_organizations_list(profile)
 
-    # now build the organizations, after syncing the profile
+    # build a context
+    context = {
+        "login_methods": subs,
+        "memberships": final_orgs,
+        "profile": profile,
+    }
+
+    return render(request, "cilogon/manage.html", context)
+
+
+def _build_organizations_list(profile: Profile | None) -> list[Any]:
     orgs = {}
     if profile:
         # initiate an external sync
@@ -316,15 +329,37 @@ def manage_login(request, user_name):
         # if the user is a member of the org, add it to the list
         if is_member:
             final_orgs.append(org)
+    return final_orgs
 
-    # build a context
-    context = {
-        "login_methods": subs,
-        "memberships": final_orgs,
-        "profile": profile,
-    }
 
-    return render(request, "cilogon/manage.html", context)
+def _remove_secondary_email(profile: Profile | None, request):
+    email = request.POST.get("email_remove", "")
+    profile.emails.remove(email)
+    profile.save()
+
+
+def _add_secondary_email(profile: Profile | None, request):
+    email = request.POST.get("new_email", "")
+    if email not in profile.emails:
+        profile.emails.append(email)
+        profile.save()
+
+
+def _make_email_primary(profile: Profile | None, request):
+    email = request.POST.get("email_primary", "")
+
+    # first, add the existing primary to the secondaries
+    if profile.email not in profile.emails:
+        profile.emails.append(profile.email)
+        profile.emails = sorted(profile.emails)
+
+    # now add the old secondary as the primary email
+    profile.email = email
+
+    # remove the old primary from the secondaries
+    profile.emails.remove(email)
+
+    profile.save()
 
 
 @transaction.atomic

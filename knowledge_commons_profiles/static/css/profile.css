@@ -1271,3 +1271,7 @@ div {
          text-decoration: underline;
          cursor: pointer;
         }
+
+        .inline-form {
+          display: inline;
+        }

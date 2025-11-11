@@ -10,7 +10,7 @@
         <h1 class="h1-associate">Manage Login Methods</h1>
 
         <h2>Login Methods</h2>
-        <h3 class="h3-manage">You currently have the following login methods available. <em>Warning:</em> If you delete all of them, you will need to re-associate a new login method with your existing email:</h3>
+        <p>You currently have the following login methods available. <em>Warning:</em> If you delete all of them, you will need to re-associate a new login method with your existing email:</p>
         <div>
           <table class="table table-danger table-bordered">
             <thead>
@@ -35,24 +35,22 @@
         </div>
         <br/>
         <h2>Network Memberships</h2>
-        <h3 class="h3-manage">You have the following organizational memberships, set using the APIs of these societies/organizations:</h3>
+        <p>You have the following organizational memberships, set using the APIs of these societies/organizations:</p>
         <div>
           <ul>
             {% for membership in memberships %}
               <li>{{ membership }}</li>
             {% endfor %}
           </ul>
+        <p>If this list is not correct, please either add an email below that corresponds to a membership record at the societies, or send an email requesting help to <a href="mailto:hello@hcommons.org">the KC support desk</a></p>
         </div>
         <h2>Emails</h2>
-        <p>Primary email: {{ profile.email }}</p>
-        {% if profile.emails|length > 0 %}<p>Other emails:</p>{% endif %}
+        <p>To change your primary email, please add it below and then make it the primary address.</p>
+        <p><em>Primary email</em>: {{ profile.email }}</p>
+        {% if profile.emails|length > 0 %}<p><em>Secondary emails</em>:</p>{% endif %}
         <ul>
           {% for email in profile.emails %}
-            <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="hidden" name="email_remove" value="{{ email }}" />
-              <li>{{ email }} (<input onclick="return confirm('Are you sure you want to remove the email \'{{ email }}\'? It may be re-added if you use it to login using a new login method.');" type="submit" value="remove" class="link-button" />)</li>
-            </form>
+            <li><form class="inline-form" action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="email_remove" value="{{ email }}" />{{ email }} (<input onclick="return confirm('Are you sure you want to remove the email \'{{ email }}\'? It may be re-added if you use it to login using a new login method.');" type="submit" value="remove" class="link-button" />)</form> <form class="inline-form" action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="email_primary" value="{{ email }}" />(<input type="submit" value="make primary" class="link-button" />)</form></li>
           {% endfor %}
         </ul>
         <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
