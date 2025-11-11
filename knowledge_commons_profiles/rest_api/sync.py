@@ -5,7 +5,9 @@ Classes for syncing external data
 import json
 import logging
 
+import requests
 from django.conf import settings
+from requests import RequestException
 
 from knowledge_commons_profiles.cilogon.sync_apis import arlisna
 from knowledge_commons_profiles.cilogon.sync_apis import mla
@@ -123,5 +125,28 @@ class ExternalSync:
                 profile.is_member_of = json.dumps(is_member_of)
                 profile.in_membership_groups = json.dumps(in_membership_groups)
                 profile.save()
+
+                # send a ping to other services
+                for url in settings.WEBHOOK_URLS:
+                    try:
+                        requests.post(
+                            url,
+                            json={
+                                "token": settings.WEBHOOK_TOKEN,
+                                "username": profile.username,
+                            },
+                            timeout=8,  # 8 seconds to ping
+                        )
+                        msg = (
+                            f"Webhook request update sent to {url} for "
+                            f"user {profile.username}"
+                        )
+                        logger.info(msg)
+                    except RequestException:
+                        logger.exception(
+                            "Failed to send webhook to %s for user %s",
+                            url,
+                            profile.username,
+                        )
 
         logger.info("Roles are now %s", profile.is_member_of)

@@ -22,8 +22,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # cache.clear()
-        # user = Profile.objects.get(username="martin_eve")
-        user = Profile.objects.get(username="pierrelandry")
+        user = Profile.objects.get(username="martin_eve")
+        # user = Profile.objects.get(username="pierrelandry")
 
         mla = MLA()
 

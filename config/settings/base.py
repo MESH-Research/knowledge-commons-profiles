@@ -440,6 +440,7 @@ WORKS_UPDATE_ENDPOINTS = [
 ]
 
 WEBHOOK_TOKEN = env("WEBHOOK_TOKEN")
+WEBHOOK_URLS = env.list("WEBHOOK_URLS", default=[])
 
 THREAD = threading.local()
 

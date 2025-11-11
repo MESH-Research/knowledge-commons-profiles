@@ -20,6 +20,7 @@ import sentry_sdk
 from dateutil import parser
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from pydantic import BaseModel
 from pydantic import TypeAdapter
@@ -445,17 +446,13 @@ class MLA(SyncClass):
         ):
             # parse response.data[0].membership.expiring_date into a date
             # and check if it is in the future
-            try:
-                expiring_date = parser.parse(
-                    response.data[0].membership.expiring_date
-                ).astimezone(UTC)
-                today = datetime.now(tz=UTC)
-
-            except (ValueError, IndexError, AttributeError):
-                logger.exception("Error parsing date in MLA response")
+            expiring_raw = response.data[0].membership.expiring_date
+            if not expiring_raw:
                 return False
-            else:
-                return expiring_date > today
+            dt = parser.parse(expiring_raw)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt > datetime.now(tz=UTC)
 
         return False
 
@@ -512,7 +509,7 @@ class MLA(SyncClass):
         """
         try:
             validate_email(email)
-        except ValidationError as ve:
+        except DjangoValidationError as ve:
             message = f"Invalid email address: {email}"
             raise ValueError(message) from ve
 
