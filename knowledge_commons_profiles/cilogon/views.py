@@ -3,6 +3,7 @@ Views for CILogon
 
 """
 
+import json
 import logging
 from enum import IntEnum
 from uuid import uuid4
@@ -14,6 +15,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -257,6 +259,53 @@ def app_logout(
         return redirect("/")
 
     return None
+
+
+@login_required
+def manage_login(request, user_name):
+    if request.method == "POST":
+        idp_id = request.POST.get("idp_id")
+        sas = SubAssociation.objects.filter(
+            id=idp_id, profile__username=request.user.username
+        )
+        sas.delete()
+
+    # get the subs from the db
+    subs = SubAssociation.objects.filter(
+        profile__username=request.user.username
+    )
+
+    # get orgs from is_member_of
+
+    # first, get a profile object
+    try:
+        profile = Profile.objects.get(username=request.user.username)
+    except Profile.DoesNotExist:
+        profile = None
+
+    # now build the organizations, after syncing the profile
+    orgs = {}
+    if profile:
+        # initiate an external sync
+        ExternalSync.sync(profile=profile)
+
+        # parse the is_member_of field into JSON
+        orgs = json.loads(profile.is_member_of)
+
+    final_orgs = []
+    for org, is_member in orgs.items():
+        # if the user is a member of the org, add it to the list
+        if is_member:
+            final_orgs.append(org)
+
+    # build a context
+    context = {
+        "login_methods": subs,
+        "memberships": final_orgs,
+        "profile": profile,
+    }
+
+    return render(request, "cilogon/manage.html", context)
 
 
 @transaction.atomic

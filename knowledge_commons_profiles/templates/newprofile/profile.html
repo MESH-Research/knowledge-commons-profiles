@@ -83,6 +83,7 @@
                class="action-btn primary">Edit</a>
             <a href="#" data-bs-toggle="modal" data-bs-target="#avatarModal" class="action-btn">Change Profile Photo</a>
             <a href="#" class="action-btn">Change Cover Image</a>
+            <a href="{% url 'manage_login' user_name=request.user.username %}" class="action-btn">Manage Login Methods</a>
           </div>
         </div>
       </div>

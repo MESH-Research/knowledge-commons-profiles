@@ -93,6 +93,7 @@
               <input type="submit" class="action-btn primary" value="Save" id="save"/>
               <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#avatarModal">Change Profile Photo</a>
               <a href="#" class="action-btn">Change Cover Image</a>
+              <a href="{% url 'manage_login' user_name=request.user.username %}" class="action-btn">Manage Login Methods</a>
             </div>
           </div>
         </div>

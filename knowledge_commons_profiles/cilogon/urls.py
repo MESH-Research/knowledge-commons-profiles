@@ -28,6 +28,11 @@ urlpatterns = [
     path("register/", views.register, name="user_registration"),
     path("confirm/", views.confirm, name="confirm"),
     path(
+        "members/<str:user_name>/settings/",
+        views.manage_login,
+        name="manage_login",
+    ),
+    path(
         "activate/<int:verification_id>/<str:secret_key>/",
         views.activate,
         name="activate",

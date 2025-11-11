@@ -984,6 +984,14 @@ div {
             line-height: 1.5;
         }
 
+        .h3-manage {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            text-align: left;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
         .ol-associate {
             margin-bottom: 35px;
             padding-left: 0;

@@ -95,6 +95,7 @@ class API:
         self._works_deposits = None
         self._works_html = None
         self._works_types = None
+        self._wp_user_triggered = False
 
     @property
     def works_citation_style(self):
@@ -192,8 +193,17 @@ class API:
         """
         Get the WordPress user
         """
+        if self._wp_user_triggered:
+            return self._wp_user
+
         if self._wp_user is None:
-            self._wp_user = WpUser.objects.get(user_login=self.user)
+            try:
+                self._wp_user = WpUser.objects.get(user_login=self.user)
+            except WpUser.DoesNotExist:
+                self._wp_user_triggered = True
+                self._wp_user = None
+
+        self._wp_user_triggered = True
         return self._wp_user
 
     @cached_property
@@ -406,6 +416,9 @@ class API:
         if not self.use_wordpress:
             return []
 
+        if not self.wp_user:
+            return []
+
         cache_key = f"blog_post_list-{self.user}"
         cached_response = cache.get(cache_key, version=VERSION)
 
@@ -610,6 +623,9 @@ class API:
         Return a list of groups that the user is a member of
         :return:
         """
+        if not self.wp_user:
+            return []
+
         # default to [("public","Public")]
         if status_choices is None:
             status_choices = WpBpGroup.STATUS_CHOICES[:1]
@@ -770,6 +786,9 @@ class API:
         Return a list of user blogs
         :return:
         """
+        if not self.wp_user:
+            return []
+
         cache_key = f"user_blog_post_list-{self.user}"
         cached_response = cache.get(cache_key, version=VERSION)
 
@@ -821,6 +840,9 @@ class API:
         """
         Return a list of user activities
         """
+        if not self.wp_user:
+            return None
+
         cache_key = f"user_activities_list-{self.user}"
         cached_response = cache.get(cache_key, version=VERSION)
 
@@ -859,7 +881,7 @@ class API:
         """
         Return an HTML-formatted list of user notifications
         """
-        if not self.use_wordpress:
+        if not self.use_wordpress or not self.wp_user:
             return []
 
         # get all new notifications for this user
