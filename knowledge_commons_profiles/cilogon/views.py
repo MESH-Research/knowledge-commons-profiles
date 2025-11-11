@@ -300,8 +300,6 @@ def manage_login(request, user_name):
         profile__username=request.user.username
     )
 
-    # get orgs from is_member_of
-
     # build the organizations, after syncing the profile
     final_orgs = _build_organizations_list(profile)
 
