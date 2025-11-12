@@ -3,6 +3,7 @@ Utility functions
 """
 
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 
@@ -11,8 +12,9 @@ from django.conf import settings
 from nameparser import HumanName
 from rest_framework.status import HTTP_400_BAD_REQUEST
 
-from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import Profile
+
+logger = logging.getLogger(__name__)
 
 
 def build_metadata(authed, error=None):
@@ -101,22 +103,25 @@ def logout_all_endpoints_sync():
         return [future.result() for future in as_completed(future_to_endpoint)]
 
 
-def get_external_memberships(obj: Profile, logger, request):
+def get_external_memberships(obj: Profile, api_only=False):
     """
     Check if a user is a member of an external organisation
     """
-    if not obj.username or not request:
-        return []
+    if not obj or not obj.username:
+        return {}
 
     try:
-        api = API(request, obj.username, use_wordpress=False)
-
         # Handle case where is_member_of might be None or empty
-        member_data = api.profile.is_member_of
+        member_data = obj.is_member_of
         if not member_data:
-            return []
+            return {}
 
-        return json.loads(member_data)
+        member_json = json.loads(member_data)
+
+        if not api_only:
+            for role in obj.role_overrides:
+                member_json[role] = True
+
     except (json.JSONDecodeError, AttributeError, Exception) as e:
         message = (
             f"Failed to get external sync memberships "
@@ -124,4 +129,6 @@ def get_external_memberships(obj: Profile, logger, request):
         )
         if logger:
             logger.warning(message)
-        return []
+        return {}
+    else:
+        return member_json

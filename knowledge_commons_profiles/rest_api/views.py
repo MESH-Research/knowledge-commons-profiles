@@ -137,6 +137,7 @@ class ProfileDetailView(generics.RetrieveAPIView):
             instance = self.get_object()
             # update the instance's sync IDs
             ExternalSync.sync(profile=instance)
+
         except Http404:
             meta = build_metadata(
                 has_full_access, error=RESTError.FATAL_USER_NOT_FOUND

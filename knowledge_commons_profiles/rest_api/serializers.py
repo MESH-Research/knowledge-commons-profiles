@@ -203,9 +203,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         """
         Check if a user is a member of an external organisation
         """
-        return get_external_memberships(
-            obj, logger, self.context.get("request")
-        )
+        return get_external_memberships(obj)
 
     def get_external_group_sync(self, obj: Profile):
         """

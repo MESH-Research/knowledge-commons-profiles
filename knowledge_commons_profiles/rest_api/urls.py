@@ -76,12 +76,12 @@ urlpatterns = [
         name="tokens_put_view",
     ),
     path(
-        r"api/v1/users/",
+        r"api/v1/members/",
         ProfileListView.as_view(),
         name="profiles_list_view",
     ),
     path(
-        r"api/v1/users/<str:user_name>/",
+        r"api/v1/members/<str:user_name>/",
         ProfileDetailView.as_view(),
         name="profiles_detail_view",
     ),

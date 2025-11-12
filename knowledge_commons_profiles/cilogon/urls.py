@@ -36,6 +36,11 @@ urlpatterns = [
         name="manage_login",
     ),
     path(
+        "members/<str:user_name>/roles/",
+        views.manage_roles,
+        name="manage_roles",
+    ),
+    path(
         "activate/<int:verification_id>/<str:secret_key>/",
         views.activate,
         name="activate",

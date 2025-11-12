@@ -6,7 +6,6 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from knowledge_commons_profiles.newprofile.api import API
-from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +19,6 @@ def profile_info(request, username):
     try:
         api = API(request, username, use_wordpress=False, create=False)
 
-        # sync external memberships
-        ExternalSync.sync(profile=api.profile)
-
         context = {
             "profile_info": api.get_profile_info(),
             "academic_interests": api.get_academic_interests(),
@@ -34,25 +30,13 @@ def profile_info(request, username):
             "show_academic_interests": api.profile.show_academic_interests,
         }
 
-        context["ARLISNA"] = (
-            "ARLISNA" in context["profile_info"]["is_member_of"]
-            and context["profile_info"]["is_member_of"]["ARLISNA"]
-        )
+        orgs = api.profile.get_external_memberships()
 
-        context["MLA"] = (
-            "MLA" in context["profile_info"]["is_member_of"]
-            and context["profile_info"]["is_member_of"]["MLA"]
-        )
-
-        context["MSU"] = (
-            "MSU" in context["profile_info"]["is_member_of"]
-            and context["profile_info"]["is_member_of"]["MSU"]
-        )
-
-        context["UP"] = (
-            "UP" in context["profile_info"]["is_member_of"]
-            and context["profile_info"]["is_member_of"]["UP"]
-        )
+        for org in orgs.items():
+            context[org] = (
+                org in context["profile_info"]["is_member_of"]
+                and context["profile_info"]["is_member_of"][org]
+            )
 
         return render(
             request, "newprofile/partials/profile_info.html", context

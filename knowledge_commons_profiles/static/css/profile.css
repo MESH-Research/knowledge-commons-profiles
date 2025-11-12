@@ -1275,3 +1275,7 @@ div {
         .inline-form {
           display: inline;
         }
+
+         .table-provider {
+           width: 33%;
+         }

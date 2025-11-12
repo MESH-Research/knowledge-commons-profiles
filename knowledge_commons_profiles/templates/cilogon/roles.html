@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Manage Roles for {{ profile.username }}
+{% endblock title %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="h1-associate">Manage Roles for {{ profile.username }}</h1>
+        {% if msg %}<p><mark>{{ msg }}</mark></p>{% endif %}
+
+        <h2>Roles Returned from APIs</h2>
+        <p>These roles are returned from the API.</p>
+        <div>
+          <table class="table table-active table-bordered table-hover">
+            <thead>
+              <tr>
+                <th class="table-provider">Provider</th>
+                <th>Is Member (API Result)</th>
+              </tr>
+            </thead>
+            {% for role in memberships_api %}
+              <tr>
+                <td class="table-provider">{{ role }}</td>
+                <td>True</td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+        <br/>
+        <h2>Role Overrides</h2>
+        <p>Here you can set overrides for roles that are not returned from the API. These roles will take precedence over the API results.</p>
+        <div>
+          <table class="table table-active table-bordered table-hover">
+            <thead>
+              <tr>
+                <th class="table-provider">Provider</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            {% for role in memberships_manual %}
+              <tr>
+                <td class="table-provider">{{ role }}</td>
+                <td>
+                  <form action="{% url 'manage_roles' user_name=profile.username %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="role_to_delete" value="{{ role }}" />
+                    <input type="submit" value="Delete" onclick="return confirm('Are you sure you want to delete the role \'{{ role }}\'?');" />
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+           <form action="{% url 'manage_roles' user_name=profile.username %}" method="post" enctype="multipart/form-data">
+            <tr>
+                <td class="table-provider"><input type="text" name="role_to_add" value="" /></td>
+                <td>
+                    {% csrf_token %}
+                    <input type="submit" value="Add" />
+                </td>
+            </tr>
+           </form>
+          </table>
+        </div>
+        <br/>
+        <h2>Final Calculated Roles</h2>
+          <p>These are the final roles calculated by combining the API results and the overrides.</p>
+          <div>
+            <table class="table table-active table-bordered table-hover">
+              <thead>
+                <tr>
+                  <th class="table-provider">Provider</th>
+                  <th>Is Member (API and Overrides Combined)</th>
+                </tr>
+              </thead>
+              {% for role in memberships_applied %}
+                <tr>
+                  <td class="table-provider">{{ role }}</td>
+                  <td>True</td>
+                </tr>
+              {% endfor %}
+            </table>
+          </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

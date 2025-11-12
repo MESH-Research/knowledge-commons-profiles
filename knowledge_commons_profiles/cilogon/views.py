@@ -3,7 +3,6 @@ Views for CILogon
 
 """
 
-import json
 import logging
 from enum import IntEnum
 from typing import Any
@@ -14,6 +13,7 @@ import sentry_sdk
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -46,6 +46,7 @@ from knowledge_commons_profiles.common.profiles_email import (
 )
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
+from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +264,51 @@ def app_logout(
     return None
 
 
+@staff_member_required
+def manage_roles(request, user_name):
+
+    # first, get a profile object
+    try:
+        profile = Profile.objects.get(username=user_name)
+    except Profile.DoesNotExist:
+        profile = None
+
+    if request.method == "POST":
+        # remove an override
+        if role_to_delete := request.POST.get("role_to_delete"):
+            if role_to_delete in profile.role_overrides:
+                msg = f"Removed role {role_to_delete} from {profile.username}"
+                logger.info(msg)
+                profile.role_overrides.remove(role_to_delete)
+                profile.save()
+        if role_to_add := request.POST.get("role_to_add"):
+            if role_to_add not in profile.role_overrides:
+                msg = f"Added role {role_to_add} to {profile.username}"
+                logger.info(msg)
+                profile.role_overrides.append(role_to_add)
+                profile.role_overrides = sorted(profile.role_overrides)
+                profile.save()
+
+    # build the organizations, after syncing the profile
+    final_orgs_api = _build_organizations_list(profile=profile, api_only=True)
+    final_orgs = _build_organizations_list(profile=profile, api_only=False)
+    final_orgs_manual = [
+        final_org
+        for final_org in final_orgs
+        if final_org not in final_orgs_api
+    ]
+
+    # build a context
+    context = {
+        "memberships_api": final_orgs_api,  # memberships from APIs
+        "memberships_manual": final_orgs_manual,  # memberships added manually
+        "memberships_applied": final_orgs,  # all memberships as applied
+        "profile": profile,
+    }
+
+    return render(request, "cilogon/roles.html", context)
+
+
 @login_required
 def manage_login(request, user_name):
 
@@ -327,14 +373,14 @@ def manage_login(request, user_name):
     return render(request, "cilogon/manage.html", context)
 
 
-def _build_organizations_list(profile: Profile | None) -> list[Any]:
+def _build_organizations_list(
+    profile: Profile | None, api_only=False, request=None
+) -> list[Any]:
     orgs = {}
     if profile:
         # initiate an external sync
-        ExternalSync.sync(profile=profile)
-
-        # parse the is_member_of field into JSON
-        orgs = json.loads(profile.is_member_of)
+        orgs = get_external_memberships(obj=profile, api_only=api_only)
+        # orgs = ExternalSync.sync(profile=profile, api_only=api_only)
 
     final_orgs = []
     for org, is_member in orgs.items():

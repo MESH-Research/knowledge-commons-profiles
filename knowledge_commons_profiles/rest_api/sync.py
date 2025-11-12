@@ -34,7 +34,11 @@ class ExternalSync:
     """
 
     @staticmethod
-    def sync(profile: models.Profile, class_list: list[str] | None = None):
+    def sync(
+        profile: models.Profile,
+        class_list: list[str] | None = None,
+        send_webhook=True,
+    ):
         """
         Sync external data
         """
@@ -48,6 +52,13 @@ class ExternalSync:
         if not isinstance(class_list, list):
             class_list = [class_list]
 
+        try:
+            is_member_of = json.loads(
+                profile.is_member_of if profile.is_member_of else "{}"
+            )
+        except TypeError:
+            is_member_of = {}
+
         # ruff: noqa: B007
         for class_name, role_organization in class_list:
             class_to_use: SyncClass = CLASS_LOOKUPS[class_name]
@@ -57,10 +68,6 @@ class ExternalSync:
                 profile.external_sync_ids
                 if profile.external_sync_ids
                 else "{}"
-            )
-
-            is_member_of = json.loads(
-                profile.is_member_of if profile.is_member_of else "{}"
             )
 
             in_membership_groups = json.loads(
@@ -122,31 +129,35 @@ class ExternalSync:
 
             finally:
                 profile.external_sync_ids = json.dumps(sync_ids)
-                profile.is_member_of = json.dumps(is_member_of)
                 profile.in_membership_groups = json.dumps(in_membership_groups)
-                profile.save()
 
-                # send a ping to other services
-                for url in settings.WEBHOOK_URLS:
-                    try:
-                        requests.post(
-                            url,
-                            json={
-                                "token": settings.WEBHOOK_TOKEN,
-                                "username": profile.username,
-                            },
-                            timeout=8,  # 8 seconds to ping
-                        )
-                        msg = (
-                            f"Webhook request update sent to {url} for "
-                            f"user {profile.username}"
-                        )
-                        logger.info(msg)
-                    except RequestException:
-                        logger.exception(
-                            "Failed to send webhook to %s for user %s",
-                            url,
-                            profile.username,
-                        )
+        profile.is_member_of = json.dumps(is_member_of)
+        profile.save()
+
+        if send_webhook:
+            # send a ping to other services
+            for url in settings.WEBHOOK_URLS:
+                try:
+                    requests.post(
+                        url,
+                        json={
+                            "token": settings.WEBHOOK_TOKEN,
+                            "username": profile.username,
+                        },
+                        timeout=8,  # 8 seconds to ping
+                    )
+                    msg = (
+                        f"Webhook request update sent to {url} for "
+                        f"user {profile.username}"
+                    )
+                    logger.info(msg)
+                except (RequestException, TypeError):
+                    logger.exception(
+                        "Failed to send webhook to %s for user %s",
+                        url,
+                        profile.username,
+                    )
 
         logger.info("Roles are now %s", profile.is_member_of)
+
+        return is_member_of

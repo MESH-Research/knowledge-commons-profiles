@@ -487,6 +487,10 @@ class Profile(models.Model):
     is_member_of = models.TextField(blank=True, null=True)
     in_membership_groups = models.TextField(blank=True, null=True)
 
+    role_overrides = ArrayField(
+        models.CharField(max_length=254), default=list, blank=True
+    )
+
     def __str__(self):
         """
         Return a human-readable representation of the Profile model instance
@@ -496,6 +500,13 @@ class Profile(models.Model):
             str: The name of the profile.
         """
         return str(self.name)
+
+    def get_external_memberships(self, api_only=False):
+        from knowledge_commons_profiles.rest_api.utils import (
+            get_external_memberships as gem,
+        )
+
+        gem(obj=self, api_only=api_only)
 
 
 class AcademicInterest(models.Model):
