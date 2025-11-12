@@ -450,3 +450,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 VERIFICATION_LIMIT_HOURS = env.int(
     "VERIFICATION_LIMIT_HOURS", 48
 )  # hours before email verifications expires
+SYNC_HOURS = env.int(
+    "SYNC_HOURS", 24
+)  # hours before syncs are considered stale

@@ -490,6 +490,7 @@ class Profile(models.Model):
     role_overrides = ArrayField(
         models.CharField(max_length=254), default=list, blank=True
     )
+    last_sync = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         """

@@ -46,7 +46,6 @@ from knowledge_commons_profiles.common.profiles_email import (
 )
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
-from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
 logger = logging.getLogger(__name__)
 
@@ -379,8 +378,7 @@ def _build_organizations_list(
     orgs = {}
     if profile:
         # initiate an external sync
-        orgs = get_external_memberships(obj=profile, api_only=api_only)
-        # orgs = ExternalSync.sync(profile=profile, api_only=api_only)
+        orgs = ExternalSync.sync(profile=profile, cache=False)
 
     final_orgs = []
     for org, is_member in orgs.items():
