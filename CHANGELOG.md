@@ -1,3 +1,9 @@
+## 2.45.0 (2025-11-12)
+
+### Feat
+
+- **manage_logins**: add garbage collection on email verifications over 48hrs old
+
 ## 2.44.0 (2025-11-12)
 
 ### Feat
