@@ -19,6 +19,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -615,6 +616,14 @@ def associate_with_existing_profile(email, profile, request, userinfo):
 
     # delete any expired existing EmailVerification entries
     EmailVerification.garbage_collect()
+
+
+def user_updated(request):
+    """
+    A view that simulates the remote webhook for local testing purposes
+    :param request: the request
+    """
+    return JsonResponse({"status": "OK"}, status=200)
 
 
 def confirm(request):
