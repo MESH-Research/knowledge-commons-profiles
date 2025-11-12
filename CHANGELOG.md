@@ -1,3 +1,9 @@
+## 2.44.0 (2025-11-12)
+
+### Feat
+
+- **login_management**: add verification by email
+
 ## 2.43.0 (2025-11-11)
 
 ### Feat
