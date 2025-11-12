@@ -361,6 +361,8 @@ def new_email_verified(request, verification_id, secret_key):
     The activation view clicked by a user from email
     """
 
+    EmailVerification.garbage_collect()
+
     # get the verification and secret key or 404
     verify: EmailVerification = get_object_or_404(
         EmailVerification, secret_uuid=secret_key, id=verification_id
@@ -561,16 +563,17 @@ def association(request):
 
 def send_new_email_verify(email, profile, request):
     uuid = uuid4().hex
-    # delete any existing EmailVerification entries
-    EmailVerification.objects.filter(profile=profile).delete()
+
     # create a new EmailVerification entry
     email_verification = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=email,
     )
+
     # replace the email for testing purposes
     email = sanitize_email_for_dev(email)
+
     # send an email
     send_knowledge_commons_email(
         recipient_email=email,
@@ -582,19 +585,23 @@ def send_new_email_verify(email, profile, request):
         template_file="mail/add_new_email.html",
     )
 
+    # delete any expired existing EmailVerification entries
+    EmailVerification.garbage_collect()
+
 
 def associate_with_existing_profile(email, profile, request, userinfo):
     uuid = uuid4().hex
-    # delete any existing EmailVerification entries
-    EmailVerification.objects.filter(profile=profile).delete()
+
     # create a new EmailVerification entry
     email_verification = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=userinfo.get("sub", ""),
     )
+
     # replace the email for testing purposes
     email = sanitize_email_for_dev(email)
+
     # send an email
     send_knowledge_commons_email(
         recipient_email=email,
@@ -605,6 +612,9 @@ def associate_with_existing_profile(email, profile, request, userinfo):
         },
         template_file="mail/associate.html",
     )
+
+    # delete any expired existing EmailVerification entries
+    EmailVerification.garbage_collect()
 
 
 def confirm(request):
@@ -619,6 +629,8 @@ def activate(request, verification_id: int, secret_key: str):
     """
     The activation view clicked by a user from email
     """
+
+    EmailVerification.garbage_collect()
 
     # get the verification and secret key or 404
     verify: EmailVerification = get_object_or_404(

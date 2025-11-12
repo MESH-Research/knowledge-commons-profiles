@@ -1,8 +1,12 @@
 import datetime
+import logging
 
+from django.conf import settings
 from django.db import models
 
 from knowledge_commons_profiles.newprofile.models import Profile
+
+logger = logging.getLogger(__name__)
 
 
 class SubAssociation(models.Model):
@@ -69,3 +73,22 @@ class EmailVerification(models.Model):
 
     def __str__(self):
         return str(self.profile) + " (" + self.sub + ")"
+
+    @classmethod
+    def garbage_collect(cls):
+        """
+        Garbage collect this object if it is older than the configured limit
+        """
+        verifications = EmailVerification.objects.filter(
+            created_at__lt=datetime.datetime.now(tz=datetime.UTC)
+            - datetime.timedelta(hours=settings.VERIFICATION_LIMIT_HOURS)
+        )
+
+        count = verifications.count()
+
+        if count > 0:
+            msg = f"Garbage collected {count} email verifications"
+            logger.info(msg)
+
+            # delete the verifications
+            verifications.delete()
