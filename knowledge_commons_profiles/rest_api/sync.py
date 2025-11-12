@@ -49,20 +49,27 @@ class ExternalSync:
 
         # don't sync if we've already done this in the period specified
         # in settings.SYNC_HOURS
-        if (
-            cache
-            and profile.last_sync
-            and (
-                datetime.datetime.now(tz=datetime.UTC) - profile.last_sync
-            ).total_seconds()
-            < settings.SYNC_HOURS * 60 * 60
-        ):
+        try:
+            if (
+                cache
+                and profile.last_sync
+                and (
+                    datetime.datetime.now(tz=datetime.UTC) - profile.last_sync
+                ).total_seconds()
+                < settings.SYNC_HOURS * 60 * 60
+            ):
+                msg = (
+                    f"External data sync is already synced for "
+                    f"{profile.username}. Using cached version."
+                )
+                logger.info(msg)
+                return profile.is_member_of
+        except TypeError:
             msg = (
-                f"External data sync is already synced for "
-                f"{profile.username}. Using cached version."
+                f"Not caching external data sync for {profile.username} "
+                f"due to an error."
             )
             logger.info(msg)
-            return profile.is_member_of
 
         logger.info("Syncing external data for %s", profile.username)
 

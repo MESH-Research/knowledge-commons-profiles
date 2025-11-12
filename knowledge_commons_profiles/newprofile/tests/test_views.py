@@ -61,11 +61,8 @@ class ProfileInfoTests(TestCase):
         self.mock_profile.external_sync_ids = "{}"
         self.mock_profile.is_member_of = '{"MLA": "True"}'
 
-    @patch(
-        "knowledge_commons_profiles.newprofile.views.profile.htmx.ExternalSync.sync"
-    )
     @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
-    def test_profile_info(self, mock_api, mock_sync):
+    def test_profile_info(self, mock_api):
         # Set up mock
         api_instance = MagicMock()
         api_instance.profile = self.mock_profile
@@ -78,7 +75,6 @@ class ProfileInfoTests(TestCase):
         api_instance.get_about_user.return_value = "About user text"
 
         mock_api.return_value = api_instance
-        mock_sync.return_value = api_instance
 
         # Create request
         request = self.factory.get("/profile/testuser/profile_info")
