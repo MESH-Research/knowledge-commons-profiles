@@ -281,7 +281,9 @@ def manage_login(request, user_name):
         # add a new secondary email
         if request.POST.get("new_email"):
             _add_secondary_email(profile, request)
-            return redirect(reverse("manage_login", args=[user_name]))
+            return redirect(
+                reverse("manage_login", args=[user_name]) + "?new_email=true"
+            )
 
         # make an email primary
         if request.POST.get("email_primary"):
@@ -303,11 +305,22 @@ def manage_login(request, user_name):
     # build the organizations, after syncing the profile
     final_orgs = _build_organizations_list(profile)
 
+    # build an alert message if needed
+    msg = ""
+    new_email_msg = request.GET.get("new_email", "")
+
+    if new_email_msg:
+        msg = (
+            "We have sent an email to your new email address. "
+            "Please check your inbox and click the link to verify it."
+        )
+
     # build a context
     context = {
         "login_methods": subs,
         "memberships": final_orgs,
         "profile": profile,
+        "msg": msg,
     }
 
     return render(request, "cilogon/manage.html", context)
@@ -338,9 +351,34 @@ def _remove_secondary_email(profile: Profile | None, request):
 
 def _add_secondary_email(profile: Profile | None, request):
     email = request.POST.get("new_email", "")
-    if email not in profile.emails:
-        profile.emails.append(email)
-        profile.save()
+
+    # send a verification email
+    send_new_email_verify(email, profile, request)
+
+
+def new_email_verified(request, verification_id, secret_key):
+    """
+    The activation view clicked by a user from email
+    """
+
+    # get the verification and secret key or 404
+    verify: EmailVerification = get_object_or_404(
+        EmailVerification, secret_uuid=secret_key, id=verification_id
+    )
+
+    # add the email
+    if verify.sub not in verify.profile.emails:
+        verify.profile.emails.append(verify.sub)
+        verify.profile.emails = sorted(verify.profile.emails)
+        verify.profile.save()
+
+    # delete the verification as it's no longer needed
+    verify.delete()
+
+    # TODO: send a webhook sync request
+
+    # redirect the user to their Profile page
+    return redirect(reverse("manage_login", args=[request.user.username]))
 
 
 def _make_email_primary(profile: Profile | None, request):
@@ -357,6 +395,10 @@ def _make_email_primary(profile: Profile | None, request):
     # remove the old primary from the secondaries
     profile.emails.remove(email)
 
+    # sort the emails
+    profile.emails = sorted(profile.emails)
+
+    # save the object
     profile.save()
 
 
@@ -517,6 +559,30 @@ def association(request):
     return render(request, "cilogon/association.html", context)
 
 
+def send_new_email_verify(email, profile, request):
+    uuid = uuid4().hex
+    # delete any existing EmailVerification entries
+    EmailVerification.objects.filter(profile=profile).delete()
+    # create a new EmailVerification entry
+    email_verification = EmailVerification.objects.create(
+        secret_uuid=uuid,
+        profile=profile,
+        sub=email,
+    )
+    # replace the email for testing purposes
+    email = sanitize_email_for_dev(email)
+    # send an email
+    send_knowledge_commons_email(
+        recipient_email=email,
+        context_data={
+            "uuid": uuid,
+            "verification_id": email_verification.id,
+            "request": request,
+        },
+        template_file="mail/add_new_email.html",
+    )
+
+
 def associate_with_existing_profile(email, profile, request, userinfo):
     uuid = uuid4().hex
     # delete any existing EmailVerification entries
@@ -558,6 +624,8 @@ def activate(request, verification_id: int, secret_key: str):
     verify: EmailVerification = get_object_or_404(
         EmailVerification, secret_uuid=secret_key, id=verification_id
     )
+
+    # TODO: check that this hasn't expired if created_at is older than X
 
     # create a sub association
     SubAssociation.objects.create(
