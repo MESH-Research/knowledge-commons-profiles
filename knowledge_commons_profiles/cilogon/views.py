@@ -297,7 +297,6 @@ def manage_roles(request, user_name):
             )
             logger.info(msg)
             _remove_comanage_role(profile, comanage_to_delete)
-            return redirect(reverse("manage_login", args=[user_name]))
 
     # build the organizations, after syncing the profile
     final_orgs_api = _build_organizations_list(profile=profile, api_only=True)

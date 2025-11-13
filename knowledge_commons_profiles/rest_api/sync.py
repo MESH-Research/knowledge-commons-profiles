@@ -126,6 +126,14 @@ class ExternalSync:
         profile.last_sync = datetime.datetime.now(tz=datetime.UTC)
         profile.save()
 
+        ExternalSync._send_webhooks(profile, send_webhook)
+
+        logger.info("Roles are now %s", profile.is_member_of)
+
+        return is_member_of
+
+    @staticmethod
+    def _send_webhooks(profile: Profile, send_webhook):
         if send_webhook:
             # send a ping to other services
             for url in settings.WEBHOOK_URLS:
@@ -150,10 +158,6 @@ class ExternalSync:
                         profile.username,
                     )
 
-        logger.info("Roles are now %s", profile.is_member_of)
-
-        return is_member_of
-
     @staticmethod
     def _handle_comanage_roles(
         is_member_of: dict[Any, Any] | Any, profile: Profile
@@ -163,14 +167,16 @@ class ExternalSync:
         ):
             # names here correlate to the map in
             # humanities-commons/society-settings.php
-            if (
-                role.organization
-                and role.organization.lower() == "stemedplus"
-                and role.affiliation == "member"
-            ):
-                is_member_of["STEM"] = True
-            else:
-                is_member_of["STEM"] = False
+            # the mapping configuration is in the base settings file
+            for key, val in settings.KNOWN_SOCIETY_MAPPINGS.items():
+                if (
+                    role.organization
+                    and role.organization.lower() == key
+                    and role.affiliation == "member"
+                ):
+                    is_member_of[val] = True
+                else:
+                    is_member_of[val] = False
 
     # ruff: noqa: PLR0913
     @staticmethod

@@ -433,6 +433,8 @@ EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("UP", ["Association of American University Presses"]),
 ]
 
+KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+"}
+
 LOGOUT_ENDPOINTS = []
 
 WORKS_UPDATE_ENDPOINTS = [
