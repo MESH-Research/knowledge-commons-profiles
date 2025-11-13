@@ -42,7 +42,7 @@ class ExternalSync:
         class_list: list[str] | None = None,
         send_webhook=True,
         cache=True,
-    ):
+    ) -> dict[str, bool]:
         """
         Sync external data
         """
@@ -119,6 +119,9 @@ class ExternalSync:
                 profile.external_sync_ids = json.dumps(sync_ids)
                 profile.in_membership_groups = json.dumps(in_membership_groups)
 
+        # now iterate over roles for known organizations
+        ExternalSync._handle_comanage_roles(is_member_of, profile)
+
         profile.is_member_of = json.dumps(is_member_of)
         profile.last_sync = datetime.datetime.now(tz=datetime.UTC)
         profile.save()
@@ -150,6 +153,24 @@ class ExternalSync:
         logger.info("Roles are now %s", profile.is_member_of)
 
         return is_member_of
+
+    @staticmethod
+    def _handle_comanage_roles(
+        is_member_of: dict[Any, Any] | Any, profile: Profile
+    ):
+        for role in Role.objects.filter(
+            person__user__username=profile.username
+        ):
+            # names here correlate to the map in
+            # humanities-commons/society-settings.php
+            if (
+                role.organization
+                and role.organization.lower() == "stemedplus"
+                and role.affiliation == "member"
+            ):
+                is_member_of["STEM"] = True
+            else:
+                is_member_of["STEM"] = False
 
     # ruff: noqa: PLR0913
     @staticmethod

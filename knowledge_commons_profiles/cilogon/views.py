@@ -373,18 +373,29 @@ def manage_login(request, user_name):
 
 
 def _build_organizations_list(
-    profile: Profile | None, api_only=False, request=None
+    profile: Profile | None, api_only=False
 ) -> list[Any]:
     orgs = {}
     if profile:
         # initiate an external sync
         orgs = ExternalSync.sync(profile=profile, cache=False)
+    else:
+        return []
 
     final_orgs = []
     for org, is_member in orgs.items():
         # if the user is a member of the org, add it to the list
         if is_member:
             final_orgs.append(org)
+
+    if api_only:
+        return final_orgs
+
+    # add any manual memberships
+    for org in profile.role_overrides:
+        if org not in final_orgs:
+            final_orgs.append(org)
+
     return final_orgs
 
 
