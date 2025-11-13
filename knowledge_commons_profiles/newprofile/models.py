@@ -507,7 +507,7 @@ class Profile(models.Model):
             get_external_memberships as gem,
         )
 
-        gem(obj=self, api_only=api_only)
+        return gem(obj=self, api_only=api_only)
 
 
 class AcademicInterest(models.Model):
