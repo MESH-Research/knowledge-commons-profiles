@@ -32,11 +32,12 @@ def profile_info(request, username):
 
         orgs = api.profile.get_external_memberships()
 
-        for org in orgs.items():
-            context[org] = (
-                org in context["profile_info"]["is_member_of"]
-                and context["profile_info"]["is_member_of"][org]
-            )
+        for org, is_member in orgs.items():
+            if is_member:
+                context[org] = (
+                    org in context["profile_info"]["is_member_of"]
+                    and context["profile_info"]["is_member_of"][org]
+                )
 
         return render(
             request, "newprofile/partials/profile_info.html", context
