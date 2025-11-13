@@ -52,6 +52,10 @@
             <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
           </a>
 
+          {% if request.user.is_staff %}
+            <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a>
+          {% endif %}
+
           <a href="#" class="social-link" id="arlisna">
           </a>
 
@@ -64,9 +68,6 @@
           <a href="#" class="social-link" id="up">
           </a>
         </div>
-        {% if request.user.is_staff %}
-          <a href="{% url 'manage_roles' user_name=username %}" class="action-btn">Manage User Roles</a>
-        {% endif %}
 
         <div class="membership-badges" id="membership-badges"
              hx-get="{% url 'mysql_data' username=username %}"
