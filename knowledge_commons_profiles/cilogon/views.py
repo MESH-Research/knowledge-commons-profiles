@@ -45,6 +45,7 @@ from knowledge_commons_profiles.common.profiles_email import (
     send_knowledge_commons_email,
 )
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 logger = logging.getLogger(__name__)
@@ -288,6 +289,16 @@ def manage_roles(request, user_name):
                 profile.role_overrides = sorted(profile.role_overrides)
                 profile.save()
 
+        # remove a legacy Comanage role
+        if comanage_to_delete := request.POST.get("comanage_role_to_delete"):
+            msg = (
+                f"Removed Comanage role {comanage_to_delete}"
+                f" from {profile.username}"
+            )
+            logger.info(msg)
+            _remove_comanage_role(profile, comanage_to_delete)
+            return redirect(reverse("manage_login", args=[user_name]))
+
     # build the organizations, after syncing the profile
     final_orgs_api = _build_organizations_list(profile=profile, api_only=True)
     final_orgs = _build_organizations_list(profile=profile, api_only=False)
@@ -297,12 +308,15 @@ def manage_roles(request, user_name):
         if final_org not in final_orgs_api
     ]
 
+    co_manage_roles = Role.objects.filter(person__user=profile)
+
     # build a context
     context = {
         "memberships_api": final_orgs_api,  # memberships from APIs
         "memberships_manual": final_orgs_manual,  # memberships added manually
         "memberships_applied": final_orgs,  # all memberships as applied
         "profile": profile,
+        "co_manage_roles": co_manage_roles,
     }
 
     return render(request, "cilogon/roles.html", context)
@@ -336,7 +350,8 @@ def manage_login(request, user_name):
             _make_email_primary(profile, request)
             return redirect(reverse("manage_login", args=[user_name]))
 
-        # remove an IDP owned by the user
+        # remove an IDP owned by the user (default action on POST if not
+        # handled above)
         idp_id = request.POST.get("idp_id")
         sas = SubAssociation.objects.filter(
             id=idp_id, profile__username=request.user.username
@@ -370,6 +385,12 @@ def manage_login(request, user_name):
     }
 
     return render(request, "cilogon/manage.html", context)
+
+
+def _remove_comanage_role(profile: Profile, comanage_role_id):
+    role = Role.objects.filter(id=comanage_role_id).first()
+    if role:
+        role.delete()
 
 
 def _build_organizations_list(
