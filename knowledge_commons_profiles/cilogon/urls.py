@@ -50,4 +50,5 @@ urlpatterns = [
         views.new_email_verified,
         name="new_email",
     ),
+    path("sah/upload-csv/", views.upload_csv_view, name="sah_upload_csv"),
 ]

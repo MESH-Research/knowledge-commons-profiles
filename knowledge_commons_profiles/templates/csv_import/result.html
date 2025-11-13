@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load csv_extras %}
+
+{% block title %}Upload SAH CSV{% endblock title %}
+
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1>CSV Import Summary</h1>
+
+        <section>
+          <h2>Overview</h2>
+          <ul>
+            <li>Total rows processed: {{ total_rows }}</li>
+            <li>Total errors: {{ error_count }}</li>
+          </ul>
+        </section>
+
+        {% if headers and preview_rows %}
+          <section>
+            <h2>Processing Results</h2>
+            <ul>
+              {% for row in output %}
+                <li>{{ row }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% else %}
+          <p>No rows found in the CSV.</p>
+        {% endif %}
+
+        <p><a href="{% url 'sah_upload_csv' %}">Upload another file</a></p>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

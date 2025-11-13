@@ -1,100 +1,157 @@
-# knowledge-commons-profiles
-
-The profiles system for Knowledge Commons
+# Knowledge Commons Profiles & Identity Management
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) ![Python](https://img.shields.io/badge/python-v3.7+-blue.svg) [![Code style: djlint](https://img.shields.io/badge/html%20style-djlint-blue.svg)](https://www.djlint.com)
 ![Django](https://img.shields.io/badge/django-3.2+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-![Last Commit](https://img.shields.io/github/last-commit/MESH-Research/knowledge-commons-profiles) ![coverage](https://img.shields.io/endpoint?style=flat-square&url=https://gist.githubusercontent.com/MartinPaulEve/0ed9af78da10972471ef6bf61524ba5e/raw/knowledge-commons-profiles-lcov-coverage.json)
-
-License: [MIT](LICENSE)
-
-**This project is a work in progress and not complete.**
-
-This project provides API endpoints and HTML templated responses to retrieve detailed information about users in our system.
-
-## Features
-
-- Retrieves comprehensive user information including:
-  - Personal details (name, title, affiliation)
-  - Academic background and interests
-  - Publications and projects
-  - Social media handles and website URLs
-  - Commons activity and memberships
-  - And more...
-
-## Settings
-
-Moved to [settings](https://cookiecutter-django.readthedocs.io/en/latest/1-getting-started/settings.html).
-
-## Initial Setup
-
-There are a number of initial setup operations that need to be performed to get initial profile data into the system from the main WordPress application.
-
-First, use the management command import_from_sql with the -file option to import a MySQL dump of the main HCommons/KCommons WordPress database:
-
-    $ python manage.py import_from_sql -file /path/to/hcommons.sql
-
-alternatively, you can provide an S3 URL:
-
-    $ python manage.py import_from_sql -file s3://bucket/path/to/hcommons.sql
-
-Second, you need to import the cover images. These are found inside the "knowledge-commons-wordpress/site/web/app/uploads/buddypress/members" directory. You need a minimum structure, on disk, of "buddypress/members" for this to work. The command is:
-
-    $ python manage.py import_cover_images /path/to/buddypress/
-
-Third, you need to import profile images. These are found inside the "knowledge-commons-wordpress/site/web/app/uploads/avatars" directory. You need a minimum structure, on disk, of "uploads/avatars" for this to work. The command is:
-
-    $ python manage.py import_profile_images /path/to/uploads
-
-## Basic Commands
-
-### Setting Up Your Users
-
-- To create a **superuser account**, use this command:
-
-      $ python manage.py createsuperuser
 
 
-### Type checks
+The central user profiles and identity management system for the Knowledge Commons platform, providing secure authentication, user profiles, and organizational role management.
 
-Running type checks with mypy:
+## Overview
 
-    $ mypy knowledge_commons_profiles
+Knowledge Commons Profiles serves as both the user profile management system and the Identity Management Stack (IDMS) for the Knowledge Commons ecosystem. Built on Django, it provides:
 
-### Test coverage
+- **Secure Authentication**: Leveraging CILogon for secure Single Sign-On (SSO) across the Knowledge Commons platform
+- **Unified User Profiles**: Centralized user information and preferences
+- **Role Management**: Comprehensive system for managing organizational memberships and roles
+- **API**: RESTful endpoints for integration with other services
 
-To run the tests, check your test coverage, and generate an HTML coverage report:
+## Key Features
 
-    $ coverage run -m pytest
-    $ coverage html
-    $ open htmlcov/index.html
+### Authentication & Security
+- CILogon-based SSO integration
+- Multi-factor authentication support
+- OAuth 2.0 and OpenID Connect compliant
+- Secure session management
 
-#### Running tests with pytest
+### User Profiles
+- Customizable public profiles
+- Academic and professional information
+- Social media integration
+- Privacy controls
 
-    $ pytest
+### Identity Management
+- Centralized user directory
+- Role-based access control
+- Organization and group management
+- Audit logging
 
-### Live reloading and Sass CSS compilation
+### API Endpoints
+- User management
+- Authentication flows
+- Profile data access
+- Role and permission management
 
-Moved to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/2-local-development/developing-locally.html#using-webpack-or-gulp).
+## Getting Started
 
-### Sentry
+### Prerequisites
 
-Sentry is an error logging aggregator service. You can sign up for a free account at <https://sentry.io/signup/?code=cookiecutter> or download and host it yourself.
-The system is set up with reasonable defaults, including 404 logging and integration with the WSGI application.
+- Python 3.7+
+- PostgreSQL 12+
+- Redis
+- Docker (for containerized deployment)
 
-You must set the DSN url in production.
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/MESH-Research/knowledge-commons-profiles.git
+   cd knowledge-commons-profiles
+   ```
+
+2. Set up a virtual environment and install dependencies:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements/local.txt
+   ```
+
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+
+5. Start the development server:
+   ```bash
+   python manage.py runserver
+   ```
+
+## Development
+
+### Code Style
+
+This project uses:
+- [Ruff](https://github.com/charliermarsh/ruff) for Python linting
+- [djLint](https://www.djlint.com/) for HTML template linting
+- [Pre-commit](https://pre-commit.com/) for git hooks
+
+Set up pre-commit hooks:
+```bash
+pre-commit install
+```
+
+### Testing
+
+Run the test suite:
+```bash
+pytest
+```
+
+### Documentation
+
+Build documentation locally:
+```bash
+cd docs
+make html
+```
 
 ## Deployment
 
-The following details how to deploy this application.
+### Production
 
-### Docker
+The application is designed to be deployed using Docker Compose:
 
-See detailed [cookiecutter-django Docker documentation](https://cookiecutter-django.readthedocs.io/en/latest/3-deployment/deployment-with-docker.html).
+```bash
+docker-compose -f production.yml up -d
+```
+
+### Environment Variables
+
+Key environment variables:
+
+- `DJANGO_SECRET_KEY`: Required for production
+- `DJANGO_ALLOWED_HOSTS`: Comma-separated list of allowed hosts
+- `DATABASE_URL`: Database connection string
+- `REDIS_URL`: Redis connection URL
+- `CILOGON_CLIENT_ID`: CILogon OAuth client ID
+- `CILOGON_CLIENT_SECRET`: CILogon OAuth client secret
+
+## API Documentation
+
+API documentation is available at `/api/docs/` when running the development server.
 
 ## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, please open an issue in the [issue tracker](https://github.com/MESH-Research/knowledge-commons-profiles/issues).
+
+## Acknowledgments
+
+- Built with [Cookiecutter Django](https://github.com/cookiecutter/cookiecutter-django/)
+- Uses [CILogon](https://www.cilogon.org/) for secure authentication
+- Inspired by the needs of the academic community

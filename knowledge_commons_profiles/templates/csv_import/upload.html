@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Upload SAH CSV{% endblock title %}
+
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1>Upload CSV to Import SAH</h1>
+
+        {% if form.csv_file.help_text %}
+          <small>{{ form.csv_file.help_text }}</small>
+        {% endif %}
+
+        <div>
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {{ form.csv_file.label_tag }}
+            {{ form.csv_file }}
+            {{ form.csv_file.errors }}
+            <button type="submit">Upload</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

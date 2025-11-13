@@ -3,6 +3,8 @@ Views for CILogon
 
 """
 
+import csv
+import io
 import logging
 from enum import IntEnum
 from typing import Any
@@ -24,7 +26,9 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 
+from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
@@ -737,3 +741,90 @@ def activate(request, verification_id: int, secret_key: str):
 
     # redirect the user to their Profile page
     return redirect(reverse("my_profile"))
+
+
+@require_http_methods(["GET", "POST"])
+@transaction.atomic
+@staff_member_required
+def upload_csv_view(request):
+    """
+    Handles CSV upload, processes it in-memory with csv.DictReader,
+    and renders a summary page.
+    """
+    society = "SAH"
+
+    if request.method == "POST":
+        form = UploadCSVForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = form.cleaned_data["csv_file"]
+
+            # Read and decode the file into text
+            # utf-8-sig handles BOM if present
+            decoded = csv_file.read().decode("utf-8-sig")
+            io_string = io.StringIO(decoded)
+
+            reader = csv.DictReader(io_string)
+
+            # first, iterate over all users with SAH in role_overrides
+            users = Profile.objects.filter(role_overrides__contains=[society])
+
+            output = []
+
+            # temporarily remove flag from all users
+            for user in users:
+                user.role_overrides.remove(society)
+                user.save()
+
+                msg = f"Removed {society} from {user.username}"
+                output.append(msg)
+                logger.info(msg)
+
+            processed_rows: list[dict[str, Any]] = []
+            errors: list[dict[str, Any]] = []
+
+            # now re-add the flag if in the spreadsheet
+            # ruff: noqa: BLE001
+            for _, row in enumerate(reader, start=2):  # line 1 is header
+
+                email = row.get("Email", None)
+
+                if email:
+                    try:
+                        user = Profile.objects.get(email=email)
+                    except Profile.DoesNotExist:
+                        user = Profile.objects.filter(
+                            emails__contains=[email]
+                        ).first()
+
+                        if not user:
+                            msg = f"Profile for {email} does not exist"
+                            output.append(msg)
+                            logger.info(msg)
+                            errors.append({"error": msg})
+                            continue
+
+                    # if here, user should be set
+                    user.role_overrides.append(society)
+                    user.save()
+
+                    msg = f"Added {society} to {user.username}"
+                    output.append(msg)
+                    logger.info(msg)
+
+                processed_rows.append(row)
+
+            headers = reader.fieldnames or []
+
+            context = {
+                "headers": headers,
+                "preview_rows": processed_rows[:20],  # show first 20
+                "total_rows": len(processed_rows),
+                "error_count": len(errors),
+                "errors": errors[:20],  # preview first 20 errors
+                "output": output,
+            }
+            return render(request, "csv_import/result.html", context)
+    else:
+        form = UploadCSVForm()
+
+    return render(request, "csv_import/upload.html", {"form": form})
