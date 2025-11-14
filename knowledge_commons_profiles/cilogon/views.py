@@ -20,7 +20,9 @@ from django.contrib.auth import login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.handlers.wsgi import WSGIRequest
 from django.db import transaction
+from django.http import Http404
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
@@ -371,6 +373,12 @@ def manage_login(request, username):
     # build the organizations, after syncing the profile
     final_orgs = _build_organizations_list(profile)
 
+    # determine the self-service networks that the user is not a member of
+    open_networks = settings.OPEN_REGISTRATION_NETWORKS
+    open_networks_user_not_enrolled = [
+        network for network in open_networks if network[0] not in final_orgs
+    ]
+
     # build an alert message if needed
     msg = ""
     new_email_msg = request.GET.get("new_email", "")
@@ -387,9 +395,67 @@ def manage_login(request, username):
         "memberships": final_orgs,
         "profile": profile,
         "msg": msg,
+        "networks": open_networks_user_not_enrolled,
+        "open_networks": [open_network[0] for open_network in open_networks],
     }
 
     return render(request, "cilogon/manage.html", context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def self_join_network(request, username, network):
+    # check the network allows users to subscribe
+    profile, username = (
+        get_profile_and_username_and_check_open_network_security(
+            network, request, username
+        )
+    )
+
+    # add the network to the profile
+    profile.role_overrides.append(network)
+    profile.save()
+
+    return redirect(reverse("manage_login", args=[username]))
+
+
+def get_profile_and_username_and_check_open_network_security(
+    network, request: WSGIRequest | Any, username: str | Any
+) -> tuple[Profile, str]:
+    if not any(
+        open_network[0] == network
+        for open_network in settings.OPEN_REGISTRATION_NETWORKS
+    ):
+        raise Http404
+
+    # get a profile object
+    if not request.user.is_staff:
+        username = request.user.username
+
+    try:
+        profile = Profile.objects.get(username=username)
+    except Profile.DoesNotExist:
+        profile = None
+
+    if not profile:
+        raise Http404
+    return profile, username
+
+
+@login_required
+@require_http_methods(["POST"])
+def self_leave_network(request, username, network):
+    profile, username = (
+        get_profile_and_username_and_check_open_network_security(
+            network, request, username
+        )
+    )
+
+    if request.POST.get("membership_to_leave"):
+        profile.role_overrides.remove(network)
+        profile.save()
+
+    return redirect(reverse("manage_login", args=[username]))
 
 
 def _remove_comanage_role(profile: Profile, comanage_role_id):

@@ -65,7 +65,7 @@
           </a>
 
           {% if request.user.is_staff %}
-            <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a>
+            <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a> <a href="{% url 'manage_login' username=username %}" class="social-link action-btn">Manage User Settings</a>
           {% endif %}
         </div>
 

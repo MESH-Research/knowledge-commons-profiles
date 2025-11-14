@@ -40,14 +40,14 @@
         <div>
           <ul>
             {% for membership in memberships %}
-              <li>{{ membership }}</li>
+              <li>{{ membership }} {% if membership in open_networks %} <form class="inline-form" action="{% url 'self_leave_network' username=profile.username network=membership %}" method="post" enctype="multipart/form-data">{% csrf_token %}(<input onclick="return confirm('Are you sure you want to leave the network \'{{ membership }}\'?');" type="submit" value="leave" class="link-button" /><input type="hidden" value="{{ membership }}" id="membership_to_leave" name="membership_to_leave" />)</form>{% endif %}</li>
             {% endfor %}
           </ul>
         <p>If this list is not correct, please either add an email below that corresponds to a membership record at the societies, or send an email requesting help to <a href="mailto:hello@hcommons.org">the KC support desk</a>.</p>
-        <p>Some networks have open registration on the Commons. Please click on any of the below to join a network:</p>
+        {% if networks|length > 0 %}<p>Some networks have open registration on the Commons. Please click on any of the below to join a network:</p>{% endif %}
         <ul>
           {% for network in networks %}
-            <li><a href="{% url 'self_join_network' network.0 %}">{{ network.0 }} ({{ network.1 }})</a></li>
+            <li><form class="inline-form" action="{% url 'self_join_network' username=profile.username network=network.0 %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="submit" value="{{ network.0 }} ({{ network.1 }})" class="link-button" /></form></li>
           {% endfor %}
         </ul>
         </div>

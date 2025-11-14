@@ -441,6 +441,7 @@ OPEN_REGISTRATION_NETWORKS = env(
             "Humanities, Arts, Science, and Technology Alliance and Collaboratory",
         ),
         ("SAH", "Society of Architectural Historians"),
+        ("STEMEd+", "STEM Ed+"),
     ],
 )
 

@@ -36,6 +36,16 @@ urlpatterns = [
         name="manage_login",
     ),
     path(
+        "members/<str:username>/join/<str:network>/",
+        views.self_join_network,
+        name="self_join_network",
+    ),
+    path(
+        "members/<str:username>/leave/<str:network>/",
+        views.self_leave_network,
+        name="self_leave_network",
+    ),
+    path(
         "members/<str:user_name>/roles/",
         views.manage_roles,
         name="manage_roles",

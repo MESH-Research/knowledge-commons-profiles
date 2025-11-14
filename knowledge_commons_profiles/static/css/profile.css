@@ -1267,7 +1267,7 @@ div {
         .link-button {
          background: none;
          border: none;
-         color: #1a0dab;
+         color: var(--primary-color);
          text-decoration: underline;
          cursor: pointer;
         }
