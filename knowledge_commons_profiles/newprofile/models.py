@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 import requests
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -491,6 +492,12 @@ class Profile(models.Model):
         models.CharField(max_length=254), default=list, blank=True
     )
     last_sync = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            GinIndex(fields=["emails"], name="profile_emails"),
+            GinIndex(fields=["role_overrides"], name="profile_role_overrides"),
+        ]
 
     def __str__(self):
         """
