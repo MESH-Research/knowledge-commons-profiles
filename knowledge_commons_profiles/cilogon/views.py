@@ -326,11 +326,15 @@ def manage_roles(request, user_name):
 
 
 @login_required
-def manage_login(request, user_name):
+def manage_login(request, username):
 
     # first, get a profile object
     try:
-        profile = Profile.objects.get(username=request.user.username)
+        # for regular users, always fetch their own profile
+        if not request.user.is_staff:
+            username = request.user.username
+
+        profile = Profile.objects.get(username=username)
     except Profile.DoesNotExist:
         profile = None
 
@@ -339,19 +343,19 @@ def manage_login(request, user_name):
         # remove a secondary email
         if request.POST.get("email_remove"):
             _remove_secondary_email(profile, request)
-            return redirect(reverse("manage_login", args=[user_name]))
+            return redirect(reverse("manage_login", args=[username]))
 
         # add a new secondary email
         if request.POST.get("new_email"):
             _add_secondary_email(profile, request)
             return redirect(
-                reverse("manage_login", args=[user_name]) + "?new_email=true"
+                reverse("manage_login", args=[username]) + "?new_email=true"
             )
 
         # make an email primary
         if request.POST.get("email_primary"):
             _make_email_primary(profile, request)
-            return redirect(reverse("manage_login", args=[user_name]))
+            return redirect(reverse("manage_login", args=[username]))
 
         # remove an IDP owned by the user (default action on POST if not
         # handled above)
@@ -362,9 +366,7 @@ def manage_login(request, user_name):
         sas.delete()
 
     # get the subs from the db
-    subs = SubAssociation.objects.filter(
-        profile__username=request.user.username
-    )
+    subs = SubAssociation.objects.filter(profile__username=username)
 
     # build the organizations, after syncing the profile
     final_orgs = _build_organizations_list(profile)

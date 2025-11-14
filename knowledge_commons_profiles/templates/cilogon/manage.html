@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
 {% block title %}
-  Manage Login Methods
+  Manage Login Methods for {{ profile.username }}
 {% endblock title %}
 {% block content %}
   <div class="container" id="main_container">
     <div class="row">
       <div class="col-12">
-        <h1 class="h1-associate">Manage Login Methods</h1>
+        <h1 class="h1-associate">Manage Login Methods  for {{ profile.username }}</h1>
         {% if msg %}<p><mark>{{ msg }}</mark></p>{% endif %}
 
         <h2>Login Methods</h2>
@@ -24,7 +24,7 @@
               <tr>
                 <td>{{ method.idp_name }}</td>
                 <td>
-                  <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
+                  <form action="{% url 'manage_login' username=profile.username %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" name="idp_id" value="{{ method.id }}" />
                     <input type="submit" value="Delete" onclick="return confirm('Are you sure you want to delete the login method from \'{{ method.idp_name }}\'?');" />
@@ -43,7 +43,13 @@
               <li>{{ membership }}</li>
             {% endfor %}
           </ul>
-        <p>If this list is not correct, please either add an email below that corresponds to a membership record at the societies, or send an email requesting help to <a href="mailto:hello@hcommons.org">the KC support desk</a></p>
+        <p>If this list is not correct, please either add an email below that corresponds to a membership record at the societies, or send an email requesting help to <a href="mailto:hello@hcommons.org">the KC support desk</a>.</p>
+        <p>Some networks have open registration on the Commons. Please click on any of the below to join a network:</p>
+        <ul>
+          {% for network in networks %}
+            <li><a href="{% url 'self_join_network' network.0 %}">{{ network.0 }} ({{ network.1 }})</a></li>
+          {% endfor %}
+        </ul>
         </div>
         <h2>Emails</h2>
         <p>To change your primary email, please add it below and then make it the primary address.</p>
@@ -51,10 +57,10 @@
         {% if profile.emails|length > 0 %}<p><em>Secondary emails</em>:</p>{% endif %}
         <ul>
           {% for email in profile.emails %}
-            <li><form class="inline-form" action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="email_remove" value="{{ email }}" />{{ email }} (<input onclick="return confirm('Are you sure you want to remove the email \'{{ email }}\'? It may be re-added if you use it to login using a new login method.');" type="submit" value="remove" class="link-button" />)</form> <form class="inline-form" action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="email_primary" value="{{ email }}" />(<input type="submit" value="make primary" class="link-button" />)</form></li>
+            <li><form class="inline-form" action="{% url 'manage_login' username=profile.username %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="email_remove" value="{{ email }}" />{{ email }} (<input onclick="return confirm('Are you sure you want to remove the email \'{{ email }}\'? It may be re-added if you use it to login using a new login method.');" type="submit" value="remove" class="link-button" />)</form> <form class="inline-form" action="{% url 'manage_login' username=profile.username %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="email_primary" value="{{ email }}" />(<input type="submit" value="make primary" class="link-button" />)</form></li>
           {% endfor %}
         </ul>
-        <form action="{% url 'manage_login' user_name=request.user.username %}" method="post" enctype="multipart/form-data">
+        <form action="{% url 'manage_login' username=profile.username %}" method="post" enctype="multipart/form-data">
           {% csrf_token %}
           Add an email: <input type="email" name="new_email" id="email" placeholder="you@email.com" value="" required /> <input type="submit" value="Add" />
         </form>

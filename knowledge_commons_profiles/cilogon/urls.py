@@ -31,7 +31,7 @@ urlpatterns = [
         "user-updated/", views.user_updated, name="user_update_webhook"
     ),  # dummy user updated rule to simulate remote API for testing
     path(
-        "members/<str:user_name>/settings/",
+        "members/<str:username>/settings/",
         views.manage_login,
         name="manage_login",
     ),

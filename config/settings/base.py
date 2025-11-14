@@ -433,6 +433,17 @@ EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("UP", ["Association of American University Presses"]),
 ]
 
+OPEN_REGISTRATION_NETWORKS = env(
+    "OPEN_REGISTRATION_NETWORKS",
+    default=[
+        (
+            "HASTAC",
+            "Humanities, Arts, Science, and Technology Alliance and Collaboratory",
+        ),
+        ("SAH", "Society of Architectural Historians"),
+    ],
+)
+
 KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+"}
 
 LOGOUT_ENDPOINTS = []
