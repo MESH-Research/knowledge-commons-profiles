@@ -46,7 +46,7 @@
           <a href="{% url "profile" user=username %}" class="social-link"
              id="kc">
             <i class="fas fa-at"></i>
-            <span>{{ username }}</span>
+            <span>{{ username }}{% if user and user.is_staff %} (Knowledge Commons Staff){% endif %}</span>
           </a>
           <a href="#" class="social-link" id="orcid">
             <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
@@ -87,7 +87,7 @@
                class="action-btn primary">Edit</a>
             <a href="#" data-bs-toggle="modal" data-bs-target="#avatarModal" class="action-btn">Change Profile Photo</a>
             <a href="#" class="action-btn">Change Cover Image</a>
-            <a href="{% url 'manage_login' user_name=request.user.username %}" class="action-btn">Manage Login Methods and Emails</a>
+            <a href="{% url 'manage_login' username=request.user.username %}" class="action-btn">Manage Login Methods and Emails</a>
           </div>
         </div>
       </div>

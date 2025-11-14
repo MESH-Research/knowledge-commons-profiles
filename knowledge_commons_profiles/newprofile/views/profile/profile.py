@@ -5,6 +5,7 @@ import logging
 
 import django.db
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.http import Http404
 from django.http import JsonResponse
@@ -64,12 +65,15 @@ def profile(request, user=""):
         del left_order
         del right_order
 
+        user = User.objects.filter(username=profile_obj.username).first()
+
         return render(
             request=request,
             context={
                 "username": user,
                 "logged_in_user_is_profile": logged_in_user_is_profile,
                 "profile": profile_obj,
+                "user": user,
                 "left_order": left_order_final,
                 "right_order": right_order_final,
                 # "works_headings_ordered": works_headings,
