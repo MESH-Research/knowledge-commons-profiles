@@ -1,3 +1,27 @@
+## 2.46.0 (2025-11-14)
+
+### Feat
+
+- **settings**: add ability to join and leave open networks
+- **settings**: allow staff members to edit other accounts and lock regular users to editing just their profile
+- **roles**: import sah roles by csv
+- **roles**: add details of roles that take effect
+- **roles**: add legacy comanage roles display and delete
+- **roles**: fix bugs and improve role handling, including stemed+
+- **roles**: add further caching to external role sync with optional cache defeat parameters on sync
+- **roles**: add role overrides to allow local administrators to specify roles for users
+- **webhook**: add webhook simulator for local testing
+- **manage_logins**: add garbage collection on email verifications over 48hrs old
+
+### Fix
+
+- **version**: bump version manually
+- **profiles**: add gin indexing to arrayfields to optimize contains queries
+- **profiles**: fix organizational display logic to iterate over dictionary instead of assumed list
+- **profiles**: move edit roles button so as not to be eclipsed by memberships
+- **memberships**: change get_external_memberships to return result of deferred call
+- **profiles**: change text to add email management to button
+
 ## 2.44.0 (2025-11-12)
 
 ### Feat
