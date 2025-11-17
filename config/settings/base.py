@@ -196,6 +196,8 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
+                "knowledge_commons_profiles.newprofile.context_processors."
+                "cc_search",
             ],
         },
     },
@@ -467,3 +469,5 @@ VERIFICATION_LIMIT_HOURS = env.int(
 SYNC_HOURS = env.int(
     "SYNC_HOURS", 24
 )  # hours before syncs are considered stale
+
+CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")

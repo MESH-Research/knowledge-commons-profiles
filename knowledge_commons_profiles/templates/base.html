@@ -37,6 +37,7 @@
     <link rel="icon" href="{% static "img/cropped-kc_logo_80_c-32x32.png" %}" sizes="32x32" />
     <link rel="icon" href="{% static "img/cropped-kc_logo_80_c-192x192.png" %}" sizes="192x192" />
     <link rel="apple-touch-icon" href="{% static "img/cropped-kc_logo_80_c-180x180.png" %}" />
+
 </head>
 <body>
     <!-- Header -->
@@ -51,12 +52,14 @@
                 </div>
                 <div class="header-right">
                     <div class="search-container">
-                      <label>
-                        <input type="text" placeholder="Search" />
-                      </label>
-                      <button type="submit">
+                      <form id="search-form">
+                        <label>
+                          <input type="text" id="search" name="search" placeholder="Search" />
+                        </label>
+                        <button type="submit">
                             <i class="fas fa-search"></i>
                         </button>
+                      </form>
                     </div>
                     <div class="hide" id="notifications-container">
                     </div>
@@ -115,6 +118,104 @@
                 }
             });
         });
+    </script>
+
+    <script src="{% static "js/autocomplete.min.js" %}"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.querySelector("#search");
+        const searchForm = document.querySelector("#search-form");
+
+        // Initialise autoComplete.js
+        const autoCompleteJS = new autoComplete({
+          selector: "#search",
+          placeHolder: "Search for members and documents…",
+          threshold: 2,  // minimum characters before querying API
+          debounce: 250, // wait 250ms after user stops typing
+          data: {
+            src: async (query) => {
+              const endpoint = `{{ CC_SEARCH_URL }}typeahead?q=${encodeURIComponent(query)}`;
+
+              try {
+                const response = await fetch(endpoint, {
+                  headers: {
+                    "Accept": "application/json",
+                  }
+                });
+
+                if (!response.ok) {
+                  console.error("API error:", response.status);
+                  return [];
+                }
+
+                const data = await response.json();
+                // Expecting array of { title, primary_url, other_urls }
+                return data;
+              } catch (err) {
+                console.error("Fetch error:", err);
+                return [];
+              }
+            },
+            keys: ["title"], // which field to search on in the data object
+          },
+          resultsList: {
+            maxResults: 10,
+            noResults: true,
+            element: (list, data) => {
+              if (!data.results.length) {
+                const message = document.createElement("div");
+                message.className = "no-result";
+                message.textContent = `No results for "${data.query}"`;
+                list.appendChild(message);
+              }
+            },
+          },
+          resultItem: {
+            highlight: true,
+            element: (item, data) => {
+              // data.value is the full object from the API
+              item.innerHTML = `
+                <span>${data.match}</span>
+                <small style="display:block; opacity:.7;">
+                  ${data.value.primary_url}
+                </small>
+              `;
+            },
+          },
+          events: {
+            input: {
+              // When a suggestion is selected
+              selection: (event) => {
+                const selection = event.detail.selection.value;
+                // selection is the full object: {title, primary_url, other_urls}
+                if (selection && selection.primary_url) {
+                  window.location.href = selection.primary_url;
+                }
+              },
+            },
+          },
+        });
+
+        // Let Enter submit the form for a full search when no suggestion is being chosen
+        searchInput.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            // If autoComplete.js is opening results, it handles Enter for selection.
+            // We want Enter to submit full search when there's no active selection.
+            const isOpen = document.querySelector(".autoComplete_results_list");
+            const active = document.querySelector(".autoComplete_result:focus, .autoComplete_result[aria-selected='true']");
+
+            if (!active) {
+              // No active suggestion – let the form submit normally
+              // (i.e., GET /people_search?q=<search term>)
+              return; // don't preventDefault
+            }
+
+            // There *is* an active item; let autoComplete.js handle it
+            // (it will trigger the `selection` event above)
+          }
+        });
+      });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
