@@ -303,7 +303,7 @@ def header_bar(request):
             }
             return render(
                 request,
-                "newprofile/partials/mysql_data.html",
+                "newprofile/partials/header_bar.html",
                 context=context,
             )
     else:
@@ -318,7 +318,7 @@ def header_bar(request):
         }
         return render(
             request,
-            "newprofile/partials/mysql_data.html",
+            "newprofile/partials/header_bar.html",
             context=context,
         )
 
