@@ -1,3 +1,9 @@
+## 2.46.1 (2025-11-17)
+
+### Fix
+
+- **header-bar**: use correct template for header bar
+
 ## 2.46.0 (2025-11-14)
 
 ### Feat
