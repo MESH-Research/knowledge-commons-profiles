@@ -1,3 +1,15 @@
+## 2.49.0 (2025-11-18)
+
+### Feat
+
+- **home**: add incomplete homepage layout and design
+- **spam-users**: add command to list all spam users
+
+### Fix
+
+- **search**: add error display
+- **search**: add url to search form
+
 ## 2.48.0 (2025-11-18)
 
 ### Feat
