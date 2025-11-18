@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  Search Results for {{ query }}
+{% endblock title %}
+
+{% block content %}
+<div class="container" id="main_container">
+  <div class="row">
+    <!-- Profile Info -->
+    <div class="wrap">
+    <section class="search-results">
+      {% if error %}
+        <header class="search-header">
+          <h1 class="search-header__title">Error Searching</h1>
+          <div class="search-header__meta">
+            We are sorry to say that there was an error conducting your search. Please try again later.
+          </div>
+        </header>
+      {% else %}
+        <header class="search-header">
+          <h1 class="search-header__title">Search Results for "{{ query }}"</h1>
+          <div class="search-header__meta">
+            Showing {{ start_item }}–{{ end_item }} of {{ total_count }} combined results (people &amp; documents)
+          </div>
+        </header>
+        {% for hit in documents %}
+          {% if hit.content_type == "person" or hit.content_type == "profile" %}
+            <!-- Person result -->
+            <article class="result-card result-card--person">
+              <a href="{% url 'profile' hit.owner.username %}">
+                <div class="result-card__avatar"
+                     style="background-image:url({{ hit.thumbnail_url }});"></div>
+              </a>
+              <div class="result-card__body">
+                <div class="result-card__title-row">
+                  <div>
+                    <h2 class="result-card__title">
+                      <a href="{% url 'profile' hit.owner.username %}">{{ hit.title }}</a>
+                    </h2>
+                    <div class="result-card__subtitle">
+                      {{ hit.description|truncatewords:150 }}
+                    </div>
+                  </div>
+                  <div class="result-card__type">Member</div>
+                </div>
+              </div>
+            </article>
+          {% endif %}
+
+          {% if hit.content_type == "post" or hit.content_type == "work" %}
+            <article class="result-card">
+              <a href="{{ hit.primary_url }}">
+                {% if hit.content_type == "post" %}
+                  <div class="result-card__avatar"
+                     style="background-image:url({% if hit.thumbnail_url %}{{ hit.thumbnail_url }}{% else %}{% static "img/blog-post.png" %}{% endif %});"></div>
+                {% else %}
+                  <div class="result-card__avatar"
+                   style="background-image:url({% if hit.thumbnail_url %}{{ hit.thumbnail_url }}{% else %}{% static "img/cropped-kc_logo_80_c-270x270.png" %}{% endif %});"></div>
+                {% endif %}
+              </a>
+              <div class="result-card__body">
+                <div class="result-card__title-row">
+                  <h2 class="result-card__title">
+                    <a href="{{ hit.primary_url }}">{{ hit.title|safe }}</a>
+                  </h2>
+                  <div class="result-card__type">{% if hit.content_type == "post" %}Post{% elif hit.content_type == "work" %}Work{% endif %}</div>
+                </div>
+                <p class="result-card__snippet">
+                  {{ hit.description|safe|truncatewords:150 }}
+                </p>
+                <div class="result-card__meta-row">
+                  {% for author in hit.contributors %}
+                    <span class="badge"><a href="{% url 'profile' author.username %}">{{ author.name }}</a></span>
+                  {% endfor %}
+                  <span class="result-card__meta-pill">{{ hit.publication_date }}</span>
+                </div>
+              </div>
+            </article>
+          {% endif %}
+        {% endfor %}
+    {% endif %}
+
+      <!-- More results... -->
+    </section>
+
+      <div class="pager">
+        {% if has_prev %}
+          <a href="?page={{ prev_cursor }}&dir=prev&q={{ query }}&per_page={{ page_size }}"><< Previous</a>
+        {% else %}
+          <span class="disabled"><< Previous</span>
+        {% endif %}
+        <span class="page-info">Page {{ current_page }} of {{ page_count }}</span>
+        {% if has_next %}
+          <a href="?page={{ next_cursor }}&q={{ query }}&per_page={{ page_size }}">Next >></a>
+        {% else %}
+          <span class="disabled">Next >></span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

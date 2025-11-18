@@ -54,7 +54,7 @@
                     <div class="search-container">
                       <form id="search-form">
                         <label>
-                          <input type="text" id="search" name="search" placeholder="Search" />
+                          <input type="text" id="q" name="q" placeholder="Search" />
                         </label>
                         <button type="submit">
                             <i class="fas fa-search"></i>
@@ -124,12 +124,12 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        const searchInput = document.querySelector("#search");
+        const searchInput = document.querySelector("#q");
         const searchForm = document.querySelector("#search-form");
 
         // Initialise autoComplete.js
         const autoCompleteJS = new autoComplete({
-          selector: "#search",
+          selector: "#q",
           placeHolder: "Search for members and documents…",
           threshold: 2,  // minimum characters before querying API
           debounce: 250, // wait 250ms after user stops typing
@@ -199,20 +199,9 @@
 
         // Let Enter submit the form for a full search when no suggestion is being chosen
         searchInput.addEventListener("keydown", function (event) {
-          if (event.key === "Enter") {
-            // If autoComplete.js is opening results, it handles Enter for selection.
-            // We want Enter to submit full search when there's no active selection.
-            const isOpen = document.querySelector(".autoComplete_results_list");
-            const active = document.querySelector(".autoComplete_result:focus, .autoComplete_result[aria-selected='true']");
-
-            if (!active) {
-              // No active suggestion – let the form submit normally
-              // (i.e., GET /people_search?q=<search term>)
-              return; // don't preventDefault
-            }
-
-            // There *is* an active item; let autoComplete.js handle it
-            // (it will trigger the `selection` event above)
+          if (event.keyCode === 13) {
+            searchForm.submit();
+            return
           }
         });
       });

@@ -59,6 +59,7 @@ from knowledge_commons_profiles.newprofile.views.profile.works import (
 from knowledge_commons_profiles.newprofile.views.profile.works import (
     works_deposits_edit,
 )
+from knowledge_commons_profiles.newprofile.views.search import search
 from knowledge_commons_profiles.newprofile.views.stats import stats_board
 from knowledge_commons_profiles.newprofile.views.stats import stats_download
 from knowledge_commons_profiles.newprofile.views.stats import stats_table
@@ -139,4 +140,5 @@ urlpatterns = [
     path("stats/download/", stats_download, name="get_stats_csv"),
     path("stats/table/", stats_table, name="stats_table"),
     path("members/", people_by_username, name="members"),
+    path("search/", search, name="search"),
 ]
