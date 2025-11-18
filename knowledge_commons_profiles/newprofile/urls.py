@@ -18,6 +18,7 @@ Including another URLconf
 from django.urls import include
 from django.urls import path
 
+from knowledge_commons_profiles.newprofile.views.home import home
 from knowledge_commons_profiles.newprofile.views.members import (
     people_by_username,
 )
@@ -141,4 +142,5 @@ urlpatterns = [
     path("stats/table/", stats_table, name="stats_table"),
     path("members/", people_by_username, name="members"),
     path("search/", search, name="search"),
+    path("", home, name="home"),
 ]

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  Search Results for {{ query }}
+{% endblock title %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const newsletter = document.getElementById("card-newsletter");
+    const support = document.getElementById("card-support");
+
+    const height = Math.max(
+      newsletter.offsetHeight,
+      support.offsetHeight
+    );
+
+    newsletter.style.height = height + "px";
+    support.style.height = height + "px";
+  });
+</script>
+{% endblock extra_js %}
+
+{% block content %}
+<div class="container" id="main_container">
+  <div class="row">
+    <!-- Profile Info -->
+    <div class="wrap">
+      <section class="kc-hero" aria-labelledby="kc-hero-heading">
+    <div class="hero-block">
+      <div class="kc-hero-logo-row">
+        <div class="kc-hero-logo-mark" aria-hidden="true">KC</div>
+        <div class="kc-hero-logo-text">Knowledge&nbsp;Commons</div>
+      </div>
+
+      <h1 class="kc-hero-heading" id="kc-hero-heading">
+        The network for knowledge creators across disciplines
+      </h1>
+
+      <p class="kc-hero-tagline">
+        Discover the latest <em>open-access</em> scholarship and teaching materials, make
+        interdisciplinary connections, build a WordPress webspace, and increase the impact of
+        your work by sharing it in the repository.
+      </p>
+
+      <div class="kc-hero-ctas">
+        <a class="kc-btn kc-btn-secondary" href="https://works.hcommons.org">
+          Discover
+        </a>
+        <a class="kc-btn kc-btn-secondary" href="https://hcommons.org/groups/">
+          Connect
+        </a>
+        <a class="kc-btn kc-btn-secondary" href="https://hcommons.org/deposits/item/new/">
+          Publish
+        </a>
+      </div>
+
+      {% if not request.user or not request.user.is_authenticated %}
+      <p class="kc-hero-meta">
+        Already a member? <strong><a href="{% url 'login' %}">Sign in</a></strong> to access your profile and works.
+      </p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- CARDS ROW -->
+  <section aria-label="Stay in touch and support Knowledge Commons">
+    <div class="kc-cards-row">
+
+      <!-- Newsletter card -->
+      <article class="kc-card" id="card-newsletter">
+        <header class="kc-card-header">
+          <div>
+            <div class="kc-tagline-mini">Stay in the loop</div>
+            <h2 class="kc-card-title">Subscribe to our monthly newsletter</h2>
+          </div>
+        </header>
+
+        <div class="kc-card-body">
+          <p>
+            Short updates once a month featuring new open-access publications, teaching resources,
+            and community events from across Knowledge Commons.
+          </p>
+
+          <form action="#" method="post">
+            <div class="kc-form-field">
+              <label for="newsletter-email" class="kc-form-label">
+                Email address <span aria-hidden="true">*</span>
+              </label>
+              <input id="newsletter-email"
+                     class="kc-input"
+                     type="email"
+                     name="email"
+                     required
+                     placeholder="you@example.org" />
+              <p class="kc-form-helper">We’ll never share your address and you can unsubscribe anytime.</p>
+            </div>
+
+            <button type="submit" class="kc-btn kc-btn-primary">
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </article>
+
+      <!-- Support card -->
+      <article class="kc-card" id="card-support">
+        <header class="kc-card-header">
+          <div>
+            <div class="kc-tagline-mini">Support the platform</div>
+            <h2 class="kc-card-title">Support Knowledge Commons</h2>
+          </div>
+        </header>
+
+        <div class="kc-card-body">
+          <p>
+            Knowledge Commons is a nonprofit, academy-owned platform. Your contribution helps us:
+          </p>
+          <ul class="kc-support-list">
+            <li>• <strong>Reach more scholars</strong> and creators around the world.</li>
+            <li>• <strong>Maintain open-source infrastructure</strong> for publishing and preservation.</li>
+            <li>• <strong>Fund new features</strong> that make sharing and discovery easier.</li>
+          </ul>
+
+          <div class="kc-card-footer">
+            <a href="https://givingto.msu.edu/causes-to-support/crowdpower/knowledge-commons" class="kc-btn kc-btn-primary">
+              Support KC
+            </a>
+            <span class="kc-form-helper">
+              Donations are processed securely and are tax-deductible where applicable.
+            </span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+    </div>
+  </div>
+</div>
+{% endblock content %}
