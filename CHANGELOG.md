@@ -1,3 +1,9 @@
+## 2.48.0 (2025-11-18)
+
+### Feat
+
+- **search**: add search capacity
+
 ## 2.47.0 (2025-11-17)
 
 ### Feat
