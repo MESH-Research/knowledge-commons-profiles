@@ -37,7 +37,7 @@ class Person(BaseModel):
 class Hit(BaseModel):
     """One search result item."""
 
-    internal_id: str = Field(alias="_internal_id")
+    internal_id: str | None = Field(default=None, alias="_internal_id")
     id: str = Field(alias="_id")
 
     title: str
