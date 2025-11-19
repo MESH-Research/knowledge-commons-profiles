@@ -70,7 +70,7 @@ def profile(request, user=""):
         return render(
             request=request,
             context={
-                "username": user,
+                "username": profile_obj.username,
                 "logged_in_user_is_profile": logged_in_user_is_profile,
                 "profile": profile_obj,
                 "user": user,
@@ -92,7 +92,7 @@ def profile(request, user=""):
         return render(
             request=request,
             context={
-                "username": user,
+                "username": "",
                 "logged_in_user_is_profile": request.user.username == user,
                 "profile": None,
                 "left_order": [],
@@ -151,6 +151,8 @@ def edit_profile(request):
             # Prepare updates using Pydantic models and send an update command
             # to third-party systems via webhook
             send_webhook_user_update(user.username)
+
+            # now send an update to the CC search client
 
             return redirect("profile", user=user.username)
     else:
