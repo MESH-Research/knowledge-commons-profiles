@@ -70,7 +70,7 @@
                          hx-get="{% url 'header_bar' %}"
                          hx-trigger="load"
                          hx-target="this">
-                        <a href="https://hcommons.org/wp-login.php?redirect_to=https%3A%2F%2Fprofile.hcommons.org%2Fmy_profile%2F" class="login-link">Login</a>
+                        <a href="{% url 'login' %}" class="login-link">Login</a>
                     </div>
                 </div>
             </div>

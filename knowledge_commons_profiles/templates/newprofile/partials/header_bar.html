@@ -44,7 +44,7 @@
 
   {% else %}
     <!-- not logged in -->
-    <div id="user-info" hx-swap-oob="true"><a href="https://hcommons.org/wp-login.php?redirect_to=https%3A%2F%2Fprofile.hcommons.org%2Fmy_profile%2F" class="login-link">Login</a></div>
+    <div id="user-info" hx-swap-oob="true"><a href="{% url 'login' %}" class="login-link">Login</a></div>
 
     <!-- notifications -->
     <div class="hide" hx-swap-oob="true" id="notifications-container"></div>
