@@ -1,3 +1,11 @@
+## 2.49.2 (2025-11-19)
+
+### Fix
+
+- **profile**: fix passing username to htmx
+- **base**: change kc logo to block
+- **home**: change login link to use local url
+
 ## 2.49.1 (2025-11-19)
 
 ### Fix
