@@ -24,45 +24,43 @@
 
 {% block content %}
 <div class="container" id="main_container">
-  <div class="row">
-    <!-- Profile Info -->
-    <div class="wrap">
+
       <section class="kc-hero" aria-labelledby="kc-hero-heading">
-    <div class="hero-block">
-      <div class="kc-hero-logo-row">
-        <div class="kc-hero-logo-mark" aria-hidden="true">KC</div>
-        <div class="kc-hero-logo-text">Knowledge&nbsp;Commons</div>
-      </div>
+        <div class="hero-block">
+          <div class="kc-hero-logo-row">
+            <div class="kc-hero-logo-mark" aria-hidden="true">KC</div>
+            <div class="kc-hero-logo-text">Knowledge&nbsp;Commons</div>
+          </div>
 
-      <h1 class="kc-hero-heading" id="kc-hero-heading">
-        The network for knowledge creators across disciplines
-      </h1>
+          <h1 class="kc-hero-heading" id="kc-hero-heading">
+            The network for knowledge creators across disciplines
+          </h1>
 
-      <p class="kc-hero-tagline">
-        Discover the latest <em>open-access</em> scholarship and teaching materials, make
-        interdisciplinary connections, build a WordPress webspace, and increase the impact of
-        your work by sharing it in the repository.
-      </p>
+          <p class="kc-hero-tagline">
+            Discover the latest <em>open-access</em> scholarship and teaching materials, make
+            interdisciplinary connections, build a WordPress webspace, and increase the impact of
+            your work by sharing it in the repository.
+          </p>
 
-      <div class="kc-hero-ctas">
-        <a class="kc-btn kc-btn-secondary" href="https://works.hcommons.org">
-          Discover
-        </a>
-        <a class="kc-btn kc-btn-secondary" href="https://hcommons.org/groups/">
-          Connect
-        </a>
-        <a class="kc-btn kc-btn-secondary" href="https://hcommons.org/deposits/item/new/">
-          Publish
-        </a>
-      </div>
+          <div class="kc-hero-ctas">
+            <a class="kc-btn kc-btn-secondary" href="https://works.hcommons.org">
+              Discover
+            </a>
+            <a class="kc-btn kc-btn-secondary" href="https://hcommons.org/groups/">
+              Connect
+            </a>
+            <a class="kc-btn kc-btn-secondary" href="https://hcommons.org/deposits/item/new/">
+              Publish
+            </a>
+          </div>
 
-      {% if not request.user or not request.user.is_authenticated %}
-      <p class="kc-hero-meta">
-        Already a member? <strong><a href="{% url 'login' %}">Sign in</a></strong> to access your profile and works.
-      </p>
-      {% endif %}
-    </div>
-  </section>
+          {% if not request.user or not request.user.is_authenticated %}
+          <p class="kc-hero-meta">
+            Already a member? <strong><a href="{% url 'login' %}">Sign in</a></strong> to access your profile and works.
+          </p>
+          {% endif %}
+        </div>
+      </section>
 
   <!-- CARDS ROW -->
   <section aria-label="Stay in touch and support Knowledge Commons">
@@ -136,6 +134,5 @@
     </div>
   </section>
     </div>
-  </div>
-</div>
+
 {% endblock content %}
