@@ -1,3 +1,13 @@
+## 2.50.0 (2025-11-19)
+
+### Feat
+
+- **cc**: add cc search api updates when a user updates their profile
+
+### Fix
+
+- **search**: handle missing internal id
+
 ## 2.49.2 (2025-11-19)
 
 ### Fix
