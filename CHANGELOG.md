@@ -1,3 +1,9 @@
+## 2.49.1 (2025-11-19)
+
+### Fix
+
+- **home**: remove wrapping divs to create responsive flow
+
 ## 2.49.0 (2025-11-18)
 
 ### Feat
