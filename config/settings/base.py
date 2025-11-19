@@ -471,3 +471,5 @@ SYNC_HOURS = env.int(
 )  # hours before syncs are considered stale
 
 CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")
+CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
+CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)

@@ -493,6 +493,9 @@ class Profile(models.Model):
     )
     last_sync = models.DateTimeField(blank=True, null=True)
 
+    # this should not be accessed directly, but instead via the property below
+    cc_search_id = models.CharField(max_length=255, blank=True, null=True)
+
     class Meta:
         indexes = [
             GinIndex(fields=["emails"], name="profile_emails"),
@@ -515,6 +518,30 @@ class Profile(models.Model):
         )
 
         return gem(obj=self, api_only=api_only)
+
+    @property
+    def cc_id(self) -> str | None:
+        """
+        Return the Commons Connect search client ID
+        :return: an ID for the Commons Connect search client
+        """
+        # see if we have a stored ID already
+        if self.cc_search_id:
+            return self.cc_search_id
+
+        # try to look this up in the WP meta table
+        cc_search_id = WpUserMeta.objects.filter(
+            user_id=self.id, meta_key="cc_search_id"
+        ).first()
+
+        # if we have a meta result, save it and return it
+        if cc_search_id:
+            self.cc_search_id = cc_search_id.meta_value
+            self.save()
+            return self.cc_search_id
+
+        # if we have no meta result in WordPress, return None
+        return None
 
 
 class AcademicInterest(models.Model):

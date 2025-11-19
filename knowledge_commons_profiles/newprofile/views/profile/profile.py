@@ -15,6 +15,9 @@ from django.views.decorators.http import require_POST
 
 from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.api import API
+from knowledge_commons_profiles.newprofile.cc_search import (
+    index_profile_in_cc_search,
+)
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.utils import process_orders
@@ -153,6 +156,7 @@ def edit_profile(request):
             send_webhook_user_update(user.username)
 
             # now send an update to the CC search client
+            index_profile_in_cc_search(user)
 
             return redirect("profile", user=user.username)
     else:
