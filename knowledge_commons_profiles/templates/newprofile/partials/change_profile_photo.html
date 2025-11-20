@@ -130,8 +130,10 @@
     }
     const data = await resp.json();
     if (data.ok) {
-      const avatar = document.getElementById('currentAvatar');
-      if (avatar) avatar.src = data.url + "?t=" + Date.now();
+      // update the current avatar
+      document.body.dispatchEvent(new Event('profileImageUpdated'));
+
+      // hide the modal
       const modalEl = document.getElementById('avatarModal');
       bootstrap.Modal.getInstance(modalEl).hide();
     }

@@ -23,7 +23,7 @@
       <div class="profile-info-card">
         <div class="profile-image-container"
           hx-get="{% url 'profile_image' username=username %}"
-          hx-trigger="load"
+          hx-trigger="load, profileImageUpdated from:body"
           hx-target="this">
         </div>
         <h1 class="profile-title" id="profile-title" hx-swap-oob="true">{{ profile.name }}</h1>
