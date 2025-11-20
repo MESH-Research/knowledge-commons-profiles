@@ -1,4 +1,8 @@
-# profiles/cc_search.py
+"""
+The CC Search API interactions
+Documentation is here: https://github.com/MESH-Research/commons-connect/blob/main/cc-search/docs/rest.md
+These functions allow us to interact with the OpenSearch instance via an API
+"""
 
 from __future__ import annotations
 
