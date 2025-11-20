@@ -1,3 +1,9 @@
+## 2.51.3 (2025-11-20)
+
+### Fix
+
+- **avatars**: auto-update avatar when new image is uploaded
+
 ## 2.51.2 (2025-11-20)
 
 ### Fix
