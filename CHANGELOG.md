@@ -1,3 +1,9 @@
+## 2.51.1 (2025-11-20)
+
+### Refactor
+
+- **utils**: add extensive logging to debug s3 issue
+
 ## 2.51.0 (2025-11-20)
 
 ### Feat
