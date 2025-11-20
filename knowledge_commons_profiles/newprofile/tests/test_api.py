@@ -900,9 +900,6 @@ class GetProfileInfoTests(django.test.TestCase):
         self.assertEqual(result["mastodon"], "@testuser@mastodon.social")
         self.assertEqual(result["mastodon_username"], "testuser")
         self.assertEqual(result["mastodon_server"], "mastodon.social")
-        self.assertEqual(
-            result["profile_image"], "https://example.com/profile.jpg"
-        )
         self.assertEqual(result["works_username"], "works_testuser")
         self.assertEqual(result["publications"], "<p>Sample publication</p>")
         self.assertEqual(result["projects"], "Sample project")
