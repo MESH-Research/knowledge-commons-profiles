@@ -172,7 +172,10 @@ def get_profile_photo(profile):
 
     # see if we have a local entry
     try:
-        if profile.profile_image.startswith("/media/"):
+        if profile.profile_image.startswith("/media/") or (
+            hasattr(settings, "aws_s3_domain")
+            and settings.aws_s3_domain in profile.profile_image
+        ):
             return profile.profile_image
     except AttributeError:
         pass

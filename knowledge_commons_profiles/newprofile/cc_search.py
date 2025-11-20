@@ -16,6 +16,8 @@ from pydantic import Field
 from pydantic import TypeAdapter
 from pydantic import ValidationError
 
+from knowledge_commons_profiles.newprofile.utils import get_profile_photo
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -209,7 +211,7 @@ def index_profile_in_cc_search(profile: Profile) -> CCSearchResponse | None:
                 f"https://hastac.hcommons.org/members/{profile.username}",
                 f"https://stemedplus.hcommons.org/members/{profile.username}",
             ],
-            thumbnail_url=getattr(profile, "profile_image", ""),
+            thumbnail_url=get_profile_photo(profile),
             modified_dt=datetime.now(tz=UTC),
             network_node="hc",
             cc_id=profile.cc_id,
