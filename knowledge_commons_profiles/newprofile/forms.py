@@ -95,8 +95,6 @@ class ProfileForm(forms.ModelForm):
             "orcid",
             "cv_file",
             "mastodon",
-            "profile_image",
-            "works_username",
             "academic_interests",
             "about_user",
             "education",
