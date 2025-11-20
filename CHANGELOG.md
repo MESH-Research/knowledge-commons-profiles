@@ -1,3 +1,9 @@
+## 2.51.2 (2025-11-20)
+
+### Fix
+
+- **avatars**: ensure profile edit does not delete avatar
+
 ## 2.51.1 (2025-11-20)
 
 ### Refactor
