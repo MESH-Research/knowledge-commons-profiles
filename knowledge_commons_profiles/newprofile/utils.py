@@ -172,17 +172,29 @@ def get_profile_photo(profile):
 
     # see if we have a local entry
     try:
+        msg = f"Testing whether image is local for {profile.username}"
+        logger.info(msg)
+
         if profile.profile_image.startswith("/media/") or (
-            hasattr(settings, "aws_s3_domain")
-            and settings.aws_s3_domain in profile.profile_image
+            hasattr(settings, "AWS_STORAGE_BUCKET_NAME")
+            and settings.AWS_STORAGE_BUCKET_NAME in profile.profile_image
         ):
+            msg = f"Image for {profile.username} is local"
+            logger.info(msg)
             return profile.profile_image
     except AttributeError:
-        pass
+        msg = f"Image for {profile.username} is not local (thrown)"
+        logger.exception(msg)
 
     profile_image = profile.profileimage_set.first()
     if profile_image:
+        msg = f"Image for {profile.username} is in WordPress"
+        logger.info(msg)
+
         return profile_image.full
+
+    msg = f"Image for {profile.username} is Gravatar"
+    logger.info(msg)
 
     # Fall back to Gravatar
     email = sanitize_email_for_dev(profile.email)

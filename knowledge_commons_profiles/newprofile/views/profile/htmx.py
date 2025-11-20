@@ -453,12 +453,16 @@ def profile_image(request, username):
 
     try:
         api = API(request, username, use_wordpress=True, create=False)
+        img = api.get_profile_photo()
+
+        msg = f"Profile image for {username}: {img}"
+        logger.debug(msg)
 
         return render(
             request,
             "newprofile/partials/profile_image.html",
             {
-                "profile_image": api.get_profile_photo(),
+                "profile_image": img,
                 "username": username,
             },
         )

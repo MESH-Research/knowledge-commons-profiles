@@ -37,6 +37,7 @@ from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
 from knowledge_commons_profiles.newprofile.models import WpPostSubTable
 from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.models import WpUserMeta
+from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
@@ -376,7 +377,7 @@ class API:
             "mastodon": self.profile.mastodon,
             "mastodon_username": m_user,
             "mastodon_server": m_server,
-            "profile_image": self.profile.profile_image,
+            "profile_image": get_profile_photo(self.profile),
             "works_username": self.profile.works_username,
             "publications": self.profile.publications,
             "projects": self.profile.projects,
