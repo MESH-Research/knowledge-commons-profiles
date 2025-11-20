@@ -1,3 +1,9 @@
+## 2.50.1 (2025-11-20)
+
+### Fix
+
+- **avatars**: check for s3 urls in determining local avatar and use utils function to get avatar in search api update
+
 ## 2.50.0 (2025-11-19)
 
 ### Feat
