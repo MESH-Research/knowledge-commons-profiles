@@ -5,7 +5,8 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.files.storage import FileSystemStorage
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.http import HttpResponseBadRequest
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -67,12 +68,9 @@ def upload_avatar(request):
 
     # Save with a safe randomized name
     filename = f"profile_images/{uuid.uuid4().hex}.jpg"
-    fs = FileSystemStorage(
-        location=str(settings.MEDIA_ROOT), base_url=settings.MEDIA_URL
-    )
-    fs.save(filename, out)
+    default_storage.save(filename, ContentFile(out.getvalue()))
 
-    url = fs.url(filename)  # like /media/profile_images/abc.jpg
+    url = default_storage.url(filename)  # like /media/profile_images/abc.jpg
     msg = f"Uploaded avatar for {request.user.username} to {url}"
     logger.info(msg)
 
