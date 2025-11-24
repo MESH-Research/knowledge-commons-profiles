@@ -1,3 +1,9 @@
+## 2.52.0 (2025-11-24)
+
+### Feat
+
+- **cover-image**: add ability to upload cover image
+
 ## 2.51.3 (2025-11-20)
 
 ### Fix
