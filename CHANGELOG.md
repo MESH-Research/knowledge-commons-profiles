@@ -1,3 +1,13 @@
+## 3.0.0 (2025-11-24)
+
+### BREAKING CHANGE
+
+- The API changes here are breaking because fields are renamed (external_sync_groups --> groups and external_sync_memberships --> memberships)
+
+### Feat
+
+- **api**: rename api fields
+
 ## 2.52.0 (2025-11-24)
 
 ### Feat
