@@ -25,6 +25,9 @@ from knowledge_commons_profiles.newprofile.views.members import (
 from knowledge_commons_profiles.newprofile.views.profile.avatars import (
     upload_avatar,
 )
+from knowledge_commons_profiles.newprofile.views.profile.avatars import (
+    upload_cover,
+)
 from knowledge_commons_profiles.newprofile.views.profile.htmx import blog_posts
 from knowledge_commons_profiles.newprofile.views.profile.htmx import cover_image
 from knowledge_commons_profiles.newprofile.views.profile.htmx import header_bar
@@ -69,6 +72,7 @@ urlpatterns = [
     path("my-profile/", my_profile, name="my_profile"),
     path("edit-profile/", edit_profile, name="edit_profile"),
     path("edit-profile/upload-avatar/", upload_avatar, name="upload_avatar"),
+    path("edit-profile/upload-cover/", upload_cover, name="upload_cover"),
     path("members/<str:user>/", profile, name="profile"),
     path("api-auth/", include("rest_framework.urls")),
     path("tinymce/", include("tinymce.urls")),

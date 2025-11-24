@@ -229,7 +229,7 @@ def cover_image(request, username):
         return render(
             request,
             "newprofile/partials/cover_image.html",
-            {"cover_image": api.get_cover_image()},
+            {"cover_image": api.get_cover_image(), "username": username},
         )
 
     except django.db.utils.OperationalError as ex:
@@ -237,6 +237,7 @@ def cover_image(request, username):
         # Return safe fallback context
         context = {
             "cover_image": None,
+            "username": username,
         }
         return render(request, "newprofile/partials/cover_image.html", context)
 

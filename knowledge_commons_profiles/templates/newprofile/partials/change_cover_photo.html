@@ -1,0 +1,142 @@
+<!-- Modal -->
+<div class="modal fade" id="coverModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form id="coverForm" class="modal-content" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Upload & Crop Cover Image</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="file" id="coverInput" name="image" accept="image/*" class="form-control mb-3" required/>
+
+        <!-- Cropper container where v2 injects its template -->
+        <div id="coverCropperContainer" class="border rounded cropper-image-div"></div>
+
+        <!-- Hidden fields populated from <cropper-selection> change event -->
+        <input type="hidden" name="x" id="coverCropX"/>
+        <input type="hidden" name="y" id="coverCropY"/>
+        <input type="hidden" name="width" id="coverCropW"/>
+        <input type="hidden" name="height" id="coverCropH"/>
+        <input type="hidden" name="rotate" id="coverCropRotate" value="0"/>
+        <input type="hidden" name="scaleX" id="coverCropScaleX" value="1"/>
+        <input type="hidden" name="scaleY" id="coverCropScaleY" value="1"/>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  let coverCropper = null;
+  let coverCropperSelection = null;
+  let coverCropperImage = null;
+
+  const coverInputEl = document.getElementById('coverInput');
+  const coverContainerSel = '#coverCropperContainer';
+
+  // Create/replace the image inside the Cropper when a file is chosen
+  coverInputEl.addEventListener('change', async (e) => {
+    const [file] = e.target.files || [];
+    if (!file) return;
+
+    // Clean up old instance
+    if (coverCropper) {
+      // Remove the previous container contents so a new template is built
+      document.querySelector(coverContainerSel).innerHTML = '';
+      coverCropper = null;
+      coverCropperSelection = null;
+      coverCropperImage = null;
+    }
+
+    // Create a temporary <img> for v2 constructor (it will inject the default template into container)
+    const img = new Image();
+    img.alt = 'Cover source';
+    img.src = URL.createObjectURL(file);
+
+    // Wait for the image to load to avoid zero-size issues
+    await img.decode().catch(() => { /* ignore */ });
+
+    const CropperCtor = (window.Cropper && window.Cropper.default) || window.Cropper;
+
+    coverCropper = new CropperCtor(img, { container: coverContainerSel });
+
+    // Access the v2 elements (canvas/image/selection)
+    const canvasEl = coverCropper.getCropperCanvas();
+    cropperImage = coverCropper.getCropperImage();
+    cropperSelection = coverCropper.getCropperSelection();
+
+    // Constrain to square and allow user drag/resize (v2 properties)
+    if (cropperSelection) {
+      cropperSelection.movable = true;
+      cropperSelection.resizable = true;
+      cropperSelection.aspectRatio = 7.5;     // force 1:1 box
+      cropperSelection.initialCoverage = 0.8; // nice default
+      cropperSelection.outlined = true;
+
+      // Listen for selection changes and push into hidden inputs
+      // event.detail is a { x, y, width, height } object in canvas coords
+      cropperSelection.addEventListener('change', (event) => {
+        const sel = event.detail;
+        document.getElementById('coverCropX').value = sel.x;
+        document.getElementById('coverCropY').value = sel.y;
+        document.getElementById('coverCropW').value = sel.width;
+        document.getElementById('coverCropH').value = sel.height;
+      }, { passive: true });
+    }
+
+    // Optional: track image transforms (rotate/scale) if you expose UI for them
+    // These map to server-side rotate/scale
+    if (cropperImage) {
+      cropperImage.rotatable = true;
+      cropperImage.scalable = true;
+      cropperImage.addEventListener('transform', (event) => {
+        const { rotate = 0, scaleX = 1, scaleY = 1 } = event.detail;
+        document.getElementById('cropRotate').value = rotate;
+        document.getElementById('cropScaleX').value = scaleX;
+        document.getElementById('cropScaleY').value = scaleY;
+      }, { passive: true });
+    }
+
+    // Ensure the canvas area is visible height-wise
+    if (canvasEl) {
+      canvasEl.style.height = '360px';
+    }
+  });
+
+  // Submit via fetch; Django view returns { ok: True, url: "/media/..." }
+  document.getElementById('coverForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sel = coverCropper.getCropperSelection();
+    const canvas = await sel.$toCanvas({ width: 1480, height: 200 });
+    await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.9));
+    const fd = new FormData();
+    fd.append('image', new File([blob], 'cover.jpg', { type: 'image/jpeg' }));
+
+    const resp = await fetch("{% url 'upload_cover' %}", {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+    });
+    if (!resp.ok) {
+      alert("Upload failed."); return;
+    }
+    const data = await resp.json();
+    if (data.ok) {
+      // update the current cover
+      console.log("Sending cover event update");
+      document.body.dispatchEvent(new Event('coverImageUpdated'));
+
+      // hide the modal
+      const modalEl = document.getElementById('coverModal');
+      bootstrap.Modal.getInstance(modalEl).hide();
+    }
+  });
+})();
+</script>

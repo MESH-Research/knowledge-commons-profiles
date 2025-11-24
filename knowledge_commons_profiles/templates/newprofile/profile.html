@@ -2,116 +2,119 @@
 {% load static %}
 
 {% block content %}
-<div class="container" id="main_container">
+  <div class="container" id="main_container">
 
-  <!-- Profile Banner and Info -->
-  <div class="row">
-    <!--djlint:off -->
-    <div class="profile-banner col-12 col-lg-12"
-         style="background-image: url('https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg');"
-         id="profile-banner"
-         hx-get="{% url 'cover_image' username=username %}"
-         hx-trigger="load"
-         hx-target="this"></div>
-    <!--djlint:on -->
-  </div>
-
-  <div class="row">
-    <!-- Profile Info -->
-    <div
-      class="col-12 col-lg-{% if logged_in_user_is_profile %}8{% else %}12{% endif %}">
-      <div class="profile-info-card">
-        <div class="profile-image-container"
-          hx-get="{% url 'profile_image' username=username %}"
-          hx-trigger="load, profileImageUpdated from:body"
-          hx-target="this">
-        </div>
-        <h1 class="profile-title" id="profile-title" hx-swap-oob="true">{{ profile.name }}</h1>
-        <h2 class="profile-subtitle" id="profile-subtitle">{{ profile.title }}</h2>
-        <p class="profile-institution" id="profile-institution">
-          <!-- djlint:off --><a href="/?s={{ profile.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile.institutional_or_other_affiliation }}</a><!-- djlint:on -->
-        </p>
-
-        <div class="profile-social">
-          <a href="#" class="social-link" id="mastodon">
-            <i class="fab fa-mastodon"></i>
-          </a>
-          <a href="#" class="social-link" id="twitter">
-            <i class="fab fa-twitter"></i>
-          </a>
-          <a href="#" class="social-link" id="bluesky">
-            <img class="bluesky" src="{% static "img/bluesky.png" %}"
-                 alt="bluseky"/>
-          </a>
-          <a href="{% url "profile" user=username %}" class="social-link"
-             id="kc">
-            <i class="fas fa-at"></i>
-            <span>{{ username }}{% if user and user.is_staff %} (Knowledge Commons Staff){% endif %}</span>
-          </a>
-          <a href="#" class="social-link" id="orcid">
-            <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
-          </a>
-
-          <a href="#" class="social-link" id="arlisna">
-          </a>
-
-          <a href="#" class="social-link" id="mla">
-          </a>
-
-          <a href="#" class="social-link" id="msu">
-          </a>
-
-          <a href="#" class="social-link" id="up">
-          </a>
-
-          {% if request.user.is_staff %}
-            <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a> <a href="{% url 'manage_login' username=username %}" class="social-link action-btn">Manage User Settings</a>
-          {% endif %}
-        </div>
-
-        <div class="membership-badges" id="membership-badges"
-             hx-get="{% url 'mysql_data' username=username %}"
-             hx-trigger="load"
-             hx-target="this">
-        </div>
+    <!-- Profile Banner and Info -->
+    <div class="row">
+      <!--djlint:off -->
+      <div class="profile-banner col-12 col-lg-12"
+           style="background-image: url('https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg');"
+           id="profile-banner"
+           hx-get="{% url 'cover_image' username=username %}"
+           hx-trigger="load, coverImageUpdated from:body"
+           hx-target="this">
       </div>
+      <!--djlint:on -->
     </div>
 
-    <!-- Profile Stats -->
-    {% if logged_in_user_is_profile %}
-      <div class="col-12 col-lg-4">
-        <div class="profile-stats-card">
-          <h3 class="stat-header" id="following"></h3>
-          <div class="profile-actions">
-            <a href="{% url "edit_profile" %}"
-               class="action-btn primary">Edit</a>
-            <a href="#" data-bs-toggle="modal" data-bs-target="#avatarModal" class="action-btn">Change Profile Photo</a>
-            <a href="#" class="action-btn">Change Cover Image</a>
-            <a href="{% url 'manage_login' username=request.user.username %}" class="action-btn">Manage Login Methods and Emails</a>
+    <div class="row">
+      <!-- Profile Info -->
+      <div
+        class="col-12 col-lg-{% if logged_in_user_is_profile %}8{% else %}12{% endif %}">
+        <div class="profile-info-card">
+          <div class="profile-image-container"
+            hx-get="{% url 'profile_image' username=username %}"
+            hx-trigger="load, profileImageUpdated from:body"
+            hx-target="this">
+          </div>
+          <h1 class="profile-title" id="profile-title" hx-swap-oob="true">{{ profile.name }}</h1>
+          <h2 class="profile-subtitle" id="profile-subtitle">{{ profile.title }}</h2>
+          <p class="profile-institution" id="profile-institution">
+            <!-- djlint:off --><a href="/?s={{ profile.institutional_or_other_affiliation }}#038;post_type%5B0%5D=user" rel="nofollow">{{ profile.institutional_or_other_affiliation }}</a><!-- djlint:on -->
+          </p>
+
+          <div class="profile-social">
+            <a href="#" class="social-link" id="mastodon">
+              <i class="fab fa-mastodon"></i>
+            </a>
+            <a href="#" class="social-link" id="twitter">
+              <i class="fab fa-twitter"></i>
+            </a>
+            <a href="#" class="social-link" id="bluesky">
+              <img class="bluesky" src="{% static "img/bluesky.png" %}"
+                   alt="bluseky"/>
+            </a>
+            <a href="{% url "profile" user=username %}" class="social-link"
+               id="kc">
+              <i class="fas fa-at"></i>
+              <span>{{ username }}{% if user and user.is_staff %} (Knowledge Commons Staff){% endif %}</span>
+            </a>
+            <a href="#" class="social-link" id="orcid">
+              <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
+            </a>
+
+            <a href="#" class="social-link" id="arlisna">
+            </a>
+
+            <a href="#" class="social-link" id="mla">
+            </a>
+
+            <a href="#" class="social-link" id="msu">
+            </a>
+
+            <a href="#" class="social-link" id="up">
+            </a>
+
+            {% if request.user.is_staff %}
+              <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a> <a href="{% url 'manage_login' username=username %}" class="social-link action-btn">Manage User Settings</a>
+            {% endif %}
+          </div>
+
+          <div class="membership-badges" id="membership-badges"
+               hx-get="{% url 'mysql_data' username=username %}"
+               hx-trigger="load"
+               hx-target="this">
           </div>
         </div>
       </div>
-    {% endif %}
 
-  </div>
+      <!-- Profile Stats -->
+      {% if logged_in_user_is_profile %}
+        <div class="col-12 col-lg-4">
+          <div class="profile-stats-card">
+            <h3 class="stat-header" id="following"></h3>
+            <div class="profile-actions">
+              <a href="{% url "edit_profile" %}"
+                 class="action-btn primary">Edit</a>
+              <a href="#" data-bs-toggle="modal" data-bs-target="#avatarModal" class="action-btn">Change Profile Photo</a>
+              <a href="#" data-bs-toggle="modal" data-bs-target="#coverModal" class="action-btn">Change Cover Image</a>
+              <a href="{% url 'manage_login' username=request.user.username %}" class="action-btn">Manage Login Methods and Emails</a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
 
-  <!-- Main Content Grid -->
-  <div class="row">
-    <!-- Left Column - About -->
-    <div class="col-12 col-lg-8">
-      {% for left_id in left_order %}
-          {% include "newprofile/fragments/"|add:left_id|add:".html" %}
-      {% endfor %}
     </div>
 
-    <!-- Right Column -->
-    <div class="col-12 col-lg-4">
-      {% for right_id in right_order %}
-          {% include "newprofile/fragments/"|add:right_id|add:".html" %}
-      {% endfor %}
+    <!-- Main Content Grid -->
+    <div class="row">
+      <!-- Left Column - About -->
+      <div class="col-12 col-lg-8">
+        {% for left_id in left_order %}
+            {% include "newprofile/fragments/"|add:left_id|add:".html" %}
+        {% endfor %}
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-12 col-lg-4">
+        {% for right_id in right_order %}
+            {% include "newprofile/fragments/"|add:right_id|add:".html" %}
+        {% endfor %}
+      </div>
     </div>
   </div>
-</div>
 
+  <!-- javascript to display image uploads -->
   {% include "newprofile/partials/change_profile_photo.html" %}
+  {% include "newprofile/partials/change_cover_photo.html" %}
 {% endblock content %}

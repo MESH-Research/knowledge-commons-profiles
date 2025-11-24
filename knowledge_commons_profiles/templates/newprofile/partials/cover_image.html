@@ -1,1 +1,10 @@
-<div id="profile-banner" class="profile-banner col-12 col-lg-12" hx-swap-oob="true" style="background-image:url( {% if cover_image %}{{ cover_image }}{% else %}https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg{% endif %})"></div>
+<div
+  id="profile-banner"
+  class="profile-banner col-12 col-lg-12"
+  hx-swap-oob="true"
+  hx-get="{% url 'cover_image' username=username %}"
+  hx-trigger="coverImageUpdated from:body"
+  hx-target="this"
+  style="background-image:url( {% if cover_image %}{{ cover_image }}{% else %}https://hcommons.org/app/uploads/buddypress/members/1300/cover-image/5835a580b85b2-bp-cover-image.jpg{% endif %})">
+
+</div>

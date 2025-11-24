@@ -16,6 +16,7 @@ from knowledge_commons_profiles.newprofile.cc_search import (
     index_profile_in_cc_search,
 )
 from knowledge_commons_profiles.newprofile.forms import AvatarUploadForm
+from knowledge_commons_profiles.newprofile.models import CoverImage
 from knowledge_commons_profiles.newprofile.models import Profile
 
 logger = logging.getLogger(__name__)
@@ -62,17 +63,10 @@ def upload_avatar(request):
     im = im.resize((150, 150), resample=Image.Resampling.LANCZOS)
 
     # Re-encode to JPEG
-    out = io.BytesIO()
-    im.save(out, format="JPEG", quality=90, optimize=True)
-    out.seek(0)
+    out = compress_image(im)
 
     # Save with a safe randomized name
-    filename = f"profile_images/{uuid.uuid4().hex}.jpg"
-    default_storage.save(filename, ContentFile(out.getvalue()))
-
-    url = default_storage.url(filename)  # like /media/profile_images/abc.jpg
-    msg = f"Uploaded avatar for {request.user.username} to {url}"
-    logger.info(msg)
+    url = save_image(out, request, "profile_images")
 
     # Save to user's profile (authorization: user owns this profile)
     profile = Profile.objects.get(username=request.user.username)
@@ -86,3 +80,84 @@ def upload_avatar(request):
     index_profile_in_cc_search(profile)
 
     return JsonResponse({"ok": True, "url": url})
+
+
+def save_image(out, request, prefix) -> str:
+    filename = f"{prefix}/{uuid.uuid4().hex}.jpg"
+    default_storage.save(filename, ContentFile(out.getvalue()))
+
+    url = default_storage.url(filename)  # like /media/profile_images/abc.jpg
+    msg = f"Uploaded image for {request.user.username} to {url}"
+    logger.info(msg)
+    return url
+
+
+@login_required
+@require_POST
+def upload_cover(request):
+    form = AvatarUploadForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return HttpResponseBadRequest("Invalid form data.")
+
+    img_file = form.cleaned_data["image"]
+
+    # Pillow verification & basic content-type allowlist
+    # ruff: noqa: BLE001
+    try:
+        im = Image.open(img_file)
+        im.verify()  # ensures it's really an image
+    except Exception:
+        msg = "Corrupt or unsupported image"
+        logger.exception(msg)
+        return HttpResponseBadRequest(msg)
+    img_file.seek(0)
+    im = Image.open(img_file).convert(
+        "RGB"
+    )  # strip alpha/exif, normalize mode
+
+    # Disallow SVG and super-huge images
+    if getattr(img_file, "content_type", "") not in {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    }:
+        msg = "Only JPEG/PNG/WebP are allowed."
+        logger.exception(msg)
+        return HttpResponseBadRequest(msg)
+    if max(im.size) > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
+        msg = "Image too large."
+        logger.exception(msg)
+        return HttpResponseBadRequest(msg)
+
+    # Resize to exactly 1480x200 (high-quality)
+    im = im.resize((1480, 200), resample=Image.Resampling.LANCZOS)
+
+    # Re-encode to JPEG
+    out = compress_image(im)
+
+    # Save with a safe randomized name
+    url = save_image(out, request, "cover_images")
+
+    # Save to user's profile (authorization: user owns this profile)
+    profile = Profile.objects.get(username=request.user.username)
+
+    # delete all existing cover images (in a model called CoverImage)
+    CoverImage.objects.filter(profile=profile).delete()
+
+    # add a new CoverImage
+    cover_image = CoverImage.objects.create(
+        profile=profile, filename=url, file_path=url
+    )
+    cover_image.save()
+
+    msg = f"Saved cover for {request.user.username} to {url}"
+    logger.info(msg)
+
+    return JsonResponse({"ok": True, "url": url})
+
+
+def compress_image(im) -> io.BytesIO:
+    out = io.BytesIO()
+    im.save(out, format="JPEG", quality=90, optimize=True)
+    out.seek(0)
+    return out

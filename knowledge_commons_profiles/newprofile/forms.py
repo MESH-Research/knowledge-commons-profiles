@@ -248,7 +248,7 @@ class ProfileForm(forms.ModelForm):
 
 class AvatarUploadForm(forms.Form):
     """
-    Form for uploading an avatar image
+    Form for uploading an avatar or cover image
     """
 
     image = forms.ImageField(required=True)
