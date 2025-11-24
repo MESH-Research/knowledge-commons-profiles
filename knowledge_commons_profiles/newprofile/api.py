@@ -68,7 +68,7 @@ class API:
     def __init__(
         self,
         request,
-        user,
+        user: str | Profile,
         use_wordpress=True,
         create=False,
         works_citation_style="MHRA",
@@ -97,6 +97,10 @@ class API:
         self._works_html = None
         self._works_types = None
         self._wp_user_triggered = False
+
+        if isinstance(user, Profile):
+            self._profile = user
+            self.user = user.username
 
     @property
     def works_citation_style(self):
@@ -331,6 +335,8 @@ class API:
         """
         if self._profile is None:
             try:
+                msg = f"Fetching info for {self.user}"
+                logger.info(msg)
                 self._profile = Profile.objects.prefetch_related(
                     "academic_interests",
                     "coverimage_set",
@@ -695,6 +701,7 @@ class API:
         # TODO: this needs to fall-back to WordPress if we don't have a local
         #  image
         cover = self.profile.coverimage_set.first()
+
         if cover:
             return cover.file_path
 

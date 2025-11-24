@@ -3,7 +3,6 @@ Serializers for the REST API
 
 """
 
-import json
 import logging
 from typing import Any
 
@@ -66,8 +65,6 @@ class GroupDetailSerializer(serializers.Serializer):
     slug = serializers.CharField()
     visibility = serializers.CharField()
     description = serializers.CharField()
-    avatar = serializers.CharField()
-    groupblog = serializers.CharField()
     upload_roles = serializers.CharField()
     moderate_roles = serializers.CharField()
 
@@ -163,8 +160,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     )
     academic_interests = AcademicInterestSerializer(many=True, read_only=True)
     groups = serializers.SerializerMethodField()
-    external_sync_memberships = serializers.SerializerMethodField()
-    external_group_sync = serializers.SerializerMethodField()
+    memberships = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
@@ -193,39 +190,30 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             "last_name",
             "institutional_affiliation",
             "orcid",
+            "avatar",
             "academic_interests",
             "groups",
-            "external_sync_memberships",
-            "external_group_sync",
+            "memberships",
         ]
 
-    def get_external_sync_memberships(self, obj: Profile):
+    def get_avatar(self, obj: Profile):
+        """
+        Get the avatar URL for the profile
+        """
+        api = API(
+            request=None,
+            user=obj,
+            use_wordpress=True,
+            create=False,
+        )
+
+        return api.get_cover_image()
+
+    def get_memberships(self, obj: Profile):
         """
         Check if a user is a member of an external organisation
         """
         return get_external_memberships(obj)
-
-    def get_external_group_sync(self, obj: Profile):
-        """
-        Check if a user is a member of an external organisation
-        """
-        request = self.context.get("request")
-        has_full_access = bool(request.auth)
-
-        if not has_full_access:
-            return []
-
-        user_id = obj.username
-        request = self.context.get("request")
-
-        if not user_id:
-            return []
-
-        # create an API object
-        api = API(request, user_id, use_wordpress=False)
-        return json.loads(
-            api.profile.is_member_of if api.profile.is_member_of else "[]"
-        )
 
     def get_groups(self, obj: Profile) -> list[dict[str, Any]]:
         """
