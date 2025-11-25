@@ -1,3 +1,9 @@
+## 3.1.0 (2025-11-25)
+
+### Feat
+
+- **api**: add avatars to group api routes and rewrite group handling
+
 ## 3.0.0 (2025-11-24)
 
 ### BREAKING CHANGE
