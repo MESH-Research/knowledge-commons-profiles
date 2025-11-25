@@ -13,7 +13,6 @@ import uuid
 
 # ruff: noqa: TC003
 from datetime import datetime
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
@@ -544,6 +543,13 @@ class Profile(models.Model):
         # if we have no meta result in WordPress, return None
         return None
 
+    def get_on_disk_profile_image(self) -> tuple[str | None, str | None]:
+        from knowledge_commons_profiles.newprofile.utils import (
+            get_on_disk_image,
+        )
+
+        return get_on_disk_image("avatars", self.central_user_id)
+
 
 class AcademicInterest(models.Model):
     """
@@ -694,40 +700,15 @@ class WpBpGroup(models.Model):
         return str(self.name)
 
     def get_avatar(self):
-        avatars_image_path: str = settings.WP_MEDIA_ROOT
-
-        thumb = None
-        full = None
-
-        group_avatars_image_path: Path = (
-            Path(avatars_image_path) / "group-avatars" / str(self.pk)
+        from knowledge_commons_profiles.newprofile.utils import (
+            get_on_disk_image,
         )
 
-        if not group_avatars_image_path.exists():
-            msg = f"Path {group_avatars_image_path!s} does not exist"
-            logger.info(msg)
-            return ""
+        thumb, full = get_on_disk_image("group-avatars", self.pk)
+        if full:
+            return settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{full}"
 
-        # Look for image files in the cover-image directory
-        for filename in group_avatars_image_path.iterdir():
-            filename_plain = filename.name
-
-            if str(filename_plain).endswith(
-                ("bpthumb.jpg", "bpthumb.jpeg", "bpthumb.png"),
-            ):
-                thumb = filename_plain
-
-            if str(filename_plain).endswith(
-                ("bpfull.jpg", "bpfull.jpeg", "bpfull.png"),
-            ):
-                full = filename_plain
-
-        if not thumb and not full:
-            msg = f"No image files found: {group_avatars_image_path!s}"
-            logger.info(msg)
-            return ""
-
-        return settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{full}"
+        return settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{thumb}"
 
 
 class WpUserMeta(models.Model):

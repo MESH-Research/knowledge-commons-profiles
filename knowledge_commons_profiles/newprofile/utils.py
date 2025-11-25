@@ -5,6 +5,7 @@ Utility functions
 import hashlib
 import json
 import logging
+from pathlib import Path
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -164,7 +165,43 @@ def get_visibilities(works_object, hidden_works):
     return visibility, visibility_works
 
 
-def get_profile_photo(profile):
+def get_on_disk_image(
+    path_type: str, obj_id: int
+) -> tuple[str | None, str | None]:
+    avatars_image_path: str = settings.WP_MEDIA_ROOT
+
+    thumb = None
+    full = None
+
+    image_path: Path = Path(avatars_image_path) / path_type / str(obj_id)
+
+    if not image_path.exists():
+        msg = f"Path {image_path!s} does not exist"
+        logger.info(msg)
+        return None, None
+
+    # Look for image files in the cover-image directory
+    for filename in image_path.iterdir():
+        filename_plain = filename.name
+
+        if str(filename_plain).endswith(
+            ("bpthumb.jpg", "bpthumb.jpeg", "bpthumb.png"),
+        ):
+            thumb = filename_plain
+
+        if str(filename_plain).endswith(
+            ("bpfull.jpg", "bpfull.jpeg", "bpfull.png"),
+        ):
+            full = filename_plain
+
+    if not thumb and not full:
+        msg = f"No image files found: {image_path!s}"
+        logger.info(msg)
+
+    return thumb, full
+
+
+def get_profile_photo(profile: Profile):
     """
     Return the path to the user's profile image
     :return:
@@ -186,9 +223,30 @@ def get_profile_photo(profile):
         msg = f"Image for {profile.username} is not local (thrown)"
         logger.exception(msg)
 
+    # see if we can find an image on disk, in the same way as BuddyPress
+    thumb, full = profile.get_on_disk_profile_image()
+    msg = (
+        f"{profile.username} ({profile.central_user_id}) has an "
+        f"image on disk: using this"
+    )
+
+    if full:
+        logger.info(msg)
+        return (
+            settings.WP_MEDIA_URL
+            + f"/avatars/{profile.central_user_id}/{full}"
+        )
+    if thumb:
+        logger.info(msg)
+        return (
+            settings.WP_MEDIA_URL
+            + f"/group-avatars/{profile.central_user_id}/{thumb}"
+        )
+
+    # fall back to the DB from import
     profile_image = profile.profileimage_set.first()
     if profile_image:
-        msg = f"Image for {profile.username} is in WordPress"
+        msg = f"Image for {profile.username} has been imported from WordPress"
         logger.info(msg)
 
         return profile_image.full

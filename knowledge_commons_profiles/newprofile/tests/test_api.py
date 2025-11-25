@@ -855,6 +855,10 @@ class GetProfileInfoTests(django.test.TestCase):
             "Test Institution"
         )
         self.mock_profile.is_member_of = '{"MLA": "True"}'
+        self.mock_profile.get_on_disk_profile_image.return_value = (
+            "https://example.com/profilethumb.jpg",
+            "https://example.com/profile.jpg",
+        )
 
         # Assign the mock profile to the model instance
         self.model_instance.profile = self.mock_profile
@@ -1386,6 +1390,8 @@ class GetGroupsTests(django.test.TestCase):
         mock_return.slug = "slug"
         mock_return.group.status = "public"
         mock_return.group.get_avatar.return_value = ""
+        mock_return.inviter_id = 0
+        mock_return.inviter = None
 
         mock_qs = MagicMock()
         mock_manager.filter.return_value = mock_qs
@@ -1413,6 +1419,7 @@ class GetGroupsTests(django.test.TestCase):
                     "slug": "slug",
                     "status": "public",
                     "avatar": "",
+                    "inviter_id": 0,
                 }
             ],
         )
@@ -1645,6 +1652,8 @@ class GetProfilePhotoTests(django.test.TestCase):
 
         # Create a mock profile object
         self.profile_obj = mock.MagicMock()
+        self.profile_obj.get_on_disk_profile_image.return_value = (None, None)
+        self.profile_obj.central_user_id = 1
         self.mock_profile.return_value = self.profile_obj
 
         # Set the email on the profile
