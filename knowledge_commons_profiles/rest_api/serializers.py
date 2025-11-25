@@ -31,6 +31,8 @@ class GroupMembershipSerializer(serializers.Serializer):
     group_name = serializers.CharField()
     role = serializers.CharField()
     url = serializers.SerializerMethodField()
+    status = serializers.CharField()
+    avatar = serializers.CharField()
 
     def get_url(self, obj: dict[str, Any]) -> str:
         """
@@ -63,10 +65,16 @@ class GroupDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     slug = serializers.CharField()
-    visibility = serializers.CharField()
+    avatar = serializers.SerializerMethodField()
     description = serializers.CharField()
-    upload_roles = serializers.CharField()
-    moderate_roles = serializers.CharField()
+    status = serializers.CharField()
+
+    def get_avatar(self, obj: WpBpGroup) -> str:
+        """
+        Get the avatar URL for the group from meta
+        """
+        logger.info("Getting avatar")
+        return obj.get_avatar()
 
 
 class AcademicInterestSerializer(serializers.ModelSerializer):

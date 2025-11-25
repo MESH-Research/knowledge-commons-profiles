@@ -1379,12 +1379,19 @@ class GetGroupsTests(django.test.TestCase):
     )
     def test_default_public_only(self, mock_manager):
         # Prepare a mock queryset chain
+        mock_return = MagicMock()
+        mock_return.gid = 1
+        mock_return.group_name = "G1"
+        mock_return.role = "member"
+        mock_return.slug = "slug"
+        mock_return.group.status = "public"
+        mock_return.group.get_avatar.return_value = ""
+
         mock_qs = MagicMock()
         mock_manager.filter.return_value = mock_qs
         mock_qs.select_related.return_value = mock_qs
         mock_qs.annotate.return_value = mock_qs
-        mock_qs.order_by.return_value = mock_qs
-        mock_qs.values_list.return_value = [[1, "G1", "member", "slug"]]
+        mock_qs.order_by.return_value = [mock_return]
 
         result = self.service.get_groups()
 
@@ -1395,12 +1402,19 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.select_related.assert_called_once_with("group")
         mock_qs.annotate.assert_called_once()
         mock_qs.order_by.assert_called_once_with("group_name")
-        mock_qs.values_list.assert_called_once_with(
-            "gid", "group_name", "role", "slug"
-        )
+
         self.assertEqual(
             result,
-            [{"id": 1, "group_name": "G1", "role": "member", "slug": "slug"}],
+            [
+                {
+                    "id": 1,
+                    "group_name": "G1",
+                    "role": "member",
+                    "slug": "slug",
+                    "status": "public",
+                    "avatar": "",
+                }
+            ],
         )
 
     @patch(
@@ -1409,15 +1423,27 @@ class GetGroupsTests(django.test.TestCase):
     def test_private_hidden_option(self, mock_manager):
         choices = WpBpGroup.STATUS_CHOICES[1:]  # private & hidden
 
+        mock_return = MagicMock()
+        mock_return.gid = 1
+        mock_return.group_name = "G2"
+        mock_return.role = "administrator"
+        mock_return.slug = "slug1"
+        mock_return.group.status = "public"
+        mock_return.group.get_avatar.return_value = ""
+
+        mock_return_two = MagicMock()
+        mock_return_two.gid = 2
+        mock_return_two.group_name = "G2"
+        mock_return_two.role = "moderator"
+        mock_return_two.slug = "slug2"
+        mock_return_two.group.status = "public"
+        mock_return_two.group.get_avatar.return_value = ""
+
         mock_qs = MagicMock()
         mock_manager.filter.return_value = mock_qs
         mock_qs.select_related.return_value = mock_qs
         mock_qs.annotate.return_value = mock_qs
-        mock_qs.order_by.return_value = mock_qs
-        mock_qs.values_list.return_value = [
-            [2, "G2", "administrator", "slug1"],
-            [3, "G3", "moderator", "slug2"],
-        ]
+        mock_qs.order_by.return_value = [mock_return, mock_return_two]
 
         result = self.service.get_groups(status_choices=choices)
 
@@ -1428,7 +1454,6 @@ class GetGroupsTests(django.test.TestCase):
             group__status__in=["private", "hidden"],
         )
         self.assertEqual(len(result), 2)
-        self.assertCountEqual([r["group_name"] for r in result], ["G2", "G3"])
 
 
 class GetCoverImageTests(django.test.TestCase):

@@ -7,20 +7,18 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.views import RedirectBehaviour
 from knowledge_commons_profiles.cilogon.views import app_logout
-from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.rest_api.authentication import (
@@ -155,73 +153,62 @@ class ProfileDetailView(generics.RetrieveAPIView):
         )
 
 
-class GroupDetailView(APIView):
+class MultipleFieldLookupMixin:
     """
-    Retrieve a Group with improved error handling
+    Allows us to lookup by different field names
+    """
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        queryset = self.filter_queryset(queryset)
+        queryset_filter = {}
+
+        for field in self.lookup_fields:
+            if self.kwargs.get(field, None):
+                queryset_filter[field] = self.kwargs[field]
+
+        obj = get_object_or_404(queryset, **queryset_filter)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+
+class GroupDetailView(MultipleFieldLookupMixin, generics.RetrieveAPIView):
+    """
+    Retrieve a profile
     """
 
     authentication_classes = [StaticBearerAuthentication]
     permission_classes = [AllowAny]
+    queryset = WpBpGroup.objects.all()
+    serializer_class = GroupDetailSerializer
+    lookup_fields = ["pk", "slug"]
+    lookup_url_kwarg = ["pk"]
 
-    def get_object(
-        self,
-        request: Request,
-        pk: str | None = None,
-        slug: str | None = None,
-    ):
-        """Get group object with proper error handling"""
-        api = API(request, None, use_wordpress=True)
-        has_full_access = bool(request.auth)
-
-        # Build access level - restrict to public if no auth
-        group_status = WpBpGroup.STATUS_CHOICES if has_full_access else None
-
-        if not pk and not slug:
-            message = "Either 'pk' or 'slug' must be provided"
-            raise ValidationError(message)
-
-        return api.get_group(
-            group_id=pk,
-            slug=slug,
-            status_choices=group_status,
-        )
-
-    def get(
-        self,
-        request: Request,
-        pk: str | None = None,
-        slug: str | None = None,
-    ) -> Response:
-        """Enhanced retrieve method"""
+    def retrieve(self, request, *args, **kwargs):
         has_full_access = bool(request.auth)
 
         try:
-            instance = self.get_object(request, pk, slug)
-        except (Http404, WpBpGroup.DoesNotExist):
+            instance: WpBpGroup = self.get_object()
+
+            if instance.status != "public" and not has_full_access:
+                meta = build_metadata(
+                    has_full_access, error=RESTError.FATAL_GROUP_NOT_FOUND
+                )
+                return Response(meta, status=status.HTTP_404_NOT_FOUND)
+
+        except Http404:
             meta = build_metadata(
                 has_full_access, error=RESTError.FATAL_GROUP_NOT_FOUND
             )
             return Response(meta, status=status.HTTP_404_NOT_FOUND)
-        except ValidationError as e:
-            meta = build_metadata(
-                has_full_access, error=RESTError.FATAL_NO_GROUP_ID_OR_SLUG
-            )
-            return Response(
-                {**meta, "detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            message = f"Unexpected error retrieving group: {e}"
-            logger.exception(message)
-            meta = build_metadata(
-                has_full_access, error=RESTError.FATAL_UNDEFINED_ERROR
-            )
-            return Response(meta, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        serializer = GroupDetailSerializer(
-            instance, context={"request": request}
-        )
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
         return Response(
-            {"results": serializer.data},
+            {
+                "results": data,
+            },
             status=status.HTTP_200_OK,
         )
 

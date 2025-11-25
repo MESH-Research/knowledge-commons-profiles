@@ -646,7 +646,7 @@ class API:
             )
 
         try:
-            group_member = (
+            group_members = (
                 WpBpGroupMember.objects.filter(
                     user_id=self.wp_user.id,
                     is_confirmed=True,
@@ -656,9 +656,7 @@ class API:
                 .annotate(
                     gid=F("group__id"),
                     slug=F("group__slug"),
-                    # rename group__name → group_name
                     group_name=F("group__name"),
-                    # compute “role” based on is_admin / is_mod
                     role=Case(
                         When(is_admin=True, then=Value("administrator")),
                         When(is_mod=True, then=Value("moderator")),
@@ -667,12 +665,18 @@ class API:
                     ),
                 )
                 .order_by("group_name")
-                .values_list("gid", "group_name", "role", "slug")
             )
 
-            return_value = [
-                {"id": gid, "group_name": name, "role": role, "slug": slug}
-                for gid, name, role, slug in group_member
+            return [
+                {
+                    "id": gm.gid,  # group id
+                    "group_name": gm.group_name,  # group name
+                    "role": gm.role,  # computed role
+                    "slug": gm.slug,  # slug
+                    "status": gm.group.status,
+                    "avatar": gm.group.get_avatar(),
+                }
+                for gm in group_members
             ]
 
         except django.db.utils.OperationalError as oe:
@@ -684,13 +688,6 @@ class API:
                 raise
 
             return [], oe
-
-        else:
-            return (
-                (return_value, None)
-                if on_error == ErrorModel.RETURN
-                else return_value
-            )
 
     def get_cover_image(self):
         """
