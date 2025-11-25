@@ -675,6 +675,7 @@ class API:
                     "slug": gm.slug,  # slug
                     "status": gm.group.status,
                     "avatar": gm.group.get_avatar(),
+                    "inviter_id": gm.inviter_id,
                 }
                 for gm in group_members
             ]

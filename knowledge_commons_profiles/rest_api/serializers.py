@@ -16,6 +16,7 @@ from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.rest_api import utils
 from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
@@ -33,6 +34,15 @@ class GroupMembershipSerializer(serializers.Serializer):
     url = serializers.SerializerMethodField()
     status = serializers.CharField()
     avatar = serializers.CharField()
+    inviter_id = serializers.IntegerField()
+    inviter = serializers.SerializerMethodField()
+
+    def get_inviter(self, obj: dict[str, Any]):
+        try:
+            user = WpUser.objects.get(id=obj["inviter_id"])
+            return reverse("profiles_detail_view", args=[user.username])
+        except WpUser.DoesNotExist:
+            return None
 
     def get_url(self, obj: dict[str, Any]) -> str:
         """
