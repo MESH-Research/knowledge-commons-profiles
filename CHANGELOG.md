@@ -1,3 +1,10 @@
+## 3.2.0 (2025-11-25)
+
+### Feat
+
+- **images**: load images directly from disk where possible
+- **api**: add inviter details to user display api
+
 ## 3.1.0 (2025-11-25)
 
 ### Feat
