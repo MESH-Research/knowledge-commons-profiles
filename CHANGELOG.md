@@ -1,3 +1,9 @@
+## 3.3.0 (2025-11-27)
+
+### Feat
+
+- **stats**: add profile link to stats download
+
 ## 3.2.0 (2025-11-25)
 
 ### Feat
