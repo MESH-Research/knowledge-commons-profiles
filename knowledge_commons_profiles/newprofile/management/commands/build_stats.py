@@ -20,10 +20,10 @@ COUNTER_LIMIT = 20
 
 class Command(BaseCommand):
     """
-    Command to import cover images from directory structure
+    Command to build stats
     """
 
-    help = "Extract data from a CSV of all users"
+    help = "Build stats"
 
     def process_users(  # noqa: PLR0913, C901
         self,
@@ -55,7 +55,6 @@ class Command(BaseCommand):
 
                         if domain not in settings.EXCLUDE_STATS_EMAILS:
                             emails.append(domain)
-
 
                 current_score = lat_long.get(
                     user["canonical_institution_name"], [0, 0, 0]

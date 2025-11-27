@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     """
-    Command to import cover images from directory structure
+    Command to extract data from a user CSV
     """
 
     help = "Extract data from a CSV of all users"

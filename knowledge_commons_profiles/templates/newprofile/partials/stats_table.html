@@ -4,7 +4,7 @@
       <tr>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">User ID</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Display Name</th>
-        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Username</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Profile</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Email</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Institution</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ROR Institution</th>
@@ -17,7 +17,7 @@
         <tr>
           <td>{{ user.id }}</td>
           <td>{{ user.display_name }}</td>
-          <td>{{ user.login_name }}</td>
+          <td>{{ user.profile }}</td>
           <td>{{ user.user_email }}</td>
           <td>{{ user.institution }}</td>
           <td>{{ user.ror_record.institution_name }}</td>

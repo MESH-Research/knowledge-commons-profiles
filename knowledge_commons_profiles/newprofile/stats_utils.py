@@ -79,6 +79,9 @@ def get_user_data(
     records = RORRecord.objects.in_bulk(ror_ids)
 
     for u in users:
+        # add a profile column
+        u["profile"] = "https://hcommons.org/members/" + u["user_login"]
+
         inst = u["institution"]
         rl = lookup_by_text.get(inst)
         rec = records.get(rl.ror.id) if (rl and rl.ror) else None
@@ -104,6 +107,7 @@ def get_user_data(
         "latest_activity",
         "ror_institution",
         "ror_id",
+        "profile",
     ]
 
     if output_stream:
@@ -122,6 +126,7 @@ def get_user_data(
             output_object: dict = {
                 "id": wp_user["id"],
                 "display_name": wp_user["display_name"],
+                "profile": wp_user["profile"],
                 "user_login": wp_user["user_login"],
                 "user_email": wp_user["user_email"],
                 "institution": wp_user["institution"],
