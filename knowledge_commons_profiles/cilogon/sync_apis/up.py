@@ -426,7 +426,8 @@ class UP(SyncClass):
         """
         response: Account | dict = self.get_user_info(user_id)
 
-        return bool(response.Id)
+        if hasattr(response, "Id"):
+            return bool(response.Id)
 
         return False
 

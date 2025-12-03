@@ -361,7 +361,7 @@ class ARLISNA(SyncClass):
                     MembersSearchResponse, result
                 )
 
-                if adapted.TotalCount > 0:
+                if hasattr(adapted, "TotalCount") and adapted.TotalCount > 0:
                     return {"ARLISNA": adapted}
 
             except APIError:
