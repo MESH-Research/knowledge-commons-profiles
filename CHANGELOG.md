@@ -1,3 +1,9 @@
+## 3.4.3 (2025-12-03)
+
+### Fix
+
+- **traefik**: add new dev rules on traefik
+
 ## 3.4.2 (2025-12-03)
 
 ### Fix
