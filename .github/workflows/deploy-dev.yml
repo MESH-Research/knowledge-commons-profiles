@@ -11,7 +11,6 @@ env:
   AWS_REGION: us-east-1                       # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: kcprofiles-dev              # set this to your Amazon ECR repository name
   ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik-dev
-  ECR_REPOSITORY_POSTGRES: kcprofiles-postgres-dev
   ECR_REPOSITORY_REDIS: kcprofiles-redis-dev
   ECS_SERVICE: kcprofiles-dev-blue            # set this to your Amazon ECS service name
   ECS_CLUSTER: kcprofiles-dev                 # set this to your Amazon ECS cluster name
@@ -59,10 +58,6 @@ jobs:
           # push the Traefik repository
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
-
-          # push the Postgres repository
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_POSTGRES:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_POSTGRES:latest
 
           # register env variables
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
