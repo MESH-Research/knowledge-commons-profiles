@@ -1,3 +1,9 @@
+## 3.4.1 (2025-12-03)
+
+### Fix
+
+- **cilogon**: do not infinite redirect if on dev
+
 ## 3.4.0 (2025-12-03)
 
 ### Feat

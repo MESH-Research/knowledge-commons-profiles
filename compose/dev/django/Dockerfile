@@ -4,7 +4,7 @@ FROM docker.io/python:3.12.9-slim-bookworm AS python
 # Python build stage
 FROM python AS python-build-stage
 
-ARG BUILD_ENVIRONMENT=production
+ARG BUILD_ENVIRONMENT=dev
 
 # Install apt packages
 RUN apt-get update && apt-get install --no-install-recommends -y \
@@ -29,7 +29,7 @@ RUN pip wheel --wheel-dir /usr/src/app/wheels  \
 # Python 'run' stage
 FROM python AS python-run-stage
 
-ARG BUILD_ENVIRONMENT=production
+ARG BUILD_ENVIRONMENT=dev
 ARG APP_HOME=/app
 
 ENV PYTHONUNBUFFERED=1
@@ -66,12 +66,12 @@ RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
   && rm -rf /wheels/
 
 
-COPY --chown=django:django ./compose/production/django/entrypoint /entrypoint
+COPY --chown=django:django ./compose/dev/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
 RUN chmod +x /entrypoint
 
 
-COPY --chown=django:django ./compose/production/django/start /start
+COPY --chown=django:django ./compose/dev/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
