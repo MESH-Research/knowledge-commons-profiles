@@ -108,7 +108,10 @@ def callback(request):
 
     # forward the code to the next URL if it's valid
     forwarding_url = forward_url(request)
-    if forwarding_url:
+    if (
+        forwarding_url
+        and request.headers["host"] != "profiles.hcommons-dev.org"
+    ):
         return forwarding_url
 
     # no "next" was found or was valid, so we will decode the result here
