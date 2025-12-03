@@ -110,7 +110,7 @@ def callback(request):
     forwarding_url = forward_url(request)
     if (
         forwarding_url
-        and request.headers["host"] != "profiles.hcommons-dev.org"
+        and request.headers.get("host") != "profiles.hcommons-dev.org"
     ):
         return forwarding_url
 
