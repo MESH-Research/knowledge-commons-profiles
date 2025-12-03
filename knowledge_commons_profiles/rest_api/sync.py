@@ -42,6 +42,7 @@ class ExternalSync:
         class_list: list[str] | None = None,
         send_webhook=True,
         cache=True,
+        webhooks=True,
     ) -> dict[str, bool]:
         """
         Sync external data
@@ -126,7 +127,8 @@ class ExternalSync:
         profile.last_sync = datetime.datetime.now(tz=datetime.UTC)
         profile.save()
 
-        ExternalSync._send_webhooks(profile, send_webhook)
+        if webhooks:
+            ExternalSync._send_webhooks(profile, send_webhook)
 
         logger.info("Roles are now %s", profile.is_member_of)
 
@@ -138,9 +140,9 @@ class ExternalSync:
             # send a ping to other services
             for url in settings.WEBHOOK_URLS:
                 try:
-                    requests.post(
+                    requests.get(
                         url,
-                        json={
+                        params={
                             "token": settings.WEBHOOK_TOKEN,
                             "username": profile.username,
                         },

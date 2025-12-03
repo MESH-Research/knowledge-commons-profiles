@@ -446,13 +446,14 @@ class MLA(SyncClass):
         ):
             # parse response.data[0].membership.expiring_date into a date
             # and check if it is in the future
-            expiring_raw = response.data[0].membership.expiring_date
-            if not expiring_raw:
-                return False
-            dt = parser.parse(expiring_raw)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=UTC)
-            return dt > datetime.now(tz=UTC)
+            if hasattr(response.data[0], "membership"):
+                expiring_raw = response.data[0].membership.expiring_date
+                if not expiring_raw:
+                    return False
+                dt = parser.parse(expiring_raw)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=UTC)
+                return dt > datetime.now(tz=UTC)
 
         return False
 
@@ -484,6 +485,7 @@ class MLA(SyncClass):
                 if (
                     hasattr(adapted, "meta")
                     and adapted.meta.status == "success"
+                    and hasattr(adapted.data[0], "total_num_results")
                     and adapted.data[0].total_num_results > 0
                 ):
                     return {"MLA": adapted}
