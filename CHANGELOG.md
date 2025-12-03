@@ -1,3 +1,14 @@
+## 3.4.0 (2025-12-03)
+
+### Feat
+
+- **dump**: new command to dump users and their organizational memberships (takes a very long time to run)
+
+### Fix
+
+- **cilogon**: add handling for dev domain
+- **traefik**: add new dev rules on traefik
+
 ## 3.3.0 (2025-11-27)
 
 ### Feat
