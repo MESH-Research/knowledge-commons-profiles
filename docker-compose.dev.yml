@@ -1,5 +1,4 @@
 volumes:
-  dev_postgres_data: {}
   dev_traefik: {}
 
 
@@ -18,27 +17,10 @@ services:
         - knowledge_commons_profiles_dev_django:latest
     image: knowledge_commons_profiles_dev_django
     depends_on:
-      - postgres
       - redis
     env_file:
       - ./.envs/.dev/.django
-      - ./.envs/.dev/.postgres
     command: /start
-
-  postgres:
-    build:
-      context: .
-      dockerfile: ./compose/dev/postgres/Dockerfile
-      tags:
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_POSTGRES:-postgres-dev}:${IMAGE_TAG:-latest}
-        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_POSTGRES:-postgres-dev}:latest
-        - knowledge_commons_profiles_dev_postgres:${IMAGE_TAG:-latest}
-        - knowledge_commons_profiles_dev_postgres:latest
-    image: knowledge_commons_profiles_dev_postgres
-    volumes:
-      - dev_postgres_data:/var/lib/postgresql/data
-    env_file:
-      - ./.envs/.dev/.postgres
 
   traefik:
     build:
