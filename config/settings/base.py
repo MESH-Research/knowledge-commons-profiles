@@ -400,6 +400,7 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
         "localhost",
         "lndo.site",
         "hcommons-staging.org",
+        "hcommons-dev.org",
     ],
 )
 

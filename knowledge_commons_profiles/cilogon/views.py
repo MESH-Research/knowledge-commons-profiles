@@ -75,17 +75,27 @@ def cilogon_login(request):
     app_logout(request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT)
     request.session.flush()
 
-    # can use this to pass a next_url if we wish
-    # an empty string assumes authentication to Profiles app
-    # values for base domain here must be present in
-    # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
-    state = pack_state("")
-
     # we need to redirect to https here because the load balancer operates
     # behind the scenes on http, which is not the external URL we want
+    # we also want to replace the dev domain with the production domain
     redirect_uri = request.build_absolute_uri(
         "/" + settings.OIDC_CALLBACK
     ).replace("http://", "https://")
+
+    if "profile.hcommons-dev.org" in redirect_uri:
+        # can use this to pass a next_url if we wish
+        # an empty string assumes authentication to Profiles app
+        # values for base domain here must be present in
+        # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
+        state = pack_state(
+            "https://profile.hcommons-dev.org/" + settings.OIDC_CALLBACK
+        )
+    else:
+        state = pack_state("")
+
+    redirect_uri = redirect_uri.replace(
+        "profile.hcommons-dev.org", "profile.hcommons.org"
+    )
 
     return oauth.cilogon.authorize_redirect(request, redirect_uri, state=state)
 
