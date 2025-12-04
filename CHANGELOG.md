@@ -1,3 +1,12 @@
+## 3.5.1 (2025-12-04)
+
+### Fix
+
+- **registration**: fixes to the registration process
+- **header-bar**: add logout link even when mysql engine fails
+- **association**: ensure that https is used for association
+- **traefik**: add new dev rules on traefik
+
 ## 3.5.0 (2025-12-04)
 
 ### Feat
