@@ -322,7 +322,7 @@ class ARLISNA(SyncClass):
         """
         response: MembersSearchResponse | dict = self.get_user_info(user_id)
 
-        if response.TotalCount > 0:
+        if hasattr(response, "TotalCount") and response.TotalCount > 0:
             # parse response.data[0].membership.expiring_date into a date
             # and check if it is in the future
             try:
