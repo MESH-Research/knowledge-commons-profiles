@@ -1,3 +1,14 @@
+## 3.5.0 (2025-12-04)
+
+### Feat
+
+- **mailchimp**: add mailchimp functionality
+
+### Fix
+
+- **association**: allow association by any attached email
+- **arlisna**: add synchronisation error handling
+
 ## 3.4.3 (2025-12-03)
 
 ### Fix
