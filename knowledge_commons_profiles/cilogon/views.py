@@ -50,6 +50,9 @@ from knowledge_commons_profiles.common.profiles_email import (
 from knowledge_commons_profiles.common.profiles_email import (
     send_knowledge_commons_email,
 )
+from knowledge_commons_profiles.newprofile.mailchimp import (
+    hcommons_add_new_user_to_mailchimp,
+)
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
@@ -615,6 +618,12 @@ def register(request):
             sub=context["cilogon_sub"], profile=profile
         )
 
+        # Add the user to Mailchimp
+        hcommons_add_new_user_to_mailchimp(profile.username)
+
+        # Send webhooks to other services
+        ExternalSync.sync(profile=profile, send_webhook=True)
+
         # Redirect to my_profile page
         return redirect(reverse("my_profile"))
 
@@ -664,6 +673,7 @@ def validate_form(email, full_name, request, username):
     return errored
 
 
+# ruff: noqa: PLR0911
 def association(request):
     """
     The association view
@@ -705,9 +715,22 @@ def association(request):
                 )
                 # render to the confirm page
                 return redirect(reverse("confirm"))
-            context.update({"error": "No profile found with that email"})
-        else:
+            # check for other emails
+            profile = Profile.objects.filter(emails__contains=[email])
+
+            # if we have a profile, generate a UUID4
+            if profile:
+                associate_with_existing_profile(
+                    email, profile, request, userinfo
+                )
+                # render to the confirm page
+                return redirect(reverse("confirm"))
+
             # if we get here, this is a new user
+            msg = f"Could not find a profile with that email {email}"
+            logger.info(msg)
+
+            context.update({"error": "No profile found with that email"})
             context.update(
                 {
                     "email": userinfo.get("email", ""),
