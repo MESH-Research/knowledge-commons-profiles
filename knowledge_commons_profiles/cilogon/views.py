@@ -365,9 +365,13 @@ def manage_login(request, username):
 
         # add a new secondary email
         if request.POST.get("new_email"):
-            _add_secondary_email(profile, request)
+            if _add_secondary_email(profile, request):
+                return redirect(
+                    reverse("manage_login", args=[username])
+                    + "?new_email=true"
+                )
             return redirect(
-                reverse("manage_login", args=[username]) + "?new_email=true"
+                reverse("manage_login", args=[username]) + "?error=true"
             )
 
         # make an email primary
@@ -398,12 +402,16 @@ def manage_login(request, username):
     # build an alert message if needed
     msg = ""
     new_email_msg = request.GET.get("new_email", "")
+    error_msg = request.GET.get("error", "")
 
     if new_email_msg:
         msg = (
             "We have sent an email to your new email address. "
             "Please check your inbox and click the link to verify it."
         )
+
+    if error_msg:
+        msg = "This email address is already in use"
 
     # build a context
     context = {
@@ -520,17 +528,17 @@ def _add_secondary_email(profile: Profile | None, request):
     profiles = Profile.objects.filter(email=email)
     if profiles.exists():
         messages.error(request, "Email already in use")
-        return
+        return False
 
     profiles = Profile.objects.filter(emails__contains=[email])
 
     if profiles.exists():
         messages.error(request, "Email already in use")
-        return
+        return False
 
     # send a verification email
     send_new_email_verify(email, profile, request)
-    return
+    return True
 
 
 def new_email_verified(request, verification_id, secret_key):
@@ -673,16 +681,24 @@ def validate_form(email, full_name, request, username):
     if not email or not username or not full_name:
         errored = True
         messages.error(request, "Please fill in all fields")
+
     # check whether this email already exists
     profile = Profile.objects.filter(email=email).first()
     if profile:
         errored = True
         messages.error(request, "This email already exists")
+
+    profile = Profile.objects.filter(emails__contains=[email]).first()
+    if profile:
+        errored = True
+        messages.error(request, "This email already exists")
+
     # check whether this username already exists
     profile = Profile.objects.filter(username=username).first()
     if profile:
         errored = True
         messages.error(request, "This username already exists")
+
     return errored
 
 
@@ -753,7 +769,7 @@ def association(request):
                 }
             )
 
-            return render(request, "cilogon/new_user.html", context)
+        return render(request, "cilogon/new_user.html", context)
 
     return render(request, "cilogon/association.html", context)
 
