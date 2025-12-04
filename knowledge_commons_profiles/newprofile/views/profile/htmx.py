@@ -301,6 +301,7 @@ def header_bar(request):
                 ),
                 "short_notifications": None,
                 "notification_count": 0,
+                "logout_url": reverse("logout"),
             }
             return render(
                 request,
@@ -413,7 +414,7 @@ def mysql_data(request, username):
                 "logged_in_profile_image": (
                     api_me.get_profile_photo() if api_me else None
                 ),
-                "logout_url": None,
+                "logout_url": reverse("logout"),
                 "profile": profile_info_obj,
             }
 
@@ -440,7 +441,7 @@ def mysql_data(request, username):
             "short_notifications": None,
             "notification_count": 0,
             "logged_in_profile_image": None,
-            "logout_url": None,
+            "logout_url": reverse("logout"),
             "profile": None,
         }
         return render(request, "newprofile/partials/mysql_data.html", context)
