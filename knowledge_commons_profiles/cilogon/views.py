@@ -516,8 +516,21 @@ def _remove_secondary_email(profile: Profile | None, request):
 def _add_secondary_email(profile: Profile | None, request):
     email = request.POST.get("new_email", "")
 
+    # check the email doesn't exist somewhere else
+    profiles = Profile.objects.filter(email=email)
+    if profiles.exists():
+        messages.error(request, "Email already in use")
+        return
+
+    profiles = Profile.objects.filter(emails__contains=[email])
+
+    if profiles.exists():
+        messages.error(request, "Email already in use")
+        return
+
     # send a verification email
     send_new_email_verify(email, profile, request)
+    return
 
 
 def new_email_verified(request, verification_id, secret_key):
@@ -716,7 +729,7 @@ def association(request):
                 # render to the confirm page
                 return redirect(reverse("confirm"))
             # check for other emails
-            profile = Profile.objects.filter(emails__contains=[email])
+            profile = Profile.objects.filter(emails__contains=[email]).first()
 
             # if we have a profile, generate a UUID4
             if profile:
