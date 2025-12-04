@@ -11,6 +11,9 @@ import requests
 from django.conf import settings
 
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.rest_api.sync import ExternalSync
+from knowledge_commons_profiles.rest_api.utils import get_first_name
+from knowledge_commons_profiles.rest_api.utils import get_last_name
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,7 @@ def get_user_by_id(user_id: str):
     """
     Lookup profile in Django ORM
     """
-    return Profile.objects.get(user_id)
+    return Profile.objects.get(username=user_id)
 
 
 def get_user_member_types(user: Profile):
@@ -113,7 +116,7 @@ def hcommons_mailchimp_request(endpoint: str, method="GET", params=None):
 # ---------------------------------------------------------------------
 
 
-def hcommons_add_new_user_to_mailchimp(user_id: int, userdata: dict):
+def hcommons_add_new_user_to_mailchimp(user_id: str):
     if not (
         settings.MAILCHIMP_LIST_ID
         and settings.MAILCHIMP_API_KEY
@@ -129,7 +132,7 @@ def hcommons_add_new_user_to_mailchimp(user_id: int, userdata: dict):
         return
 
     try:
-        user = get_user_by_id(user_id)
+        user: Profile = get_user_by_id(user_id)
     except NotImplementedError:
         trigger_error("User lookup not implemented")
         return
@@ -140,21 +143,9 @@ def hcommons_add_new_user_to_mailchimp(user_id: int, userdata: dict):
         )
         return
 
-    # --------------------------------------------------------------
-    # TODO: hcommons_set_user_member_types( $user );
-    #       (Original PHP)
-    #
-    # hcommons_set_user_member_types( $user );
-    # --------------------------------------------------------------
-    # TODO: implement equivalent member-type setting if needed
+    ExternalSync.sync(user, send_webhook=False)
 
-    if "user_email" not in userdata:
-        trigger_error(
-            "Mailchimp user creation failed: no email address provided."
-        )
-        return
-
-    email = userdata["user_email"]
+    email = user.email
 
     # Check if Mailchimp already has this user
     existing = hcommons_mailchimp_request(
@@ -189,12 +180,10 @@ def hcommons_add_new_user_to_mailchimp(user_id: int, userdata: dict):
         "email_address": email,
         "status": "subscribed",
         "merge_fields": {
-            "FNAME": userdata.get("first_name", ""),
-            "LNAME": userdata.get("last_name", ""),
-            "DNAME": (
-                user.display_name if hasattr(user, "display_name") else ""
-            ),
-            "USERNAME": userdata.get("user_login", ""),
+            "FNAME": get_first_name(user, logger),
+            "LNAME": get_last_name(user, logger),
+            "DNAME": user.name,
+            "USERNAME": user.username,
         },
         "tags": tags,
         "interests": {settings.MAILCHIMP_NEWSLETTER_GROUP_ID: True},
@@ -225,7 +214,7 @@ def hcommons_add_new_user_to_mailchimp(user_id: int, userdata: dict):
 # ---------------------------------------------------------------------
 
 
-def hcommons_remove_user_from_mailchimp(user_id: int):
+def hcommons_remove_user_from_mailchimp(user_id: str):
     if not settings.MAILCHIMP_LIST_ID:
         trigger_error(
             "Mailchimp user removal failed: Mailchimp constants not defined."
@@ -233,7 +222,7 @@ def hcommons_remove_user_from_mailchimp(user_id: int):
         return
 
     try:
-        user = get_user_by_id(user_id)
+        user: Profile = get_user_by_id(user_id)
     except NotImplementedError:
         trigger_error("User lookup not implemented")
         return
@@ -244,10 +233,10 @@ def hcommons_remove_user_from_mailchimp(user_id: int):
         )
         return
 
-    trigger_error(f"Removing user {user.user_login} from Mailchimp.", "notice")
+    trigger_error(f"Removing user {user.username} from Mailchimp.", "notice")
 
     existing = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{user.user_email}"
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{user.email}"
     )
 
     if isinstance(existing, dict) and "email_address" in existing:
@@ -261,7 +250,7 @@ def hcommons_remove_user_from_mailchimp(user_id: int):
 
         if response is not None:
             trigger_error(
-                f"Mailchimp user deleted for email {user.user_email}", "notice"
+                f"Mailchimp user deleted for email {user.email}", "notice"
             )
         else:
             trigger_error(
@@ -271,6 +260,6 @@ def hcommons_remove_user_from_mailchimp(user_id: int):
     else:
         trigger_error(
             f"Mailchimp deletion failed: user does not exist "
-            f"for email {user.user_email}",
+            f"for email {user.email}",
             "notice",
         )
