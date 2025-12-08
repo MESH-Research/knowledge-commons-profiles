@@ -1,3 +1,27 @@
+## 3.6.0 (2025-12-08)
+
+### Feat
+
+- **dump**: new command to dump users and their organizational memberships (takes a very long time to run)
+
+### Fix
+
+- **works**: add guard to input validation for no entries
+- **works**: fix pluralization of syllabi
+- **works**: add additional pluralizations to avoid "bibliographys"
+- **works-deposits**: fix bug with parsing works-deposits and include regression test
+- **dev-requirements**: fix merge
+- **traefik**: add new dev rules on traefik
+- **registration**: fixes to the registration process
+- **header-bar**: add logout link even when mysql engine fails
+- **association**: ensure that https is used for association
+- **dev**: remove merge markers
+- **merge**: fix merge
+- **merge**: merging main
+- **cilogon**: further handling of redirect
+- **cilogon**: add handling for dev domain
+- **traefik**: add new dev rules on traefik
+
 ## 3.5.1 (2025-12-04)
 
 ### Fix
