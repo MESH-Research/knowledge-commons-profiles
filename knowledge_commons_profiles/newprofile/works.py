@@ -61,6 +61,7 @@ PLURALS = {
     "Slides": "slides",
     "Bibliography": "Bibliographies",
     "Chart and Graph": "Charts and Graphs",
+    "Syllabus": "Syllabi",
 }
 
 
