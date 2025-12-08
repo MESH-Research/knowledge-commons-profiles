@@ -3,9 +3,11 @@ from unittest.mock import patch
 
 import django.test
 from django.core.cache import cache
+from django.test import TestCase
 from django.test import override_settings
 
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.works import Creator
 from knowledge_commons_profiles.newprofile.works import Metadata
 from knowledge_commons_profiles.newprofile.works import OutputFormat
@@ -18,6 +20,43 @@ from knowledge_commons_profiles.newprofile.works import ResourceTypeInLanguage
 from knowledge_commons_profiles.newprofile.works import RoleInfo
 from knowledge_commons_profiles.newprofile.works import WorksApiError
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
+
+
+class WorksDepositsHtmxViewTests(TestCase):
+    @patch(
+        "knowledge_commons_profiles.newprofile.works.WorksDeposits."
+        "get_works_for_frontend_display",
+        side_effect=WorksApiError("forced validation failure"),
+    )
+    def test_works_deposits_view_handles_works_api_error(
+        self, mocked_get_works
+    ):
+        """
+        Regression test for a bug where a Pydantic ValidationError raised while
+        building Hitdict inside WorksDeposits.get_works() was wrapped in
+        WorksApiError and bubbled all the way up, causing a 500 error on:
+
+            GET /htmx/works-deposits/<profile_slug>/
+
+        This test simulates that situation by forcing WorksDeposits to raise
+        WorksApiError and asserts that the HTMX view no longer returns 500.
+        """
+
+        # first, create the user cplong
+        Profile.objects.create(username="cplong")
+
+        # Use the same slug that triggered the original error (from the
+        # traceback)
+        response = self.client.get("/htmx/works-deposits/cplong/")
+
+        self.assertNotEqual(
+            response.status_code,
+            404,
+            f"View still returns 404 when WorksApiError is raised; "
+            f"status={response.status_code}",
+        )
+
+        self.assertEqual(response.status_code, 200)
 
 
 # ruff: noqa: PLC0415

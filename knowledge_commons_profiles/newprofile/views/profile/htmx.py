@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from knowledge_commons_profiles.newprofile.api import API
+from knowledge_commons_profiles.newprofile.works import WorksApiError
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ def works_deposits(request, username, style=None):
             },
         )
 
-    except django.db.utils.OperationalError as ex:
+    except (django.db.utils.OperationalError, WorksApiError) as ex:
         logger.warning(
             "Unable to connect to database for works deposits: %s", ex
         )

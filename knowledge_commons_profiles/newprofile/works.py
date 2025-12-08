@@ -17,6 +17,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.template.loader import render_to_string
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import HttpUrl
 from pydantic import ValidationError
@@ -74,7 +75,9 @@ class Journal(BaseModel):
     Journal information
     """
 
-    title: str
+    model_config = ConfigDict(extra="ignore")
+
+    title: str | None = None
     volume: str | None = None
     issue: str | None = None
     pages: str | None = None
@@ -202,12 +205,21 @@ class Record(BaseModel):
     custom_fields: CustomFields | None
 
 
-class Hitdict(BaseModel):
+class HitsContainer(BaseModel):
     """
-    A dictionary of hits
+    The inner 'hits' object returned by the API.
     """
 
-    hits: dict[str, list[Record] | int]
+    hits: list[Record] = Field(default_factory=list)
+    total: int | dict[str, Any] | None = None
+
+
+class Hitdict(BaseModel):
+    """
+    Top-level search result wrapper.
+    """
+
+    hits: HitsContainer = Field(default_factory=HitsContainer)
 
 
 class WorksApiError(Exception):
@@ -337,12 +349,14 @@ class WorksDeposits:
             )
             response.raise_for_status()
 
-            validated = Hitdict(**response.json())
+            json_to_validate = response.json()
+
+            validated = Hitdict(**json_to_validate)
 
             try:
                 cache.set(
                     key=cache_key,
-                    value=validated.hits["hits"],
+                    value=validated.hits.hits,
                     timeout=CACHE_TIMEOUT,
                     version=VERSION,
                 )
@@ -352,8 +366,6 @@ class WorksDeposits:
                     f"because {e}"
                 )
                 logger.exception(msg)
-
-            return validated.hits["hits"]
 
         except httpx.HTTPStatusError as e:
             logger.exception("HTTP error")
@@ -367,6 +379,8 @@ class WorksDeposits:
         except Exception as e:
             logger.exception("Unknown error")
             raise WorksApiError from e
+        else:
+            return validated.hits.hits
 
     def get_works_for_frontend_display(self, style="MLA"):
         """
@@ -481,6 +495,7 @@ class WorksDeposits:
             "newprofile/works.html", context={"works_links": styled_works}
         )
 
+    # ruff: noqa: C901
     def get_formatted_works(
         self,
         style: str = "MLA",
@@ -497,7 +512,15 @@ class WorksDeposits:
         :param output_type: the output type
         """
 
-        works = self.get_works()
+        try:
+            works = self.get_works()
+        except WorksApiError:
+            logger.info(
+                "An error was encountered. Assuming no works found "
+                "for user: %s",
+                self.user,
+            )
+            return "" if output_format else []
 
         if not works:
             logger.info("No works found for user: %s", self.user)

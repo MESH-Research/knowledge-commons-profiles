@@ -39,6 +39,7 @@ from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.models import WpUserMeta
 from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
+from knowledge_commons_profiles.newprofile.works import WorksApiError
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
 
 logger = logging.getLogger(__name__)
@@ -186,12 +187,21 @@ class API:
         """
         Get the works deposits
         """
-        if self._works_deposits is None:
-            self._works_deposits = WorksDeposits(
-                self.profile_info["username"],
-                "https://works.hcommons.org",
+        try:
+            if self._works_deposits is None:
+                self._works_deposits = WorksDeposits(
+                    self.profile_info["username"],
+                    "https://works.hcommons.org",
+                )
+        except WorksApiError:
+            logger.exception(
+                "An error was encountered. "
+                "Assuming no works found for user: %s",
+                self.user,
             )
-        return self._works_deposits
+            return None
+        else:
+            return self._works_deposits
 
     @cached_property
     def wp_user(self):
