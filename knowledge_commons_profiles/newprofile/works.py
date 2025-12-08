@@ -357,6 +357,10 @@ class WorksDeposits:
 
             json_to_validate = response.json()
 
+            hits_data = json_to_validate.get("hits")
+            if not hits_data:
+                return []
+
             validated = Hitdict(**json_to_validate)
 
             try:
