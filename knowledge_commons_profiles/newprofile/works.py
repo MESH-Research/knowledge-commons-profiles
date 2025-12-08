@@ -56,7 +56,12 @@ CSL_TYPES = {
     "Blog post": "webpage",
 }
 
-PLURALS = {"Thesis": "theses", "Slides": "slides"}
+PLURALS = {
+    "Thesis": "theses",
+    "Slides": "slides",
+    "Bibliography": "Bibliographies",
+    "Chart and Graph": "Charts and Graphs",
+}
 
 
 class Imprint(BaseModel):
