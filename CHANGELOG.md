@@ -1,3 +1,9 @@
+## 3.7.0 (2025-12-09)
+
+### Feat
+
+- **api**: add superadmin status flag to api and management command to toggle superadmin
+
 ## 3.6.0 (2025-12-08)
 
 ### Feat
