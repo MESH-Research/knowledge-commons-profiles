@@ -17,7 +17,6 @@ from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpUser
-from knowledge_commons_profiles.rest_api import utils
 from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
 logger = logging.getLogger(__name__)
@@ -104,6 +103,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
+    is_superadmin = serializers.SerializerMethodField()
+
     institutional_affiliation = serializers.CharField(
         source="institutional_or_other_affiliation", allow_blank=True
     )
@@ -140,6 +141,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "orcid",
             "academic_interests",
             "url",
+            "is_superadmin",
         ]
 
     def get_url(self, obj: Profile) -> str:
@@ -159,11 +161,27 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_first_name(self, obj: Profile) -> str:
         """Extract and format the first name"""
-        return utils.get_first_name(obj, logger)
+        from knowledge_commons_profiles.rest_api.serializers.serializers_shared import (
+            get_first_name as gfn,
+        )
+
+        return gfn(obj)
 
     def get_last_name(self, obj: Profile) -> str:
         """Extract and format the last name"""
-        return utils.get_last_name(obj, logger)
+        from knowledge_commons_profiles.rest_api.serializers.serializers_shared import (
+            get_last_name as gln,
+        )
+
+        return gln(obj)
+
+    def get_is_superadmin(self, obj: Profile) -> bool:
+        """Work out whether the user is a superadmin"""
+        from knowledge_commons_profiles.rest_api.serializers.serializers_shared import (
+            get_is_superadmin as giss,
+        )
+
+        return giss(obj)
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
@@ -180,6 +198,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     groups = serializers.SerializerMethodField()
     memberships = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+
+    is_superadmin = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         # Don't return emails when listing users
@@ -212,6 +232,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             "academic_interests",
             "groups",
             "memberships",
+            "is_superadmin",
         ]
 
     def get_avatar(self, obj: Profile):
@@ -225,7 +246,10 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             create=False,
         )
 
-        return api.get_cover_image()
+        try:
+            return api.get_cover_image()
+        except OperationalError:
+            return ""
 
     def get_memberships(self, obj: Profile):
         """
@@ -267,17 +291,34 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             # if there's no WordPress database access, return an empty list
             return []
 
+    # ruff: noqa: E501
     def get_first_name(self, obj):
         """
         Get the first name
         """
-        return utils.get_first_name(obj, logger)
+        from knowledge_commons_profiles.rest_api.serializers.serializers_shared import (
+            get_first_name as gfn,
+        )
+
+        return gfn(obj)
 
     def get_last_name(self, obj):
         """
         Get the last name
         """
-        return utils.get_last_name(obj, logger)
+        from knowledge_commons_profiles.rest_api.serializers.serializers_shared import (
+            get_last_name as gln,
+        )
+
+        return gln(obj)
+
+    def get_is_superadmin(self, obj: Profile) -> bool:
+        """Work out whether the user is a superadmin"""
+        from knowledge_commons_profiles.rest_api.serializers.serializers_shared import (
+            get_is_superadmin as giss,
+        )
+
+        return giss(obj)
 
 
 class SubProfileSerializer(serializers.ModelSerializer):
