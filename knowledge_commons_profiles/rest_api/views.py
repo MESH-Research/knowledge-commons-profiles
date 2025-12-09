@@ -34,19 +34,27 @@ from knowledge_commons_profiles.rest_api.pagination import (
 from knowledge_commons_profiles.rest_api.pagination import (
     SubProfileCursorPagination,
 )
-from knowledge_commons_profiles.rest_api.serializers import (
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
     GroupDetailSerializer,
 )
-from knowledge_commons_profiles.rest_api.serializers import LogoutSerializer
-from knowledge_commons_profiles.rest_api.serializers import (
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
+    LogoutSerializer,
+)
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
     ProfileDetailSerializer,
 )
-from knowledge_commons_profiles.rest_api.serializers import ProfileSerializer
-from knowledge_commons_profiles.rest_api.serializers import (
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
+    ProfileSerializer,
+)
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
     SingleSubProfileSerializer,
 )
-from knowledge_commons_profiles.rest_api.serializers import SubProfileSerializer
-from knowledge_commons_profiles.rest_api.serializers import TokenSerializer
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
+    SubProfileSerializer,
+)
+from knowledge_commons_profiles.rest_api.serializers.serializers import (
+    TokenSerializer,
+)
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import build_metadata
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
