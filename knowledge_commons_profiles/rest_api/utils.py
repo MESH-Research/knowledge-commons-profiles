@@ -63,7 +63,7 @@ def get_last_name(obj: Profile, logger) -> str:
         return ""
 
 
-def logout_all_endpoints_sync(request=None):
+def logout_all_endpoints_sync(username="", request=None):
     """Synchronous logout using threading for parallel requests."""
 
     endpoints = getattr(settings, "LOGOUT_ENDPOINTS", [])
@@ -75,7 +75,9 @@ def logout_all_endpoints_sync(request=None):
         "Content-Type": "application/json",
     }
 
-    username = request.user.username if request else ""
+    username = (
+        request.user.username if request and username == "" else username
+    )
 
     def send_request(endpoint):
         msg = f"Sending logout request to {endpoint} for {username}"
