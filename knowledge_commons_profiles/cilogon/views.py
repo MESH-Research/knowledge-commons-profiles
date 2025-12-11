@@ -56,6 +56,7 @@ from knowledge_commons_profiles.newprofile.mailchimp import (
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
+from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +215,9 @@ def app_logout(
         user_agent,
         apps,
     )
+
+    # send api requests to logout
+    logout_all_endpoints_sync()
 
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
