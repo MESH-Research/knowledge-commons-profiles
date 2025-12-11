@@ -451,7 +451,7 @@ OPEN_REGISTRATION_NETWORKS = env(
 
 KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+"}
 
-LOGOUT_ENDPOINTS = []
+LOGOUT_ENDPOINTS = env.list("LOGOUT_ENDPOINTS", default=[])
 
 WORKS_UPDATE_ENDPOINTS = [
     "https://localhost/" if DEBUG else "https://works.hcommons.org/"
