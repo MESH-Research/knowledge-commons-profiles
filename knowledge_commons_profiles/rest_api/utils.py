@@ -16,6 +16,8 @@ from knowledge_commons_profiles.newprofile.models import Profile
 
 logger = logging.getLogger(__name__)
 
+LOGOUT_TIMEOUT = 5
+
 
 def build_metadata(authed, error=None):
     """
@@ -87,9 +89,11 @@ def logout_all_endpoints_sync(username="", request=None):
                 endpoint,
                 headers=headers,
                 params={"username": username},
-                timeout=30,
+                timeout=LOGOUT_TIMEOUT,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
+            msg = f"Error sending logout signal to {endpoint} for {username}"
+            logger.exception(msg)
             return {
                 "endpoint": endpoint,
                 "status": None,
