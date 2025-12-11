@@ -217,7 +217,7 @@ def app_logout(
     )
 
     # send api requests to logout
-    logout_all_endpoints_sync()
+    logout_all_endpoints_sync(username=user_name, request=request)
 
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
