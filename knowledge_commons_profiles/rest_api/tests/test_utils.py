@@ -6,7 +6,6 @@ import requests
 from django.test import TestCase
 from django.test import override_settings
 
-from knowledge_commons_profiles.rest_api.utils import LOGOUT_TIMEOUT
 from knowledge_commons_profiles.rest_api.utils import build_metadata
 from knowledge_commons_profiles.rest_api.utils import get_first_name
 from knowledge_commons_profiles.rest_api.utils import get_last_name
@@ -525,7 +524,7 @@ class TestLogoutAllEndpointsSync(TestCase):
                 "Content-Type": "application/json",
             },
             params={"username": ""},
-            timeout=LOGOUT_TIMEOUT,
+            timeout=30,
         )
 
     @override_settings(
