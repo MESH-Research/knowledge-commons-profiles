@@ -1,3 +1,9 @@
+## 3.7.1 (2025-12-11)
+
+### Fix
+
+- **logout**: add username to logout
+
 ## 3.7.0 (2025-12-09)
 
 ### Feat
