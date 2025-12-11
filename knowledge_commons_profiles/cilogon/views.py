@@ -63,11 +63,20 @@ logger = logging.getLogger(__name__)
 
 class RedirectBehaviour(IntEnum):
     """
-    Enum for redirect behaviour
+    Enum for whether to flush logout to other sources
     """
 
     REDIRECT = 1
     NO_REDIRECT = 2
+
+
+class FlushLogoutBehaviour(IntEnum):
+    """
+    Enum for redirect behaviour
+    """
+
+    FLUSH_LOGOUT = 1
+    NO_FLUSH_LOGOUT = 2
 
 
 def cilogon_login(request):
@@ -173,12 +182,14 @@ def callback(request):
     return redirect(reverse("associate"))
 
 
+# ruff: noqa: PLR0913
 def app_logout(
     request,
     redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT,
     user_name=None,
     user_agent=None,
     apps=None,
+    flush_behaviour: FlushLogoutBehaviour = FlushLogoutBehaviour.FLUSH_LOGOUT,
 ):
     """
     Log the user out of all sessions sharing this user agent
@@ -217,7 +228,8 @@ def app_logout(
     )
 
     # send api requests to logout
-    logout_all_endpoints_sync(username=user_name, request=request)
+    if flush_behaviour == FlushLogoutBehaviour.FLUSH_LOGOUT:
+        logout_all_endpoints_sync(username=user_name, request=request)
 
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
