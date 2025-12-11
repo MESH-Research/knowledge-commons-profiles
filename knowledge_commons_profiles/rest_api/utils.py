@@ -63,7 +63,7 @@ def get_last_name(obj: Profile, logger) -> str:
         return ""
 
 
-def logout_all_endpoints_sync():
+def logout_all_endpoints_sync(request=None):
     """Synchronous logout using threading for parallel requests."""
 
     endpoints = getattr(settings, "LOGOUT_ENDPOINTS", [])
@@ -75,10 +75,15 @@ def logout_all_endpoints_sync():
         "Content-Type": "application/json",
     }
 
+    username = request.user.username if request else ""
+
     def send_request(endpoint):
         try:
-            response = requests.post(
-                endpoint, headers=headers, json={}, timeout=30
+            response = requests.get(
+                endpoint,
+                headers=headers,
+                params={"username": username},
+                timeout=30,
             )
         except Exception as e:  # noqa: BLE001
             return {
