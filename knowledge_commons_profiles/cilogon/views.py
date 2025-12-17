@@ -184,6 +184,7 @@ def callback(request):
 
 
 # ruff: noqa: PLR0913
+# ruff: noqa: C901
 def app_logout(
     request,
     redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT,
@@ -295,24 +296,29 @@ def app_logout(
 
     # Kill the local Django session immediately
     try:
-        user_id = User.objects.get(username=user_name).id
+        user = User.objects.get(username=user_name)
     except User.DoesNotExist:
         msg = f"Unable to find correlating user for logout request {user_name}"
         logger.warning(msg)
-        user_id = -1
+        user = None
 
-    if user_id > 0:
+    if user:
         msg = (
-            f"Logging out {user_name} (ID: {user_id}) locally "
+            f"Logging out {user_name} (ID: {user.id}) locally "
             f"and deleting all sessions"
         )
         logger.info(msg)
 
-        [
-            s.delete()
-            for s in DjangoSession.objects.all()
-            if s.get_decoded().get("_auth_user_id") == user_id
-        ]
+        to_delete: list[DjangoSession] = []
+
+        for session in DjangoSession.objects.all():
+            decoded = session.get_decoded()
+            if decoded.get("_auth_user_id") == str(user.pk):
+                to_delete.append(session)
+
+        for session in to_delete:
+            session.delete()
+
     logout(request)
 
     if redirect_behaviour == RedirectBehaviour.REDIRECT:
