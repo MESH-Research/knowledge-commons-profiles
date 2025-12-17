@@ -20,7 +20,6 @@ import requests
 import sentry_sdk
 from django.conf import settings
 from django.core.cache import cache
-from django.core.validators import validate_email
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import TypeAdapter
@@ -288,6 +287,7 @@ class Contact(BaseModel):
     Email: str | None = None
     AccountId: str | None = None
     Current_Staff__c: bool | None = None
+    UP_Commons_Eligible__c: bool | None = None
 
 
 T = TypeVar("T")
@@ -328,6 +328,7 @@ class UP(SyncClass):
             pool_block=False,
         )
         self.session.mount("https://", adapter)
+        self.contact_response: list[Contact] | None = None
 
     @rate_limit(max_calls=MAX_CALLS, period=MAX_CALL_PERIOD)
     def _make_rest_request(self, url, http_method=HTTPMethod.GET, params=None):
@@ -363,6 +364,7 @@ class UP(SyncClass):
         attributes: dict[str, str],
         suffix: str | None = None,
         cache_key: str | None = None,
+        url: str | None = None,
     ):
         """
         Query the UP API
@@ -376,8 +378,8 @@ class UP(SyncClass):
             if cached_response is not None:
                 return cached_response
 
-        suffix = suffix if suffix else MEMBERS_URL
-        url = self.base_url + suffix
+        suffix = suffix[1:] if suffix else MEMBERS_URL
+        url = url if url else self.base_url + suffix
 
         try:
             response = self._make_rest_request(
@@ -420,14 +422,14 @@ class UP(SyncClass):
         logger.error(message)
         raise APIError(message)
 
-    def is_member(self, user_id: str) -> bool:
+    def is_member(self, sync_id: str) -> bool:
         """
         Check if a user is a member
         """
-        response: Account | dict = self.get_user_info(user_id)
+        response: list[Contact] = self.get_user_info(sync_id)
 
-        if hasattr(response, "Id"):
-            return bool(response.Id)
+        if len(response) > 0:
+            return response[0].UP_Commons_Eligible__c
 
         return False
 
@@ -449,7 +451,8 @@ class UP(SyncClass):
 
             # ruff: noqa: S608
             search_params = {
-                "q": f"SELECT Id, Name, Email, AccountId, Current_Staff__c "
+                "q": f"SELECT Id, Name, Email, AccountId, Current_Staff__c, "
+                f"UP_Commons_Eligible__c "
                 f"FROM Contact "
                 f"WHERE Email = '{email}'",
             }
@@ -463,6 +466,8 @@ class UP(SyncClass):
                         SalesforceQueryResponse[Contact], result
                     )
                 )
+
+                self.contact_response = adapted.records
 
                 if adapted.totalSize > 0:
                     return {"UP": adapted}
@@ -486,27 +491,7 @@ class UP(SyncClass):
         Search for a user
         :param email: the email to search for
         """
-        try:
-            validate_email(email)
-        except ValidationError as ve:
-            message = f"Invalid email address: {email}"
-            raise ValueError(message) from ve
-
-        cache_key = f"UP_api_search_{email}"
-
-        search_params = {
-            "email": email,
-        }
-
-        try:
-            result = self._query_up_api(search_params, cache_key=cache_key)
-        except APIError:
-            return {}
-
-        if not result:
-            return {}
-
-        return self._process_adapter(SalesforceQueryResponse, result)
+        raise NotImplementedError
 
     @staticmethod
     def _process_adapter(type_adapter, result):
@@ -528,33 +513,11 @@ class UP(SyncClass):
 
         return response
 
-    def get_user_info(self, up_id: str | int) -> Account | dict:
+    def get_user_info(self, url: str | int) -> list[Contact]:
         """
         Search for a user
         """
-        try:
-            up_id = str(up_id)
-        except ValueError:
-            logger.exception("Invalid UP ID (must be string or int)")
-            return {}
-
-        cache_key = f"UP_api_user_info_{up_id}"
-
-        search_params = {}
-
-        try:
-            result = self._query_up_api(
-                search_params,
-                suffix="sobjects/Account/" + up_id,
-                cache_key=cache_key,
-            )
-        except APIError:
-            return {}
-
-        if not result:
-            return {}
-
-        return self._process_adapter(Account, result)
+        return self.contact_response
 
     def groups(self, user_id: str | int) -> list[str]:
         """
