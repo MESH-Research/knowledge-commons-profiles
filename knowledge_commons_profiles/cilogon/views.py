@@ -294,20 +294,26 @@ def app_logout(
             )
 
     # Kill the local Django session immediately
-    user_id = User.objects.get(username=user_name).id
+    try:
+        user_id = User.objects.get(username=user_name).id
+    except User.DoesNotExist:
+        msg = f"Unable to find correlating user for logout request {user_name}"
+        logger.warning(msg)
+        user_id = -1
 
-    msg = (
-        f"Logging out {user_name} (ID: {user_id}) locally "
-        f"and deleting all sessions"
-    )
-    logger.info(msg)
+    if user_id > 0:
+        msg = (
+            f"Logging out {user_name} (ID: {user_id}) locally "
+            f"and deleting all sessions"
+        )
+        logger.info(msg)
 
+        [
+            s.delete()
+            for s in DjangoSession.objects.all()
+            if s.get_decoded().get("_auth_user_id") == user_id
+        ]
     logout(request)
-    [
-        s.delete()
-        for s in DjangoSession.objects.all()
-        if s.get_decoded().get("_auth_user_id") == user_id
-    ]
 
     if redirect_behaviour == RedirectBehaviour.REDIRECT:
         # redirect the user to the home page
