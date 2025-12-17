@@ -20,6 +20,7 @@ from django.contrib.auth import login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session as DjangoSession
 from django.core.handlers.wsgi import WSGIRequest
 from django.db import transaction
 from django.http import Http404
@@ -229,6 +230,7 @@ def app_logout(
 
     # send api requests to logout
     if flush_behaviour == FlushLogoutBehaviour.FLUSH_LOGOUT:
+        msg = f"Flushing logout behaviour to all endpoints for {user_name}"
         logout_all_endpoints_sync(username=user_name, request=request)
 
     # get all token associations for this browser
@@ -292,7 +294,20 @@ def app_logout(
             )
 
     # Kill the local Django session immediately
+    user_id = User.objects.get(username=user_name).id
+
+    msg = (
+        f"Logging out {user_name} (ID: {user_id}) locally "
+        f"and deleting all sessions"
+    )
+    logger.info(msg)
+
     logout(request)
+    [
+        s.delete()
+        for s in DjangoSession.objects.all()
+        if s.get_decoded().get("_auth_user_id") == user_id
+    ]
 
     if redirect_behaviour == RedirectBehaviour.REDIRECT:
         # redirect the user to the home page
