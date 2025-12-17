@@ -27,8 +27,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # cache.clear()
-        user = Profile.objects.get(username="sineadneville")
-        # user = Profile.objects.get(username="martin_eve")
+        # user = Profile.objects.get(username="sineadneville")
+        user = Profile.objects.get(username="martin_eve2")
         # user = Profile.objects.get(username="mtmurphy")
         up = UP()
 
