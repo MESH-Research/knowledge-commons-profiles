@@ -1,3 +1,9 @@
+## 3.8.2 (2025-12-18)
+
+### Fix
+
+- **oauth**: fix handling jsondecodeerror in oauth.decide
+
 ## 3.8.1 (2025-12-18)
 
 ### Fix
