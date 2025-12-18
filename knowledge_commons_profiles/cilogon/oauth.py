@@ -89,14 +89,20 @@ def extract_code_next_url(request):
     """
     Extract the code and next url from the incoming callback request
     """
-    b64 = request.GET.get("state")
+    b64 = request.GET.get("state", None)
+
+    # handle error if no data provided
+    if not b64:
+        logger.info("No state was provided")
+        return None, None
+
     data = json.loads(base64.urlsafe_b64decode(b64).decode())
 
     logger.info("Data decoded was: %s", data)
 
     # see if we have a forwarding URL
-    next_url = data.get("callback_next")
-    code = request.GET.get("code")
+    next_url: str = data.get("callback_next", None)
+    code: str = request.GET.get("code", None)
 
     return code, next_url
 

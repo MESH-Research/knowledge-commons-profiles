@@ -21,7 +21,6 @@
               <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }} ({{ p.username }})</a></p>
               <div class="aff"><a href="{% url "profile" p.username %}">{% if p.institutional_or_other_affiliation %}{{ p.institutional_or_other_affiliation }}{% endif %}</a></div>
             </div>
-            <button class="btn">Follow</button>
         </div>
         {% endif %}
       {% endfor %}
