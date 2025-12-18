@@ -247,7 +247,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         )
 
         try:
-            return api.get_cover_image()
+            return api.get_profile_photo()
         except OperationalError:
             return ""
 

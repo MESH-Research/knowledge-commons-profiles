@@ -67,6 +67,14 @@
 
             {% if request.user.is_staff %}
               <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a> <a href="{% url 'manage_login' username=username %}" class="social-link action-btn">Manage User Settings</a>
+              <form method="post" action="{% url 'toggle_superadmin' username=username %}">
+              {% csrf_token %}
+                {% if user and user.is_staff %}
+                  <input type="submit" class="social-link action-btn" value="Remove Superadmin Rights" />
+                {% else %}
+                  <input type="submit" class="social-link action-btn" value="Bestow Superadmin Rights" />
+                {% endif %}
+              </form>
             {% endif %}
           </div>
 
