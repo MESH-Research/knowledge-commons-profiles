@@ -54,6 +54,9 @@ from knowledge_commons_profiles.newprofile.views.profile.profile import profile
 from knowledge_commons_profiles.newprofile.views.profile.profile import (
     save_profile_order,
 )
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    toggle_superadmin_rights_with_permission,
+)
 from knowledge_commons_profiles.newprofile.views.profile.works import (
     save_works_order,
 )
@@ -71,6 +74,11 @@ from knowledge_commons_profiles.newprofile.views.stats import stats_table
 urlpatterns = [
     path("my-profile/", my_profile, name="my_profile"),
     path("edit-profile/", edit_profile, name="edit_profile"),
+    path(
+        "edit-profile/<str:username>/makesuperuser/",
+        toggle_superadmin_rights_with_permission,
+        name="toggle_superadmin",
+    ),
     path("edit-profile/upload-avatar/", upload_avatar, name="upload_avatar"),
     path("edit-profile/upload-cover/", upload_cover, name="upload_cover"),
     path("members/<str:user>/", profile, name="profile"),

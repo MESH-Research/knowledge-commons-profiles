@@ -351,6 +351,18 @@ class EncryptionSecurityTests(CILogonTestBase):
         with self.assertRaises((ValueError, Exception)):
             encoder3.decode(encoded1)
 
+    def test_bad_json(self):
+        """Test secure key derivation for parameter encoding"""
+        encoder1 = SecureParamEncoder("password123")
+
+        data = "{test}"
+
+        # Same password should produce compatible encoders
+        encoded1 = encoder1.encode(data, dump=False)
+        decoded2 = encoder1.decode(encoded1)
+
+        self.assertIsNone(decoded2)
+
     def test_secure_param_encoder_iv_uniqueness(self):
         """Test that each encryption uses a unique IV"""
         encoder = SecureParamEncoder("test_password")

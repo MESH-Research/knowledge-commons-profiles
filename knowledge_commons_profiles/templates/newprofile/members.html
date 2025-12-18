@@ -7,7 +7,7 @@
     {% csrf_token %}
     <div class="user-search-container">
         <h1>Knowledge Commons Members</h1>
-        <input type="text" class="user-search" placeholder="Search for a user..."/> <input type="submit" value="Search"/>
+        <input type="text" name="username" id="username" class="user-search" placeholder="Search for a user..."/> <input type="submit" value="Search"/>
     </div>
   </form>
   <div class="row">
@@ -21,7 +21,6 @@
               <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }} ({{ p.username }})</a></p>
               <div class="aff"><a href="{% url "profile" p.username %}">{% if p.institutional_or_other_affiliation %}{{ p.institutional_or_other_affiliation }}{% endif %}</a></div>
             </div>
-            <button class="btn">Follow</button>
         </div>
         {% endif %}
       {% endfor %}

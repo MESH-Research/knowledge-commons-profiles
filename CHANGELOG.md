@@ -1,3 +1,41 @@
+## 3.8.2 (2025-12-18)
+
+### Fix
+
+- **oauth**: fix handling jsondecodeerror in oauth.decide
+
+## 3.8.1 (2025-12-18)
+
+### Fix
+
+- **oauth**: handle missing state parameter
+
+## 3.8.0 (2025-12-17)
+
+### Feat
+
+- **members**: add user search ability
+
+### Fix
+
+- **up-api**: use contact field in api instead of account and check for kc eligibility
+- **logout**: fix logout logic to logout all sessions
+- **logout**: fix logout when no user found
+- **logout**: add logging to logout api call
+- **logout**: fixes to logout ping system
+- **settings**: use sparkpost on dev
+- **logout**: lower timeout threshold for signal and add option to disable flush signalling
+- **logout**: set username correctly in logout function
+- **logout**: add logging
+- **logout**: ensure logout hooks are called
+- **logout**: fix tests and add logout variable from env
+
+## 3.7.1 (2025-12-11)
+
+### Fix
+
+- **logout**: add username to logout
+
 ## 3.7.0 (2025-12-09)
 
 ### Feat

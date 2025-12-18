@@ -177,6 +177,19 @@ class URLUtilityTests(CILogonTestBase):
         self.assertIn("code=auth_code_123", query_string)
         self.assertIn("user=test", query_string)
 
+    def test_extract_code_next_url_valid_request(self):
+        """Test extracting code and next URL from valid callback request"""
+        # Create a proper state parameter using pack_state
+        next_url = "https://example.com/profile"
+        state = pack_state(next_url)
+
+        request = self.factory.get(f"/callback?code=auth123&state={state}")
+
+        code, extracted_next_url = extract_code_next_url(request)
+
+        self.assertEqual(code, "auth123")
+        self.assertEqual(extracted_next_url, next_url)
+
     def test_generate_next_url_no_existing_params(self):
         """Test generating next URL without existing query parameters"""
         request = self.factory.get("/callback")
@@ -190,18 +203,15 @@ class URLUtilityTests(CILogonTestBase):
         query_string = result[4]
         self.assertIn("code=auth_code_123", query_string)
 
-    def test_extract_code_next_url_valid_request(self):
-        """Test extracting code and next URL from valid callback request"""
-        # Create a proper state parameter using pack_state
-        next_url = "https://example.com/profile"
-        state = pack_state(next_url)
+    def test_extract_code_state_is_none(self):
+        """Test for when state is None"""
+        # Create a proper state parameter
+        request = self.factory.get("/callback")
 
-        request = self.factory.get(f"/callback?code=auth123&state={state}")
+        code, next_url = extract_code_next_url(request)
 
-        code, extracted_next_url = extract_code_next_url(request)
-
-        self.assertEqual(code, "auth123")
-        self.assertEqual(extracted_next_url, next_url)
+        self.assertIsNone(code)
+        self.assertEqual(next_url, None)
 
     def test_extract_code_next_url_missing_code(self):
         """Test extracting from request missing authorization code"""
@@ -228,9 +238,11 @@ class URLUtilityTests(CILogonTestBase):
         """Test extracting from request missing state parameter"""
         request = self.factory.get("/callback?code=auth123")
 
+        code, next_url = extract_code_next_url(request)
+
         # Should handle missing state gracefully
-        with self.assertRaises((TypeError, AttributeError)):
-            extract_code_next_url(request)
+        self.assertIsNone(code)
+        self.assertIsNone(next_url)
 
 
 class TokenManagementTests(CILogonTestBase):

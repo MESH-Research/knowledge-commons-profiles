@@ -40,6 +40,30 @@ def _page_bounds(page_num: int):
 
 
 def people_by_username(request):
+    if request.POST:
+        username = request.POST.get("username")
+
+        # make a Q query that searches username and name fields
+        rows = Profile.objects.filter(
+            Q(username__icontains=username) | Q(name__icontains=username)
+        ).order_by("username", "id")
+
+        return render(
+            request,
+            "newprofile/members.html",
+            {
+                "profiles": rows,
+                "has_next": False,
+                "has_prev": False,
+                "next_cursor": None,
+                "prev_cursor": None,
+                "current_page": 1,
+                "page_count": 1,
+                "total_count": rows.count(),
+                "page_size": PAGE_SIZE,
+            },
+        )
+
     cursor = request.GET.get("cursor")
     direction = request.GET.get("dir", "next")
 
@@ -49,6 +73,35 @@ def people_by_username(request):
 
     rows = []
 
+    has_next, has_prev, next_cursor, prev_cursor, rows = _handle_cursor(
+        cursor, direction, qs, rows
+    )
+
+    current_page = _compute_current_page(current_page, qs, rows)
+
+    return render(
+        request,
+        "newprofile/members.html",
+        {
+            "profiles": rows,
+            "has_next": has_next,
+            "has_prev": has_prev,
+            "next_cursor": next_cursor,
+            "prev_cursor": prev_cursor,
+            "current_page": current_page,
+            "page_count": page_count,
+            "total_count": total_count,
+            "page_size": PAGE_SIZE,
+        },
+    )
+
+
+def _handle_cursor(
+    cursor: str | None,
+    direction: str,
+    qs: QuerySet[Profile, Profile],
+    rows: list[Profile],
+) -> tuple[list[Profile], bool, bool, str | None, str | None]:
     if cursor:
         c = _decode_cursor(cursor)
         c_username, c_id = c["username"], c["id"]
@@ -114,24 +167,7 @@ def people_by_username(request):
         )
     else:
         next_cursor = prev_cursor = None
-
-    current_page = _compute_current_page(current_page, qs, rows)
-
-    return render(
-        request,
-        "newprofile/members.html",
-        {
-            "profiles": rows,
-            "has_next": has_next,
-            "has_prev": has_prev,
-            "next_cursor": next_cursor,
-            "prev_cursor": prev_cursor,
-            "current_page": current_page,
-            "page_count": page_count,
-            "total_count": total_count,
-            "page_size": PAGE_SIZE,
-        },
-    )
+    return has_next, has_prev, next_cursor, prev_cursor, rows
 
 
 def fetch_member_data() -> tuple[int, QuerySet[Profile, Profile], int]:

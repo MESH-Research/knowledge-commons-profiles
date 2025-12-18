@@ -7,10 +7,13 @@ import django.db
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
 from django.views.decorators.http import require_POST
 
 from knowledge_commons_profiles.__version__ import VERSION
@@ -104,6 +107,36 @@ def profile(request, user=""):
             },
             template_name="newprofile/profile.html",
         )
+
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_superadmin_rights_with_permission(request, username):
+    """
+    Toggle superadmin and staff rights for a user (with permission check).
+
+    Only superusers can toggle other users' rights.
+
+    Args:
+        request: The HTTP request object
+        username: The username of the user whose rights should be toggled
+
+    Returns:
+        Redirect to the previous page or a specified redirect URL
+    """
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
+    # this will only work if the user has logged in once already
+    user = get_object_or_404(User, username=username)
+
+    # Toggle both superuser and staff rights
+    user.is_superuser = not user.is_superuser
+    user.is_staff = not user.is_staff
+    user.save()
+
+    # Redirect back to the referring page or a default URL
+    return redirect(request.headers.get("referer", "admin:index"))
 
 
 @login_required
