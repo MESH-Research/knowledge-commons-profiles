@@ -8,6 +8,7 @@ import logging
 import os
 import time
 import urllib.parse as urlparse
+from json import JSONDecodeError
 from urllib.parse import urlencode
 
 import requests
@@ -399,12 +400,12 @@ class SecureParamEncoder:
         # Derive a 32-byte key from any length secret
         self.key = hashlib.sha256(shared_secret.encode()).digest()
 
-    def encode(self, data: dict) -> str:
+    def encode(self, data: dict | str, dump=True) -> str:
         """
         Encrypt and encode data
         :param data: a dictionary of querystring parameters
         """
-        json_data = json.dumps(data).encode()
+        json_data = json.dumps(data).encode() if dump else data.encode()
 
         # Generate random IV
         iv = os.urandom(16)
@@ -422,7 +423,7 @@ class SecureParamEncoder:
         result = iv + encrypted
         return base64.urlsafe_b64encode(result).decode()
 
-    def decode(self, encrypted_param: str) -> dict:
+    def decode(self, encrypted_param: str) -> dict | None:
         """
         Decode and decrypt data
         """
@@ -441,7 +442,10 @@ class SecureParamEncoder:
         unpadder = padding.PKCS7(128).unpadder()
         json_data = unpadder.update(padded_data) + unpadder.finalize()
 
-        return json.loads(json_data.decode())
+        try:
+            return json.loads(json_data.decode())
+        except JSONDecodeError:
+            return None
 
 
 def check_for_sub_or_return_negative(
