@@ -1,3 +1,9 @@
+## 3.8.1 (2025-12-18)
+
+### Fix
+
+- **oauth**: handle missing state parameter
+
 ## 3.8.0 (2025-12-17)
 
 ### Feat
