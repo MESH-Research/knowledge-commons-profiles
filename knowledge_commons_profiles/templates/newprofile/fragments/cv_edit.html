@@ -1,0 +1,30 @@
+{% load crispy_forms_tags crispy_forms_field %}
+
+<div class="content-card sortable-item" id="cv_edit">
+  <h3 class="card-title">Curriculum Vitae (CV)</h3>
+  {% crispy_field form.show_cv %}
+
+  <div class="section-content">
+    <div class="form-group">
+      {% crispy_field form.cv_file %}
+      <small class="form-text text-muted">
+        Accepted formats: PDF, DOC, DOCX. Maximum file size: 10 MB.
+        You can have only one CV file at a time. Uploading a new file will replace the previous one.
+      </small>
+    </div>
+
+    {% if profile.cv_file %}
+      <div class="current-cv" id="current_cv">
+        <p><strong>Current CV:</strong> <a href="{{ profile.cv_file.url }}" target="_blank" class="cv-link" id="cv_link">
+            <i class="fas fa-file-pdf"></i>
+            {{ profile.cv_file.name|truncatechars:50 }}
+          </a></p>
+      </div>
+
+    {% else %}
+      <div class="no-cv-message">
+        <p><em>No CV file uploaded yet.</em></p>
+      </div>
+    {% endif %}
+  </div>
+</div>

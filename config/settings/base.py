@@ -334,6 +334,7 @@ PROFILE_FIELDS_LEFT = [
 ]
 
 PROFILE_FIELDS_RIGHT = [
+    "cv",
     "academic_interests",
     "commons_groups",
     "commons_activity",

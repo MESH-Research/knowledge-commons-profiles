@@ -13,6 +13,7 @@ import uuid
 
 # ruff: noqa: TC003
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
@@ -34,6 +35,30 @@ logger = logging.getLogger(__name__)
 HTTP_200_OK = 200
 
 CITATION_STYLE_CHOICES = [(key, key) for key in settings.CITATION_STYLES]
+
+
+def cv_file_path(instance, filename):
+    """
+    Generate the upload path for CV files.
+
+    Files are stored as: cvs/{user_pk}.{extension}
+
+    Examples:
+        - User PK 123 uploads "my_resume.pdf" → stored as "cvs/123.pdf"
+        - User PK 456 uploads "cv.docx" → stored as "cvs/456.docx"
+
+    Args:
+        instance: The Profile model instance being saved
+        filename: The original filename uploaded by the user
+
+    Returns:
+        The path where the file should be stored (e.g., "cvs/123.pdf")
+    """
+    # Get the file extension from the original filename
+    ext = Path(filename).suffix
+
+    # Return the new path with the user's PK as the filename
+    return f"cvs/{instance.pk}{ext}"
 
 
 # ruff: noqa: PLC0415
@@ -445,7 +470,7 @@ class Profile(models.Model):
     cv = models.TextField(blank=True, null=True)
 
     cv_file = models.FileField(
-        upload_to="cvs/",
+        upload_to=cv_file_path,
         blank=True,
         null=True,
         help_text="Upload your CV (PDF format recommended)",

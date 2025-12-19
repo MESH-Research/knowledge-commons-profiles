@@ -1,0 +1,15 @@
+{% if profile.show_cv and profile.cv_file %}
+
+<div class="content-card" id="cv">
+  <h3 class="card-title">Curriculum Vitae (CV)</h3>
+
+  <div class="card-body">
+    <div class="current-cv">
+      <p><a href="{{ profile.cv_file.url }}" target="_blank" class="cv-link">
+          <i class="fas fa-file-pdf"></i>
+          {{ profile.cv_file.name|truncatechars:50 }}
+        </a></p>
+    </div>
+  </div>
+</div>
+{% endif %}
