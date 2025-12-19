@@ -1,3 +1,19 @@
+## 3.9.0 (2025-12-19)
+
+### Feat
+
+- **profiles**: add cv upload function
+
+### Fix
+
+- **logout**: fix tests and add logout variable from env
+
+## 3.8.3 (2025-12-18)
+
+### Fix
+
+- **profiles**: add ability to make superadmin and change cover image to profile image
+
 ## 3.8.2 (2025-12-18)
 
 ### Fix
