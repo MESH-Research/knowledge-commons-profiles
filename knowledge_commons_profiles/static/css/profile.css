@@ -1977,3 +1977,23 @@ div {
       clip: rect(0, 0, 0, 0);
       border: 0;
     }
+
+  .cv-file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .cv-link {
+    text-decoration: none;
+    color: #007bff;
+  }
+
+  .cv-link:hover {
+    text-decoration: underline;
+  }
+
+  #delete-cv-btn {
+    margin-left: auto;
+  }

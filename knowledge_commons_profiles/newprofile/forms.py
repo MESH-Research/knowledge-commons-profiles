@@ -5,6 +5,7 @@ Forms for the profile app
 from bleach.linkifier import Linker
 from bleach.sanitizer import Cleaner
 from django import forms
+from django.core.exceptions import ValidationError
 from django_select2.forms import ModelSelect2TagWidget
 from tinymce.widgets import TinyMCE
 
@@ -67,6 +68,18 @@ class AcademicInterestsSelect2TagWidget(ModelSelect2TagWidget):
 
 
 class ProfileForm(forms.ModelForm):
+    cv_file = forms.FileField(
+        required=False,
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": ".pdf,.doc,.docx",
+                "class": "form-control",
+            }
+        ),
+        help_text="Upload your CV (PDF, DOC, or DOCX). "
+        'Check "Clear" to remove your current CV.',
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Convert newlines to <br> tags if instance exists
@@ -169,7 +182,10 @@ class ProfileForm(forms.ModelForm):
                 },
             ),
             "show_cv": forms.CheckboxInput(
-                attrs={"style": "display: inline-block; float:right;"},
+                attrs={
+                    "style": "display: inline-block; float:right;"
+                    "margin-top:-4em;"
+                },
             ),
             "show_blog_posts": forms.CheckboxInput(
                 attrs={
@@ -244,6 +260,26 @@ class ProfileForm(forms.ModelForm):
                 attrs={"cols": 80, "rows": 20, "promotion": "false"}
             ),
         }
+
+    def clean_cv_file(self):
+        cv_file = self.cleaned_data.get("cv_file")
+        if cv_file:
+            # Check file size (10 MB limit)
+            if cv_file.size > 10 * 1024 * 1024:
+                msg = "File size must not exceed 10 MB."
+                raise ValidationError(msg)
+
+            # Check file extension
+            allowed_extensions = ["pdf", "doc", "docx"]
+            file_ext = cv_file.name.split(".")[-1].lower()
+            if file_ext not in allowed_extensions:
+                msg = (
+                    f"File type '{file_ext}' is not allowed. Use PDF, "
+                    f"DOC, or DOCX."
+                )
+                raise ValidationError(msg)
+
+        return cv_file
 
 
 class AvatarUploadForm(forms.Form):
