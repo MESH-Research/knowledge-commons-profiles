@@ -99,8 +99,6 @@ def extract_code_next_url(request):
 
     data = json.loads(base64.urlsafe_b64decode(b64).decode())
 
-    logger.info("Data decoded was: %s", data)
-
     # see if we have a forwarding URL
     next_url: str = data.get("callback_next", None)
     code: str = request.GET.get("code", None)
@@ -134,8 +132,6 @@ def forward_url(request):
     # If there is no next URL, we want to decode the code here and login
     try:
         code, next_url = extract_code_next_url(request)
-
-        logger.info("Code: %s and Next URL: %s", code, next_url)
 
         if next_url and next_url != "":
             url_parts = generate_next_url(code, next_url, request)
