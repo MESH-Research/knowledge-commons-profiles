@@ -39,22 +39,24 @@ class CILogonViewTests(CILogonTestBase):
                 "knowledge_commons_profiles.cilogon.views.app_logout"
             ) as logout_mock,
             patch(
-                "knowledge_commons_profiles.cilogon.views.pack_state",
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"
             ) as redirect_mock,
-            patch("django.conf.settings.OIDC_CALLBACK", "auth/callback"),
         ):
-            redirect_uri = request.build_absolute_uri("/auth/callback")
             cilogon_login(request)
             logout_mock.assert_called_once_with(
                 request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT
             )
             redirect_mock.assert_called_once_with(
                 request,
-                redirect_uri.replace("http://", "https://"),
+                "https://example.com/auth/callback",
                 state="abc123",
             )
 
@@ -64,9 +66,15 @@ class CILogonViewTests(CILogonTestBase):
         self._add_session(request)
 
         response_redirect = redirect("/somewhere")
-        with patch(
-            "knowledge_commons_profiles.cilogon.views.forward_url",
-            return_value=response_redirect,
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=response_redirect,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.is_request_from_actual_domain",
+                return_value=False,
+            ),
         ):
             response = callback(request)
             self.assertEqual(response.status_code, 302)

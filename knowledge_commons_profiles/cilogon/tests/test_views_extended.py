@@ -60,13 +60,16 @@ class CILogonLoginTests(CILogonTestBase):
                 "knowledge_commons_profiles.cilogon.views.app_logout"
             ) as logout_mock,
             patch(
-                "knowledge_commons_profiles.cilogon.views.pack_state",
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"
             ),
-            patch("django.conf.settings.OIDC_CALLBACK", "auth/callback"),
         ):
             cilogon_login(request)
 
@@ -83,8 +86,12 @@ class CILogonLoginTests(CILogonTestBase):
                 "knowledge_commons_profiles.cilogon.views.app_logout"
             ) as logout_mock,
             patch(
-                "knowledge_commons_profiles.cilogon.views.pack_state",
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"
@@ -105,18 +112,20 @@ class CILogonLoginTests(CILogonTestBase):
         with (
             patch("knowledge_commons_profiles.cilogon.views.app_logout"),
             patch(
-                "knowledge_commons_profiles.cilogon.views.pack_state"
-            ) as pack_mock,
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy"
+            ) as state_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
+            ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"
             ),
         ):
             cilogon_login(request)
 
-            # Check that pack_state was called - it should be called with
-            # some URL. The test verifies that the function is called, the
-            # exact URL handling may vary.
-            pack_mock.assert_called_once()
+            # Check that get_forwarding_state_for_proxy was called
+            state_mock.assert_called_once()
 
     def test_cilogon_login_session_error(self):
         """Test CILogon login with session handling error"""
@@ -128,8 +137,12 @@ class CILogonLoginTests(CILogonTestBase):
         with (
             patch("knowledge_commons_profiles.cilogon.views.app_logout"),
             patch(
-                "knowledge_commons_profiles.cilogon.views.pack_state",
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"

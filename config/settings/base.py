@@ -416,6 +416,16 @@ CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
 CILOGON_TOKEN_CLEAROUT_DAYS = 4
 CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
 
+# OAuth domain mapping for environments sharing CILogon credentials.
+# CILOGON_REGISTERED_DOMAIN: The domain registered with CILogon (used in redirects)
+# CILOGON_ACTUAL_DOMAIN: The actual domain this instance runs on (if different)
+# When these differ, redirects go through REGISTERED_DOMAIN but forward back to
+# ACTUAL_DOMAIN. Leave ACTUAL_DOMAIN empty in production where they match.
+CILOGON_REGISTERED_DOMAIN = env(
+    "CILOGON_REGISTERED_DOMAIN", default="profile.hcommons.org"
+)
+CILOGON_ACTUAL_DOMAIN = env("CILOGON_ACTUAL_DOMAIN", default="")
+
 MLA_API_KEY = env("MLA_API_KEY", default="")
 MLA_API_SECRET = env("MLA_API_SECRET", default="")
 MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
