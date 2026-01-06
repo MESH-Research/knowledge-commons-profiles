@@ -17,7 +17,11 @@ import tldextract
 import validators
 from authlib.integrations.django_client import OAuth
 from authlib.jose import jwt
+from authlib.jose.errors import BadSignatureError
+from authlib.jose.errors import DecodeError as JoseDecodeError
+from authlib.jose.errors import ExpiredTokenError
 from authlib.jose.errors import InvalidClaimError
+from authlib.jose.errors import InvalidTokenError as JoseInvalidTokenError
 from authlib.oidc.core import CodeIDToken
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher
@@ -381,9 +385,30 @@ def verify_and_decode_cilogon_jwt(id_token):
                 "exp": {"essential": True},
             },
         )
-    except Exception:  # noqa: BLE001
-        # Return None for any JWT validation errors (invalid signature,
-        # malformed token, etc.)
+    except requests.RequestException:
+        logger.warning("Failed to fetch JWKS for JWT verification")
+        return None
+    except ExpiredTokenError:
+        logger.info("JWT token has expired")
+        return None
+    except BadSignatureError:
+        logger.warning("JWT signature verification failed")
+        return None
+    except InvalidClaimError as e:
+        logger.warning("JWT claim validation failed: %s", e)
+        return None
+    except JoseDecodeError:
+        logger.warning("JWT decoding failed - malformed token")
+        return None
+    except JoseInvalidTokenError:
+        logger.warning("JWT token is invalid")
+        return None
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+        logger.warning("JWT parsing error: %s", type(e).__name__)
+        return None
+    except Exception:
+        # Catch-all for any other unexpected JWT validation errors
+        logger.exception("Unexpected error during JWT verification")
         return None
 
 
@@ -463,6 +488,8 @@ def check_for_sub_or_return_negative(
     return False, None
 
 
+# ruff: noqa: PLR0911
+# ruff: noqa: C901
 def get_secure_userinfo(request) -> tuple[bool, dict | None]:
     """
     Get the token and userinfo with proper validation
@@ -482,10 +509,19 @@ def get_secure_userinfo(request) -> tuple[bool, dict | None]:
             return check_for_sub_or_return_negative(userinfo_session)
 
         userinfo_signed = encoder.decode(request.GET.get("userinfo"))
+    except binascii.Error:
+        logger.warning("Failed to base64 decode userinfo parameter")
+        return check_for_sub_or_return_negative(userinfo_session)
+    except ValueError as e:
+        # Includes padding errors from cryptography
+        logger.warning("Failed to decrypt userinfo - invalid data: %s", e)
+        return check_for_sub_or_return_negative(userinfo_session)
+    except TypeError:
+        logger.warning("Failed to decrypt userinfo - type error")
+        return check_for_sub_or_return_negative(userinfo_session)
     except Exception:
-        message = "Failed to decrypt userinfo"
-        logger.exception(message)
-
+        # Catch-all for unexpected decryption errors
+        logger.exception("Unexpected error decrypting userinfo")
         return check_for_sub_or_return_negative(userinfo_session)
 
     if not userinfo_signed:
@@ -507,9 +543,23 @@ def get_secure_userinfo(request) -> tuple[bool, dict | None]:
         # a sub
         if userinfo_verified and userinfo_verified.get("sub"):
             return True, userinfo_verified
-    except (InvalidTokenError, ValueError, Exception):
-        message = "Failed to verify and decode CILogon userinfo"
-        logger.exception(message)
+    except InvalidTokenError:
+        logger.warning("Failed to verify CILogon userinfo - invalid token")
+        sentry_sdk.capture_exception()
+    except ValueError as e:
+        logger.warning(
+            "Failed to verify CILogon userinfo - value error: %s", e
+        )
+        sentry_sdk.capture_exception()
+    except AttributeError:
+        logger.warning("Failed to verify CILogon userinfo - missing attribute")
+        sentry_sdk.capture_exception()
+    except TypeError:
+        logger.warning("Failed to verify CILogon userinfo - type error")
+        sentry_sdk.capture_exception()
+    except Exception:
+        # Catch-all for unexpected verification errors
+        logger.exception("Unexpected error verifying CILogon userinfo")
         sentry_sdk.capture_exception()
 
     # Validate session data
