@@ -39,9 +39,15 @@ from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import forward_url
+from knowledge_commons_profiles.cilogon.oauth import (
+    get_forwarding_state_for_proxy,
+)
+from knowledge_commons_profiles.cilogon.oauth import get_oauth_redirect_uri
 from knowledge_commons_profiles.cilogon.oauth import get_secure_userinfo
+from knowledge_commons_profiles.cilogon.oauth import (
+    is_request_from_actual_domain,
+)
 from knowledge_commons_profiles.cilogon.oauth import oauth
-from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
@@ -89,27 +95,11 @@ def cilogon_login(request):
     app_logout(request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT)
     request.session.flush()
 
-    # we need to redirect to https here because the load balancer operates
-    # behind the scenes on http, which is not the external URL we want
-    # we also want to replace the dev domain with the production domain
-    redirect_uri = request.build_absolute_uri(
-        "/" + settings.OIDC_CALLBACK
-    ).replace("http://", "https://")
+    # Build redirect URI, substituting registered domain if using domain proxy
+    redirect_uri = get_oauth_redirect_uri(request)
 
-    if "profile.hcommons-dev.org" in redirect_uri:
-        # can use this to pass a next_url if we wish
-        # an empty string assumes authentication to Profiles app
-        # values for base domain here must be present in
-        # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
-        state = pack_state(
-            "https://profile.hcommons-dev.org/" + settings.OIDC_CALLBACK
-        )
-    else:
-        state = pack_state("")
-
-    redirect_uri = redirect_uri.replace(
-        "profile.hcommons-dev.org", "profile.hcommons.org"
-    )
+    # Get state with forwarding URL if using domain proxy
+    state = get_forwarding_state_for_proxy()
 
     return oauth.cilogon.authorize_redirect(request, redirect_uri, state=state)
 
@@ -120,12 +110,14 @@ def callback(request):
     :param request: request
     """
 
-    # forward the code to the next URL if it's valid
+    # Forward the code to the next URL if:
+    # 1. There's a valid forwarding URL in the state
+    # 2. We're NOT on the actual domain (i.e., we're on the proxy/registered
+    # domain)
+    # When using domain proxy, the registered domain forwards to the actual
+    # domain
     forwarding_url = forward_url(request)
-    if (
-        forwarding_url
-        and request.headers.get("host") != "profile.hcommons-dev.org"
-    ):
+    if forwarding_url and not is_request_from_actual_domain(request):
         return forwarding_url
 
     # no "next" was found or was valid, so we will decode the result here

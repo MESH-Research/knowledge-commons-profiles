@@ -77,8 +77,12 @@ class AuthenticationSecurityTests(CILogonTestBase):
                 "knowledge_commons_profiles.cilogon.views.app_logout"
             ) as logout_mock,
             patch(
-                "knowledge_commons_profiles.cilogon.views.pack_state",
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"

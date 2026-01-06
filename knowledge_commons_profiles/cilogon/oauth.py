@@ -127,6 +127,81 @@ def pack_state(next_url):
     ).decode()
 
 
+def is_using_domain_proxy() -> bool:
+    """
+    Check if this instance uses a domain proxy for OAuth.
+
+    Returns True if CILOGON_ACTUAL_DOMAIN is set and differs from
+    CILOGON_REGISTERED_DOMAIN (meaning this instance runs on a different
+    domain than the one registered with CILogon).
+    """
+    actual = settings.CILOGON_ACTUAL_DOMAIN
+    registered = settings.CILOGON_REGISTERED_DOMAIN
+    return bool(actual and actual != registered)
+
+
+def get_oauth_redirect_uri(request) -> str:
+    """
+    Build the OAuth redirect URI, substituting the registered domain if needed.
+
+    When running on a dev/staging domain that shares OAuth credentials with
+    production, this replaces the actual domain with the registered domain
+    so CILogon accepts the redirect.
+
+    Args:
+        request: The Django request object.
+
+    Returns:
+        The redirect URI with the correct domain for CILogon.
+    """
+    redirect_uri = request.build_absolute_uri(
+        "/" + settings.OIDC_CALLBACK
+    ).replace("http://", "https://")
+
+    if is_using_domain_proxy():
+        redirect_uri = redirect_uri.replace(
+            settings.CILOGON_ACTUAL_DOMAIN,
+            settings.CILOGON_REGISTERED_DOMAIN,
+        )
+
+    return redirect_uri
+
+
+def get_forwarding_state_for_proxy() -> str:
+    """
+    Get the state parameter for OAuth when using domain proxy.
+
+    When using a domain proxy, we need to encode the actual domain's callback
+    URL in the state so the callback can forward back to us.
+
+    Returns:
+        Encoded state with forwarding URL, or empty state if not using proxy.
+    """
+    if is_using_domain_proxy():
+        forward_url = (
+            f"https://{settings.CILOGON_ACTUAL_DOMAIN}/{settings.OIDC_CALLBACK}"
+        )
+        return pack_state(forward_url)
+    return pack_state("")
+
+
+def is_request_from_actual_domain(request) -> bool:
+    """
+    Check if the request is coming from the actual domain (not the proxy).
+
+    This is used to determine whether to forward the callback or process it.
+
+    Args:
+        request: The Django request object.
+
+    Returns:
+        True if the request host matches CILOGON_ACTUAL_DOMAIN.
+    """
+    if not is_using_domain_proxy():
+        return False
+    return request.headers.get("host") == settings.CILOGON_ACTUAL_DOMAIN
+
+
 def forward_url(request):
     """
     Forward the code to the next URL (return a redirect) or return None
