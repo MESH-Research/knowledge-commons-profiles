@@ -1,3 +1,9 @@
+## 3.10.0 (2026-01-06)
+
+### Feat
+
+- **cilogon**: added encryption at rest to access and refresh tokens
+
 ## 3.9.1 (2025-12-19)
 
 ### Fix
