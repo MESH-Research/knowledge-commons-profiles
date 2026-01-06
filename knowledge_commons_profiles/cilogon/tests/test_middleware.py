@@ -81,14 +81,16 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             ),
         ):
             self.middleware.process_request(self.request)
-            self.assertTrue(
-                TokenUserAgentAssociations.objects.filter(
-                    user_agent="TestAgent",
-                    user_name=self.user.username,
-                    access_token="a",
-                    refresh_token="r",
-                ).exists()
-            )
+            # Note: Can't filter by token values directly since they're
+            # encrypted  in the database. Instead, verify the association
+            # exists and has correct decrypted values.
+            assoc = TokenUserAgentAssociations.objects.filter(
+                user_agent="TestAgent",
+                user_name=self.user.username,
+            ).first()
+            self.assertIsNotNone(assoc)
+            self.assertEqual(assoc.access_token, "a")
+            self.assertEqual(assoc.refresh_token, "r")
 
     def test_skips_if_token_not_expired(self):
         self.request.session["oidc_token"] = {
