@@ -386,6 +386,9 @@ OIDC_CALLBACK = "cilogon/callback/"
 
 STATIC_API_BEARER = env("STATIC_API_BEARER", default="")
 
+# Encryption key for tokens at rest. Falls back to STATIC_API_BEARER if not set.
+TOKEN_ENCRYPTION_KEY = env("TOKEN_ENCRYPTION_KEY", default="")
+
 WP_MEDIA_ROOT = env("WP_MEDIA_ROOT", default="")
 WP_MEDIA_URL = env("WP_MEDIA_URL", default="")
 
