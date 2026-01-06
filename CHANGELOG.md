@@ -1,3 +1,15 @@
+## 3.11.0 (2026-01-06)
+
+### Feat
+
+- **cilogon**: allow dynamic configuration of cilogon proxy environment
+- **cilogon**: better error handling and logging
+- **cilogon**: check for expiry date on verification tokens in the association routine
+
+### Fix
+
+- **cilogon**: remove logging of sensitive variables
+
 ## 3.10.0 (2026-01-06)
 
 ### Feat
