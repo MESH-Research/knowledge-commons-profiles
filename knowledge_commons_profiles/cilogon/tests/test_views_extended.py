@@ -17,6 +17,7 @@ from django.db import IntegrityError
 from django.http import Http404
 from django.test import RequestFactory
 from django.test import override_settings
+from django.urls import reverse
 
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
@@ -850,6 +851,49 @@ class EmailVerificationTests(CILogonTestBase):
             activate(request, verification.id, verification.secret_uuid)
 
         create_mock.assert_called_once()
+
+    def test_activate_expired_verification(self):
+        """Test activation with expired verification redirects with error"""
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+
+        request = self.factory.get("/")
+        request.session = SessionStore()
+        request.session.create()
+        request._messages = FallbackStorage(request)
+
+        verification = EmailVerification.objects.create(
+            secret_uuid="test-uuid",
+            profile=self.profile,
+            sub="cilogon_sub_123",
+        )
+
+        # Mock garbage_collect to prevent it from deleting the verification
+        # and mock is_expired to return True
+        with patch.object(
+            EmailVerification, "garbage_collect"
+        ), patch.object(
+            EmailVerification, "is_expired", return_value=True
+        ):
+            response = activate(
+                request, verification.id, verification.secret_uuid
+            )
+
+        # Should redirect to login
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("login"))
+
+        # Verification should be deleted (by the activate view)
+        self.assertFalse(
+            EmailVerification.objects.filter(id=verification.id).exists()
+        )
+
+        # SubAssociation should NOT be created
+        self.assertFalse(
+            SubAssociation.objects.filter(
+                sub="cilogon_sub_123", profile=self.profile
+            ).exists()
+        )
 
     def test_confirm_view(self):
         """Test confirmation view"""
