@@ -75,6 +75,22 @@ class EmailVerification(models.Model):
     def __str__(self):
         return str(self.profile) + " (" + self.sub + ")"
 
+    def is_expired(self) -> bool:
+        """
+        Check if this verification has expired based on
+        VERIFICATION_LIMIT_HOURS.
+
+        Returns:
+            bool: True if the verification is older than the configured limit.
+        """
+        if not self.created_at:
+            return True
+
+        expiry_time = self.created_at + datetime.timedelta(
+            hours=settings.VERIFICATION_LIMIT_HOURS
+        )
+        return datetime.datetime.now(tz=datetime.UTC) > expiry_time
+
     @classmethod
     def garbage_collect(cls):
         """

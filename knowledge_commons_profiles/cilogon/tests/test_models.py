@@ -482,6 +482,65 @@ class EmailVerificationModelTests(CILogonTestBase):
             )
             verification.full_clean()
 
+    def test_is_expired_returns_false_for_recent_verification(self):
+        """Test is_expired returns False for recently created verification"""
+        verification = EmailVerification.objects.create(
+            sub="cilogon_sub_123",
+            secret_uuid=str(uuid.uuid4()),
+            profile=self.profile,
+        )
+
+        self.assertFalse(verification.is_expired())
+
+    def test_is_expired_returns_true_for_old_verification(self):
+        """Test is_expired returns True for verification older than limit"""
+        verification = EmailVerification.objects.create(
+            sub="cilogon_sub_123",
+            secret_uuid=str(uuid.uuid4()),
+            profile=self.profile,
+        )
+
+        # Set created_at to 3 days ago (beyond the 48 hour default limit)
+        verification.created_at = timezone.now() - timedelta(days=3)
+        verification.save()
+
+        self.assertTrue(verification.is_expired())
+
+    def test_is_expired_returns_true_when_created_at_is_none(self):
+        """Test is_expired returns True when created_at is None"""
+        verification = EmailVerification.objects.create(
+            sub="cilogon_sub_123",
+            secret_uuid=str(uuid.uuid4()),
+            profile=self.profile,
+        )
+
+        # Manually set created_at to None
+        verification.created_at = None
+
+        self.assertTrue(verification.is_expired())
+
+    def test_is_expired_boundary_condition(self):
+        """Test is_expired at exactly the expiry boundary"""
+        from django.conf import settings
+
+        verification = EmailVerification.objects.create(
+            sub="cilogon_sub_123",
+            secret_uuid=str(uuid.uuid4()),
+            profile=self.profile,
+        )
+
+        # Set to just before expiry (should not be expired)
+        verification.created_at = timezone.now() - timedelta(
+            hours=settings.VERIFICATION_LIMIT_HOURS - 1
+        )
+        self.assertFalse(verification.is_expired())
+
+        # Set to just after expiry (should be expired)
+        verification.created_at = timezone.now() - timedelta(
+            hours=settings.VERIFICATION_LIMIT_HOURS + 1
+        )
+        self.assertTrue(verification.is_expired())
+
 
 class ModelIntegrationTests(CILogonTestBase):
     """Integration tests for CILogon models working together"""

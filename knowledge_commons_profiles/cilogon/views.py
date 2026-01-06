@@ -901,7 +901,14 @@ def activate(request, verification_id: int, secret_key: str):
         EmailVerification, secret_uuid=secret_key, id=verification_id
     )
 
-    # TODO: check that this hasn't expired if created_at is older than X
+    # check that this hasn't expired
+    if verify.is_expired():
+        verify.delete()
+        messages.error(
+            request,
+            "This verification link has expired. Please request a new one.",
+        )
+        return redirect(reverse("login"))
 
     # create a sub association
     SubAssociation.objects.create(
