@@ -4,8 +4,10 @@ Views for CILogon
 """
 
 import csv
+import html
 import io
 import logging
+import re
 from enum import IntEnum
 from typing import Any
 from uuid import uuid4
@@ -21,7 +23,9 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session as DjangoSession
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.wsgi import WSGIRequest
+from django.core.validators import validate_email
 from django.db import transaction
 from django.http import Http404
 from django.http import JsonResponse
@@ -66,6 +70,9 @@ from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
 
 logger = logging.getLogger(__name__)
+
+# Maximum length for full name field
+MAX_FULL_NAME_LENGTH = 100
 
 
 class RedirectBehaviour(IntEnum):
@@ -662,9 +669,12 @@ def register(request):
         if errored:
             return render(request, "cilogon/new_user.html", context)
 
+        # Sanitize the full name before storage (defense in depth)
+        sanitized_name = sanitize_full_name(full_name)
+
         # Create the Profile object
         profile = Profile.objects.create(
-            name=full_name, username=username, email=email
+            name=sanitized_name, username=username, email=email
         )
 
         # Create the corresponding Django User
@@ -720,6 +730,42 @@ def validate_form(email, full_name, request, username):
     if not email or not username or not full_name:
         errored = True
         messages.error(request, "Please fill in all fields")
+        # Early return since we can't validate empty values
+        return errored
+
+    # Validate email format using Django's EmailValidator
+    try:
+        validate_email(email)
+    except DjangoValidationError:
+        errored = True
+        messages.error(request, "Please enter a valid email address")
+
+    # Validate username: alphanumeric, underscores, hyphens only
+    # Length between 3 and 30 characters
+    username_pattern = r"^[a-zA-Z0-9_-]{3,30}$"
+    if not re.match(username_pattern, username):
+        errored = True
+        messages.error(
+            request,
+            "Username must be 3-30 characters and contain only letters, "
+            "numbers, underscores, and hyphens",
+        )
+
+    # Validate full name: reasonable length and no HTML/script tags
+    # Strip any HTML tags for XSS prevention
+    if len(full_name) > MAX_FULL_NAME_LENGTH:
+        errored = True
+        messages.error(
+            request,
+            f"Full name must be {MAX_FULL_NAME_LENGTH} characters or less",
+        )
+
+    # Check for HTML/script injection attempts
+    if _contains_html_or_script(full_name):
+        errored = True
+        messages.error(
+            request, "Full name contains invalid characters or formatting"
+        )
 
     # check whether this email already exists
     profile = Profile.objects.filter(email=email).first()
@@ -739,6 +785,45 @@ def validate_form(email, full_name, request, username):
         messages.error(request, "This username already exists")
 
     return errored
+
+
+def _contains_html_or_script(text: str) -> bool:
+    """
+    Check if text contains HTML tags or script injection attempts.
+    Returns True if potentially dangerous content is found.
+    """
+    if not text:
+        return False
+
+    # Check for HTML tags (including self-closing)
+    html_pattern = r"<[^>]+>"
+    if re.search(html_pattern, text):
+        return True
+
+    # Check for common XSS patterns
+    xss_patterns = [
+        r"javascript:",
+        r"on\w+\s*=",  # onclick, onerror, etc.
+        r"data:",
+        r"vbscript:",
+    ]
+    text_lower = text.lower()
+    return any(re.search(pattern, text_lower) for pattern in xss_patterns)
+
+
+def sanitize_full_name(full_name: str) -> str:
+    """
+    Sanitize a full name by escaping HTML entities and trimming.
+    Use this when displaying user-provided names.
+    """
+    if not full_name:
+        return ""
+
+    # Escape HTML entities
+    sanitized = html.escape(full_name.strip())
+
+    # Limit length
+    return sanitized[:MAX_FULL_NAME_LENGTH]
 
 
 # ruff: noqa: PLR0911
