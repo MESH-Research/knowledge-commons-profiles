@@ -291,27 +291,41 @@ def store_session_variables(request, token, userinfo_input=None):
 
 def find_user_and_login(request, sub_association):
     """
-    Find the user and log them in
+    Find or create the Django User and log them in.
+
+    Uses get_or_create with select_for_update to prevent race conditions
+    and ensure atomic user creation.
     """
-    # does the user exist in Django?
-    user = User.objects.filter(
-        username=sub_association.profile.username
-    ).first()
+    from django.db import transaction
 
-    if user:
-        logger.info(
-            "Logging in user %s from sub %s",
-            user.username,
-            sub_association.sub,
-        )
-    else:
-        # there is no user at the moment, so create one
-        user = User.objects.create(
+    with transaction.atomic():
+        # Use get_or_create for atomic lookup/creation
+        # select_for_update prevents race conditions with concurrent logins
+        user, created = User.objects.select_for_update().get_or_create(
             username=sub_association.profile.username,
-            email=sub_association.profile.email,
+            defaults={"email": sub_association.profile.email},
         )
 
-    # log the user in
+        if created:
+            logger.info(
+                "Created new Django user %s for sub %s",
+                user.username,
+                sub_association.sub,
+            )
+        else:
+            logger.info(
+                "Logging in existing user %s from sub %s",
+                user.username,
+                sub_association.sub,
+            )
+
+            # Update email if it has changed on the profile
+            if user.email != sub_association.profile.email:
+                user.email = sub_association.profile.email
+                user.save(update_fields=["email"])
+
+    # log the user in (outside transaction - login doesn't need to be atomic
+    # with user creation, and holding the lock during login is unnecessary)
     login(request, user)
 
 

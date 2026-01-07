@@ -263,6 +263,165 @@ class CallbackTests(CILogonTestBase):
             self.assertEqual(response.status_code, 302)
             self.assertIn("associate", response.url)
 
+    @override_settings(EXTERNAL_SYNC_CLASSES=[])
+    def test_callback_transaction_rollback_on_profile_save_failure(self):
+        """Test that database changes rollback if profile save fails"""
+        from django.db import DatabaseError
+
+        state = base64.urlsafe_b64encode(
+            json.dumps({"callback_next": ""}).encode()
+        ).decode()
+        request = self.factory.get(
+            f"/auth/callback?code=auth123&state={state}"
+        )
+        request.user = AnonymousUser()
+        self._add_session(request)
+
+        # Create SubAssociation
+        sub_association = SubAssociation.objects.create(
+            sub="cilogon_sub_rollback", profile=self.profile
+        )
+        original_idp_name = sub_association.idp_name
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token"
+            ) as token_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.store_session_variables"
+            ) as session_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=None,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.find_user_and_login"
+            ),
+            patch.object(
+                Profile,
+                "save",
+                side_effect=DatabaseError("Simulated DB error"),
+            ),
+        ):
+            token_mock.return_value = {"access_token": "token123"}
+            session_mock.return_value = {
+                "sub": "cilogon_sub_rollback",
+                "email": "different@example.com",  # Diff email triggers save
+                "idp_name": "new_idp",
+            }
+
+            with self.assertRaises(DatabaseError):
+                callback(request)
+
+        # SubAssociation idp_name should be rolled back to original
+        sub_association.refresh_from_db()
+        self.assertEqual(sub_association.idp_name, original_idp_name)
+
+    @override_settings(EXTERNAL_SYNC_CLASSES=[])
+    def test_callback_transaction_commits_on_success(self):
+        """Test that database changes are committed on successful callback"""
+        state = base64.urlsafe_b64encode(
+            json.dumps({"callback_next": ""}).encode()
+        ).decode()
+        request = self.factory.get(
+            f"/auth/callback?code=auth123&state={state}"
+        )
+        request.user = AnonymousUser()
+        self._add_session(request)
+
+        # Create SubAssociation without idp_name
+        sub_association = SubAssociation.objects.create(
+            sub="cilogon_sub_commit",
+            profile=self.profile,
+            idp_name="",
+        )
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token"
+            ) as token_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.store_session_variables"
+            ) as session_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=None,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.find_user_and_login"
+            ),
+        ):
+            token_mock.return_value = {"access_token": "token123"}
+            session_mock.return_value = {
+                "sub": "cilogon_sub_commit",
+                "email": "test@example.com",
+                "idp_name": "Updated IDP",
+            }
+
+            response = callback(request)
+
+        # Should redirect successfully
+        self.assertEqual(response.status_code, 302)
+
+        # SubAssociation idp_name should be updated
+        sub_association.refresh_from_db()
+        self.assertEqual(sub_association.idp_name, "Updated IDP")
+
+    @override_settings(EXTERNAL_SYNC_CLASSES=[])
+    def test_callback_external_sync_runs_outside_transaction(self):
+        """Test that ExternalSync runs after transaction commits"""
+        state = base64.urlsafe_b64encode(
+            json.dumps({"callback_next": ""}).encode()
+        ).decode()
+        request = self.factory.get(
+            f"/auth/callback?code=auth123&state={state}"
+        )
+        request.user = AnonymousUser()
+        self._add_session(request)
+
+        _ = SubAssociation.objects.create(
+            sub="cilogon_sub_sync", profile=self.profile
+        )
+
+        sync_call_order = []
+
+        def track_find_user(*args, **kwargs):
+            sync_call_order.append("find_user")
+
+        def track_sync(*args, **kwargs):
+            sync_call_order.append("sync")
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token"
+            ) as token_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.store_session_variables"
+            ) as session_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=None,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.find_user_and_login",
+                side_effect=track_find_user,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.ExternalSync.sync",
+                side_effect=track_sync,
+            ),
+        ):
+            token_mock.return_value = {"access_token": "token123"}
+            session_mock.return_value = {
+                "sub": "cilogon_sub_sync",
+                "email": "test@example.com",
+            }
+
+            callback(request)
+
+        # Verify sync is called after find_user (outside the transaction)
+        self.assertEqual(sync_call_order, ["find_user", "sync"])
+
 
 class LogoutTests(CILogonTestBase):
     """Test cases for logout functionality"""
@@ -883,10 +1042,9 @@ class EmailVerificationTests(CILogonTestBase):
 
         # Mock garbage_collect to prevent it from deleting the verification
         # and mock is_expired to return True
-        with patch.object(
-            EmailVerification, "garbage_collect"
-        ), patch.object(
-            EmailVerification, "is_expired", return_value=True
+        with (
+            patch.object(EmailVerification, "garbage_collect"),
+            patch.object(EmailVerification, "is_expired", return_value=True),
         ):
             response = activate(
                 request, verification.id, verification.secret_uuid
