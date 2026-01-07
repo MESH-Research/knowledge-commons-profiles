@@ -425,6 +425,163 @@ class AssociationManagementTests(CILogonTestBase):
         self.assertIsNotNone(created_user)
         self.assertEqual(created_user.email, "test2@example.com")
 
+    def test_find_user_and_login_uses_get_or_create(self):
+        """Test that get_or_create is used for atomic user creation"""
+        request = self.factory.get("/")
+        session = SessionStore()
+        session.create()
+        request.session = session
+
+        profile = Profile.objects.create(
+            username="testuser_atomic", email="atomic@example.com"
+        )
+        sub_association = SubAssociation.objects.create(
+            profile=profile,
+            sub="test_sub_atomic",
+        )
+
+        # First call creates user
+        with patch("knowledge_commons_profiles.cilogon.oauth.logger"):
+            find_user_and_login(request, sub_association)
+
+        user_count_after_first = User.objects.filter(
+            username="testuser_atomic"
+        ).count()
+        self.assertEqual(user_count_after_first, 1)
+
+        # Second call should find existing user, not create duplicate
+        with patch("knowledge_commons_profiles.cilogon.oauth.logger"):
+            find_user_and_login(request, sub_association)
+
+        user_count_after_second = User.objects.filter(
+            username="testuser_atomic"
+        ).count()
+        self.assertEqual(user_count_after_second, 1)
+
+    def test_find_user_and_login_updates_email_if_changed(self):
+        """Test that email is synced from profile to user"""
+        request = self.factory.get("/")
+        session = SessionStore()
+        session.create()
+        request.session = session
+
+        # Create user with old email
+        User.objects.create_user(
+            "testuser_email_sync",
+            email="old@example.com",
+            password="pw",
+        )
+        profile = Profile.objects.create(
+            username="testuser_email_sync",
+            email="new@example.com",  # Different email
+        )
+        sub_association = SubAssociation.objects.create(
+            profile=profile,
+            sub="test_sub_email_sync",
+        )
+
+        with patch("knowledge_commons_profiles.cilogon.oauth.logger"):
+            find_user_and_login(request, sub_association)
+
+        # Verify email was updated
+        user = User.objects.get(username="testuser_email_sync")
+        self.assertEqual(user.email, "new@example.com")
+
+    def test_find_user_and_login_rollback_on_login_failure(self):
+        """Test that user creation is committed even if login fails"""
+
+        request = self.factory.get("/")
+        session = SessionStore()
+        session.create()
+        request.session = session
+
+        profile = Profile.objects.create(
+            username="testuser_login_fail", email="loginfail@example.com"
+        )
+        sub_association = SubAssociation.objects.create(
+            profile=profile,
+            sub="test_sub_login_fail",
+        )
+
+        # ruff: noqa: B017
+        # Mock login to raise an exception
+        with (
+            patch("knowledge_commons_profiles.cilogon.oauth.logger"),
+            patch(
+                "knowledge_commons_profiles.cilogon.oauth.login",
+                side_effect=Exception("Login failed"),
+            ),
+            self.assertRaises(Exception),
+        ):
+            find_user_and_login(request, sub_association)
+
+        # User should still be created because the transaction commits
+        # before login is called
+        user = User.objects.filter(username="testuser_login_fail").first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.email, "loginfail@example.com")
+
+    # ruff: noqa: PERF401
+    def test_find_user_and_login_concurrent_creation_prevention(self):
+        """Test that concurrent user creation attempts don't
+        create duplicates"""
+        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import as_completed
+        from threading import Barrier
+
+        profile = Profile.objects.create(
+            username="testuser_concurrent", email="concurrent@example.com"
+        )
+        sub_association = SubAssociation.objects.create(
+            profile=profile,
+            sub="test_sub_concurrent",
+        )
+
+        # Barrier to synchronize thread starts
+        num_threads = 5
+        barrier = Barrier(num_threads)
+        results = []
+
+        def create_user_attempt():
+            """Attempt to create user - all threads start simultaneously"""
+            from django.contrib.sessions.backends.db import SessionStore
+            from django.test import RequestFactory
+
+            barrier.wait()  # Wait for all threads to be ready
+
+            factory = RequestFactory()
+            request = factory.get("/")
+            session = SessionStore()
+            session.create()
+            request.session = session
+
+            # ruff: noqa: BLE001
+            try:
+                with patch("knowledge_commons_profiles.cilogon.oauth.logger"):
+                    find_user_and_login(request, sub_association)
+            except Exception as e:
+                return f"error: {e}"
+            else:
+                return "success"
+
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            futures = [
+                executor.submit(create_user_attempt)
+                for _ in range(num_threads)
+            ]
+            for future in as_completed(futures):
+                results.append(future.result())
+
+        # All attempts should succeed (no IntegrityError)
+        for result in results:
+            self.assertEqual(result, "success")
+
+        # Only one user should exist
+        user_count = User.objects.filter(
+            username="testuser_concurrent"
+        ).count()
+        self.assertEqual(user_count, 1)
+
 
 class SecureParamEncoderTests(TestCase):
     """Test cases for secure parameter encoding/decoding"""

@@ -147,25 +147,29 @@ def callback(request):
 
     # do we have a sub->profile?
     if sub_association:
-        # update the sub with an idp_name
-        sub_association.idp_name = userinfo.get("idp_name", "")
-        sub_association.save()
+        # Wrap database operations in a transaction to ensure consistency
+        with transaction.atomic():
+            # update the sub with an idp_name
+            sub_association.idp_name = userinfo.get("idp_name", "")
+            sub_association.save()
 
-        # yes, found a sub->profile, log them in
-        find_user_and_login(request, sub_association)
+            # yes, found a sub->profile, log them in
+            # (find_user_and_login has its own nested transaction for user
+            # creation)
+            find_user_and_login(request, sub_association)
 
-        logger.info("Received userinfo: %s", userinfo)
+            logger.info("Received userinfo: %s", userinfo)
 
-        # test whether the userinfo has an email that we don't know about
-        if (
-            userinfo.get("email")
-            and userinfo.get("email") != sub_association.profile.email
-        ):
-            if userinfo.get("email") not in sub_association.profile.emails:
-                sub_association.profile.emails.append(userinfo.get("email"))
-                sub_association.profile.save()
+            # test whether the userinfo has an email that we don't know about
+            if (
+                userinfo.get("email")
+                and userinfo.get("email") != sub_association.profile.email
+            ):
+                if userinfo.get("email") not in sub_association.profile.emails:
+                    sub_association.profile.emails.append(userinfo.get("email"))
+                    sub_association.profile.save()
 
-        # update user network affiliations
+        # update user network affiliations (outside transaction - external call)
         ExternalSync.sync(profile=sub_association.profile)
 
         # return to the profile page
