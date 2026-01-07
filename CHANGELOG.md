@@ -1,3 +1,10 @@
+## 3.11.1 (2026-01-07)
+
+### Fix
+
+- **cilogon**: stricter validation on form inputs to improve security
+- **cilogon**: move user creation inside atomic transaction to avoid race conditions and orphaned user objects
+
 ## 3.11.0 (2026-01-06)
 
 ### Feat
