@@ -38,3 +38,18 @@ services:
       - production_traefik:/etc/traefik/acme
     ports:
       - '0.0.0.0:80:80'
+
+  monitor:
+    platform: linux/arm64
+    build:
+      platforms:
+        - linux/arm64
+      context: .
+      dockerfile: ./compose/production/monitor/Dockerfile
+      tags:
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_MONITOR:-monitor}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_MONITOR:-monitor}:latest
+        - knowledge_commons_profiles_monitor:${IMAGE_TAG:-latest}
+        - knowledge_commons_profiles_monitor:latest
+    image: knowledge_commons_profiles_monitor
+    restart: unless-stopped
