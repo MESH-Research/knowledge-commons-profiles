@@ -53,6 +53,9 @@ jobs:
       - name: Run Django Tests
         run: docker compose -f docker-compose.github.yml run --rm django coverage run manage.py test
 
+      - name: Run Cron/Monitor Tests (pytest)
+        run: docker compose -f docker-compose.github.yml run --rm django python -m pytest knowledge_commons_profiles/cron/tests/ -v
+
       - name: Generate lcov
         run: docker compose -f docker-compose.github.yml run --rm django coverage lcov
 
