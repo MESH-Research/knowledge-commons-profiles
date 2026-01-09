@@ -1,3 +1,9 @@
+## 3.13.3 (2026-01-09)
+
+### Fix
+
+- **cilogon**: fix to cilogon rest_api sub return
+
 ## 3.13.2 (2026-01-09)
 
 ### Fix
