@@ -1,3 +1,9 @@
+## 3.13.0 (2026-01-09)
+
+### Feat
+
+- **monitor**: get website_url from environment
+
 ## 3.12.1 (2026-01-09)
 
 ### Fix
