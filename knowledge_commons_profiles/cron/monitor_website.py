@@ -51,6 +51,7 @@ RECIPIENTS = [
     "eve@msu.edu",
     "tzouris@msu.edu",
     "bonnie@msu.edu",
+    "scottia4@msu.edu",
 ]
 
 # SparkPost API endpoint (defaults for testing)
