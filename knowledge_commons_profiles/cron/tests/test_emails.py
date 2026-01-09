@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 import requests
 
-from knowledge_commons_profiles.cron.emails import SparkPostEmailClient
+from knowledge_commons_profiles.cron.monitor_website import SparkPostEmailClient
 
 # Test constants
 EXPECTED_TIMEOUT = 10
@@ -17,11 +17,11 @@ class TestSparkPostEmailClientInit:
     """Tests for SparkPostEmailClient initialization."""
 
     @mock.patch(
-        "knowledge_commons_profiles.cron.emails.SPARKPOST_API_KEY",
+        "knowledge_commons_profiles.cron.monitor_website.SPARKPOST_API_KEY",
         "test-key",
     )
     @mock.patch(
-        "knowledge_commons_profiles.cron.emails.SPARKPOST_API_URL",
+        "knowledge_commons_profiles.cron.monitor_website.SPARKPOST_API_URL",
         "https://api.sparkpost.com/api/v1",
     )
     def test_client_initialization(self):
@@ -44,11 +44,11 @@ class TestSendEmail:
         """Create a SparkPostEmailClient with mocked credentials."""
         with (
             mock.patch(
-                "knowledge_commons_profiles.cron.emails.SPARKPOST_API_KEY",
+                "knowledge_commons_profiles.cron.monitor_website.SPARKPOST_API_KEY",
                 "test-key",
             ),
             mock.patch(
-                "knowledge_commons_profiles.cron.emails.SPARKPOST_API_URL",
+                "knowledge_commons_profiles.cron.monitor_website.SPARKPOST_API_URL",
                 "https://api.sparkpost.com/api/v1",
             ),
         ):
@@ -66,7 +66,10 @@ class TestSendEmail:
                 from_name="Sender Name",
                 subject="Test Subject",
                 html_content="<p>Hello World</p>",
-                recipients=["recipient1@example.com", "recipient2@example.com"],
+                recipients=[
+                    "recipient1@example.com",
+                    "recipient2@example.com",
+                ],
             )
 
             # Verify the API was called
