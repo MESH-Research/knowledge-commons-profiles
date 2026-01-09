@@ -15,15 +15,17 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+import environ
 import requests
 
 from .emails import SparkPostEmailClient
 
 logger = logging.getLogger(__name__)
 
+env = environ.Env()
 
 # Configuration
-WEBSITE_URL = "https://hcommons.org"
+WEBSITE_URL = env("CHECK_WEBSITE", "https://hcommons.org")
 LISTENER_RULE_ARN = (
     "arn:aws:elasticloadbalancing:us-east-1:755997884632:"
     "listener-rule/app/hcommons-prod-alb/cd92f60f938442a3/7bf51009f05e0d44/"
