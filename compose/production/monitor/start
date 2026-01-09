@@ -5,7 +5,6 @@ set -o pipefail
 set -o nounset
 
 echo "Starting website monitor..."
-echo "Monitoring URL: ${MONITOR_URL:-https://hcommons.org}"
 echo "Check interval: ${CHECK_INTERVAL:-60} seconds"
 
 cd /app
