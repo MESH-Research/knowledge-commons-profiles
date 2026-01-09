@@ -1,3 +1,9 @@
+## 3.12.0 (2026-01-09)
+
+### Feat
+
+- **monitor**: add new monitoring tool
+
 ## 3.11.1 (2026-01-07)
 
 ### Fix
