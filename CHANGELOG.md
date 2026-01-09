@@ -1,3 +1,9 @@
+## 3.13.1 (2026-01-09)
+
+### Fix
+
+- **monitor**: fix default for check_website environment var
+
 ## 3.13.0 (2026-01-09)
 
 ### Feat
