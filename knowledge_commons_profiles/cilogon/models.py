@@ -32,7 +32,9 @@ class SubAssociation(models.Model):
         verbose_name_plural = "CI Logon Associations"
 
     def __str__(self):
-        return self.profile.username + " (" + self.sub + ")"
+        if self.profile:
+            return self.profile.username + " (" + self.sub + ")"
+        return f"(no profile) ({self.sub})"
 
 
 class TokenUserAgentAssociations(models.Model):

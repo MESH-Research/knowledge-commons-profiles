@@ -336,10 +336,7 @@ def app_logout(
 def manage_roles(request, user_name):
 
     # first, get a profile object
-    try:
-        profile = Profile.objects.get(username=user_name)
-    except Profile.DoesNotExist:
-        profile = None
+    profile = get_object_or_404(Profile, username=user_name)
 
     if request.method == "POST":
         # remove an override
@@ -482,9 +479,10 @@ def self_join_network(request, username, network):
         )
     )
 
-    # add the network to the profile
-    profile.role_overrides.append(network)
-    profile.save()
+    # add the network to the profile (only if not already a member)
+    if network not in profile.role_overrides:
+        profile.role_overrides.append(network)
+        profile.save()
 
     return redirect(reverse("manage_login", args=[username]))
 
@@ -522,8 +520,10 @@ def self_leave_network(request, username, network):
     )
 
     if request.POST.get("membership_to_leave"):
-        profile.role_overrides.remove(network)
-        profile.save()
+        # Only remove if user is actually a member
+        if network in profile.role_overrides:
+            profile.role_overrides.remove(network)
+            profile.save()
 
     return redirect(reverse("manage_login", args=[username]))
 
@@ -563,8 +563,9 @@ def _build_organizations_list(
 
 def _remove_secondary_email(profile: Profile | None, request):
     email = request.POST.get("email_remove", "")
-    profile.emails.remove(email)
-    profile.save()
+    if email and email in profile.emails:
+        profile.emails.remove(email)
+        profile.save()
 
 
 def _add_secondary_email(profile: Profile | None, request):
@@ -587,6 +588,7 @@ def _add_secondary_email(profile: Profile | None, request):
     return True
 
 
+@login_required
 def new_email_verified(request, verification_id, secret_key):
     """
     The activation view clicked by a user from email
@@ -617,6 +619,10 @@ def new_email_verified(request, verification_id, secret_key):
 def _make_email_primary(profile: Profile | None, request):
     email = request.POST.get("email_primary", "")
 
+    # Only proceed if email is valid and in the secondaries list
+    if not email or email not in profile.emails:
+        return
+
     # first, add the existing primary to the secondaries
     if profile.email not in profile.emails:
         profile.emails.append(profile.email)
@@ -625,7 +631,7 @@ def _make_email_primary(profile: Profile | None, request):
     # now add the old secondary as the primary email
     profile.email = email
 
-    # remove the old primary from the secondaries
+    # remove the new primary from the secondaries
     profile.emails.remove(email)
 
     # sort the emails
@@ -705,12 +711,19 @@ def extract_form_data(context, request, userinfo):
     email = request.POST.get("email", None)
     username = request.POST.get("username", None)
     full_name = request.POST.get("full_name", None)
-    try:
-        first_name = full_name.split(" ")[0]
-        last_name = " ".join(full_name.split(" ")[1:])
-    except IndexError:
-        first_name = None
-        last_name = full_name
+
+    first_name = None
+    last_name = full_name
+
+    if full_name:
+        try:
+            parts = full_name.split(" ")
+            first_name = parts[0]
+            last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+        except (IndexError, AttributeError):
+            first_name = None
+            last_name = full_name
+
     context.update(
         {
             "email": request.POST.get("email", userinfo.get("email", "")),
@@ -1068,8 +1081,10 @@ def upload_csv_view(request):
                             continue
 
                     # if here, user should be set
-                    user.role_overrides.append(society)
-                    user.save()
+                    # Only add if not already present (avoid duplicates)
+                    if society not in user.role_overrides:
+                        user.role_overrides.append(society)
+                        user.save()
 
                     msg = f"Added {society} to {user.username}"
                     output.append(msg)

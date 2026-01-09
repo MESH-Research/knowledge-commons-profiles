@@ -613,7 +613,7 @@ class FormValidationTests(CILogonTestBase):
         self.assertEqual(username, "testuser")
 
     def test_extract_form_data_missing_full_name(self):
-        """Test extracting form data with missing full name"""
+        """Test extracting form data with missing full name gracefully"""
         request = self._create_request_with_messages(
             "/",
             "POST",
@@ -625,10 +625,14 @@ class FormValidationTests(CILogonTestBase):
         context = {}
         userinfo = {"email": "test@example.com", "name": "Test User"}
 
-        with self.assertRaises(AttributeError):
-            email, full_name, username = extract_form_data(
-                context, request, userinfo
-            )
+        # Should not raise - handles None gracefully
+        email, full_name, username = extract_form_data(
+            context, request, userinfo
+        )
+
+        self.assertEqual(email, "test@example.com")
+        self.assertIsNone(full_name)
+        self.assertEqual(username, "testuser")
 
     def test_validate_form_valid(self):
         """Test form validation with valid data"""

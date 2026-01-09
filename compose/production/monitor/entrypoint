@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Verify AWS credentials are available
+if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
+    echo "WARNING: AWS credentials not set. AWS CLI commands may fail."
+    echo "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables."
+fi
+
+# Verify SparkPost credentials
+if [ -z "${SPARKPOST_API_KEY:-}" ]; then
+    echo "WARNING: SPARKPOST_API_KEY not set. Email notifications will fail."
+fi
+
+if [ -z "${SPARKPOST_API_URL:-}" ]; then
+    echo "WARNING: SPARKPOST_API_URL not set. Email notifications will fail."
+fi
+
+exec "$@"

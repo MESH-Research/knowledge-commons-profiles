@@ -1,0 +1,55 @@
+{
+  "family": "hcommons-monitor",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/hcommons-monitor-task-role",
+  "containerDefinitions": [
+    {
+      "name": "monitor",
+      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/hcommons-monitor:latest",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/hcommons-monitor",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "monitor"
+        }
+      },
+      "environment": [
+        {
+          "name": "AWS_DEFAULT_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "MONITOR_URL",
+          "value": "https://hcommons.org"
+        },
+        {
+          "name": "CHECK_INTERVAL",
+          "value": "60"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SPARKPOST_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:hcommons/sparkpost:api_key::"
+        },
+        {
+          "name": "SPARKPOST_API_URL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:hcommons/sparkpost:api_url::"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "pgrep -f monitor_website.py || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 10
+      }
+    }
+  ]
+}
