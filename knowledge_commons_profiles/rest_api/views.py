@@ -98,12 +98,10 @@ class SubSingleView(generics.ListAPIView):
     pagination_class = SubProfileCursorPagination
 
     def get_queryset(self):
-        # select_related avoids an extra query when touching profile
-        return SubAssociation.objects.select_related("profile")
-
-    def get_object(self):
-        username = self.kwargs[self.lookup_url_kwarg]
-        return SubAssociation.objects.filter(profile__username=username)
+        username = self.kwargs.get(self.lookup_url_kwarg)
+        return SubAssociation.objects.select_related("profile").filter(
+            profile__username=username
+        )
 
 
 class ProfileListView(generics.ListAPIView):
