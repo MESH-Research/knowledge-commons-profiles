@@ -4,6 +4,31 @@
   {{ page.title }}
 {% endblock title %}
 {% block content %}
+  <style>
+    .page-body ol {
+      counter-reset: none;
+      list-style: decimal;
+      padding-left: 1.5em;
+    }
+    .page-body ol li {
+      padding: 0.25em 0;
+      margin-bottom: 0.5em;
+      background: none;
+      border-radius: 0;
+      border-left: none;
+      position: static;
+      line-height: inherit;
+      color: inherit;
+      transition: none;
+    }
+    .page-body ol li:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    .page-body ol li::before {
+      content: none;
+    }
+  </style>
   <div class="container" id="main_container">
     <div class="row">
       <div class="col-12 col-md-8 col-lg-6 mx-auto py-4">
