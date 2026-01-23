@@ -1,3 +1,13 @@
+## 3.14.0 (2026-01-23)
+
+### Feat
+
+- **registration**: add terms and conditions acceptance checkbox
+
+### Fix
+
+- **registration**: changes to default registration item
+
 ## 3.13.4 (2026-01-09)
 
 ### Fix
