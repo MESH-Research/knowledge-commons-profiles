@@ -11,6 +11,7 @@ from django.test import RequestFactory
 from django.test import TestCase
 
 from knowledge_commons_profiles.cilogon.views import _contains_html_or_script
+from knowledge_commons_profiles.cilogon.views import register
 from knowledge_commons_profiles.cilogon.views import sanitize_full_name
 from knowledge_commons_profiles.cilogon.views import validate_form
 
@@ -527,3 +528,61 @@ class TestValidateFormEdgeCases(TestCase):
             "Full name contains invalid characters or formatting",
             self._get_messages(request),
         )
+
+
+class TestAcceptTermsValidation(TestCase):
+    """Tests for the accept_terms checkbox validation in the register view"""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def _create_post_request(self, data):
+        request = self.factory.post("/register/", data=data)
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        from django.contrib.messages.storage.session import SessionStorage
+
+        request._messages = SessionStorage(request)
+        # Simulate an anonymous user
+        request.user = MagicMock()
+        request.user.is_authenticated = False
+        return request
+
+    def _get_messages(self, request):
+        return [str(m) for m in get_messages(request)]
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_secure_userinfo",
+        return_value=(True, {"sub": "test-sub-123", "email": "t@example.com"}),
+    )
+    def test_missing_accept_terms_shows_error(self, mock_userinfo):
+        """Submitting without accept_terms produces an error message"""
+        request = self._create_post_request(
+            {
+                "username": "newuser",
+                "full_name": "New User",
+                "email": "newuser@example.com",
+            }
+        )
+        register(request)
+        msgs = self._get_messages(request)
+        self.assertIn("You must accept the terms and conditions", msgs)
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_secure_userinfo",
+        return_value=(True, {"sub": "test-sub-123", "email": "t@example.com"}),
+    )
+    def test_accept_terms_present_no_error(self, mock_userinfo):
+        """Submitting with accept_terms does not produce the terms error"""
+        request = self._create_post_request(
+            {
+                "username": "newuser",
+                "full_name": "New User",
+                "email": "newuser@example.com",
+                "accept_terms": "on",
+            }
+        )
+        register(request)
+        msgs = self._get_messages(request)
+        self.assertNotIn("You must accept the terms and conditions", msgs)

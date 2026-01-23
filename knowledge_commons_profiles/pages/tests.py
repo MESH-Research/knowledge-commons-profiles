@@ -1,4 +1,5 @@
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory
+from django.test import TestCase
 from django.urls import reverse
 
 from knowledge_commons_profiles.pages.models import SitePage
@@ -60,6 +61,25 @@ class SitePageViewTests(TestCase):
         response = site_page(request, slug="test-slug")
         content = response.content.decode()
         self.assertNotIn("btn-primary", content)
+
+
+class TermsOfServicePageTests(TestCase):
+    def setUp(self):
+        self.page, _ = SitePage.objects.update_or_create(
+            slug="terms-of-service",
+            defaults={
+                "title": "Terms of Service",
+                "body": "<p>These are the terms.</p>",
+            },
+        )
+
+    def test_terms_page_can_be_retrieved_by_slug(self):
+        page = SitePage.objects.get(slug="terms-of-service")
+        self.assertEqual(page.title, "Terms of Service")
+        self.assertEqual(page.body, "<p>These are the terms.</p>")
+
+    def test_str_returns_title(self):
+        self.assertEqual(str(self.page), "Terms of Service")
 
 
 class RegistrationStartPageTests(TestCase):

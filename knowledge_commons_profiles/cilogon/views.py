@@ -66,6 +66,7 @@ from knowledge_commons_profiles.newprofile.mailchimp import (
 )
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
+from knowledge_commons_profiles.pages.models import SitePage
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
 
@@ -664,6 +665,12 @@ def register(request):
         logger.error("The sub was not passed to the register view")
         return render(request, "cilogon/registration_error.html")
 
+    # Load terms of service content for the registration form
+    terms_page = SitePage.objects.filter(slug="terms-of-service").first()
+    if terms_page:
+        context["terms_content"] = terms_page.body
+        context["terms_title"] = terms_page.title
+
     if request.method == "POST":
         email, full_name, username = extract_form_data(
             context, request, userinfo
@@ -671,6 +678,12 @@ def register(request):
 
         errored = False
         errored = validate_form(email, full_name, request, username)
+
+        if not request.POST.get("accept_terms"):
+            errored = True
+            messages.error(
+                request, "You must accept the terms and conditions"
+            )
 
         if errored:
             return render(request, "cilogon/new_user.html", context)
@@ -866,6 +879,12 @@ def association(request):
     if not context["cilogon_sub"]:
         logger.error("The sub was not passed to the association view")
         return render(request, "cilogon/registration_error.html")
+
+    # Load terms of service content for the registration form
+    terms_page = SitePage.objects.filter(slug="terms-of-service").first()
+    if terms_page:
+        context["terms_content"] = terms_page.body
+        context["terms_title"] = terms_page.title
 
     # check if we have an email POSTed
     if request.method == "POST":

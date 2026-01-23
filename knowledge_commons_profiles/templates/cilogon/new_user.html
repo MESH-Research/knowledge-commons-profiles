@@ -51,15 +51,52 @@
                 </div>
               </li>
               <li>
+                <div class="form-check terms-check">
+                  <input type="checkbox" class="form-check-input terms-check-input" name="accept_terms" id="accept_terms" required />
+                  <label class="form-check-label" for="accept_terms">
+                    I accept the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
+                  </label>
+                </div>
+              </li>
+              <li>
                 <input type="submit" value="Register" />
               </li>
               <li>For any problems, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a> if you need help.</li>
             </ol>
           </form>
+          <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="termsModalLabel">{{ terms_title }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  {{ terms_content|safe }}
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <style>
+    .terms-check {
+      display: flex;
+      align-items: center;
+      padding-left: 0;
+    }
+    .terms-check-input {
+      width: 1em;
+      height: 1em;
+      margin: 0 0.5em 0 0;
+    }
+  </style>
 
   <script>
     // Initialize and show all toasts when page loads
