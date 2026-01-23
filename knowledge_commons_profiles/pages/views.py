@@ -12,7 +12,8 @@ def site_page(request, slug):
     """
     try:
         page = SitePage.objects.get(slug=slug)
-    except SitePage.DoesNotExist:
-        raise Http404("Page not found.")
+    except SitePage.DoesNotExist as ex:
+        msg = "Page not found."
+        raise Http404(msg) from ex
 
     return render(request, "pages/site_page.html", {"page": page})

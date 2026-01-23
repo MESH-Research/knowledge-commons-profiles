@@ -13,8 +13,10 @@ class SitePage(models.Model):
     slug = models.SlugField(
         max_length=200,
         unique=True,
-        help_text="URL path identifier for this page (e.g. 'registration-start').",
+        help_text="URL path identifier for this page "
+        "(e.g. 'registration-start').",
     )
+
     title = models.CharField(
         max_length=300,
         help_text="Page title displayed in the heading and browser tab.",
