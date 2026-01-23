@@ -64,15 +64,18 @@ class SitePageViewTests(TestCase):
 
 class RegistrationStartPageTests(TestCase):
     def setUp(self):
-        self.page = SitePage.objects.create(
+        self.page, _ = SitePage.objects.update_or_create(
             slug="registration-start",
-            title="Create Your Account",
-            body=(
-                "<p>To create your Knowledge Commons account, you will first "
-                "sign in through your institution or an identity provider.</p>"
-            ),
-            cta_url="/login/",
-            cta_text="Begin Registration",
+            defaults={
+                "title": "Create Your Account",
+                "body": (
+                    "<p>To create your Knowledge Commons account, you will "
+                    "first sign in through your institution or an identity "
+                    "provider.</p>"
+                ),
+                "cta_url": "/login/",
+                "cta_text": "Begin Registration",
+            },
         )
 
     def test_registration_start_url_resolves(self):
