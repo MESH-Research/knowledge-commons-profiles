@@ -95,6 +95,7 @@ LOCAL_APPS = [
     "knowledge_commons_profiles.cilogon.apps.CILogonConfig",
     "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
     "knowledge_commons_profiles.rest_api.apps.RestAPIConfig",
+    "knowledge_commons_profiles.pages.apps.PagesConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

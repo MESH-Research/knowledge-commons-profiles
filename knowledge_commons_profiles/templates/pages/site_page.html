@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ page.title }}
+{% endblock title %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12 col-md-8 col-lg-6 mx-auto py-4">
+        <h1>{{ page.title }}</h1>
+        <div class="page-body my-3">
+          {{ page.body|safe }}
+        </div>
+        {% if page.cta_url %}
+          <a href="{{ page.cta_url }}" class="btn btn-primary btn-lg mt-3">
+            {{ page.cta_text|default:"Continue" }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}
