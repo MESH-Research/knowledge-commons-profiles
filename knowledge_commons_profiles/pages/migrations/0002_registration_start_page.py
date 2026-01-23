@@ -14,8 +14,8 @@ REGISTRATION_START_BODY = """
   identity provider.</li>
   <li>Sign in with your chosen provider. This verifies your identity without
   Knowledge Commons ever seeing your password.</li>
-  <li>After signing in, you will be asked to either connect an existing
-  Knowledge Commons account or create a new one.</li>
+  <li>After signing in, you will be asked either to connect an existing
+  Knowledge Commons account or to create a new one.</li>
 </ol>
 
 <p>
@@ -32,7 +32,7 @@ def create_registration_start_page(apps, schema_editor):
         defaults={
             "title": "Create Your Account",
             "body": REGISTRATION_START_BODY,
-            "cta_url": "/login/",
+            "cta_url": "/register/",
             "cta_text": "Begin Registration",
         },
     )
