@@ -1,3 +1,9 @@
+## 3.14.1 (2026-01-23)
+
+### Refactor
+
+- **pages**: refactor to meet linter standards
+
 ## 3.14.0 (2026-01-23)
 
 ### Feat
