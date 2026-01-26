@@ -26,6 +26,7 @@ from django.contrib.sessions.models import Session as DjangoSession
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.validators import validate_email
+from django.db import IntegrityError
 from django.db import transaction
 from django.http import Http404
 from django.http import JsonResponse
@@ -174,7 +175,9 @@ def callback(request):
                 and userinfo.get("email") != sub_association.profile.email
             ):
                 if userinfo.get("email") not in sub_association.profile.emails:
-                    sub_association.profile.emails.append(userinfo.get("email"))
+                    sub_association.profile.emails.append(
+                        userinfo.get("email")
+                    )
                     sub_association.profile.save()
 
         # update user network affiliations (outside transaction - external call)
@@ -681,9 +684,7 @@ def register(request):
 
         if not request.POST.get("accept_terms"):
             errored = True
-            messages.error(
-                request, "You must accept the terms and conditions"
-            )
+            messages.error(request, "You must accept the terms and conditions")
 
         if errored:
             return render(request, "cilogon/new_user.html", context)
@@ -691,21 +692,61 @@ def register(request):
         # Sanitize the full name before storage (defense in depth)
         sanitized_name = sanitize_full_name(full_name)
 
-        # Create the Profile object
-        profile = Profile.objects.create(
-            name=sanitized_name, username=username, email=email
-        )
+        # Explicit pre-creation checks to catch race conditions early
+        # (validate_form already checks, but a double-click can slip through)
+        if Profile.objects.filter(username=username).exists():
+            messages.error(request, "This username already exists")
+            return render(request, "cilogon/new_user.html", context)
 
-        # Create the corresponding Django User
-        user = User.objects.create(username=username, email=email)
+        if Profile.objects.filter(email=email).exists():
+            messages.error(request, "This email already exists")
+            return render(request, "cilogon/new_user.html", context)
 
-        # Log the user in
+        if Profile.objects.filter(emails__contains=[email]).exists():
+            messages.error(request, "This email already exists")
+            return render(request, "cilogon/new_user.html", context)
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "This username already exists")
+            return render(request, "cilogon/new_user.html", context)
+
+        try:
+            # Create the Profile object
+            profile = Profile.objects.create(
+                name=sanitized_name, username=username, email=email
+            )
+
+            # Create the corresponding Django User
+            user = User.objects.create(username=username, email=email)
+
+            # Create the SubAssociation with the cilogon sub
+            SubAssociation.objects.create(
+                sub=context["cilogon_sub"], profile=profile
+            )
+        except IntegrityError:
+            # Race condition: another request created the user between our
+            # check and creation. Do NOT log in - just show error and return.
+            msg = (
+                "IntegrityError during registration for username=%s email=%s "
+                "(likely double-submit race condition)"
+            )
+            logger.warning(
+                msg,
+                username,
+                email,
+            )
+            err_message = (
+                "This account was just created. Please try logging "
+                "in instead."
+            )
+            messages.error(
+                request,
+                err_message,
+            )
+            return render(request, "cilogon/new_user.html", context)
+
+        # Only log in AFTER all objects are successfully created
         login(request, user)
-
-        # Create the SubAssociation with the cilogon sub
-        SubAssociation.objects.create(
-            sub=context["cilogon_sub"], profile=profile
-        )
 
         # Add the user to Mailchimp
         hcommons_add_new_user_to_mailchimp(profile.username)
