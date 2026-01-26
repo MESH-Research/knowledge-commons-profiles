@@ -1,3 +1,9 @@
+## 3.14.2 (2026-01-26)
+
+### Fix
+
+- **register**: add checks against race condition on registration page
+
 ## 3.14.1 (2026-01-23)
 
 ### Refactor
