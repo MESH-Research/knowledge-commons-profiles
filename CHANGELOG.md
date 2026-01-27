@@ -1,3 +1,9 @@
+## 3.15.0 (2026-01-27)
+
+### Feat
+
+- **registration**: require email verification before login
+
 ## 3.14.2 (2026-01-26)
 
 ### Fix
