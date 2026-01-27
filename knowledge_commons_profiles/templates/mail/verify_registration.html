@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Knowledge Commons</title>
+    <style>
+        /* Reset styles */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            display: block;
+            outline: none;
+            text-decoration: none;
+        }
+
+        /* Main styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+
+        /* Header styles */
+        .header {
+            background: linear-gradient(135deg, #18453b 0%, #2a6b5c 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .logo img {
+            max-width: 280px;
+            height: auto;
+            margin: 0 auto;
+        }
+
+        .tagline {
+            color: #a8d5c7;
+            font-size: 14px;
+            margin-top: 10px;
+            font-weight: 300;
+        }
+
+        /* Content styles */
+        .content {
+            padding: 40px 30px;
+        }
+
+        .content h1 {
+            color: #18453b;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .content h2 {
+            color: #18453b;
+            font-size: 22px;
+            margin: 30px 0 15px 0;
+            font-weight: 600;
+        }
+
+        .content p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        /* Button styles */
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #18453b 0%, #2a6b5c 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(24, 69, 59, 0.3);
+        }
+
+        .button:hover {
+            background: linear-gradient(135deg, #2a6b5c 0%, #18453b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(24, 69, 59, 0.4);
+        }
+
+        /* Highlight box */
+        .highlight-box {
+            background-color: #f0f8f6;
+            border-left: 4px solid #18453b;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Footer styles */
+        .footer {
+            background-color: #18453b;
+            color: #a8d5c7;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #f4d03f;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .social-links {
+            margin: 20px 0;
+        }
+
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            text-decoration: none;
+            color: #ffffff;
+            transition: background-color 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background-color: rgba(244, 208, 63, 0.3);
+        }
+
+        /* Responsive styles */
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .header {
+                padding: 30px 15px;
+            }
+
+            .logo img {
+                max-width: 220px;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .content h1 {
+                font-size: 24px;
+            }
+
+            .content h2 {
+                font-size: 20px;
+            }
+
+            .button {
+                display: block;
+                text-align: center;
+                margin: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <img src="https://kcommons-newprofiles.s3.amazonaws.com/static/img/KCommons_logo_WHITE.png" alt="Knowledge Commons" />
+        </div>
+        <div class="tagline">Sharing Knowledge, Building Community</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <h1>Verify Your Email Address</h1>
+
+        <p>Hello {{ username }},</p>
+
+        <p>Thank you for registering with Knowledge Commons! To complete your registration and activate your account, please verify your email address by clicking the link below.</p>
+
+        <div class="highlight-box">
+            <strong>To verify your email and activate your account:</strong> Please <a href="https://{{ request.get_host }}{% url "activate" verification_id uuid %}">click here to verify your email</a>.
+        </div>
+
+        <p>If you did not create an account with Knowledge Commons, you can safely ignore this email.</p>
+
+        <p>Welcome to our community! We look forward to having you.</p>
+
+        <p>Best regards,<br/>
+            The Knowledge Commons Team</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="social-links">
+            <a href="mailto:hello@hcommons.org">📧</a>
+        </div>
+
+        <p>
+            Knowledge Commons<br/>
+            Building bridges through shared knowledge<br/>
+            <a href="https://hcommons.org">Visit our website</a>
+        </p>
+
+    </div>
+</div>
+</body>
+</html>

@@ -717,12 +717,10 @@ def register(request):
             )
 
             # Create the corresponding Django User
-            user = User.objects.create(username=username, email=email)
+            User.objects.create(username=username, email=email)
 
-            # Create the SubAssociation with the cilogon sub
-            SubAssociation.objects.create(
-                sub=context["cilogon_sub"], profile=profile
-            )
+            # Do NOT create SubAssociation yet - wait for email verification
+            # Do NOT log in yet - wait for email verification
         except IntegrityError:
             # Race condition: another request created the user between our
             # check and creation. Do NOT log in - just show error and return.
@@ -745,17 +743,16 @@ def register(request):
             )
             return render(request, "cilogon/new_user.html", context)
 
-        # Only log in AFTER all objects are successfully created
-        login(request, user)
+        # Send email verification - user must confirm before they can log in
+        send_registration_verification_email(
+            email=email,
+            profile=profile,
+            cilogon_sub=context["cilogon_sub"],
+            request=request,
+        )
 
-        # Add the user to Mailchimp
-        hcommons_add_new_user_to_mailchimp(profile.username)
-
-        # Send webhooks to other services
-        ExternalSync.sync(profile=profile, send_webhook=True)
-
-        # Redirect to my_profile page
-        return redirect(reverse("my_profile"))
+        # Redirect to confirmation page (tell user to check their email)
+        return redirect(reverse("confirm"))
 
     return render(request, "cilogon/new_user.html", context)
 
@@ -999,6 +996,43 @@ def send_new_email_verify(email, profile, request):
     EmailVerification.garbage_collect()
 
 
+def send_registration_verification_email(email, profile, cilogon_sub, request):
+    """
+    Send a verification email for new user registration.
+
+    The user must click the link to verify their email before they can log in.
+    This creates an EmailVerification with the cilogon sub, which will be used
+    to create the SubAssociation when they click the link.
+    """
+
+    uuid = uuid4().hex
+
+    # create a new EmailVerification entry
+    email_verification = EmailVerification.objects.create(
+        secret_uuid=uuid,
+        profile=profile,
+        sub=cilogon_sub,
+    )
+
+    # replace the email for testing purposes
+    email = sanitize_email_for_dev(email)
+
+    # send an email
+    send_knowledge_commons_email(
+        recipient_email=email,
+        context_data={
+            "uuid": uuid,
+            "verification_id": email_verification.id,
+            "request": request,
+            "username": profile.username,
+        },
+        template_file="mail/verify_registration.html",
+    )
+
+    # delete any expired existing EmailVerification entries
+    EmailVerification.garbage_collect()
+
+
 def associate_with_existing_profile(email, profile, request, userinfo):
     uuid = uuid4().hex
 
@@ -1045,7 +1079,11 @@ def confirm(request):
 
 def activate(request, verification_id: int, secret_key: str):
     """
-    The activation view clicked by a user from email
+    The activation view clicked by a user from email.
+
+    This handles both:
+    1. New user registration verification (first SubAssociation for profile)
+    2. Existing user adding a new login method (additional SubAssociation)
     """
 
     EmailVerification.garbage_collect()
@@ -1064,17 +1102,46 @@ def activate(request, verification_id: int, secret_key: str):
         )
         return redirect(reverse("login"))
 
+    # Save references before deleting the verification
+    profile = verify.profile
+    sub = verify.sub
+
+    # Check if this is a new registration (no existing SubAssociations)
+    is_new_registration = not SubAssociation.objects.filter(
+        profile=profile
+    ).exists()
+
     # create a sub association
     SubAssociation.objects.create(
-        sub=verify.sub,
-        profile=verify.profile,
+        sub=sub,
+        profile=profile,
     )
 
     # delete the verification as it's no longer needed
     verify.delete()
 
     # send a message to the webhooks
-    send_association_message(sub=verify.sub, kc_id=verify.profile.username)
+    send_association_message(sub=sub, kc_id=profile.username)
+
+    # For new registrations, run the post-registration tasks
+    if is_new_registration:
+        # Add the user to Mailchimp
+        hcommons_add_new_user_to_mailchimp(profile.username)
+
+        # Send webhooks to other services
+        ExternalSync.sync(profile=profile, send_webhook=True)
+
+    # Log the user in so they don't have to go through OAuth again
+    try:
+        user = User.objects.get(username=profile.username)
+        login(request, user)
+    except User.DoesNotExist:
+        # User doesn't exist yet (shouldn't happen for new registrations
+        # since we create it, but could happen for legacy associations)
+        logger.warning(
+            "User %s does not exist during activation",
+            profile.username,
+        )
 
     # redirect the user to their Profile page
     return redirect(reverse("my_profile"))
