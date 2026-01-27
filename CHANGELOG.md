@@ -1,3 +1,11 @@
+## 3.15.1 (2026-01-27)
+
+### Refactor
+
+- **jetbrains**: remove jetbrains ide files (.idea)
+- **devcontainer**: remove extraneous devcontainer folder
+- **windsurf**: remove windsurf environment
+
 ## 3.15.0 (2026-01-27)
 
 ### Feat
