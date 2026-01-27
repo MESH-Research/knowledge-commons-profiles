@@ -118,14 +118,35 @@ This guide documents the environment variables used for application startup and 
 - **Usage**: Local file system access to WordPress media
 - **Example**: `WP_MEDIA_ROOT=/var/www/wordpress/wp-content/uploads/`
 
-## Development and Debugging Variables
+## Monitoring and Observability Variables
 
-### IPYTHONDIR
-- **Purpose**: Directory for IPython configuration
-- **Type**: File path
-- **Status**: Not found in current codebase
-- **Usage**: Would configure IPython shell directory if used
-- **Example**: `IPYTHONDIR=/app/.ipython`
+### SENTRY_DSN
+- **Purpose**: Data Source Name for Sentry error monitoring
+- **Type**: URL
+- **Usage**: Configures Sentry SDK for error tracking and performance monitoring
+- **Required**: Yes (production/dev environments)
+- **Example**: `SENTRY_DSN=https://key@sentry.io/project`
+
+### SENTRY_ENVIRONMENT
+- **Purpose**: Environment identifier for Sentry
+- **Type**: String
+- **Default**: "production" (production), "dev" (development)
+- **Usage**: Tags errors and events with the deployment environment
+- **Example**: `SENTRY_ENVIRONMENT=staging`
+
+### SENTRY_TRACES_SAMPLE_RATE
+- **Purpose**: Sampling rate for Sentry performance tracing
+- **Type**: Float (0.0 to 1.0)
+- **Default**: 1.0 (100% of transactions)
+- **Usage**: Controls what percentage of transactions are sent to Sentry for performance monitoring
+- **Example**: `SENTRY_TRACES_SAMPLE_RATE=0.1` (10% sampling)
+
+### DJANGO_SENTRY_LOG_LEVEL
+- **Purpose**: Minimum log level for Sentry event capture
+- **Type**: Integer (Python logging level)
+- **Default**: 20 (logging.INFO)
+- **Usage**: Controls which log events are sent to Sentry
+- **Example**: `DJANGO_SENTRY_LOG_LEVEL=40` (logging.ERROR)
 
 ## Security Best Practices
 

@@ -31,8 +31,11 @@ graph TB
         Profile[👤 Profile Model]
         SubAssoc[🔗 SubAssociation<br/>Links CILogon sub to Profile]
         DjangoUser[👤 Django User]
-        
-        %% External Integrations
+        EmailVerify[📧 EmailVerification<br/>Pending Verifications]
+
+        %% Email and External Integrations
+        EmailService[✉️ Email Service<br/>Verification Emails]
+        ActivateView[✅ activate<br/>views.py]
         Webhook[📡 Webhook Service<br/>Association Updates]
         
         %% Middleware
@@ -55,25 +58,28 @@ graph TB
     CallbackView -->|6b Existing User| Profile
     RegisterView -->|7 Create Profile & User| Profile
     RegisterView --> DjangoUser
-    RegisterView -->|8 Link CILogon Identity| SubAssoc
+    RegisterView -->|8 Create Verification| EmailVerify
+    EmailVerify -->|9 Send Email| EmailService
+    EmailService -->|10 User Clicks Link| ActivateView
+    ActivateView -->|11 Link CILogon Identity| SubAssoc
     
     %% Flow 3: Token Management
-    OAuthClient -->|9 Store Tokens| TokenManager
-    RefreshMiddleware -->|10 Auto-refresh| TokenManager
-    GCMiddleware -->|11 Cleanup Expired| TokenManager
-    
+    OAuthClient -->|12 Store Tokens| TokenManager
+    RefreshMiddleware -->|13 Auto-refresh| TokenManager
+    GCMiddleware -->|14 Cleanup Expired| TokenManager
+
     %% Flow 4: External System Integration
-    SubAssoc -->|12 Association Event| Webhook
-    Webhook -->|13 Notify KC Works| Works
-    Webhook -->|14 Notify WordPress| WordPress
-    
+    ActivateView -->|15 Association Event| Webhook
+    Webhook -->|16 Notify KC Works| Works
+    Webhook -->|17 Notify WordPress| WordPress
+
     %% Flow 5: WordPress Data Access
-    Profile -->|15 Read WP Data| WPDB
-    
+    Profile -->|18 Read WP Data| WPDB
+
     %% Flow 6: Multi-App Logout
-    LogoutView -->|16 Revoke All Tokens| CILogon
-    LogoutView -->|17 Clear Works Session| Works
-    LogoutView -->|18 Clear WordPress Session| WordPress
+    LogoutView -->|19 Revoke All Tokens| CILogon
+    LogoutView -->|20 Clear Works Session| Works
+    LogoutView -->|21 Clear WordPress Session| WordPress
     
     %% Styling
     classDef userStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -84,8 +90,8 @@ graph TB
     
     class User,Browser userStyle
     class CILogon,Works,WordPress externalStyle
-    class LoginView,CallbackView,RegisterView,LogoutView,OAuthClient,Profile,SubAssoc,DjangoUser,Webhook appStyle
-    class WPDB,TokenManager dataStyle
+    class LoginView,CallbackView,RegisterView,LogoutView,ActivateView,OAuthClient,Profile,SubAssoc,DjangoUser,Webhook,EmailService appStyle
+    class WPDB,TokenManager,EmailVerify dataStyle
     class RefreshMiddleware,GCMiddleware middlewareStyle
 ```
 
@@ -107,12 +113,19 @@ graph TB
    - Exchanges code for access/refresh tokens
    - Validates JWT tokens and extracts user info
 
-3. **User Registration/Association** (`register`)
-   - New users: Creates Profile + Django User + SubAssociation
-   - Existing users: Links CILogon identity to existing profile
+3. **User Registration** (`register`)
+   - New users: Creates Profile + Django User + EmailVerification
+   - Sends verification email to user
+   - User is NOT logged in until email is verified
    - Validates `cilogon_sub` before any user creation
 
-4. **Session Management**
+4. **Email Verification** (`activate`)
+   - User clicks verification link in email
+   - Creates SubAssociation linking CILogon identity to profile
+   - Triggers Mailchimp enrollment and external service sync
+   - Logs user in after successful verification
+
+5. **Session Management**
    - Stores tokens in `TokenUserAgentAssociations`
    - Auto-refresh middleware maintains token validity
    - Garbage collection cleans expired tokens

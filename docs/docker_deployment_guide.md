@@ -13,7 +13,7 @@ The knowledge-commons-profiles application uses Docker for containerized deploym
 The application uses a multi-stage Docker build to optimize image size and security:
 
 **Build Stage** (`python-build-stage`)
-- Based on Python 3.12.11 slim-bookworm
+- Based on Python 3.12.12 slim-bookworm (local/production) or 3.12.9 (dev/github)
 - Installs build dependencies for Python packages
 - Creates Python dependency wheels for faster installation
 - Includes PostgreSQL and MySQL client libraries
@@ -27,7 +27,7 @@ The application uses a multi-stage Docker build to optimize image size and secur
 ### Container Images
 
 **Django Application Container**
-- **Base Image**: `python:3.12.11-slim-bookworm`
+- **Base Image**: `python:3.12.12-slim-bookworm` (production/local)
 - **Platform**: `linux/arm64` (configurable)
 - **User**: Non-root `django` user
 - **Working Directory**: `/app`
@@ -59,6 +59,7 @@ The application uses a multi-stage Docker build to optimize image size and secur
 **Services**:
 - `django`: Application server with Gunicorn
 - `traefik`: Load balancer and SSL termination
+- `monitor`: Website monitoring service (see Monitor Service section below)
 
 **Environment Files**:
 - `.envs/.production/.django`: Django application settings
@@ -124,6 +125,30 @@ The application uses a multi-stage Docker build to optimize image size and secur
 - MySQL client libraries (`libmariadb-dev`)
 - Translation tools (`gettext`)
 - Process management utilities (`wait-for-it`)
+
+### Monitor Service Container
+
+**Dockerfile**: `compose/production/monitor/Dockerfile`
+
+The monitor service is a lightweight container for website monitoring tasks:
+
+**Features**:
+- Python 3.12.12 slim-bookworm base image
+- AWS CLI for CloudWatch metrics publishing
+- Minimal dependencies (requests, django-environ)
+- Non-root `monitor` user for security
+- Runs cron-based monitoring scripts
+
+**Purpose**:
+- Website availability monitoring
+- Health check execution
+- CloudWatch metrics publishing
+- Automated alerting integration
+
+**Configuration**:
+- Copies the `cron` module from the main application
+- Runs independently of the main Django container
+- Restarts automatically unless stopped
 
 ### Startup Scripts
 
