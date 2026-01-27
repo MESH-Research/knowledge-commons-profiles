@@ -1,6 +1,6 @@
 # Logging and Observability Technical Guide
 
-> **Note**: This documentation refers to knowledge-commons-profiles version 2.30.0
+> **Note**: This documentation refers to knowledge-commons-profiles version 3.15.0
 
 ## Overview
 

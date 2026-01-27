@@ -1,6 +1,6 @@
 # Knowledge Commons Profiles Documentation
 
-> **Note**: This documentation refers to knowledge-commons-profiles version 2.30.0
+> **Note**: This documentation refers to knowledge-commons-profiles version 3.15.0
 
 The Knowledge Commons Profiles application is a Django-based user profile management system that provides authentication, profile management, and integration with external services. The application supports federated identity management through CILogon, integrates with WordPress systems, and provides robust logging and monitoring capabilities.
 

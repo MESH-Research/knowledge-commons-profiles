@@ -1,6 +1,6 @@
 # Environment Variables Technical Guide
 
-> **Version Note**: This documentation is for knowledge-commons-profiles version 2.30.0
+> **Version Note**: This documentation is for knowledge-commons-profiles version 3.15.0
 
 ## Overview
 
