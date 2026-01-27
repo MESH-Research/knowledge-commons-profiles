@@ -14,6 +14,8 @@ This documentation provides technical guides for developers, system administrato
 
 - **[CILogon OAuth Flow Diagram](cilogon/cilogon_oauth_flow_diagram.md)** - Visual architecture diagram showing the complete OAuth authentication flow between users, CILogon, and the Knowledge Commons ecosystem including Works and WordPress integration.
 
+- **[CILogon Proxy and Forwarding Guide](cilogon/cilogon_proxy_guide.md)** - How to configure OAuth proxy for staging/development environments and service forwarding for ecosystem integration with KC Works and other services.
+
 ### Profile Management
 
 - **[Profiles App Technical Guide](newprofile/profiles_app_technical_guide.md)** - Technical documentation for the core profile management system, covering data models, views, API layer, forms, and integration points with WordPress and external services.
