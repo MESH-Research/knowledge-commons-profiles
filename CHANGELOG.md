@@ -1,3 +1,9 @@
+## 3.15.2 (2026-01-27)
+
+### Refactor
+
+- **jetbrains**: remove jetbrains ide files non-destructively
+
 ## 3.15.1 (2026-01-27)
 
 ### Refactor
