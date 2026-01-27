@@ -13,6 +13,9 @@ __pycache__/
 .claude
 .claude/*
 
+.devcontainer
+.devcontainer/*
+
 # Distribution / packaging
 .Python
 build/
