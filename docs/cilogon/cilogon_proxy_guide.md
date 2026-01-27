@@ -23,31 +23,21 @@ The domain proxy feature solves this by:
 
 ### How It Works
 
-```
-┌──────────┐     ┌───────────┐     ┌─────────────────────┐     ┌─────────────────────┐
-│  User    │────>│  CILogon  │────>│ Registered Domain   │────>│  Actual Domain      │
-│          │     │           │     │ (profile.hcommons.org)    │ (profile.dev.org)   │
-└──────────┘     └───────────┘     └─────────────────────┘     └─────────────────────┘
-     │                │                      │                           │
-     │ 1. Login       │                      │                           │
-     │ request        │                      │                           │
-     │───────────────>│                      │                           │
-     │                │                      │                           │
-     │ 2. Auth redirect (callback to registered domain)                  │
-     │<───────────────│                      │                           │
-     │                │                      │                           │
-     │ 3. User authenticates at IdP         │                           │
-     │                │                      │                           │
-     │ 4. Callback with code                │                           │
-     │                │─────────────────────>│                           │
-     │                │                      │                           │
-     │                │      5. Extract forwarding URL from state        │
-     │                │      6. Redirect with code to actual domain      │
-     │                │                      │──────────────────────────>│
-     │                │                      │                           │
-     │                │                      │      7. Process callback  │
-     │                │                      │      8. Log user in       │
-     │<──────────────────────────────────────────────────────────────────│
+```mermaid
+sequenceDiagram
+    participant User
+    participant ActualDomain as Actual Domain<br/>(profile.dev.org)
+    participant CILogon
+    participant RegisteredDomain as Registered Domain<br/>(profile.hcommons.org)
+
+    User->>ActualDomain: 1. Login request
+    ActualDomain->>User: 2. Redirect to CILogon<br/>(callback points to registered domain)
+    User->>CILogon: 3. User authenticates at IdP
+    CILogon->>RegisteredDomain: 4. Callback with code
+    Note over RegisteredDomain: 5. Extract forwarding URL from state
+    RegisteredDomain->>ActualDomain: 6. Redirect with code
+    Note over ActualDomain: 7. Process callback<br/>8. Log user in
+    ActualDomain->>User: 9. Authentication complete
 ```
 
 ### Configuration
@@ -109,41 +99,23 @@ Other services in the Knowledge Commons ecosystem (like KC Works) may need to au
 
 ### How It Works
 
-```
-┌──────────┐     ┌───────────────┐     ┌───────────┐     ┌───────────────┐
-│  User    │────>│  KC Works     │────>│  Profiles │────>│   CILogon     │
-│          │     │               │     │           │     │               │
-└──────────┘     └───────────────┘     └───────────┘     └───────────────┘
-     │                  │                    │                   │
-     │ 1. Access        │                    │                   │
-     │ protected page   │                    │                   │
-     │─────────────────>│                    │                   │
-     │                  │                    │                   │
-     │ 2. Redirect to   │                    │                   │
-     │ Profiles login   │                    │                   │
-     │ with callback_next                    │                   │
-     │<─────────────────│                    │                   │
-     │                  │                    │                   │
-     │ 3. Login request │                    │                   │
-     │ (includes Works callback)             │                   │
-     │─────────────────────────────────────>│                   │
-     │                  │                    │                   │
-     │ 4. Redirect to CILogon               │                   │
-     │<─────────────────────────────────────│                   │
-     │                  │                    │                   │
-     │ 5. User authenticates                │                   │
-     │─────────────────────────────────────────────────────────>│
-     │                  │                    │                   │
-     │ 6. Callback to Profiles with code    │                   │
-     │<────────────────────────────────────────────────────────│
-     │                  │                    │                   │
-     │ 7. Forward code to Works             │                   │
-     │<─────────────────────────────────────│                   │
-     │                  │                    │                   │
-     │ 8. Works receives │                   │                   │
-     │ code, exchanges  │                    │                   │
-     │ for tokens       │                    │                   │
-     │─────────────────>│                    │                   │
+```mermaid
+sequenceDiagram
+    participant User
+    participant Works as KC Works
+    participant Profiles
+    participant CILogon
+
+    User->>Works: 1. Access protected page
+    Works->>User: 2. Redirect to Profiles login<br/>(with callback_next URL)
+    User->>Profiles: 3. Login request<br/>(includes Works callback)
+    Profiles->>User: 4. Redirect to CILogon
+    User->>CILogon: 5. User authenticates
+    CILogon->>Profiles: 6. Callback with code
+    Note over Profiles: Validate callback_next<br/>against whitelist
+    Profiles->>Works: 7. Forward code to Works
+    Note over Works: 8. Exchange code for tokens<br/>using own credentials
+    Works->>User: 9. Authentication complete
 ```
 
 ### Configuration
