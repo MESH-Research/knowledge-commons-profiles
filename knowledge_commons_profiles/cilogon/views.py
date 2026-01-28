@@ -924,7 +924,10 @@ def association(request):
     if user and user.is_authenticated:
         return redirect(reverse("my_profile"))
 
-    context = {"cilogon_sub": userinfo.get("sub", "")}
+    context = {
+        "cilogon_sub": userinfo.get("sub", ""),
+        "open_networks": settings.OPEN_REGISTRATION_NETWORKS,
+    }
 
     # Check that we have a valid cilogon_sub before proceeding
     if not context["cilogon_sub"]:
