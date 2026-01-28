@@ -50,6 +50,22 @@
                   <input type="email" name="email" id="email" placeholder="you@email.com" value="{{ email }}" required />
                 </div>
               </li>
+              {% if open_networks %}
+              <li>
+                <p class="mb-2">Optionally join one or more of these open networks:</p>
+                {% for network_code, network_name in open_networks %}
+                  <div class="form-check network-check">
+                    <input type="checkbox"
+                           class="form-check-input network-check-input"
+                           name="network_{{ network_code }}"
+                           id="network_{{ network_code }}" />
+                    <label class="form-check-label" for="network_{{ network_code }}">
+                      {{ network_name }}
+                    </label>
+                  </div>
+                {% endfor %}
+              </li>
+            {% endif %}
               <li>
                 <div class="form-check terms-check">
                   <input type="checkbox" class="form-check-input terms-check-input" name="accept_terms" id="accept_terms" required />
@@ -86,15 +102,20 @@
   </div>
 
   <style>
-    .terms-check {
+    .terms-check,
+    .network-check {
       display: flex;
       align-items: center;
       padding-left: 0;
     }
-    .terms-check-input {
+    .terms-check-input,
+    .network-check-input {
       width: 1em;
       height: 1em;
       margin: 0 0.5em 0 0;
+    }
+    .network-check {
+      margin-bottom: 0.5em;
     }
   </style>
 

@@ -674,6 +674,9 @@ def register(request):
         context["terms_content"] = terms_page.body
         context["terms_title"] = terms_page.title
 
+    # Load open registration networks for optional membership
+    context["open_networks"] = settings.OPEN_REGISTRATION_NETWORKS
+
     if request.method == "POST":
         email, full_name, username = extract_form_data(
             context, request, userinfo
@@ -710,10 +713,20 @@ def register(request):
             messages.error(request, "This username already exists")
             return render(request, "cilogon/new_user.html", context)
 
+        # Collect selected networks from the form
+        selected_networks = [
+            network_code
+            for network_code, _ in settings.OPEN_REGISTRATION_NETWORKS
+            if request.POST.get(f"network_{network_code}")
+        ]
+
         try:
-            # Create the Profile object
+            # Create the Profile object with any selected network memberships
             profile = Profile.objects.create(
-                name=sanitized_name, username=username, email=email
+                name=sanitized_name,
+                username=username,
+                email=email,
+                role_overrides=sorted(selected_networks),
             )
 
             # Create the corresponding Django User
