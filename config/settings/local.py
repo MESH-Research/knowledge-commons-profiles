@@ -99,6 +99,16 @@ INSTALLED_APPS += ["django_extensions", "sslserver"]
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+# CILogon forwarding domains for local development
+ALLOWED_CILOGON_FORWARDING_DOMAINS = [
+    "hcommons.org",
+    "msu.edu",
+    "localhost",
+    "lndo.site",
+    "hcommons-staging.org",
+    "hcommons-dev.org",
+]
+
 with Path("log_config/local.yaml").open(
     "r", errors="ignore", encoding="utf-8"
 ) as f:
