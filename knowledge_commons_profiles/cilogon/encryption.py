@@ -20,7 +20,10 @@ def get_token_encryption_key() -> bytes:
     """
     Derive a Fernet-compatible key from the configured secret.
 
-    Uses TOKEN_ENCRYPTION_KEY if set, falling back to STATIC_API_BEARER.
+    Requires TOKEN_ENCRYPTION_KEY to be set. This key MUST be different from
+    STATIC_API_BEARER to maintain proper key separation between authentication
+    and encryption concerns.
+
     The secret is hashed with SHA256 to produce a consistent 32-byte key,
     which is then base64-encoded for Fernet compatibility.
 
@@ -28,16 +31,27 @@ def get_token_encryption_key() -> bytes:
         bytes: A 32-byte URL-safe base64-encoded key for Fernet.
 
     Raises:
-        ValueError: If neither TOKEN_ENCRYPTION_KEY nor STATIC_API_BEARER is
-        set.
+        ValueError: If TOKEN_ENCRYPTION_KEY is not set or if it matches
+        STATIC_API_BEARER.
     """
     secret = getattr(settings, "TOKEN_ENCRYPTION_KEY", None)
-    if not secret:
-        secret = getattr(settings, "STATIC_API_BEARER", None)
 
     if not secret:
-        message = "TOKEN_ENCRYPTION_KEY or STATIC_API_BEARER must be set"
+        message = (
+            "TOKEN_ENCRYPTION_KEY must be set. This key is used to encrypt "
+            "OAuth tokens at rest and must be different from STATIC_API_BEARER."
+        )
         raise ValueError(message)
+
+    # Security check: ensure encryption key is different from API bearer token
+    api_bearer = getattr(settings, "STATIC_API_BEARER", None)
+    if api_bearer and secret == api_bearer:
+        logger.warning(
+            "SECURITY WARNING: TOKEN_ENCRYPTION_KEY should not be the same as "
+            "STATIC_API_BEARER. Using the same secret for authentication and "
+            "encryption reduces security - if one is compromised, both are "
+            "compromised. Please configure separate secrets."
+        )
 
     # Fernet requires a 32-byte URL-safe base64-encoded key
     # Derive it from the secret using SHA256
