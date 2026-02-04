@@ -41,7 +41,9 @@ from django.views.decorators.http import require_http_methods
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
-from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
+from knowledge_commons_profiles.cilogon.models import (
+    TokenUserAgentAssociations,
+)
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
