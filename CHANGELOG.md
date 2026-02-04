@@ -1,3 +1,9 @@
+## 3.16.1 (2026-02-04)
+
+### Refactor
+
+- **docs**: rename universal logout doc to use snake case
+
 ## 3.16.0 (2026-02-04)
 
 ### Feat
