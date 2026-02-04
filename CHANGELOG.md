@@ -1,3 +1,14 @@
+## 3.16.0 (2026-02-04)
+
+### Feat
+
+- **registration**: add optional network membership selection
+
+### Fix
+
+- **registration**: make checkboxes smaller and not reverse indented
+- **registration**: fix display of initial registration page
+
 ## 3.15.2 (2026-01-27)
 
 ### Refactor
