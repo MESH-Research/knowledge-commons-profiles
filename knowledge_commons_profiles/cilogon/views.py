@@ -593,16 +593,16 @@ def _add_secondary_email(profile: Profile | None, request):
 
 
 @login_required
-def new_email_verified(request, verification_id, secret_key):
+def new_email_verified(request, secret_key):
     """
     The activation view clicked by a user from email
     """
 
     EmailVerification.garbage_collect()
 
-    # get the verification and secret key or 404
+    # get the verification by secret key or 404
     verify: EmailVerification = get_object_or_404(
-        EmailVerification, secret_uuid=secret_key, id=verification_id
+        EmailVerification, secret_uuid=secret_key
     )
 
     # add the email
@@ -1002,7 +1002,6 @@ def send_new_email_verify(email, profile, request):
         recipient_email=email,
         context_data={
             "uuid": uuid,
-            "verification_id": email_verification.id,
             "request": request,
         },
         template_file="mail/add_new_email.html",
@@ -1038,7 +1037,6 @@ def send_registration_verification_email(email, profile, cilogon_sub, request):
         recipient_email=email,
         context_data={
             "uuid": uuid,
-            "verification_id": email_verification.id,
             "request": request,
             "username": profile.username,
         },
@@ -1067,7 +1065,6 @@ def associate_with_existing_profile(email, profile, request, userinfo):
         recipient_email=email,
         context_data={
             "uuid": uuid,
-            "verification_id": email_verification.id,
             "request": request,
         },
         template_file="mail/associate.html",
@@ -1093,7 +1090,7 @@ def confirm(request):
     return render(request, "cilogon/confirm.html", {})
 
 
-def activate(request, verification_id: int, secret_key: str):
+def activate(request, secret_key: str):
     """
     The activation view clicked by a user from email.
 
@@ -1104,9 +1101,9 @@ def activate(request, verification_id: int, secret_key: str):
 
     EmailVerification.garbage_collect()
 
-    # get the verification and secret key or 404
+    # get the verification by secret key or 404
     verify: EmailVerification = get_object_or_404(
-        EmailVerification, secret_uuid=secret_key, id=verification_id
+        EmailVerification, secret_uuid=secret_key
     )
 
     # check that this hasn't expired

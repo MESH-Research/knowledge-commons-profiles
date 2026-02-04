@@ -327,14 +327,12 @@ class TestNewEmailVerifiedUnauthenticated(TestCase):
         )
 
         request = self.factory.get(
-            f"/new-email-verified/{verification.id}/test-uuid-123/"
+            f"/new-email-verified/test-uuid-123/"
         )
         request.user = self.user
         self._add_session(request)
 
-        response = new_email_verified(
-            request, verification.id, "test-uuid-123"
-        )
+        response = new_email_verified(request, "test-uuid-123")
 
         # Should redirect to manage_login with correct username
         self.assertEqual(response.status_code, 302)

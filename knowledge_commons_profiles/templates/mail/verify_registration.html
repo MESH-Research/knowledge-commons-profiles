@@ -209,7 +209,7 @@
         <p>Thank you for registering with Knowledge Commons! To complete your registration and activate your account, please verify your email address by clicking the link below.</p>
 
         <div class="highlight-box">
-            <strong>To verify your email and activate your account:</strong> Please <a href="https://{{ request.get_host }}{% url "activate" verification_id uuid %}">click here to verify your email</a>.
+            <strong>To verify your email and activate your account:</strong> Please <a href="https://{{ request.get_host }}{% url "activate" uuid %}">click here to verify your email</a>.
         </div>
 
         <p>If you did not create an account with Knowledge Commons, you can safely ignore this email.</p>

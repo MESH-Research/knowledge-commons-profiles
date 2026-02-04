@@ -966,7 +966,7 @@ class EmailVerificationTests(CILogonTestBase):
         with patch(
             "knowledge_commons_profiles.cilogon.views.send_association_message"
         ) as message_mock:
-            activate(request, verification.id, verification.secret_uuid)
+            activate(request, verification.secret_uuid)
 
         # Should redirect to my_profile (302, not 200)
         # self.assertEqual(response.status_code, 302)
@@ -989,24 +989,24 @@ class EmailVerificationTests(CILogonTestBase):
             sub="cilogon_sub_123", kc_id=self.profile.username
         )
 
-    def test_activate_invalid_verification_id(self):
-        """Test activation with invalid verification ID"""
+    def test_activate_invalid_secret_uuid(self):
+        """Test activation with invalid secret UUID"""
         request = self.factory.get("/")
 
         with self.assertRaises(Http404):
-            activate(request, 999, "invalid-uuid")
+            activate(request, "invalid-uuid")
 
-    def test_activate_invalid_secret(self):
-        """Test activation with invalid secret key"""
+    def test_activate_wrong_secret(self):
+        """Test activation with wrong secret key (different from existing)"""
         request = self.factory.get("/")
-        verification = EmailVerification.objects.create(
+        EmailVerification.objects.create(
             secret_uuid="test-uuid",
             profile=self.profile,
             sub="cilogon_sub_123",
         )
 
         with self.assertRaises(Http404):
-            activate(request, verification.id, "wrong-secret")
+            activate(request, "wrong-secret")
 
     def test_activate_database_error(self):
         """Test activation with database error"""
@@ -1024,7 +1024,7 @@ class EmailVerificationTests(CILogonTestBase):
             ) as create_mock,
             self.assertRaises(DatabaseError),
         ):
-            activate(request, verification.id, verification.secret_uuid)
+            activate(request, verification.secret_uuid)
 
         create_mock.assert_called_once()
 
@@ -1050,9 +1050,7 @@ class EmailVerificationTests(CILogonTestBase):
             patch.object(EmailVerification, "garbage_collect"),
             patch.object(EmailVerification, "is_expired", return_value=True),
         ):
-            response = activate(
-                request, verification.id, verification.secret_uuid
-            )
+            response = activate(request, verification.secret_uuid)
 
         # Should redirect to login
         self.assertEqual(response.status_code, 302)

@@ -66,7 +66,7 @@ class EmailVerification(models.Model):
     """
 
     sub: str = models.CharField(max_length=255)
-    secret_uuid: str = models.CharField(max_length=255)
+    secret_uuid: str = models.CharField(max_length=255, unique=True, db_index=True)
     profile: Profile = models.ForeignKey(
         Profile, on_delete=models.CASCADE, null=True
     )
