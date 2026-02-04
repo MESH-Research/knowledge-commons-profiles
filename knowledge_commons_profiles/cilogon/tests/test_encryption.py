@@ -17,7 +17,9 @@ from knowledge_commons_profiles.cilogon.encryption import (
     get_token_encryption_key,
 )
 from knowledge_commons_profiles.cilogon.fields import EncryptedTextField
-from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
+from knowledge_commons_profiles.cilogon.models import (
+    TokenUserAgentAssociations,
+)
 
 
 class TokenEncryptorTests(TestCase):
@@ -143,7 +145,9 @@ class TokenEncryptorKeyTests(TestCase):
         with self.assertRaises(ValueError) as context:
             get_token_encryption_key()
 
-        self.assertIn("TOKEN_ENCRYPTION_KEY must be set", str(context.exception))
+        self.assertIn(
+            "TOKEN_ENCRYPTION_KEY must be set", str(context.exception)
+        )
 
     @override_settings(TOKEN_ENCRYPTION_KEY="", STATIC_API_BEARER="")
     def test_raises_when_no_key_available(self):
@@ -151,9 +155,13 @@ class TokenEncryptorKeyTests(TestCase):
         with self.assertRaises(ValueError) as context:
             get_token_encryption_key()
 
-        self.assertIn("TOKEN_ENCRYPTION_KEY must be set", str(context.exception))
+        self.assertIn(
+            "TOKEN_ENCRYPTION_KEY must be set", str(context.exception)
+        )
 
-    @override_settings(TOKEN_ENCRYPTION_KEY="same_key", STATIC_API_BEARER="same_key")
+    @override_settings(
+        TOKEN_ENCRYPTION_KEY="same_key", STATIC_API_BEARER="same_key"
+    )
     def test_warns_when_keys_are_same(self):
         """Verify warning is logged when TOKEN_ENCRYPTION_KEY matches
         STATIC_API_BEARER."""
