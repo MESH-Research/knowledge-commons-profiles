@@ -32,7 +32,9 @@ class TestManageRolesNullProfile(TestCase):
         middleware.process_request(request)
         request.session.save()
 
-    @patch("knowledge_commons_profiles.cilogon.views._build_organizations_list")
+    @patch(
+        "knowledge_commons_profiles.cilogon.views._build_organizations_list"
+    )
     def test_manage_roles_returns_404_for_nonexistent_user(self, mock_build):
         """manage_roles should return 404 if profile doesn't exist"""
         from django.http import Http404
@@ -47,7 +49,9 @@ class TestManageRolesNullProfile(TestCase):
         with self.assertRaises(Http404):
             manage_roles(request, "nonexistent_user")
 
-    @patch("knowledge_commons_profiles.cilogon.views._build_organizations_list")
+    @patch(
+        "knowledge_commons_profiles.cilogon.views._build_organizations_list"
+    )
     def test_manage_roles_post_returns_404_for_nonexistent_user(
         self, mock_build
     ):
@@ -326,9 +330,7 @@ class TestNewEmailVerifiedUnauthenticated(TestCase):
             profile=self.profile,
         )
 
-        request = self.factory.get(
-            f"/new-email-verified/test-uuid-123/"
-        )
+        request = self.factory.get(f"/new-email-verified/test-uuid-123/")
         request.user = self.user
         self._add_session(request)
 
