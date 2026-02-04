@@ -1,5 +1,6 @@
 # ruff: noqa: E501
 """Base settings to build other settings files upon."""
+
 import threading
 from pathlib import Path
 
