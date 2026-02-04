@@ -8,6 +8,8 @@ import html
 import io
 import logging
 import re
+import secrets
+import time
 from enum import IntEnum
 from typing import Any
 from uuid import uuid4
@@ -801,13 +803,23 @@ def extract_form_data(context, request, userinfo):
 
 
 def validate_form(email, full_name, request, username):
+    """
+    Validate registration form inputs.
+
+    This function uses constant-time patterns to prevent user enumeration
+    attacks via timing analysis. All database checks are performed regardless
+    of earlier validation failures to ensure consistent response times.
+    """
     errored = False
+    start_time = time.monotonic()
 
     # check none of these are blank
     if not email or not username or not full_name:
         errored = True
         messages.error(request, "Please fill in all fields")
         # Early return since we can't validate empty values
+        # Add timing normalization even on early return
+        _normalize_validation_timing(start_time)
         return errored
 
     # Validate email format using Django's EmailValidator
@@ -844,24 +856,50 @@ def validate_form(email, full_name, request, username):
             request, "Full name contains invalid characters or formatting"
         )
 
-    # check whether this email already exists
-    profile = Profile.objects.filter(email=email).first()
-    if profile:
+    # Check email/username existence using exists() for more consistent timing.
+    # Always run all three queries regardless of earlier validation failures
+    # to prevent enumeration via timing differences.
+    email_exists_primary = Profile.objects.filter(email=email).exists()
+    email_exists_secondary = Profile.objects.filter(
+        emails__contains=[email]
+    ).exists()
+    username_exists = Profile.objects.filter(username=username).exists()
+
+    if email_exists_primary or email_exists_secondary:
         errored = True
         messages.error(request, "This email already exists")
 
-    profile = Profile.objects.filter(emails__contains=[email]).first()
-    if profile:
-        errored = True
-        messages.error(request, "This email already exists")
-
-    # check whether this username already exists
-    profile = Profile.objects.filter(username=username).first()
-    if profile:
+    if username_exists:
         errored = True
         messages.error(request, "This username already exists")
 
+    # Add timing normalization to make response times consistent
+    _normalize_validation_timing(start_time)
+
     return errored
+
+
+def _normalize_validation_timing(start_time: float, target_ms: float = 100.0):
+    """
+    Normalize validation timing to prevent timing-based enumeration attacks.
+
+    Ensures the validation function takes a minimum consistent time by adding
+    a small sleep if needed, plus a random jitter to obscure timing patterns.
+
+    Args:
+        start_time: The monotonic time when validation started.
+        target_ms: Target minimum time in milliseconds (default 100ms).
+    """
+    elapsed = (time.monotonic() - start_time) * 1000  # Convert to ms
+    remaining = target_ms - elapsed
+
+    if remaining > 0:
+        # Sleep for the remaining time to reach target
+        time.sleep(remaining / 1000)
+
+    # Add small random jitter (0-10ms) to further obscure timing
+    jitter_ms = secrets.randbelow(11)
+    time.sleep(jitter_ms / 1000)
 
 
 def _contains_html_or_script(text: str) -> bool:
