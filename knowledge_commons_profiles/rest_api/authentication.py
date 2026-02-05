@@ -3,6 +3,8 @@ Authentication for the REST API
 
 """
 
+import secrets
+
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.authentication import BaseAuthentication
@@ -31,7 +33,7 @@ class StaticBearerAuthentication(BaseAuthentication):
             return None
 
         token = parts[1]
-        if token != self.static_token:
+        if not secrets.compare_digest(token, self.static_token):
             # invalid token
             return None
 
@@ -47,4 +49,6 @@ class HasStaticBearerToken(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return request.auth == settings.STATIC_API_BEARER
+        if request.auth is None:
+            return False
+        return secrets.compare_digest(request.auth, settings.STATIC_API_BEARER)
