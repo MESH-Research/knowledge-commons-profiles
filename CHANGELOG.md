@@ -1,3 +1,20 @@
+## 3.16.3 (2026-02-05)
+
+### Fix
+
+- **security**: add timing normalization to prevent user enumeration
+- **settings**: add note about development domains and reinstate these
+- **security**: remove dev domains from forwarding whitelist defaults
+- **security**: require separate encryption key from API bearer token
+- **security**: use constant-time comparison for bearer token validation
+- **security**: use UUID-only URLs for email verification
+
+### Refactor
+
+- **views**: refactor for pre-commit checks
+- **test-encryption**: refactor test-encryption file to meet pre-commit linting specs
+- **emails**: remove unassigned variables
+
 ## 3.16.2 (2026-02-05)
 
 ### Fix
