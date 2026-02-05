@@ -39,9 +39,7 @@ from django.views.decorators.http import require_http_methods
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
-from knowledge_commons_profiles.cilogon.models import (
-    TokenUserAgentAssociations,
-)
+from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
@@ -990,7 +988,7 @@ def send_new_email_verify(email, profile, request):
     uuid = uuid4().hex
 
     # create a new EmailVerification entry
-    email_verification = EmailVerification.objects.create(
+    _ = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=email,
@@ -1025,7 +1023,7 @@ def send_registration_verification_email(email, profile, cilogon_sub, request):
     uuid = uuid4().hex
 
     # create a new EmailVerification entry
-    email_verification = EmailVerification.objects.create(
+    _ = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=cilogon_sub,
@@ -1053,7 +1051,7 @@ def associate_with_existing_profile(email, profile, request, userinfo):
     uuid = uuid4().hex
 
     # create a new EmailVerification entry
-    email_verification = EmailVerification.objects.create(
+    _ = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=userinfo.get("sub", ""),

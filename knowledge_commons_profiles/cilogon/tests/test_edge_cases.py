@@ -324,13 +324,13 @@ class TestNewEmailVerifiedUnauthenticated(TestCase):
         from knowledge_commons_profiles.cilogon.views import new_email_verified
 
         # Create verification
-        verification = EmailVerification.objects.create(
+        _ = EmailVerification.objects.create(
             sub="newemail@example.com",
             secret_uuid="test-uuid-123",
             profile=self.profile,
         )
 
-        request = self.factory.get(f"/new-email-verified/test-uuid-123/")
+        request = self.factory.get("/new-email-verified/test-uuid-123/")
         request.user = self.user
         self._add_session(request)
 
