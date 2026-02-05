@@ -17,9 +17,7 @@ from knowledge_commons_profiles.cilogon.encryption import (
     get_token_encryption_key,
 )
 from knowledge_commons_profiles.cilogon.fields import EncryptedTextField
-from knowledge_commons_profiles.cilogon.models import (
-    TokenUserAgentAssociations,
-)
+from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 
 
 class TokenEncryptorTests(TestCase):
