@@ -137,11 +137,15 @@ class TokenEncryptorKeyTests(TestCase):
     @override_settings(
         TOKEN_ENCRYPTION_KEY="", STATIC_API_BEARER="fallback_key"
     )
-    def test_falls_back_to_static_api_bearer(self):
-        """Verify fallback to STATIC_API_BEARER when TOKEN_ENCRYPTION_KEY
-        empty."""
-        key = get_token_encryption_key()
-        self.assertIsNotNone(key)
+    def test_raises_when_token_encryption_key_not_set(self):
+        """Verify ValueError raised when TOKEN_ENCRYPTION_KEY is not set,
+        even if STATIC_API_BEARER is available (no fallback for security)."""
+        with self.assertRaises(ValueError) as context:
+            get_token_encryption_key()
+
+        self.assertIn(
+            "TOKEN_ENCRYPTION_KEY must be set", str(context.exception)
+        )
 
     @override_settings(TOKEN_ENCRYPTION_KEY="", STATIC_API_BEARER="")
     def test_raises_when_no_key_available(self):
@@ -149,7 +153,28 @@ class TokenEncryptorKeyTests(TestCase):
         with self.assertRaises(ValueError) as context:
             get_token_encryption_key()
 
-        self.assertIn("must be set", str(context.exception))
+        self.assertIn(
+            "TOKEN_ENCRYPTION_KEY must be set", str(context.exception)
+        )
+
+    @override_settings(
+        TOKEN_ENCRYPTION_KEY="same_key", STATIC_API_BEARER="same_key"
+    )
+    def test_warns_when_keys_are_same(self):
+        """Verify warning is logged when TOKEN_ENCRYPTION_KEY matches
+        STATIC_API_BEARER."""
+        with self.assertLogs(
+            "knowledge_commons_profiles.cilogon.encryption", level="WARNING"
+        ) as log:
+            key = get_token_encryption_key()
+
+        self.assertIsNotNone(key)
+        self.assertTrue(
+            any("SECURITY WARNING" in message for message in log.output)
+        )
+        self.assertTrue(
+            any("should not be the same" in message for message in log.output)
+        )
 
     def test_different_keys_produce_incompatible_encryption(self):
         """Verify tokens encrypted with different keys cannot be decrypted."""
