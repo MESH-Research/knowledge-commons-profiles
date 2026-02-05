@@ -365,7 +365,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.post")
+    @patch("requests.get")
     def test_single_successful_request(self, mock_post):
         """Test successful logout to single endpoint."""
         mock_response = Mock()
@@ -553,7 +553,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.post")
+    @patch("requests.get")
     def test_return_value_structure(self, mock_post):
         """Test that return values have correct structure."""
         mock_response = Mock()
