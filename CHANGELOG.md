@@ -1,3 +1,9 @@
+## 3.16.2 (2026-02-05)
+
+### Fix
+
+- **tests**: patch requests.get instead of requests.post in logout tests
+
 ## 3.16.1 (2026-02-04)
 
 ### Refactor
