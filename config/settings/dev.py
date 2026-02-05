@@ -175,3 +175,12 @@ sentry_sdk.init(
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+# CILogon forwarding domains for dev/staging environment
+ALLOWED_CILOGON_FORWARDING_DOMAINS = [
+    "hcommons.org",
+    "msu.edu",
+    "localhost",
+    "lndo.site",
+    "hcommons-staging.org",
+    "hcommons-dev.org",
+]

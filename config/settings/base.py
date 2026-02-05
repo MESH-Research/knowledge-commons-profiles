@@ -1,5 +1,6 @@
 # ruff: noqa: E501
 """Base settings to build other settings files upon."""
+
 import threading
 from pathlib import Path
 
@@ -398,6 +399,15 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 50,
 }
 
+# OAuth forwarding domain whitelist for CILogon proxy redirects.
+# SECURITY: Only include production domains in defaults. Development domains
+# (localhost, lndo.site, etc.) should be explicitly configured via environment
+# variable in non-production environments to prevent potential open redirect
+# attacks if these defaults are accidentally used in production.
+
+# NOTE: this includes, for now, development domains here, as we need to use
+# the proxy on Production for testing the staging and dev environments
+# as well as local lando dev
 ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
     "ALLOWED_CILOGON_FORWARDING_DOMAINS",
     default=[

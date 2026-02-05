@@ -41,6 +41,15 @@ TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 MEDIA_URL = "http://media.testserver/"
 # Your stuff...
 # -----------------------------------------------------------------------------
+# CILogon forwarding domains for testing
+ALLOWED_CILOGON_FORWARDING_DOMAINS = [
+    "hcommons.org",
+    "msu.edu",
+    "localhost",
+    "lndo.site",
+    "hcommons-staging.org",
+    "hcommons-dev.org",
+]
 
 with Path("log_config/local.yaml").open(
     "r", errors="ignore", encoding="utf-8"
