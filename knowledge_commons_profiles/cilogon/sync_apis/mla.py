@@ -23,6 +23,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from pydantic import BaseModel
+from pydantic import SecretStr
 from pydantic import TypeAdapter
 from pydantic import ValidationError
 from requests.adapters import HTTPAdapter
@@ -192,7 +193,7 @@ class Authentication(BaseModel):
     """
 
     username: str
-    password: str
+    password: SecretStr
     membership_status: str
 
 
