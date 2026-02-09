@@ -1,3 +1,85 @@
+## 3.16.3 (2026-02-05)
+
+### Fix
+
+- **security**: add timing normalization to prevent user enumeration
+- **settings**: add note about development domains and reinstate these
+- **security**: remove dev domains from forwarding whitelist defaults
+- **security**: require separate encryption key from API bearer token
+- **security**: use constant-time comparison for bearer token validation
+- **security**: use UUID-only URLs for email verification
+
+### Refactor
+
+- **views**: refactor for pre-commit checks
+- **test-encryption**: refactor test-encryption file to meet pre-commit linting specs
+- **emails**: remove unassigned variables
+
+## 3.16.2 (2026-02-05)
+
+### Fix
+
+- **tests**: patch requests.get instead of requests.post in logout tests
+
+## 3.16.1 (2026-02-04)
+
+### Refactor
+
+- **docs**: rename universal logout doc to use snake case
+
+## 3.16.0 (2026-02-04)
+
+### Feat
+
+- **registration**: add optional network membership selection
+
+### Fix
+
+- **registration**: make checkboxes smaller and not reverse indented
+- **registration**: fix display of initial registration page
+
+## 3.15.2 (2026-01-27)
+
+### Refactor
+
+- **jetbrains**: remove jetbrains ide files non-destructively
+
+## 3.15.1 (2026-01-27)
+
+### Refactor
+
+- **jetbrains**: remove jetbrains ide files (.idea)
+- **devcontainer**: remove extraneous devcontainer folder
+- **windsurf**: remove windsurf environment
+
+## 3.15.0 (2026-01-27)
+
+### Feat
+
+- **registration**: require email verification before login
+
+## 3.14.2 (2026-01-26)
+
+### Fix
+
+- **register**: add checks against race condition on registration page
+
+## 3.14.1 (2026-01-23)
+
+### Refactor
+
+- **pages**: refactor to meet linter standards
+
+## 3.14.0 (2026-01-23)
+
+### Feat
+
+- **registration**: add terms and conditions acceptance checkbox
+
+### Fix
+
+- **registration**: changes to default registration item
+
 ## 3.13.4 (2026-01-09)
 
 ### Fix

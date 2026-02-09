@@ -8,6 +8,8 @@ import html
 import io
 import logging
 import re
+import secrets
+import time
 from enum import IntEnum
 from typing import Any
 from uuid import uuid4
@@ -26,6 +28,7 @@ from django.contrib.sessions.models import Session as DjangoSession
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.validators import validate_email
+from django.db import IntegrityError
 from django.db import transaction
 from django.http import Http404
 from django.http import JsonResponse
@@ -66,6 +69,7 @@ from knowledge_commons_profiles.newprofile.mailchimp import (
 )
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
+from knowledge_commons_profiles.pages.models import SitePage
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
 
@@ -173,7 +177,9 @@ def callback(request):
                 and userinfo.get("email") != sub_association.profile.email
             ):
                 if userinfo.get("email") not in sub_association.profile.emails:
-                    sub_association.profile.emails.append(userinfo.get("email"))
+                    sub_association.profile.emails.append(
+                        userinfo.get("email")
+                    )
                     sub_association.profile.save()
 
         # update user network affiliations (outside transaction - external call)
@@ -589,16 +595,16 @@ def _add_secondary_email(profile: Profile | None, request):
 
 
 @login_required
-def new_email_verified(request, verification_id, secret_key):
+def new_email_verified(request, secret_key):
     """
     The activation view clicked by a user from email
     """
 
     EmailVerification.garbage_collect()
 
-    # get the verification and secret key or 404
+    # get the verification by secret key or 404
     verify: EmailVerification = get_object_or_404(
-        EmailVerification, secret_uuid=secret_key, id=verification_id
+        EmailVerification, secret_uuid=secret_key
     )
 
     # add the email
@@ -664,6 +670,15 @@ def register(request):
         logger.error("The sub was not passed to the register view")
         return render(request, "cilogon/registration_error.html")
 
+    # Load terms of service content for the registration form
+    terms_page = SitePage.objects.filter(slug="terms-of-service").first()
+    if terms_page:
+        context["terms_content"] = terms_page.body
+        context["terms_title"] = terms_page.title
+
+    # Load open registration networks for optional membership
+    context["open_networks"] = settings.OPEN_REGISTRATION_NETWORKS
+
     if request.method == "POST":
         email, full_name, username = extract_form_data(
             context, request, userinfo
@@ -672,36 +687,87 @@ def register(request):
         errored = False
         errored = validate_form(email, full_name, request, username)
 
+        if not request.POST.get("accept_terms"):
+            errored = True
+            messages.error(request, "You must accept the terms and conditions")
+
         if errored:
             return render(request, "cilogon/new_user.html", context)
 
         # Sanitize the full name before storage (defense in depth)
         sanitized_name = sanitize_full_name(full_name)
 
-        # Create the Profile object
-        profile = Profile.objects.create(
-            name=sanitized_name, username=username, email=email
+        # Explicit pre-creation checks to catch race conditions early
+        # (validate_form already checks, but a double-click can slip through)
+        if Profile.objects.filter(username=username).exists():
+            messages.error(request, "This username already exists")
+            return render(request, "cilogon/new_user.html", context)
+
+        if Profile.objects.filter(email=email).exists():
+            messages.error(request, "This email already exists")
+            return render(request, "cilogon/new_user.html", context)
+
+        if Profile.objects.filter(emails__contains=[email]).exists():
+            messages.error(request, "This email already exists")
+            return render(request, "cilogon/new_user.html", context)
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "This username already exists")
+            return render(request, "cilogon/new_user.html", context)
+
+        # Collect selected networks from the form
+        selected_networks = [
+            network_code
+            for network_code, _ in settings.OPEN_REGISTRATION_NETWORKS
+            if request.POST.get(f"network_{network_code}")
+        ]
+
+        try:
+            # Create the Profile object with any selected network memberships
+            profile = Profile.objects.create(
+                name=sanitized_name,
+                username=username,
+                email=email,
+                role_overrides=sorted(selected_networks),
+            )
+
+            # Create the corresponding Django User
+            User.objects.create(username=username, email=email)
+
+            # Do NOT create SubAssociation yet - wait for email verification
+            # Do NOT log in yet - wait for email verification
+        except IntegrityError:
+            # Race condition: another request created the user between our
+            # check and creation. Do NOT log in - just show error and return.
+            msg = (
+                "IntegrityError during registration for username=%s email=%s "
+                "(likely double-submit race condition)"
+            )
+            logger.warning(
+                msg,
+                username,
+                email,
+            )
+            err_message = (
+                "This account was just created. Please try logging "
+                "in instead."
+            )
+            messages.error(
+                request,
+                err_message,
+            )
+            return render(request, "cilogon/new_user.html", context)
+
+        # Send email verification - user must confirm before they can log in
+        send_registration_verification_email(
+            email=email,
+            profile=profile,
+            cilogon_sub=context["cilogon_sub"],
+            request=request,
         )
 
-        # Create the corresponding Django User
-        user = User.objects.create(username=username, email=email)
-
-        # Log the user in
-        login(request, user)
-
-        # Create the SubAssociation with the cilogon sub
-        SubAssociation.objects.create(
-            sub=context["cilogon_sub"], profile=profile
-        )
-
-        # Add the user to Mailchimp
-        hcommons_add_new_user_to_mailchimp(profile.username)
-
-        # Send webhooks to other services
-        ExternalSync.sync(profile=profile, send_webhook=True)
-
-        # Redirect to my_profile page
-        return redirect(reverse("my_profile"))
+        # Redirect to confirmation page (tell user to check their email)
+        return redirect(reverse("confirm"))
 
     return render(request, "cilogon/new_user.html", context)
 
@@ -737,13 +803,23 @@ def extract_form_data(context, request, userinfo):
 
 
 def validate_form(email, full_name, request, username):
+    """
+    Validate registration form inputs.
+
+    This function uses constant-time patterns to prevent user enumeration
+    attacks via timing analysis. All database checks are performed regardless
+    of earlier validation failures to ensure consistent response times.
+    """
     errored = False
+    start_time = time.monotonic()
 
     # check none of these are blank
     if not email or not username or not full_name:
         errored = True
         messages.error(request, "Please fill in all fields")
         # Early return since we can't validate empty values
+        # Add timing normalization even on early return
+        _normalize_validation_timing(start_time)
         return errored
 
     # Validate email format using Django's EmailValidator
@@ -780,24 +856,50 @@ def validate_form(email, full_name, request, username):
             request, "Full name contains invalid characters or formatting"
         )
 
-    # check whether this email already exists
-    profile = Profile.objects.filter(email=email).first()
-    if profile:
+    # Check email/username existence using exists() for more consistent timing.
+    # Always run all three queries regardless of earlier validation failures
+    # to prevent enumeration via timing differences.
+    email_exists_primary = Profile.objects.filter(email=email).exists()
+    email_exists_secondary = Profile.objects.filter(
+        emails__contains=[email]
+    ).exists()
+    username_exists = Profile.objects.filter(username=username).exists()
+
+    if email_exists_primary or email_exists_secondary:
         errored = True
         messages.error(request, "This email already exists")
 
-    profile = Profile.objects.filter(emails__contains=[email]).first()
-    if profile:
-        errored = True
-        messages.error(request, "This email already exists")
-
-    # check whether this username already exists
-    profile = Profile.objects.filter(username=username).first()
-    if profile:
+    if username_exists:
         errored = True
         messages.error(request, "This username already exists")
 
+    # Add timing normalization to make response times consistent
+    _normalize_validation_timing(start_time)
+
     return errored
+
+
+def _normalize_validation_timing(start_time: float, target_ms: float = 100.0):
+    """
+    Normalize validation timing to prevent timing-based enumeration attacks.
+
+    Ensures the validation function takes a minimum consistent time by adding
+    a small sleep if needed, plus a random jitter to obscure timing patterns.
+
+    Args:
+        start_time: The monotonic time when validation started.
+        target_ms: Target minimum time in milliseconds (default 100ms).
+    """
+    elapsed = (time.monotonic() - start_time) * 1000  # Convert to ms
+    remaining = target_ms - elapsed
+
+    if remaining > 0:
+        # Sleep for the remaining time to reach target
+        time.sleep(remaining / 1000)
+
+    # Add small random jitter (0-10ms) to further obscure timing
+    jitter_ms = secrets.randbelow(11)
+    time.sleep(jitter_ms / 1000)
 
 
 def _contains_html_or_script(text: str) -> bool:
@@ -860,12 +962,21 @@ def association(request):
     if user and user.is_authenticated:
         return redirect(reverse("my_profile"))
 
-    context = {"cilogon_sub": userinfo.get("sub", "")}
+    context = {
+        "cilogon_sub": userinfo.get("sub", ""),
+        "open_networks": settings.OPEN_REGISTRATION_NETWORKS,
+    }
 
     # Check that we have a valid cilogon_sub before proceeding
     if not context["cilogon_sub"]:
         logger.error("The sub was not passed to the association view")
         return render(request, "cilogon/registration_error.html")
+
+    # Load terms of service content for the registration form
+    terms_page = SitePage.objects.filter(slug="terms-of-service").first()
+    if terms_page:
+        context["terms_content"] = terms_page.body
+        context["terms_title"] = terms_page.title
 
     # check if we have an email POSTed
     if request.method == "POST":
@@ -915,7 +1026,7 @@ def send_new_email_verify(email, profile, request):
     uuid = uuid4().hex
 
     # create a new EmailVerification entry
-    email_verification = EmailVerification.objects.create(
+    _ = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=email,
@@ -929,10 +1040,45 @@ def send_new_email_verify(email, profile, request):
         recipient_email=email,
         context_data={
             "uuid": uuid,
-            "verification_id": email_verification.id,
             "request": request,
         },
         template_file="mail/add_new_email.html",
+    )
+
+    # delete any expired existing EmailVerification entries
+    EmailVerification.garbage_collect()
+
+
+def send_registration_verification_email(email, profile, cilogon_sub, request):
+    """
+    Send a verification email for new user registration.
+
+    The user must click the link to verify their email before they can log in.
+    This creates an EmailVerification with the cilogon sub, which will be used
+    to create the SubAssociation when they click the link.
+    """
+
+    uuid = uuid4().hex
+
+    # create a new EmailVerification entry
+    _ = EmailVerification.objects.create(
+        secret_uuid=uuid,
+        profile=profile,
+        sub=cilogon_sub,
+    )
+
+    # replace the email for testing purposes
+    email = sanitize_email_for_dev(email)
+
+    # send an email
+    send_knowledge_commons_email(
+        recipient_email=email,
+        context_data={
+            "uuid": uuid,
+            "request": request,
+            "username": profile.username,
+        },
+        template_file="mail/verify_registration.html",
     )
 
     # delete any expired existing EmailVerification entries
@@ -943,7 +1089,7 @@ def associate_with_existing_profile(email, profile, request, userinfo):
     uuid = uuid4().hex
 
     # create a new EmailVerification entry
-    email_verification = EmailVerification.objects.create(
+    _ = EmailVerification.objects.create(
         secret_uuid=uuid,
         profile=profile,
         sub=userinfo.get("sub", ""),
@@ -957,7 +1103,6 @@ def associate_with_existing_profile(email, profile, request, userinfo):
         recipient_email=email,
         context_data={
             "uuid": uuid,
-            "verification_id": email_verification.id,
             "request": request,
         },
         template_file="mail/associate.html",
@@ -983,16 +1128,20 @@ def confirm(request):
     return render(request, "cilogon/confirm.html", {})
 
 
-def activate(request, verification_id: int, secret_key: str):
+def activate(request, secret_key: str):
     """
-    The activation view clicked by a user from email
+    The activation view clicked by a user from email.
+
+    This handles both:
+    1. New user registration verification (first SubAssociation for profile)
+    2. Existing user adding a new login method (additional SubAssociation)
     """
 
     EmailVerification.garbage_collect()
 
-    # get the verification and secret key or 404
+    # get the verification by secret key or 404
     verify: EmailVerification = get_object_or_404(
-        EmailVerification, secret_uuid=secret_key, id=verification_id
+        EmailVerification, secret_uuid=secret_key
     )
 
     # check that this hasn't expired
@@ -1004,17 +1153,46 @@ def activate(request, verification_id: int, secret_key: str):
         )
         return redirect(reverse("login"))
 
+    # Save references before deleting the verification
+    profile = verify.profile
+    sub = verify.sub
+
+    # Check if this is a new registration (no existing SubAssociations)
+    is_new_registration = not SubAssociation.objects.filter(
+        profile=profile
+    ).exists()
+
     # create a sub association
     SubAssociation.objects.create(
-        sub=verify.sub,
-        profile=verify.profile,
+        sub=sub,
+        profile=profile,
     )
 
     # delete the verification as it's no longer needed
     verify.delete()
 
     # send a message to the webhooks
-    send_association_message(sub=verify.sub, kc_id=verify.profile.username)
+    send_association_message(sub=sub, kc_id=profile.username)
+
+    # For new registrations, run the post-registration tasks
+    if is_new_registration:
+        # Add the user to Mailchimp
+        hcommons_add_new_user_to_mailchimp(profile.username)
+
+        # Send webhooks to other services
+        ExternalSync.sync(profile=profile, send_webhook=True)
+
+    # Log the user in so they don't have to go through OAuth again
+    try:
+        user = User.objects.get(username=profile.username)
+        login(request, user)
+    except User.DoesNotExist:
+        # User doesn't exist yet (shouldn't happen for new registrations
+        # since we create it, but could happen for legacy associations)
+        logger.warning(
+            "User %s does not exist during activation",
+            profile.username,
+        )
 
     # redirect the user to their Profile page
     return redirect(reverse("my_profile"))

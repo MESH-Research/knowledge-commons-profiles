@@ -10,6 +10,12 @@ __pycache__/
 .windsurf
 .windsurf/*
 
+.claude
+.claude/*
+
+.devcontainer
+.devcontainer/*
+
 # Distribution / packaging
 .Python
 build/

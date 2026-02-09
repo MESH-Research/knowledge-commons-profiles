@@ -209,7 +209,7 @@
         <p>We have received a request to add a new email "{{ email }}" to your account. If this was not you, please ignore this email and do <strong>NOT</strong> click the link below.</p>
 
         <div class="highlight-box">
-            <strong>To add "{{ email }}" to your Knowledge Commons account:</strong> Please <a href="{{ request.scheme }}://{{ request.get_host }}{% url "new_email" verification_id uuid %}">verify and associate this address</a>.
+            <strong>To add "{{ email }}" to your Knowledge Commons account:</strong> Please <a href="{{ request.scheme }}://{{ request.get_host }}{% url "new_email" uuid %}">verify and associate this address</a>.
         </div>
 
         <p>Thank you for being part of our growing community. Together, we're building something remarkable.</p>

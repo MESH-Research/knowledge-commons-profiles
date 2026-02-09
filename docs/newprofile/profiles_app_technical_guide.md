@@ -1,6 +1,6 @@
 # Profiles App Technical Guide
 
-> **Note**: This documentation refers to knowledge-commons-profiles version 2.30.0
+> **Note**: This documentation refers to knowledge-commons-profiles version 3.15.0
 
 ## Overview
 
@@ -17,16 +17,52 @@ The Profiles App uses a hybrid approach, combining Django models with WordPress 
 **Profile Model**
 - Central user profile model with comprehensive academic and social fields
 - Key fields: `name`, `username`, `email`, `orcid`, `affiliation`, `title`
+- Multi-email support: `emails` (ArrayField) for secondary email addresses
 - Social media integration: `twitter`, `github`, `mastodon`, `bluesky`
 - Academic fields: `academic_interests`, `about_user`, `education`, `publications`
 - Visibility controls: Boolean fields for showing/hiding profile sections
 - Layout customization: `left_order`, `right_order`, `works_order`
 - Citation style preference: `reference_style` with configurable choices
+- Role management: `role_overrides` (ArrayField) for custom role display preferences
 
 **AcademicInterest Model**
 - Simple text-based model for academic interest tags
 - Many-to-many relationship with Profile model
 - Used for categorizing and filtering user interests
+
+**CoverImage Model**
+- Stores user profile cover/banner images
+- Fields: `profile` (ForeignKey), `image` (ImageField)
+- Supports image compression and optimization
+
+**ProfileImage Model**
+- Stores user avatar/profile images
+- Fields: `profile` (ForeignKey), `image` (ImageField)
+- Supports image compression and optimization
+
+#### COManage Integration Models
+
+The app integrates with COManage for organizational role management:
+
+**CO Model (Collaborative Organization)**
+- Represents a collaborative organization in COManage
+- Fields: `co_id`, `name`, `slug`
+- Used for organization-level membership tracking
+
+**COU Model (Collaborative Organization Unit)**
+- Represents organizational units within a CO
+- Fields: `cou_id`, `name`, `co` (ForeignKey to CO)
+- Used for departmental/unit-level organization
+
+**Person Model**
+- COManage person record integration
+- Fields: `co_person_id`, `profile` (ForeignKey)
+- Links COManage identities to local profiles
+
+**Role Model**
+- User roles within organizations
+- Fields: `role_id`, `person` (ForeignKey), `cou` (ForeignKey), `affiliation`, `title`, `organization`, `status`
+- Tracks membership status and organizational affiliations
 
 #### WordPress Integration Models
 
@@ -49,7 +85,25 @@ The app maintains read-only access to WordPress data through several models:
 
 ### Views and URL Routing
 
-#### Main Views (`views.py`)
+#### View Module Structure
+
+The views are organized into modular components:
+
+```
+newprofile/views/
+├── __init__.py
+├── health.py         # Health check endpoints
+├── home.py           # Home page views
+├── members.py        # Member listing and filtering
+├── search.py         # Search functionality
+├── stats.py          # Statistics endpoints
+└── profile/          # Profile-related views
+    ├── avatars.py    # Image upload handling
+    ├── display.py    # Profile display views
+    └── edit.py       # Profile editing views
+```
+
+#### Main Views
 
 **Profile Display Views**
 - `profile(request, user="")`: Main profile page renderer
@@ -61,6 +115,22 @@ The app maintains read-only access to WordPress data through several models:
 - `save_profile_order(request, side)`: AJAX profile layout saving
 - `save_works_order(request)`: AJAX works ordering
 - `save_works_visibility(request)`: AJAX visibility controls
+
+**Image Upload Views** (`views/profile/avatars.py`)
+- `upload_avatar(request)`: Profile image upload with compression
+- `upload_cover(request)`: Cover image upload with compression
+
+**Member Views** (`views/members.py`)
+- `members(request)`: Paginated member directory
+- Filter and search capabilities for member listing
+
+**Health Check Views** (`views/health.py`)
+- `healthcheck(request)`: Application health status endpoint
+- Database connectivity verification
+
+**Statistics Views** (`views/stats.py`)
+- `stats(request)`: Usage statistics endpoint
+- Protected by basic authentication
 
 **Content Integration Views**
 - `works_deposits(request, username, style=None)`: KC Works display
@@ -207,19 +277,40 @@ The app extensively uses HTMX for dynamic content loading:
 ### Key Files Structure
 ```
 newprofile/
-├── models.py          # Data models and WordPress integration
-├── views.py           # View functions and request handling
+├── models.py          # Data models (Profile, COManage, WordPress)
+├── views/             # Modular view organization
+│   ├── health.py      # Health check endpoints
+│   ├── home.py        # Home page views
+│   ├── members.py     # Member directory views
+│   ├── search.py      # Search functionality
+│   ├── stats.py       # Statistics views
+│   └── profile/       # Profile-specific views
 ├── urls.py            # URL routing configuration
 ├── forms.py           # Form definitions and validation
 ├── api.py             # API layer and data access
 ├── utils.py           # Utility functions
 ├── works.py           # KC Works integration
 ├── mastodon.py        # Social media integration
+├── mailchimp.py       # Mailchimp newsletter integration
+├── notifications.py   # Notification system
 ├── management/        # Django management commands
 ├── migrations/        # Database migrations
 ├── tests/             # Test suite
 └── templatetags/      # Custom template tags
 ```
+
+### CMS Pages Integration
+
+The application includes a CMS system for configurable content pages:
+
+**SitePage Model** (in `pages` app)
+- Stores CMS-managed pages with title, slug, and body content
+- Used for registration start page and terms of service
+- Editable through Django admin
+
+**Pre-configured Pages**:
+- `registration-start`: Entry point for new user registration
+- `terms-of-service`: Terms and conditions displayed during registration
 
 ### Testing Considerations
 - WordPress database integration testing

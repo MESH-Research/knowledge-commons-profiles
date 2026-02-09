@@ -51,12 +51,12 @@ urlpatterns = [
         name="manage_roles",
     ),
     path(
-        "activate/<int:verification_id>/<str:secret_key>/",
+        "activate/<str:secret_key>/",
         views.activate,
         name="activate",
     ),
     path(
-        "new-email/<int:verification_id>/<str:secret_key>/",
+        "new-email/<str:secret_key>/",
         views.new_email_verified,
         name="new_email",
     ),

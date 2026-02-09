@@ -1,5 +1,6 @@
 # ruff: noqa: E501
 """Base settings to build other settings files upon."""
+
 import threading
 from pathlib import Path
 
@@ -95,6 +96,7 @@ LOCAL_APPS = [
     "knowledge_commons_profiles.cilogon.apps.CILogonConfig",
     "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
     "knowledge_commons_profiles.rest_api.apps.RestAPIConfig",
+    "knowledge_commons_profiles.pages.apps.PagesConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -397,6 +399,15 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 50,
 }
 
+# OAuth forwarding domain whitelist for CILogon proxy redirects.
+# SECURITY: Only include production domains in defaults. Development domains
+# (localhost, lndo.site, etc.) should be explicitly configured via environment
+# variable in non-production environments to prevent potential open redirect
+# attacks if these defaults are accidentally used in production.
+
+# NOTE: this includes, for now, development domains here, as we need to use
+# the proxy on Production for testing the staging and dev environments
+# as well as local lando dev
 ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
     "ALLOWED_CILOGON_FORWARDING_DOMAINS",
     default=[

@@ -1997,3 +1997,8 @@ div {
   #delete-cv-btn {
     margin-left: auto;
   }
+
+  .form-check .form-check-input {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }

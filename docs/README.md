@@ -1,6 +1,6 @@
 # Knowledge Commons Profiles Documentation
 
-> **Note**: This documentation refers to knowledge-commons-profiles version 2.30.0
+> **Note**: This documentation refers to knowledge-commons-profiles version 3.15.0
 
 The Knowledge Commons Profiles application is a Django-based user profile management system that provides authentication, profile management, and integration with external services. The application supports federated identity management through CILogon, integrates with WordPress systems, and provides robust logging and monitoring capabilities.
 
@@ -13,6 +13,8 @@ This documentation provides technical guides for developers, system administrato
 - **[CILogon Features Technical Guide](cilogon/cilogon_features_technical_guide.md)** - Technical overview of CILogon OAuth 2.0/OpenID Connect integration, including authentication flows, user registration, token management, and security features.
 
 - **[CILogon OAuth Flow Diagram](cilogon/cilogon_oauth_flow_diagram.md)** - Visual architecture diagram showing the complete OAuth authentication flow between users, CILogon, and the Knowledge Commons ecosystem including Works and WordPress integration.
+
+- **[CILogon Proxy and Forwarding Guide](cilogon/cilogon_proxy_guide.md)** - How to configure OAuth proxy for staging/development environments and service forwarding for ecosystem integration with KC Works and other services.
 
 ### Profile Management
 

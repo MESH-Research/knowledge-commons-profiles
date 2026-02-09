@@ -1,6 +1,6 @@
-# CILogon Features Technical Guide 🔐
+# CILogon Features Technical Guide
 
-> **Note**: This documentation refers to knowledge-commons-profiles version 2.30.0
+> **Note**: This documentation refers to knowledge-commons-profiles version 3.15.0
 
 This document provides a technical overview of the CILogon authentication and authorization features implemented in the Knowledge Commons Profiles repository. CILogon enables federated identity management through OAuth 2.0/OpenID Connect protocols.
 
@@ -57,18 +57,32 @@ Handles the OAuth callback from CILogon after user authentication:
 
 **Location**: `knowledge_commons_profiles/cilogon/views.py`
 
-Handles new user registration when no existing profile is found:
+Handles new user registration when no existing profile is found. Registration requires email verification before the user can log in.
 
-1. **Validation**: Validates CILogon `sub` (subject identifier) is present
-2. **Profile Creation**: Creates new `Profile` object with user details
-3. **User Creation**: Creates corresponding Django `User` object
-4. **Association**: Links CILogon identity to profile via `SubAssociation`
-5. **Auto-Login**: Automatically logs in the newly registered user
+**Registration Flow**:
+
+1. **Terms of Service**: User must accept terms and conditions (displayed in a modal, content managed via Django admin)
+2. **Validation**: Validates form fields (username, email, full name) and CILogon `sub` identifier
+3. **Race Condition Protection**: Explicit checks verify username/email don't exist before creation
+4. **Profile Creation**: Creates new `Profile` object with user details
+5. **User Creation**: Creates corresponding Django `User` object
+6. **Email Verification**: Sends verification email - user must click link to activate account
+7. **Confirmation Page**: User is redirected to a page instructing them to check their email
+
+**Important**: The user is NOT logged in until they verify their email. The `SubAssociation` linking the CILogon identity to the profile is only created after email verification.
+
+**Security Features**:
+- Terms and conditions acceptance is required
+- Email must be verified before login is permitted
+- Race condition protection with `IntegrityError` handling prevents duplicate account creation from double-clicks
+- Input validation prevents XSS and injection attacks
 
 **Key Models**:
-- `SubAssociation` - Links CILogon `sub` to user profiles
+- `SubAssociation` - Links CILogon `sub` to user profiles (created after email verification)
 - `Profile` - User profile information
 - `User` - Django authentication user
+- `EmailVerification` - Stores pending email verifications
+- `SitePage` - CMS model storing terms of service content
 
 ## Data Models 
 
@@ -104,7 +118,20 @@ Manages OAuth tokens per user agent and application, enabling single-logout func
 
 **Location**: `knowledge_commons_profiles/cilogon/models.py`
 
-Handles email verification during the association process when users need to confirm their identity.
+```python
+class EmailVerification(models.Model):
+    sub = models.CharField(max_length=255)  # CILogon sub or email address
+    secret_uuid = models.CharField(max_length=255)  # Verification token
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+```
+
+Handles email verification for multiple scenarios:
+- **New Registration**: Stores CILogon `sub` identifier; verification creates the `SubAssociation`
+- **Adding Login Method**: Stores CILogon `sub` identifier for existing users adding new identity providers
+- **Adding Secondary Email**: Stores email address being added to an existing profile
+
+The model includes automatic expiration checking via `is_expired()` and garbage collection via `garbage_collect()` class method.
 
 ## Token Management 
 
@@ -179,11 +206,18 @@ Handles linking existing profiles to CILogon identities:
 
 **Location**: `knowledge_commons_profiles/cilogon/views.py`
 
-Handles email-based verification for profile associations:
+Handles email-based verification for both new user registrations and existing user profile associations:
 
 1. **Token Validation**: Validates verification tokens from email links
-2. **Association Completion**: Completes the profile association process
-3. **Auto-Login**: Logs user in after successful verification
+2. **Expiration Check**: Verifies the link hasn't expired (configurable via `VERIFICATION_LIMIT_HOURS`)
+3. **New Registration Detection**: Checks if this is the first `SubAssociation` for the profile
+4. **Association Creation**: Creates `SubAssociation` linking CILogon identity to profile
+5. **Post-Registration Tasks**: For new registrations, triggers Mailchimp enrollment and external service sync
+6. **Auto-Login**: Logs user in after successful verification
+
+**Handling Different Verification Types**:
+- **New Registration**: Creates `SubAssociation`, enrolls in Mailchimp, syncs with external services, logs user in
+- **Existing User Adding Login Method**: Creates additional `SubAssociation`, logs user in
 
 ## Logout and Session Management 
 
