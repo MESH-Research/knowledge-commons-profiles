@@ -863,7 +863,11 @@ class AssociationTests(CILogonTestBase):
     def test_associate_with_existing_profile_success(self):
         """Test successful profile association"""
         request = self._create_request_with_messages()
-        userinfo = {"sub": "cilogon_sub_123", "email": "test@example.com"}
+        userinfo = {
+            "sub": "cilogon_sub_123",
+            "email": "test@example.com",
+            "idp_name": "Test University",
+        }
 
         with (
             patch(
@@ -880,12 +884,11 @@ class AssociationTests(CILogonTestBase):
 
         self.assertIsNone(result)  # Successful association returns None
 
-        # Should create EmailVerification (not SubAssociation directly)
-        self.assertTrue(
-            EmailVerification.objects.filter(
-                sub="cilogon_sub_123", profile=self.profile
-            ).exists()
+        # Should create EmailVerification with idp_name
+        verification = EmailVerification.objects.get(
+            sub="cilogon_sub_123", profile=self.profile
         )
+        self.assertEqual(verification.idp_name, "Test University")
 
         # Should send email
         email_mock.assert_called_once()
@@ -961,6 +964,7 @@ class EmailVerificationTests(CILogonTestBase):
             secret_uuid="test-uuid",
             profile=self.profile,
             sub="cilogon_sub_123",
+            idp_name="Test University",
         )
 
         with patch(
@@ -972,12 +976,11 @@ class EmailVerificationTests(CILogonTestBase):
         # self.assertEqual(response.status_code, 302)
         # self.assertEqual(response.url, reverse("my_profile"))
 
-        # Should create SubAssociation
-        self.assertTrue(
-            SubAssociation.objects.filter(
-                sub="cilogon_sub_123", profile=self.profile
-            ).exists()
+        # Should create SubAssociation with idp_name propagated
+        sub_assoc = SubAssociation.objects.get(
+            sub="cilogon_sub_123", profile=self.profile
         )
+        self.assertEqual(sub_assoc.idp_name, "Test University")
 
         # Should delete EmailVerification
         self.assertFalse(

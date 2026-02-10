@@ -764,6 +764,7 @@ def register(request):
             profile=profile,
             cilogon_sub=context["cilogon_sub"],
             request=request,
+            idp_name=userinfo.get("idp_name", ""),
         )
 
         # Redirect to confirmation page (tell user to check their email)
@@ -1049,7 +1050,9 @@ def send_new_email_verify(email, profile, request):
     EmailVerification.garbage_collect()
 
 
-def send_registration_verification_email(email, profile, cilogon_sub, request):
+def send_registration_verification_email(
+    email, profile, cilogon_sub, request, idp_name=""
+):
     """
     Send a verification email for new user registration.
 
@@ -1065,6 +1068,7 @@ def send_registration_verification_email(email, profile, cilogon_sub, request):
         secret_uuid=uuid,
         profile=profile,
         sub=cilogon_sub,
+        idp_name=idp_name,
     )
 
     # replace the email for testing purposes
@@ -1093,6 +1097,7 @@ def associate_with_existing_profile(email, profile, request, userinfo):
         secret_uuid=uuid,
         profile=profile,
         sub=userinfo.get("sub", ""),
+        idp_name=userinfo.get("idp_name", ""),
     )
 
     # replace the email for testing purposes
@@ -1156,6 +1161,7 @@ def activate(request, secret_key: str):
     # Save references before deleting the verification
     profile = verify.profile
     sub = verify.sub
+    idp_name = verify.idp_name
 
     # Check if this is a new registration (no existing SubAssociations)
     is_new_registration = not SubAssociation.objects.filter(
@@ -1166,6 +1172,7 @@ def activate(request, secret_key: str):
     SubAssociation.objects.create(
         sub=sub,
         profile=profile,
+        idp_name=idp_name,
     )
 
     # delete the verification as it's no longer needed

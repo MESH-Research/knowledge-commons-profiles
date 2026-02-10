@@ -72,6 +72,7 @@ class EmailVerification(models.Model):
     profile: Profile = models.ForeignKey(
         Profile, on_delete=models.CASCADE, null=True
     )
+    idp_name = models.TextField(blank=True, null=True)
     created_at: datetime.datetime = models.DateTimeField(
         auto_now_add=True, blank=True, null=True
     )
