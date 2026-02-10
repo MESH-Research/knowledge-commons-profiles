@@ -1,3 +1,9 @@
+## 3.17.2 (2026-02-10)
+
+### Fix
+
+- **cilogon**: handle InvalidClaimError in OAuth callback
+
 ## 3.17.1 (2026-02-10)
 
 ### Fix
