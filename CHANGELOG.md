@@ -1,3 +1,9 @@
+## 3.17.1 (2026-02-10)
+
+### Fix
+
+- **cilogon**: store idp_name in EmailVerification so SubAssociation gets it on activation
+
 ## 3.17.0 (2026-02-10)
 
 ### Feat
