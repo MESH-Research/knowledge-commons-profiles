@@ -365,7 +365,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_single_successful_request(self, mock_post):
         """Test successful logout to single endpoint."""
         mock_response = Mock()
@@ -384,7 +384,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_single_failed_request_4xx(self, mock_post):
         """Test failed logout with 4xx status code."""
         mock_response = Mock()
@@ -403,7 +403,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_single_failed_request_5xx(self, mock_post):
         """Test failed logout with 5xx status code."""
         mock_response = Mock()
@@ -421,7 +421,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_request_exception(self, mock_post):
         """Test handling of network/connection exceptions."""
         mock_post.side_effect = requests.ConnectionError("Connection failed")
@@ -443,7 +443,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         ],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_multiple_successful_requests(self, mock_post):
         """Test successful logout to multiple endpoints."""
         mock_response = Mock()
@@ -473,7 +473,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         ],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_mixed_success_failure_results(self, mock_post):
         """Test mixed results with some successes and failures."""
 
@@ -509,7 +509,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_correct_headers_sent(self, mock_post):
         """Test that correct headers are sent with requests."""
         mock_response = Mock()
@@ -533,7 +533,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         * 15,  # 15 identical endpoints
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_many_endpoints_processed(self, mock_post):
         """Test that function can handle many endpoints."""
         mock_response = Mock()
@@ -576,7 +576,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="different-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_uses_configured_bearer_token(self, mock_post):
         """Test that function uses the configured bearer token."""
         mock_response = Mock()
