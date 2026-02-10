@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 from authlib.integrations.base_client import OAuthError
+from authlib.jose.errors import InvalidClaimError
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.contrib.messages.storage.fallback import FallbackStorage
@@ -597,3 +598,28 @@ class AuthorizationSecurityTests(CILogonTestBase):
             except (ValueError, Exception) as e:
                 # Acceptable to reject malicious input
                 self.assertIsInstance(e, (ValueError, Exception))
+
+    def test_invalid_claim_error_renders_error_template(self):
+        """Test that InvalidClaimError from token validation is
+        caught and renders the error template"""
+        request = self.factory.get(
+            "/cilogon/callback/",
+            {"code": "test_code", "state": "test_state"},
+        )
+        self._add_session(request)
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=None,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views"
+                ".oauth.cilogon.authorize_access_token",
+                side_effect=InvalidClaimError("amr"),
+            ),
+        ):
+            response = callback(request)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "Authentication Error")

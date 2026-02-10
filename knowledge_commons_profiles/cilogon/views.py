@@ -17,6 +17,7 @@ from uuid import uuid4
 import requests
 import sentry_sdk
 from authlib.integrations.base_client import OAuthError
+from authlib.jose.errors import InvalidClaimError
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -136,7 +137,7 @@ def callback(request):
         token = oauth.cilogon.authorize_access_token(
             request, claims_cls=ORCIDHandledToken
         )
-    except OAuthError as e:
+    except (OAuthError, InvalidClaimError) as e:
         # send to Sentry if there are errors that are not just the user
         # not being found etc.
         if "Client has not been approved. Unapproved client" in e.description:
