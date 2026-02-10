@@ -1,3 +1,38 @@
+## 3.17.0 (2026-02-10)
+
+### Feat
+
+- **monitor**: get website_url from environment
+- **monitor**: add new monitoring tool
+- **cilogon**: allow dynamic configuration of cilogon proxy environment
+- **cilogon**: better error handling and logging
+- **cilogon**: check for expiry date on verification tokens in the association routine
+- **cilogon**: added encryption at rest to access and refresh tokens
+- **profiles**: add cv upload function
+- **api**: add superadmin status flag to api and management command to toggle superadmin
+
+### Fix
+
+- **monitor**: add Ian to email list
+- **cilogon**: fix to cilogon rest_api sub return
+- **monitor**: fixes to logging
+- **monitor**: fix default for check_website environment var
+- **monitor**: run tests in ci
+- **cilogon**: stricter validation on form inputs to improve security
+- **cilogon**: move user creation inside atomic transaction to avoid race conditions and orphaned user objects
+- **cilogon**: remove logging of sensitive variables
+- **up-api**: use contact field in api instead of account and check for kc eligibility
+- **logout**: fix logout logic to logout all sessions
+- **logout**: fix logout when no user found
+- **logout**: add logging to logout api call
+- **logout**: fixes to logout ping system
+- **settings**: use sparkpost on dev
+- **logout**: lower timeout threshold for signal and add option to disable flush signalling
+- **logout**: set username correctly in logout function
+- **logout**: add logging
+- **logout**: ensure logout hooks are called
+- **logout**: fix tests and add logout variable from env
+
 ## 3.16.5 (2026-02-10)
 
 ### Fix
