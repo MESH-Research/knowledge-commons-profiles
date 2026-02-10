@@ -1,3 +1,9 @@
+## 3.16.5 (2026-02-10)
+
+### Fix
+
+- **logout**: use POST instead of GET for logout endpoint requests
+
 ## 3.16.4 (2026-02-06)
 
 ### Fix
