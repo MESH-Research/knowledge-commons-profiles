@@ -1,3 +1,9 @@
+## 3.16.4 (2026-02-06)
+
+### Fix
+
+- **mla-sync**: make authentication password a secretstr to prevent credential leaks on logging in the mla api
+
 ## 3.16.3 (2026-02-05)
 
 ### Fix

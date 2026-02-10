@@ -85,7 +85,7 @@ def logout_all_endpoints_sync(username="", request=None):
         msg = f"Sending logout request to {endpoint} for {username}"
         logger.info(msg)
         try:
-            response = requests.get(
+            response = requests.post(
                 endpoint,
                 headers=headers,
                 params={"username": username},
