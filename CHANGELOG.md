@@ -1,3 +1,14 @@
+## 3.18.0 (2026-02-11)
+
+### Feat
+
+- **nav**: make sidebar links configurable via environment variables
+
+### Fix
+
+- **header**: show user name when WordPress database is unavailable
+- **cilogon**: handle InvalidClaimError in OAuth callback
+
 ## 3.17.2 (2026-02-10)
 
 ### Fix
