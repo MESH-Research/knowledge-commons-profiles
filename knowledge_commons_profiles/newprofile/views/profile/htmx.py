@@ -293,10 +293,25 @@ def header_bar(request):
             logger.warning(
                 "Unable to connect to database for header bar: %s", ex
             )
+
+            # get the username
+            api_me = (
+                API(
+                    request,
+                    request.user.username,
+                    use_wordpress=False,
+                    create=False,
+                )
+                if request.user.is_authenticated
+                else None
+            )
+
+            profile = api_me.profile if api_me else None
+
             # Return safe fallback context
             context = {
                 "username": request.user.username,
-                "logged_in_profile": None,
+                "logged_in_profile": profile,
                 "logged_in_user": (
                     request.user if request.user.is_authenticated else None
                 ),

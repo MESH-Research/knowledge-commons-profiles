@@ -2,8 +2,10 @@
 {% if logged_in_user %}
   <!-- user logged in section -->
   <div class="user-info" id="user-info" hx-swap-oob="true">
+    <a href="{% url 'my_profile' %}">
       <span class="user-name" id="logged-in-user">{{ logged_in_profile.name }}</span>
-    <a href="{% url 'my_profile' %}"><img src="{{ logged_in_profile_image }}" alt="{{ logged_in_profile.name }}" /></a>
+      <img src="{{ logged_in_profile_image }}" alt="{{ logged_in_profile.name }}" />
+    </a>
   </div>
 
   <li class="sidebar-item" hx-swap-oob="true" id="logout">
