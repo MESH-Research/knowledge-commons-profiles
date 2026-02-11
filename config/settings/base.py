@@ -201,6 +201,8 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "knowledge_commons_profiles.newprofile.context_processors."
                 "cc_search",
+                "knowledge_commons_profiles.newprofile.context_processors."
+                "nav_links",
             ],
         },
     },
@@ -500,6 +502,15 @@ SYNC_HOURS = env.int(
 CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")
 CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
 CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)
+
+NAV_NEWS_FEED_URL = env("NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/")
+NAV_GROUPS_URL = env("NAV_GROUPS_URL", default="https://hcommons.org/groups/")
+NAV_SITES_URL = env("NAV_SITES_URL", default="https://hcommons.org/sites/")
+NAV_WORKS_URL = env("NAV_WORKS_URL", default="https://works.hcommons.org/")
+NAV_SUPPORT_URL = env("NAV_SUPPORT_URL", default="https://support.hcommons.org/")
+NAV_ORGANIZATIONS_URL = env("NAV_ORGANIZATIONS_URL", default="https://hcommons.org/societies/")
+NAV_ABOUT_URL = env("NAV_ABOUT_URL", default="https://sustaining.hcommons.org/")
+NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
 
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")
 MAILCHIMP_API_KEY = env("MAILCHIMP_API_KEY")
