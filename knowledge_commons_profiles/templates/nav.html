@@ -57,7 +57,13 @@
             <span>Team Blog</span>
         </a>
     </li>
+    {% if user.is_authenticated %}
     <li class="sidebar-item" id="logout">
+        <a href="{% url 'logout' %}" class="sidebar-link">
+            <i class="fas fa-sign-out"></i>
+            <span>Logout</span>
+        </a>
     </li>
+    {% endif %}
     <li class="version">Version {% version %}</li>
 </ul>
