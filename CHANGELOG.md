@@ -1,3 +1,16 @@
+## 3.19.0 (2026-02-11)
+
+### Feat
+
+- **profile**: allow staff to edit other users' profiles
+- **urls**: add alternative profile path for BuddyPress compatibility
+
+### Fix
+
+- **nav**: use request.user for auth check in logout link
+- **profile**: hide follower count when WordPress database is unreachable
+- **nav**: render logout link directly instead of via htmx swap
+
 ## 3.18.0 (2026-02-11)
 
 ### Feat
