@@ -10,7 +10,9 @@
   </div>
 {% endif %}
 
-<h3 class="stat-header" id="following" hx-swap-oob="true">Following {{ follower_count }} members</h3>
+{% if follower_count %}
+  <h3 class="stat-header" id="following" hx-swap-oob="true">Following {{ follower_count }} members</h3>
+{% endif %}
 
 {% if groups|length > 0 and profile.profile.show_commons_groups %}
   <div class="content-card" id="commons-groups" hx-swap-oob="true">
