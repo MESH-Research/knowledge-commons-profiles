@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.http import require_POST
 
@@ -157,9 +158,10 @@ def my_profile(request):
 
 
 @login_required
-def edit_profile(request):
+def edit_profile(request, username=None):
     """
     A view for logged-in users to edit their own profile page.
+    Staff users can edit any user's profile by passing a username.
 
     If the request is a POST, validate the form data and save it to the
     database.  If the request is a GET, return a form page with the
@@ -167,14 +169,21 @@ def edit_profile(request):
 
     :param request: The request object.
     :type request: django.http.HttpRequest
+    :param username: Optional username of the profile to edit (staff only).
+    :type username: str or None
     :return: A rendered HTML template with a form.
     :rtype: django.http.HttpResponse
     """
 
-    logger.debug("Editing profile for %s", request.user)
+    if username is None:
+        username = request.user.username
+    elif not request.user.is_staff and username != request.user.username:
+        raise PermissionDenied
+
+    logger.debug("Editing profile for %s", username)
 
     user = Profile.objects.prefetch_related("academic_interests").get(
-        username=request.user
+        username=username
     )
 
     if request.method == "POST":
@@ -205,6 +214,21 @@ def edit_profile(request):
     del left_order
     del right_order
 
+    if username == request.user.username:
+        form_action = reverse("edit_profile")
+        avatar_upload_url = reverse("upload_avatar")
+        cover_upload_url = reverse("upload_cover")
+    else:
+        form_action = reverse(
+            "edit_profile_user", kwargs={"username": username}
+        )
+        avatar_upload_url = reverse(
+            "upload_avatar_user", kwargs={"username": username}
+        )
+        cover_upload_url = reverse(
+            "upload_cover_user", kwargs={"username": username}
+        )
+
     return render(
         request,
         "newprofile/edit_profile.html",
@@ -215,6 +239,9 @@ def edit_profile(request):
             "left_order": left_order_final,
             "right_order": right_order_final,
             "logged_in_user_is_profile": True,
+            "form_action": form_action,
+            "avatar_upload_url": avatar_upload_url,
+            "cover_upload_url": cover_upload_url,
         },
     )
 

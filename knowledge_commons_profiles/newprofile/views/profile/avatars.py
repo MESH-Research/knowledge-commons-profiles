@@ -5,6 +5,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.http import HttpResponseBadRequest
@@ -24,7 +25,12 @@ logger = logging.getLogger(__name__)
 
 @login_required
 @require_POST
-def upload_avatar(request):
+def upload_avatar(request, username=None):
+    if username is None:
+        username = request.user.username
+    elif not request.user.is_staff and username != request.user.username:
+        raise PermissionDenied
+
     form = AvatarUploadForm(request.POST, request.FILES)
     if not form.is_valid():
         return HttpResponseBadRequest("Invalid form data.")
@@ -69,11 +75,11 @@ def upload_avatar(request):
     url = save_image(out, request, "profile_images")
 
     # Save to user's profile (authorization: user owns this profile)
-    profile = Profile.objects.get(username=request.user.username)
+    profile = Profile.objects.get(username=username)
     profile.profile_image = url
     profile.save(update_fields=["profile_image"])
 
-    msg = f"Saved avatar for {request.user.username} to {url}"
+    msg = f"Saved avatar for {username} to {url}"
     logger.info(msg)
 
     # now send an update to the CC search client because avatar has changed
@@ -94,7 +100,12 @@ def save_image(out, request, prefix) -> str:
 
 @login_required
 @require_POST
-def upload_cover(request):
+def upload_cover(request, username=None):
+    if username is None:
+        username = request.user.username
+    elif not request.user.is_staff and username != request.user.username:
+        raise PermissionDenied
+
     form = AvatarUploadForm(request.POST, request.FILES)
     if not form.is_valid():
         return HttpResponseBadRequest("Invalid form data.")
@@ -139,7 +150,7 @@ def upload_cover(request):
     url = save_image(out, request, "cover_images")
 
     # Save to user's profile (authorization: user owns this profile)
-    profile = Profile.objects.get(username=request.user.username)
+    profile = Profile.objects.get(username=username)
 
     # delete all existing cover images (in a model called CoverImage)
     CoverImage.objects.filter(profile=profile).delete()
@@ -150,7 +161,7 @@ def upload_cover(request):
     )
     cover_image.save()
 
-    msg = f"Saved cover for {request.user.username} to {url}"
+    msg = f"Saved cover for {username} to {url}"
     logger.info(msg)
 
     return JsonResponse({"ok": True, "url": url})

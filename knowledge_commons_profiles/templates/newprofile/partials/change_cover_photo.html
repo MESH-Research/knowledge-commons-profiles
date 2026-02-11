@@ -119,7 +119,7 @@
     const fd = new FormData();
     fd.append('image', new File([blob], 'cover.jpg', { type: 'image/jpeg' }));
 
-    const resp = await fetch("{% url 'upload_cover' %}", {
+    const resp = await fetch("{{ cover_upload_url }}", {
       method: 'POST',
       body: fd,
       headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }

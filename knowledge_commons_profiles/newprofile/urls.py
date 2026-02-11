@@ -75,12 +75,27 @@ urlpatterns = [
     path("my-profile/", my_profile, name="my_profile"),
     path("edit-profile/", edit_profile, name="edit_profile"),
     path(
+        "members/<str:username>/edit-profile/",
+        edit_profile,
+        name="edit_profile_user",
+    ),
+    path(
         "edit-profile/<str:username>/makesuperuser/",
         toggle_superadmin_rights_with_permission,
         name="toggle_superadmin",
     ),
     path("edit-profile/upload-avatar/", upload_avatar, name="upload_avatar"),
     path("edit-profile/upload-cover/", upload_cover, name="upload_cover"),
+    path(
+        "members/<str:username>/edit-profile/upload-avatar/",
+        upload_avatar,
+        name="upload_avatar_user",
+    ),
+    path(
+        "members/<str:username>/edit-profile/upload-cover/",
+        upload_cover,
+        name="upload_cover_user",
+    ),
     path("members/<str:user>/", profile, name="profile"),
     path("members/<str:user>/profile/", profile, name="alternative_profile_1"),
     path("api-auth/", include("rest_framework.urls")),

@@ -66,6 +66,7 @@
             </a>
 
             {% if request.user.is_staff %}
+              <a href="{% url 'edit_profile_user' username=username %}" class="social-link action-btn">Edit This Profile</a>
               <a href="{% url 'manage_roles' user_name=username %}" class="social-link action-btn">Manage User Roles</a> <a href="{% url 'manage_login' username=username %}" class="social-link action-btn">Manage User Settings</a>
               <form method="post" action="{% url 'toggle_superadmin' username=username %}">
               {% csrf_token %}

@@ -6,6 +6,7 @@ from unittest.mock import patch
 import django.db
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.test import Client
 from django.test import RequestFactory
 from django.test import TestCase
@@ -298,6 +299,90 @@ class EditProfileTests(TestCase):
             mock_form_class.assert_called_once()
             mock_form.is_valid.assert_called_once()
             mock_form.save.assert_not_called()
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.Profile.objects."
+        "prefetch_related"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.render"
+    )
+    def test_staff_can_edit_other_user(self, mock_render, mock_prefetch):
+        staff_user = User.objects.create_user(
+            username="staffuser", password="testpass", is_staff=True
+        )
+        mock_queryset = MagicMock()
+        mock_prefetch.return_value = mock_queryset
+        mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
+        type(mock_user).username = PropertyMock(return_value="otheruser")
+        mock_queryset.get.return_value = mock_user
+
+        request = self.factory.get("/members/otheruser/edit-profile/")
+        request.user = staff_user
+
+        edit_profile(request, username="otheruser")
+
+        mock_render.assert_called_once()
+
+    def test_non_staff_cannot_edit_other_user(self):
+        request = self.factory.get("/members/otheruser/edit-profile/")
+        request.user = self.user
+
+        with self.assertRaises(PermissionDenied):
+            edit_profile(request, username="otheruser")
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.Profile.objects."
+        "prefetch_related"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.render"
+    )
+    def test_non_staff_can_edit_own_profile(self, mock_render, mock_prefetch):
+        mock_queryset = MagicMock()
+        mock_prefetch.return_value = mock_queryset
+        mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
+        type(mock_user).username = PropertyMock(return_value="testuser")
+        mock_queryset.get.return_value = mock_user
+
+        request = self.factory.get("/edit-profile/")
+        request.user = self.user
+
+        edit_profile(request)
+
+        mock_render.assert_called_once()
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.Profile.objects."
+        "prefetch_related"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.render"
+    )
+    def test_staff_can_edit_own_profile_via_username(
+        self, mock_render, mock_prefetch
+    ):
+        staff_user = User.objects.create_user(
+            username="staffuser2", password="testpass", is_staff=True
+        )
+        mock_queryset = MagicMock()
+        mock_prefetch.return_value = mock_queryset
+        mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
+        type(mock_user).username = PropertyMock(return_value="staffuser2")
+        mock_queryset.get.return_value = mock_user
+
+        request = self.factory.get("/members/staffuser2/edit-profile/")
+        request.user = staff_user
+
+        edit_profile(request, username="staffuser2")
+
+        mock_render.assert_called_once()
 
 
 class BlogPostsTests(TestCase):

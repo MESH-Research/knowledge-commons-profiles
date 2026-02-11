@@ -21,7 +21,7 @@
 
       {{ form.media }}
 
-    <form method="post" enctype="multipart/form-data" action="{% url "edit_profile" %}">
+    <form method="post" enctype="multipart/form-data" action="{{ form_action }}">
       {% csrf_token %}
 
       <!-- Profile Banner and Info -->
@@ -93,7 +93,7 @@
                 <input type="submit" class="action-btn primary" value="Save" id="save"/>
                 <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#avatarModal">Change Profile Photo</a>
                 <a href="#" class="action-btn" data-bs-toggle="modal" data-bs-target="#coverModal">Change Cover Image</a>
-                <a href="{% url 'manage_login' username=request.user.username %}" class="action-btn">Manage Login Methods and Emails</a>
+                <a href="{% url 'manage_login' username=username %}" class="action-btn">Manage Login Methods and Emails</a>
               </div>
             </div>
           </div>
