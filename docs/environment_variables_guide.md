@@ -331,6 +331,58 @@ This guide documents the environment variables used for application startup and 
 - **Default**: 10
 - **Example**: `CC_SEARCH_TIMEOUT=15`
 
+### Navigation Links
+
+These variables control the sidebar navigation URLs in the application. Override them to point to different services per deployment.
+
+#### NAV_NEWS_FEED_URL
+- **Purpose**: URL for the "News Feed" sidebar link
+- **Type**: URL
+- **Default**: "https://hcommons.org/activity/"
+- **Example**: `NAV_NEWS_FEED_URL=https://example.org/activity/`
+
+#### NAV_GROUPS_URL
+- **Purpose**: URL for the "Groups" sidebar link
+- **Type**: URL
+- **Default**: "https://hcommons.org/groups/"
+- **Example**: `NAV_GROUPS_URL=https://example.org/groups/`
+
+#### NAV_SITES_URL
+- **Purpose**: URL for the "Sites" sidebar link
+- **Type**: URL
+- **Default**: "https://hcommons.org/sites/"
+- **Example**: `NAV_SITES_URL=https://example.org/sites/`
+
+#### NAV_WORKS_URL
+- **Purpose**: URL for the "Works" sidebar link
+- **Type**: URL
+- **Default**: "https://works.hcommons.org/"
+- **Example**: `NAV_WORKS_URL=https://works.example.org/`
+
+#### NAV_SUPPORT_URL
+- **Purpose**: URL for the "Help & Support" sidebar link
+- **Type**: URL
+- **Default**: "https://support.hcommons.org/"
+- **Example**: `NAV_SUPPORT_URL=https://support.example.org/`
+
+#### NAV_ORGANIZATIONS_URL
+- **Purpose**: URL for the "KC Organizations" sidebar link
+- **Type**: URL
+- **Default**: "https://hcommons.org/societies/"
+- **Example**: `NAV_ORGANIZATIONS_URL=https://example.org/societies/`
+
+#### NAV_ABOUT_URL
+- **Purpose**: URL for the "About the Commons" sidebar link
+- **Type**: URL
+- **Default**: "https://sustaining.hcommons.org/"
+- **Example**: `NAV_ABOUT_URL=https://sustaining.example.org/`
+
+#### NAV_BLOG_URL
+- **Purpose**: URL for the "Team Blog" sidebar link
+- **Type**: URL
+- **Default**: "https://team.hcommons.org/"
+- **Example**: `NAV_BLOG_URL=https://team.example.org/`
+
 ### Registration Configuration
 
 #### OPEN_REGISTRATION_NETWORKS
