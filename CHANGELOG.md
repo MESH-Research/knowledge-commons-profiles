@@ -1,3 +1,9 @@
+## 3.19.1 (2026-02-12)
+
+### Fix
+
+- **api**: include bluesky handle in profile info response
+
 ## 3.19.0 (2026-02-11)
 
 ### Feat
