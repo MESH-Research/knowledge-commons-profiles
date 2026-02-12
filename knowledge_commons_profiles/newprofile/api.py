@@ -390,6 +390,7 @@ class API:
             "github": self.profile.github,
             "email": self.profile.email,
             "orcid": self.profile.orcid,
+            "bluesky": self.profile.bluesky,
             "mastodon": self.profile.mastodon,
             "mastodon_username": m_user,
             "mastodon_server": m_server,
