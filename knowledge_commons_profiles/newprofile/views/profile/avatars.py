@@ -5,10 +5,8 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.http import HttpResponseBadRequest
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from PIL import Image
@@ -29,11 +27,15 @@ def upload_avatar(request, username=None):
     if username is None:
         username = request.user.username
     elif not request.user.is_staff and username != request.user.username:
-        raise PermissionDenied
+        return JsonResponse(
+            {"ok": False, "error": "Permission denied."}, status=403
+        )
 
     form = AvatarUploadForm(request.POST, request.FILES)
     if not form.is_valid():
-        return HttpResponseBadRequest("Invalid form data.")
+        return JsonResponse(
+            {"ok": False, "error": "Invalid form data."}, status=400
+        )
 
     img_file = form.cleaned_data["image"]
 
@@ -45,7 +47,7 @@ def upload_avatar(request, username=None):
     except Exception:
         msg = "Corrupt or unsupported image"
         logger.exception(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({"ok": False, "error": msg}, status=400)
     img_file.seek(0)
     im = Image.open(img_file).convert(
         "RGB"
@@ -59,11 +61,11 @@ def upload_avatar(request, username=None):
     }:
         msg = "Only JPEG/PNG/WebP are allowed."
         logger.exception(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({"ok": False, "error": msg}, status=400)
     if max(im.size) > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
         msg = "Image too large."
         logger.exception(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({"ok": False, "error": msg}, status=400)
 
     # Resize to exactly 150x150 (high-quality)
     im = im.resize((150, 150), resample=Image.Resampling.LANCZOS)
@@ -104,11 +106,15 @@ def upload_cover(request, username=None):
     if username is None:
         username = request.user.username
     elif not request.user.is_staff and username != request.user.username:
-        raise PermissionDenied
+        return JsonResponse(
+            {"ok": False, "error": "Permission denied."}, status=403
+        )
 
     form = AvatarUploadForm(request.POST, request.FILES)
     if not form.is_valid():
-        return HttpResponseBadRequest("Invalid form data.")
+        return JsonResponse(
+            {"ok": False, "error": "Invalid form data."}, status=400
+        )
 
     img_file = form.cleaned_data["image"]
 
@@ -120,7 +126,7 @@ def upload_cover(request, username=None):
     except Exception:
         msg = "Corrupt or unsupported image"
         logger.exception(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({"ok": False, "error": msg}, status=400)
     img_file.seek(0)
     im = Image.open(img_file).convert(
         "RGB"
@@ -134,11 +140,11 @@ def upload_cover(request, username=None):
     }:
         msg = "Only JPEG/PNG/WebP are allowed."
         logger.exception(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({"ok": False, "error": msg}, status=400)
     if max(im.size) > settings.FILE_UPLOAD_MAX_MEMORY_SIZE:
         msg = "Image too large."
         logger.exception(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({"ok": False, "error": msg}, status=400)
 
     # Resize to exactly 1480x200 (high-quality)
     im = im.resize((1480, 200), resample=Image.Resampling.LANCZOS)

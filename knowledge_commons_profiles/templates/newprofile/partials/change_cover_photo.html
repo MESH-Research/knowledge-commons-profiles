@@ -125,7 +125,11 @@
       headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
     });
     if (!resp.ok) {
-      alert("Upload failed."); return;
+      try {
+        const err = await resp.json();
+        alert(err.error || "Upload failed.");
+      } catch { alert("Upload failed."); }
+      return;
     }
     const data = await resp.json();
     if (data.ok) {

@@ -83,9 +83,22 @@ def profile(request, user=""):
                 "user": user,
                 "left_order": left_order_final,
                 "right_order": right_order_final,
-                # "works_headings_ordered": works_headings,
-                # "works_show_map": works_show_map,
-                # "works_work_show_map": works_work_show_map,
+                "avatar_upload_url": (
+                    reverse("upload_avatar")
+                    if logged_in_user_is_profile
+                    else reverse(
+                        "upload_avatar_user",
+                        kwargs={"username": profile_obj.username},
+                    )
+                ),
+                "cover_upload_url": (
+                    reverse("upload_cover")
+                    if logged_in_user_is_profile
+                    else reverse(
+                        "upload_cover",
+                        kwargs={"username": profile_obj.username},
+                    )
+                ),
             },
             template_name="newprofile/profile.html",
         )
