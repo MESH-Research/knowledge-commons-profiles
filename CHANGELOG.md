@@ -1,3 +1,9 @@
+## 3.19.3 (2026-02-18)
+
+### Fix
+
+- **storage**: set public-read ACL on media storage backend, closes #323, refs #321
+
 ## 3.19.2 (2026-02-18)
 
 ### Fix
