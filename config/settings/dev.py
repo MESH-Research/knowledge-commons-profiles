@@ -91,6 +91,7 @@ STORAGES = {
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
             "location": "media",
+            "default_acl": "public-read",
             "file_overwrite": False,
         },
     },
