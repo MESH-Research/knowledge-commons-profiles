@@ -29,6 +29,9 @@ from knowledge_commons_profiles.newprofile.views.profile.profile import (
 from knowledge_commons_profiles.newprofile.views.profile.profile import (
     my_profile,
 )
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    profile as profile_view,
+)
 
 STATUS_CODE_500 = 500
 STATUS_CODE_302 = 302
@@ -522,3 +525,166 @@ class MySQLDataTests(TestCase):
 
         # Assert empty context was returned
         self.assertEqual(response.status_code, 200)
+
+
+class ProfileViewTests(TestCase):
+    """Tests for the main profile() view, including the #326 regression.
+
+    Uses the test Client so that responses go through the full URL resolver
+    and template engine — a mocked render() would hide template errors.
+    """
+
+    PATCH_PREFIX = (
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+    )
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass"
+        )
+        self.other_user = User.objects.create_user(
+            username="otheruser", password="testpass"
+        )
+        self.staff_user = User.objects.create_user(
+            username="staffuser", password="testpass", is_staff=True
+        )
+
+    def _make_mock_profile(self, username):
+        mock_prof = MagicMock()
+        mock_prof.username = username
+        mock_prof.left_order = "[]"
+        mock_prof.right_order = "[]"
+        return mock_prof
+
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=True)
+    @patch(PATCH_PREFIX + "API")
+    def test_anonymous_user_viewing_profile(
+        self, mock_api, mock_profile_exists
+    ):
+        api_instance = MagicMock()
+        api_instance.profile = self._make_mock_profile("testuser")
+        mock_api.return_value = api_instance
+
+        response = self.client.get("/members/testuser/")
+
+        self.assertEqual(response.status_code, 200)
+
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=True)
+    @patch(PATCH_PREFIX + "API")
+    def test_logged_in_user_viewing_own_profile(
+        self, mock_api, mock_profile_exists
+    ):
+        api_instance = MagicMock()
+        api_instance.profile = self._make_mock_profile("testuser")
+        mock_api.return_value = api_instance
+
+        self.client.login(username="testuser", password="testpass")
+        response = self.client.get("/members/testuser/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["logged_in_user_is_profile"])
+        self.assertIn(
+            "/edit-profile/upload-avatar/",
+            response.context["avatar_upload_url"],
+        )
+        self.assertIn(
+            "/edit-profile/upload-cover/",
+            response.context["cover_upload_url"],
+        )
+
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=True)
+    @patch(PATCH_PREFIX + "API")
+    def test_logged_in_user_viewing_other_profile(
+        self, mock_api, mock_profile_exists
+    ):
+        """Regression test for #326: viewing another user's profile must use
+        upload_cover_user / upload_avatar_user URL names."""
+        api_instance = MagicMock()
+        api_instance.profile = self._make_mock_profile("otheruser")
+        mock_api.return_value = api_instance
+
+        self.client.login(username="testuser", password="testpass")
+        response = self.client.get("/members/otheruser/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["logged_in_user_is_profile"])
+        self.assertIn(
+            "/members/otheruser/edit-profile/upload-avatar/",
+            response.context["avatar_upload_url"],
+        )
+        self.assertIn(
+            "/members/otheruser/edit-profile/upload-cover/",
+            response.context["cover_upload_url"],
+        )
+
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=True)
+    @patch(PATCH_PREFIX + "API")
+    def test_staff_user_viewing_own_profile(
+        self, mock_api, mock_profile_exists
+    ):
+        api_instance = MagicMock()
+        api_instance.profile = self._make_mock_profile("staffuser")
+        mock_api.return_value = api_instance
+
+        self.client.login(username="staffuser", password="testpass")
+        response = self.client.get("/members/staffuser/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["logged_in_user_is_profile"])
+
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=True)
+    @patch(PATCH_PREFIX + "API")
+    def test_staff_user_viewing_other_profile(
+        self, mock_api, mock_profile_exists
+    ):
+        api_instance = MagicMock()
+        api_instance.profile = self._make_mock_profile("otheruser")
+        mock_api.return_value = api_instance
+
+        self.client.login(username="staffuser", password="testpass")
+        response = self.client.get("/members/otheruser/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["logged_in_user_is_profile"])
+        self.assertIn(
+            "/members/otheruser/edit-profile/upload-avatar/",
+            response.context["avatar_upload_url"],
+        )
+        self.assertIn(
+            "/members/otheruser/edit-profile/upload-cover/",
+            response.context["cover_upload_url"],
+        )
+
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=False)
+    def test_nonexistent_profile_returns_404(self, mock_profile_exists):
+        response = self.client.get("/members/nosuchuser/")
+
+        self.assertEqual(response.status_code, 404)
+
+    @patch(PATCH_PREFIX + "render")
+    @patch(PATCH_PREFIX + "profile_exists_or_has_been_created",
+           return_value=True)
+    @patch(PATCH_PREFIX + "API",
+           side_effect=django.db.utils.OperationalError("connection refused"))
+    def test_database_error_renders_with_fallback_context(
+        self, mock_api, mock_profile_exists, mock_render
+    ):
+        # The DB-error fallback sets username="" which the template's
+        # {% url %} tags can't resolve, so we mock render here and just
+        # verify the view passes the right fallback context.
+        # Uses RequestFactory to bypass middleware on the mock response.
+        factory = RequestFactory()
+        request = factory.get("/members/testuser/")
+        request.user = self.user
+        profile_view(request, user="testuser")
+
+        mock_render.assert_called_once()
+        ctx = mock_render.call_args.kwargs["context"]
+        self.assertTrue(ctx["database_error"])
