@@ -1,3 +1,10 @@
+## 3.19.4 (2026-02-18)
+
+### Fix
+
+- **profile**: use correct URL name for user cover upload, closes #326
+- **settings**: add TINYMCE_JS_URL override to dev settings, closes #325
+
 ## 3.19.3 (2026-02-18)
 
 ### Fix
