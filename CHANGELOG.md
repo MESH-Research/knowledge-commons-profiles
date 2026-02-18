@@ -1,3 +1,9 @@
+## 3.19.2 (2026-02-18)
+
+### Fix
+
+- **uploads**: return JSON errors from image upload endpoints, refs #322, refs #321
+
 ## 3.19.1 (2026-02-12)
 
 ### Fix
