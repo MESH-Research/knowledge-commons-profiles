@@ -95,7 +95,7 @@ def profile(request, user=""):
                     reverse("upload_cover")
                     if logged_in_user_is_profile
                     else reverse(
-                        "upload_cover",
+                        "upload_cover_user",
                         kwargs={"username": profile_obj.username},
                     )
                 ),
