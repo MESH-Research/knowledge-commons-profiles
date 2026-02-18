@@ -185,3 +185,6 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = [
     "hcommons-staging.org",
     "hcommons-dev.org",
 ]
+
+# this is duplicated from base.py as STATIC_URL is overwritten above
+TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
