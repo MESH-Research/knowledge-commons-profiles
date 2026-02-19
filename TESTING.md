@@ -19,6 +19,23 @@ whitelisting.
 
 ---
 
+## ⚠️ CRUCIAL NOTE: Unexpected Error Pages When Navigating
+
+Many links within the profile area (and across the Commons sites) still point
+to legacy WordPress/BuddyPress URLs that have not yet been intercepted and
+redirected to the new profiles application. Clicking these links is likely to
+lead to error pages or unexpected behaviour.
+
+**This is expected.** We are progressively catching and redirecting these URLs
+via nginx rewrite rules ([#301](https://github.com/MESH-Research/knowledge-commons-profiles/issues/301)).
+If you encounter an error page while clicking around the profile area, please
+check whether the URL in question is already listed in
+[#301](https://github.com/MESH-Research/knowledge-commons-profiles/issues/301)
+before filing a new bug. If it is not listed there, please add a comment to
+that issue with the URL that caused the error.
+
+---
+
 ## Authentication
 
 ### Login
@@ -51,12 +68,6 @@ they are logged in immediately.
 information to get them started quickly. After account creation, verify that the
 user can then log in successfully across all three applications (Profiles, Works,
 and Commons).
-
-### Known authentication bugs
-
-- **Provider name shows "None":** In the Login Methods section of the settings
-  page, the provider name always displays as "None". Tracked in
-  [#299](https://github.com/MESH-Research/knowledge-commons-profiles/issues/299).
 
 ---
 
@@ -164,6 +175,32 @@ would deny it. Test that:
 ### Editing other users' profiles
 
 Staff users should be able to edit profiles belonging to other users. This has not been implemented yet and is tracked in [#300](https://github.com/MESH-Research/knowledge-commons-profiles/issues/300).
+
+---
+
+## Known Issues
+
+- **Search is not working:** The global search at `/search/` currently returns
+  a 403 error due to an authentication issue with the search service. Tracked
+  in [#309](https://github.com/MESH-Research/knowledge-commons-profiles/issues/309).
+
+- **Primary email changes are not synced to WordPress:** When a user changes
+  their primary email address in Profiles, the change is not yet propagated to
+  their WordPress account. Tracked in
+  [#324](https://github.com/MESH-Research/knowledge-commons-profiles/issues/324).
+
+- **Join group buttons not visible for regular users:** Non-admin users may not
+  see "Join Group" buttons on group listing and individual group pages. Instead
+  they see a message prompting them to join HC. Admin users are not affected.
+  Tracked in
+  [#330](https://github.com/MESH-Research/knowledge-commons-profiles/issues/330).
+
+- **New user login issues (possibly resolved):** Users who create a new account
+  via CILogon may be returned to the WordPress login form instead of being
+  logged in, if their account exists in the Profiles API but not yet in
+  WordPress. We believe this has been fixed but are awaiting confirmation from
+  testing. Tracked in
+  [#317](https://github.com/MESH-Research/knowledge-commons-profiles/issues/317).
 
 ---
 
