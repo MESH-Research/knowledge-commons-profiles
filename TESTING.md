@@ -178,6 +178,15 @@ Staff users should be able to edit profiles belonging to other users. This has n
 
 ---
 
+## KCWorks
+- Try editing the metadata on an existing deposit
+- Create a new version of an existing deposit
+- Upload a new deposit
+- Check to see if information changed in WordPress is propagated through to Works
+- If testing as a non-priviledged user check to ensure that the link to their profile in the top menu bar is correct.
+
+---
+
 ## Known Issues
 
 - **Search is not working:** The global search at `/search/` currently returns
