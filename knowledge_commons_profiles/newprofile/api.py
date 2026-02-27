@@ -127,7 +127,7 @@ class API:
         if self._works_deposits is None:
             self._works_deposits = WorksDeposits(
                 self.user,
-                "https://works.hcommons.org",
+                f"https://{settings.WORKS_DOMAIN}",
                 user_profile=self.profile,
             )
 
@@ -149,7 +149,7 @@ class API:
         if self._works_deposits is None:
             self._works_deposits = WorksDeposits(
                 self.user,
-                "https://works.hcommons.org",
+                f"https://{settings.WORKS_DOMAIN}",
                 user_profile=self.profile,
             )
 
@@ -164,13 +164,13 @@ class API:
             try:
                 self._works_deposits = WorksDeposits(
                     self.user,
-                    "https://works.hcommons.org",
+                    f"https://{settings.WORKS_DOMAIN}",
                     user_profile=self.profile,
                 )
             except django.http.response.Http404:
                 self._works_deposits = WorksDeposits(
                     None,
-                    "https://works.hcommons.org",
+                    f"https://{settings.WORKS_DOMAIN}",
                 )
 
         if self._works_html is None:
@@ -191,7 +191,7 @@ class API:
             if self._works_deposits is None:
                 self._works_deposits = WorksDeposits(
                     self.profile_info["username"],
-                    "https://works.hcommons.org",
+                    f"https://{settings.WORKS_DOMAIN}",
                 )
         except WorksApiError:
             logger.exception(

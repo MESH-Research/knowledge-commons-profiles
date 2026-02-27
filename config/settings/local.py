@@ -116,3 +116,4 @@ with Path("log_config/local.yaml").open(
     logging.config.dictConfig(config)
 
 WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons.org")
+WORKS_DOMAIN = env("WORKS_DOMAIN", default="works.hcommons.org")

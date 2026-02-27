@@ -185,3 +185,4 @@ sentry_sdk.init(
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
 WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons.org")
+WORKS_DOMAIN = env("WORKS_DOMAIN", default="works.hcommons.org")
