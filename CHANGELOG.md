@@ -1,3 +1,9 @@
+## 3.21.0 (2026-02-27)
+
+### Feat
+
+- **settings**: make Works domain configurable per environment, closes #334
+
 ## 3.20.0 (2026-02-27)
 
 ### Feat
