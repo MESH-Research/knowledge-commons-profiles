@@ -183,3 +183,5 @@ sentry_sdk.init(
 # ------------------------------------------------------------------------------
 # this is duplicated from base.py as STATIC_URL is overwritten above
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
+
+WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons.org")

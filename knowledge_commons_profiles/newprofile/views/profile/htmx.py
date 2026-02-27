@@ -2,6 +2,7 @@
 import logging
 
 import django.db
+from django.conf import settings
 from django.shortcuts import render
 from django.urls import reverse
 
@@ -432,6 +433,7 @@ def mysql_data(request, username):
                 ),
                 "logout_url": reverse("logout"),
                 "profile": profile_info_obj,
+                "wordpress_domain": settings.WORDPRESS_DOMAIN,
             }
 
         return render(
@@ -459,6 +461,7 @@ def mysql_data(request, username):
             "logged_in_profile_image": None,
             "logout_url": reverse("logout"),
             "profile": None,
+            "wordpress_domain": settings.WORDPRESS_DOMAIN,
         }
         return render(request, "newprofile/partials/mysql_data.html", context)
 

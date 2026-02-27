@@ -114,3 +114,5 @@ with Path("log_config/local.yaml").open(
 ) as f:
     config = yaml.safe_load(f.read())
     logging.config.dictConfig(config)
+
+WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons.org")

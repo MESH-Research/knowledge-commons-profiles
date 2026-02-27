@@ -19,14 +19,13 @@
       <h3 class="card-title">Commons Groups</h3>
       {% for group in groups %}
       <ul class="interests-list">
-          <li class="interest-item"><a class="interest-link" href="https://hcommons.org/groups/{{ group.slug }}/">{{ group.group_name }}</a></li>
+          <li class="interest-item"><a class="interest-link" href="https://{{ wordpress_domain }}/groups/{{ group.slug }}/">{{ group.group_name }}</a></li>
       </ul>
       {% endfor %}
   </div>
 {% else %}
   <div class="hide" id="commons-groups" hx-swap-oob="true"></div>
 {% endif %}
-
 {% if activities|length > 0 and profile.profile.show_recent_activity %}
   <div class="content-card" id="commons-activity" hx-swap-oob="true">
     <h3 class="card-title">Recent Commons Activity</h3>
