@@ -1,3 +1,9 @@
+## 3.20.0 (2026-02-27)
+
+### Feat
+
+- **settings**: make WordPress domain configurable per environment, closes #335
+
 ## 3.19.4 (2026-02-18)
 
 ### Fix
