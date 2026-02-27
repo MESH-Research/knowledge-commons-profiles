@@ -190,3 +190,4 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = [
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
 WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons-staging.org")
+WORKS_DOMAIN = env("WORKS_DOMAIN", default="works.hcommons-staging.org")
