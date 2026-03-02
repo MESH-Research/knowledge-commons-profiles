@@ -1,3 +1,9 @@
+## 3.22.0 (2026-03-02)
+
+### Feat
+
+- **cilogon**: sync primary email changes to WordPress via REST API, refs #324
+
 ## 3.21.0 (2026-02-27)
 
 ### Feat
