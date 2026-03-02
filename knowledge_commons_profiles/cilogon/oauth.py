@@ -655,6 +655,43 @@ def get_secure_userinfo(request) -> tuple[bool, dict | None]:
     return check_for_sub_or_return_negative(userinfo_session)
 
 
+def sync_email_to_wordpress(username: str, email: str) -> bool:
+    """
+    Sync a user's primary email to WordPress via REST API.
+    """
+    url = settings.WORDPRESS_EMAIL_UPDATE_URL
+    bearer = settings.STATIC_API_BEARER
+
+    if not url:
+        logger.warning("WORDPRESS_EMAIL_UPDATE_URL is not configured")
+        return False
+
+    if not bearer:
+        logger.warning("STATIC_API_BEARER is not configured")
+        return False
+
+    try:
+        response = requests.post(
+            url,
+            json={"username": username, "email": email},
+            headers={"Authorization": f"Bearer {bearer}"},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException:
+        logger.exception(
+            "Failed to sync email to WordPress for user %s", username
+        )
+        return False
+    else:
+        logger.info(
+            "Synced email for %s to WordPress: %s",
+            username,
+            response.status_code,
+        )
+        return True
+
+
 def send_association_message(sub: str, kc_id: str):
     """
     Send an association message to the webhook

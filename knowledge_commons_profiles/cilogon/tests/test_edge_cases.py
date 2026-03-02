@@ -343,3 +343,62 @@ class TestNewEmailVerifiedUnauthenticated(TestCase):
         # Email should be added to profile
         self.profile.refresh_from_db()
         self.assertIn("newemail@example.com", self.profile.emails)
+
+
+class TestMakeEmailPrimaryWordpressSync(TestCase):
+    """Test that _make_email_primary calls WordPress sync"""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.profile = Profile.objects.create(
+            username="testuser",
+            email="primary@example.com",
+            emails=["secondary@example.com"],
+        )
+
+    def _create_request(self, email):
+        request = self.factory.post("/", {"email_primary": email})
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        return request
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.sync_email_to_wordpress"
+    )
+    def test_make_primary_calls_wordpress_sync(self, mock_sync):
+        """Changing primary email should call sync with correct args"""
+        mock_sync.return_value = True
+        request = self._create_request("secondary@example.com")
+
+        _make_email_primary(self.profile, request)
+
+        mock_sync.assert_called_once_with(
+            username="testuser", email="secondary@example.com"
+        )
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.sync_email_to_wordpress"
+    )
+    def test_make_primary_invalid_email_does_not_sync(self, mock_sync):
+        """Invalid email (not in secondaries) should not trigger sync"""
+        request = self._create_request("notinlist@example.com")
+
+        _make_email_primary(self.profile, request)
+
+        mock_sync.assert_not_called()
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.sync_email_to_wordpress"
+    )
+    def test_make_primary_saves_before_sync(self, mock_sync):
+        """Profile should be saved even if sync raises an exception"""
+        mock_sync.side_effect = RuntimeError("WordPress down")
+        request = self._create_request("secondary@example.com")
+
+        with self.assertRaises(RuntimeError):
+            _make_email_primary(self.profile, request)
+
+        # Profile should still have been saved with the new primary
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.email, "secondary@example.com")

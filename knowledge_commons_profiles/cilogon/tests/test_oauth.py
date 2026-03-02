@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
+import requests
 from authlib.jose.errors import InvalidClaimError
 from django.contrib.auth.models import User
 from django.contrib.sessions.backends.db import SessionStore
@@ -33,6 +34,7 @@ from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import token_expired
 from knowledge_commons_profiles.cilogon.oauth import (
     verify_and_decode_cilogon_jwt,
@@ -895,3 +897,92 @@ class AssociationMessageTests(CILogonTestBase):
             # Function returns None when no endpoints to process
             self.assertIsNone(result)
             mock_api_client.assert_not_called()
+
+
+@override_settings(
+    WORDPRESS_EMAIL_UPDATE_URL="https://example.org/wp-json/idms/update-email",
+    STATIC_API_BEARER="test-bearer-token",
+)
+class TestSyncEmailToWordpress(TestCase):
+    """Test cases for sync_email_to_wordpress helper"""
+
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.post")
+    def test_sync_email_success(self, mock_post):
+        """Successful POST returns True with correct URL/payload/headers"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        result = sync_email_to_wordpress(
+            username="testuser", email="new@example.com"
+        )
+
+        self.assertTrue(result)
+        mock_post.assert_called_once_with(
+            "https://example.org/wp-json/idms/update-email",
+            json={"username": "testuser", "email": "new@example.com"},
+            headers={
+                "Authorization": "Bearer test-bearer-token",
+            },
+            timeout=10,
+        )
+
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.post")
+    def test_sync_email_connection_error(self, mock_post):
+        """ConnectionError returns False"""
+        mock_post.side_effect = requests.exceptions.ConnectionError(
+            "Connection refused"
+        )
+
+        result = sync_email_to_wordpress(
+            username="testuser", email="new@example.com"
+        )
+
+        self.assertFalse(result)
+
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.post")
+    def test_sync_email_timeout(self, mock_post):
+        """Timeout returns False"""
+        mock_post.side_effect = requests.exceptions.Timeout("Timed out")
+
+        result = sync_email_to_wordpress(
+            username="testuser", email="new@example.com"
+        )
+
+        self.assertFalse(result)
+
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.post")
+    def test_sync_email_http_error(self, mock_post):
+        """HTTPError returns False"""
+        mock_post.side_effect = requests.exceptions.HTTPError(
+            "500 Server Error"
+        )
+
+        result = sync_email_to_wordpress(
+            username="testuser", email="new@example.com"
+        )
+
+        self.assertFalse(result)
+
+    @override_settings(WORDPRESS_EMAIL_UPDATE_URL="")
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.post")
+    def test_sync_email_no_url_configured(self, mock_post):
+        """Empty URL returns False without calling requests.post"""
+        result = sync_email_to_wordpress(
+            username="testuser", email="new@example.com"
+        )
+
+        self.assertFalse(result)
+        mock_post.assert_not_called()
+
+    @override_settings(STATIC_API_BEARER="")
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.post")
+    def test_sync_email_no_bearer_token(self, mock_post):
+        """Empty bearer token returns False without calling requests.post"""
+        result = sync_email_to_wordpress(
+            username="testuser", email="new@example.com"
+        )
+
+        self.assertFalse(result)
+        mock_post.assert_not_called()

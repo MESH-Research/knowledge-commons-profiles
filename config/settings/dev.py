@@ -191,3 +191,7 @@ TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 
 WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons-staging.org")
 WORKS_DOMAIN = env("WORKS_DOMAIN", default="works.hcommons-staging.org")
+WORDPRESS_EMAIL_UPDATE_URL = env(
+    "WORDPRESS_EMAIL_UPDATE_URL",
+    default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-email",
+)

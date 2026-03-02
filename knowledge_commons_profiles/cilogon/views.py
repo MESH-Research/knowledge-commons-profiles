@@ -59,6 +59,7 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
+from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
 )
@@ -647,6 +648,8 @@ def _make_email_primary(profile: Profile | None, request):
     # save the object
     profile.save()
 
+    sync_email_to_wordpress(username=profile.username, email=profile.email)
+
 
 @transaction.atomic
 def register(request):
@@ -1184,6 +1187,15 @@ def activate(request, secret_key: str):
 
     # For new registrations, run the post-registration tasks
     if is_new_registration:
+        # Note that we do NOT send an API call to update the email in WordPress
+        # because the account in WordPress is only created when the user logs
+        # in there
+        """
+        sync_email_to_wordpress(
+            username=profile.username, email=profile.email
+        )
+        """
+
         # Add the user to Mailchimp
         hcommons_add_new_user_to_mailchimp(profile.username)
 

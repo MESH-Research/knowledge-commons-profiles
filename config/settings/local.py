@@ -117,3 +117,7 @@ with Path("log_config/local.yaml").open(
 
 WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons.org")
 WORKS_DOMAIN = env("WORKS_DOMAIN", default="works.hcommons.org")
+WORDPRESS_EMAIL_UPDATE_URL = env(
+    "WORDPRESS_EMAIL_UPDATE_URL",
+    default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-email",
+)
