@@ -178,9 +178,7 @@ def get_forwarding_state_for_proxy() -> str:
         Encoded state with forwarding URL, or empty state if not using proxy.
     """
     if is_using_domain_proxy():
-        forward_url = (
-            f"https://{settings.CILOGON_ACTUAL_DOMAIN}/{settings.OIDC_CALLBACK}"
-        )
+        forward_url = f"https://{settings.CILOGON_ACTUAL_DOMAIN}/{settings.OIDC_CALLBACK}"
         return pack_state(forward_url)
     return pack_state("")
 
@@ -674,7 +672,7 @@ def sync_email_to_wordpress(username: str, email: str) -> bool:
         response = requests.post(
             url,
             json={"username": username, "email": email},
-            headers={"Authorization": f"Bearer {bearer}"},
+            headers={"Authorization": f"Bearer {bearer}", "x-auth": bearer},
             timeout=10,
         )
         response.raise_for_status()

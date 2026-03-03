@@ -924,6 +924,7 @@ class TestSyncEmailToWordpress(TestCase):
             json={"username": "testuser", "email": "new@example.com"},
             headers={
                 "Authorization": "Bearer test-bearer-token",
+                "x-auth": "test-bearer-token",
             },
             timeout=10,
         )
