@@ -1,3 +1,9 @@
+## 3.23.0 (2026-03-03)
+
+### Feat
+
+- **cilogon**: add x-auth header to WordPress email sync request, refs #324
+
 ## 3.22.0 (2026-03-02)
 
 ### Feat
