@@ -6,6 +6,7 @@ Serializers for the REST API
 import logging
 from typing import Any
 
+from django.conf import settings
 from django.db import OperationalError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -15,7 +16,9 @@ from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import WpBlog
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.newprofile.models import WpBpGroupsGroupmeta
 from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
@@ -73,17 +76,42 @@ class GroupDetailSerializer(serializers.Serializer):
 
     id = serializers.IntegerField()
     name = serializers.CharField()
-    slug = serializers.CharField()
-    avatar = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+    visibility = serializers.CharField(source="status")
     description = serializers.CharField()
-    status = serializers.CharField()
+    avatar = serializers.SerializerMethodField()
+    groupblog = serializers.SerializerMethodField()
+    upload_roles = serializers.SerializerMethodField()
+    moderate_roles = serializers.SerializerMethodField()
 
     def get_avatar(self, obj: WpBpGroup) -> str:
-        """
-        Get the avatar URL for the group from meta
-        """
-        logger.info("Getting avatar")
         return obj.get_avatar()
+
+    def get_url(self, obj: WpBpGroup) -> str:
+        return f"{settings.NAV_GROUPS_URL}{obj.slug}/"
+
+    def get_groupblog(self, obj: WpBpGroup) -> str:
+        blog_id = (
+            WpBpGroupsGroupmeta.objects.filter(
+                group=obj, meta_key="groupblog_blog_id"
+            )
+            .values_list("meta_value", flat=True)
+            .first()
+        )
+        if blog_id:
+            try:
+                blog = WpBlog.objects.get(blog_id=blog_id)
+            except WpBlog.DoesNotExist:
+                return ""
+            else:
+                return f"https://{blog.domain}{blog.path}"
+        return ""
+
+    def get_upload_roles(self, obj: WpBpGroup) -> list[str]:
+        return ["member", "moderator", "administrator"]
+
+    def get_moderate_roles(self, obj: WpBpGroup) -> list[str]:
+        return ["moderator", "administrator"]
 
 
 class AcademicInterestSerializer(serializers.ModelSerializer):

@@ -730,10 +730,18 @@ class WpBpGroup(models.Model):
         )
 
         thumb, full = get_on_disk_image("group-avatars", self.pk)
-        if full:
-            return settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{full}"
 
-        return settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{thumb}"
+        full_final = settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{full}"
+        thumb_final = (
+            settings.WP_MEDIA_URL + f"/group-avatars/{self.pk}/{thumb}"
+        )
+
+        if full:
+            return full_final
+        if thumb:
+            return thumb_final
+
+        return ""
 
 
 class WpUserMeta(models.Model):
