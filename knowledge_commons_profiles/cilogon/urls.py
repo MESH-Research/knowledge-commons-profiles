@@ -36,6 +36,11 @@ urlpatterns = [
         name="manage_login",
     ),
     path(
+        "members/<str:username>/settings/<str:anything>/",
+        views.manage_login,
+        name="manage_login",
+    ),  # hijack the BuddyPress URLs for config
+    path(
         "members/<str:username>/join/<str:network>/",
         views.self_join_network,
         name="self_join_network",
