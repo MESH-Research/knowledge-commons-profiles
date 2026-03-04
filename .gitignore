@@ -347,3 +347,7 @@ knowledge_commons_profiles/media/
 !.envs/.github/*
 
 users.csv
+
+# TLS certificates
+cert.crt
+cert.key
