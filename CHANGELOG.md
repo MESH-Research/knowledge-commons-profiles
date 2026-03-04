@@ -1,3 +1,9 @@
+## 3.23.1 (2026-03-04)
+
+### Fix
+
+- **rest_api**: correct groupblog meta_key and enhance GroupDetailSerializer
+
 ## 3.23.0 (2026-03-03)
 
 ### Feat
