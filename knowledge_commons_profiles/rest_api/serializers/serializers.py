@@ -79,6 +79,7 @@ class GroupDetailSerializer(serializers.Serializer):
     url = serializers.SerializerMethodField()
     visibility = serializers.CharField(source="status")
     description = serializers.CharField()
+    slug = serializers.CharField()
     avatar = serializers.SerializerMethodField()
     groupblog = serializers.SerializerMethodField()
     upload_roles = serializers.SerializerMethodField()
