@@ -75,6 +75,7 @@ class TestGroupDetailSerializerFields(TestCase):
             "url",
             "visibility",
             "description",
+            "slug",
             "avatar",
             "groupblog",
             "upload_roles",
@@ -85,14 +86,15 @@ class TestGroupDetailSerializerFields(TestCase):
     @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
-    def test_slug_not_in_output(
+    def test_slug_in_output_status_not(
         self, mock_blog_qs, mock_meta_qs
     ):
         _set_no_blog(mock_meta_qs)
         serializer = GroupDetailSerializer(self.group)
         data = serializer.data
 
-        self.assertNotIn("slug", data)
+        self.assertIn("slug", data)
+        self.assertEqual(data["slug"], "open-art-histories")
         self.assertNotIn("status", data)
 
 
@@ -261,6 +263,7 @@ class TestGroupDetailSerializerFullOutput(TestCase):
             ),
             "visibility": "private",
             "description": "Open Art Histories group",
+            "slug": "open-art-histories",
             "avatar": (
                 "https://hcommons-dev.org/app/uploads"
                 "/group-avatars/1004185/"
