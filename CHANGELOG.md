@@ -1,3 +1,10 @@
+## 3.24.0 (2026-03-05)
+
+### Feat
+
+- **groups-api**: add slug to serializer to match previous api structure
+- **cilogon**: add catch-all route for BuddyPress settings URLs
+
 ## 3.23.1 (2026-03-04)
 
 ### Fix
