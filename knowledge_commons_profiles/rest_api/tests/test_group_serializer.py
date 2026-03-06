@@ -235,6 +235,62 @@ class TestGroupDetailSerializerRoles(TestCase):
         )
 
 
+class TestGroupDetailSerializerWpUnslash(TestCase):
+    """Test that WordPress backslash escaping is stripped from output."""
+
+    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @mock.patch(_MOCK_META)
+    @mock.patch(_MOCK_BLOG)
+    def test_name_with_escaped_apostrophe(
+        self, mock_blog_qs, mock_meta_qs
+    ):
+        _set_no_blog(mock_meta_qs)
+        group = _make_mock_group(name="Ian\\'s test group D")
+        data = GroupDetailSerializer(group).data
+
+        self.assertEqual(data["name"], "Ian's test group D")
+
+    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @mock.patch(_MOCK_META)
+    @mock.patch(_MOCK_BLOG)
+    def test_description_with_escaped_apostrophe(
+        self, mock_blog_qs, mock_meta_qs
+    ):
+        _set_no_blog(mock_meta_qs)
+        group = _make_mock_group(
+            description="A group about Ian\\'s research"
+        )
+        data = GroupDetailSerializer(group).data
+
+        self.assertEqual(
+            data["description"], "A group about Ian's research"
+        )
+
+    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @mock.patch(_MOCK_META)
+    @mock.patch(_MOCK_BLOG)
+    def test_name_with_escaped_double_quote(
+        self, mock_blog_qs, mock_meta_qs
+    ):
+        _set_no_blog(mock_meta_qs)
+        group = _make_mock_group(name='Say \\"hello\\"')
+        data = GroupDetailSerializer(group).data
+
+        self.assertEqual(data["name"], 'Say "hello"')
+
+    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @mock.patch(_MOCK_META)
+    @mock.patch(_MOCK_BLOG)
+    def test_name_without_escaping_unchanged(
+        self, mock_blog_qs, mock_meta_qs
+    ):
+        _set_no_blog(mock_meta_qs)
+        group = _make_mock_group(name="Normal Group Name")
+        data = GroupDetailSerializer(group).data
+
+        self.assertEqual(data["name"], "Normal Group Name")
+
+
 class TestGroupDetailSerializerFullOutput(TestCase):
     """Integration test for the full expected output shape."""
 

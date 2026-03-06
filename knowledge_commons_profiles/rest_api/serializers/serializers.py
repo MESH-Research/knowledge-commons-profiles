@@ -21,6 +21,7 @@ from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpGroupsGroupmeta
 from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.rest_api.utils import get_external_memberships
+from knowledge_commons_profiles.rest_api.utils import wp_unslash
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,13 @@ class GroupMembershipSerializer(serializers.Serializer):
             logger.warning(message)
             return ""
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        for field in ("group_name",):
+            if field in ret and isinstance(ret[field], str):
+                ret[field] = wp_unslash(ret[field])
+        return ret
+
 
 class GroupDetailSerializer(serializers.Serializer):
     """
@@ -113,6 +121,13 @@ class GroupDetailSerializer(serializers.Serializer):
 
     def get_moderate_roles(self, obj: WpBpGroup) -> list[str]:
         return ["moderator", "administrator"]
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        for field in ("name", "description"):
+            if field in ret and isinstance(ret[field], str):
+                ret[field] = wp_unslash(ret[field])
+        return ret
 
 
 class AcademicInterestSerializer(serializers.ModelSerializer):

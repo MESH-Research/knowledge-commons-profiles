@@ -19,6 +19,15 @@ logger = logging.getLogger(__name__)
 LOGOUT_TIMEOUT = 5
 
 
+def wp_unslash(value: str) -> str:
+    """Strip WordPress addslashes escaping from a string.
+
+    WordPress's wp_slash() escapes ', ", and \\ before storing in the DB.
+    This reverses that transformation.
+    """
+    return value.replace("\\'", "'").replace('\\"', '"').replace("\\\\", "\\")
+
+
 def build_metadata(authed, error=None):
     """
     Build the metadata for the response
