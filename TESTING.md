@@ -183,6 +183,7 @@ Staff users should be able to edit profiles belonging to other users. This has n
 - Create a new version of an existing deposit
 - Upload a new deposit
 - Check to see if information changed in WordPress is propagated through to Works
+- If you are a superuser check to ensure you have access to the admin menu (gear)
 - If testing as a non-priviledged user check to ensure that the link to their profile in the top menu bar is correct.
 
 ---
