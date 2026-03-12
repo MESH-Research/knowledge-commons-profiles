@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   libmariadb-dev-compat \
   pkg-config \
   nano \
-  rsync \
+  rsync
 
 
 # Requirements are installed here to ensure they will be cached.
@@ -53,7 +53,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # entrypoint
   wait-for-it \
   nano \
-  rsync \
+  rsync
 
 RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat pkg-config curl wget
 
