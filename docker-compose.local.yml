@@ -11,8 +11,9 @@ services:
     container_name: knowledge_commons_profiles_local_django
     volumes:
       - .:/app:z
+      - ${HOME}/cert.pem:/certs/cert.pem:ro
+      - ${HOME}/key.pem:/certs/key.pem:ro
     env_file:
       - ./.envs/.local/.django
     ports:
-      - '8000:8000'
-    command: /start
+      - '443:443'
