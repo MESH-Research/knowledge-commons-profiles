@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # mysql dependencies
   libmariadb-dev \
   libmariadb-dev-compat \
-  pkg-config
+  pkg-config \
+  nano \
+  rsync \
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements .
@@ -59,6 +61,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   wait-for-it \
   # Translations dependencies
   gettext \
+  nano \
+  rsync \
   # cleaning up unused files
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*

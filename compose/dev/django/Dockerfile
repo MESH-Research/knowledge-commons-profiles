@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # mysql dependencies
   libmariadb-dev \
   libmariadb-dev-compat \
-  pkg-config
+  pkg-config \
+  nano \
+  rsync \
 
 
 # Requirements are installed here to ensure they will be cached.
@@ -49,7 +51,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # Translations dependencies
   gettext \
   # entrypoint
-  wait-for-it
+  wait-for-it \
+  nano \
+  rsync \
 
 RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat pkg-config curl wget
 
