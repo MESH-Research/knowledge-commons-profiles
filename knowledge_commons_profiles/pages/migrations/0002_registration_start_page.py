@@ -10,12 +10,14 @@ REGISTRATION_START_BODY = """
 <p><strong>Here is how it works:</strong></p>
 
 <ol>
-  <li>Click the button below to begin. You will be redirected to choose your
-  identity provider.</li>
+  <li>Click the button below to begin. You will be redirected to
+  <strong>CILogon</strong>, where you can choose from any institutional
+  account listed, or use <strong>ORCID</strong>, <strong>Google</strong>,
+  or <strong>GitHub</strong>.</li>
   <li>Sign in with your chosen provider. This verifies your identity without
   Knowledge Commons ever seeing your password.</li>
-  <li>After signing in, you will be asked either to connect an existing
-  Knowledge Commons account or to create a new one.</li>
+  <li>Once you return to this site, you will be asked to provide your
+  account details and set up your profile.</li>
 </ol>
 
 <p>
