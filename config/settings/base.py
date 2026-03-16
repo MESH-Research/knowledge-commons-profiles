@@ -471,7 +471,6 @@ OPEN_REGISTRATION_NETWORKS = env(
             "HASTAC",
             "Humanities, Arts, Science, and Technology Alliance and Collaboratory",
         ),
-        ("SAH", "Society of Architectural Historians"),
         ("STEMEd+", "STEM Ed+"),
     ],
 )
