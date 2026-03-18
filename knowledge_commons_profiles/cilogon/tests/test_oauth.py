@@ -547,6 +547,7 @@ class AssociationManagementTests(CILogonTestBase):
         def create_user_attempt():
             """Attempt to create user - all threads start simultaneously"""
             from django.contrib.sessions.backends.db import SessionStore
+            from django.db import connection
             from django.test import RequestFactory
 
             barrier.wait()  # Wait for all threads to be ready
@@ -565,6 +566,8 @@ class AssociationManagementTests(CILogonTestBase):
                 return f"error: {e}"
             else:
                 return "success"
+            finally:
+                connection.close()
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = [
