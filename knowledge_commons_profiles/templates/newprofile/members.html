@@ -10,6 +10,12 @@
         <input type="text" name="username" id="username" class="user-search" placeholder="Search for a user..."/> <input type="submit" value="Search"/>
     </div>
   </form>
+  {% if interest_filter %}
+    <div class="interest-filter-banner">
+      <p>Members with interest: <strong>{{ interest_filter }}</strong></p>
+      <a href="{% url 'members' %}" class="clear-filter">Show all members</a>
+    </div>
+  {% endif %}
   <div class="row">
     <!-- Profile Info -->
     <div class="wrap">
@@ -20,6 +26,16 @@
             <div>
               <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }} ({{ p.username }})</a></p>
               <div class="aff"><a href="{% url "profile" p.username %}">{% if p.institutional_or_other_affiliation %}{{ p.institutional_or_other_affiliation }}{% endif %}</a></div>
+              {% if p.display_interests %}
+                <div class="member-interests">
+                  {% for interest in p.display_interests|slice:":5" %}
+                    <!-- djlint:off --><a href="{% url 'members' %}?interest={{ interest|urlencode }}" class="member-interest-tag">{{ interest }}</a><!-- djlint:on -->
+                  {% endfor %}
+                  {% if p.display_interests|length > 5 %}
+                    <span class="member-interest-more">+{{ p.display_interests|length|add:"-5" }} more</span>
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
         </div>
         {% endif %}
@@ -27,13 +43,13 @@
 
       <div class="pager">
         {% if has_prev %}
-          <a href="?cursor={{ prev_cursor }}&dir=prev"><< Previous</a>
+          <a href="?{% if interest_filter %}interest={{ interest_filter|urlencode }}&{% endif %}cursor={{ prev_cursor }}&dir=prev"><< Previous</a>
         {% else %}
           <span class="disabled"><< Previous</span>
         {% endif %}
         <span class="page-info">Page {{ current_page }} of {{ page_count }}</span>
         {% if has_next %}
-          <a href="?cursor={{ next_cursor }}">Next >></a>
+          <a href="?{% if interest_filter %}interest={{ interest_filter|urlencode }}&{% endif %}cursor={{ next_cursor }}">Next >></a>
         {% else %}
           <span class="disabled">Next >></span>
         {% endif %}

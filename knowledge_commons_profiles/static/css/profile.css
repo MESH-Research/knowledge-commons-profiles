@@ -1283,6 +1283,68 @@ div {
             padding: 5px;
         }
 
+        /* Interest filter banner */
+        .interest-filter-banner {
+          max-width: 980px;
+          margin: 0 auto 12px;
+          padding: 12px 20px;
+          background: var(--kc-green-light, #eef5f1);
+          border: 1px solid #d1e3da;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .interest-filter-banner p {
+          margin: 0;
+          font-size: 0.95rem;
+          color: var(--kc-text, #1a2e28);
+        }
+
+        .clear-filter {
+          font-size: 0.85rem;
+          color: var(--kc-green-dark, #235b4e);
+          text-decoration: underline;
+          white-space: nowrap;
+        }
+
+        /* Member interest tags on cards */
+        .member-interests {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+          margin-top: 6px;
+        }
+
+        .member-interest-tag {
+          display: inline-block;
+          padding: 2px 8px;
+          font-size: 0.75rem;
+          background: var(--kc-green-light, #eef5f1);
+          color: var(--kc-green-dark, #235b4e);
+          border-radius: 999px;
+          border: 1px solid #d1e3da;
+          text-decoration: none;
+          white-space: nowrap;
+          transition: background 0.15s ease;
+        }
+
+        .member-interest-tag:hover {
+          background: #d6eade;
+          text-decoration: none;
+        }
+
+        .member-interest-more {
+          display: inline-block;
+          padding: 2px 8px;
+          font-size: 0.75rem;
+          color: var(--muted, #6b7c75);
+          white-space: nowrap;
+        }
+
         .cropper-image-div {
           min-height:360px;
           overflow:hidden;

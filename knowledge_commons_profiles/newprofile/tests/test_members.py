@@ -7,6 +7,7 @@ from unittest.mock import patch
 from django.test import RequestFactory
 from django.test import TestCase
 
+from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.views import members
 from knowledge_commons_profiles.newprofile.views.members import _decode_cursor
@@ -385,3 +386,171 @@ class PeopleByUsernameViewTests(TestCase):
             self.assertEqual(c3["current_page"], 3)
             self.assertEqual(c3["page_count"], 3)
             self.assertEqual(c3["total_count"], 10)
+
+
+class InterestFilterTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.interest_dh = AcademicInterest.objects.create(
+            text="Digital Humanities"
+        )
+        self.interest_ml = AcademicInterest.objects.create(
+            text="Machine Learning"
+        )
+
+        self.alice = Profile.objects.create(username="alice", name="Alice A")
+        self.alice.academic_interests.add(self.interest_dh, self.interest_ml)
+
+        self.bob = Profile.objects.create(username="bob", name="Bob B")
+        self.bob.academic_interests.add(self.interest_dh)
+
+        self.carol = Profile.objects.create(username="carol", name="Carol C")
+        self.carol.academic_interests.add(self.interest_ml)
+
+        self.dave = Profile.objects.create(username="dave", name="Dave D")
+        # dave has no interests
+
+    def _stub_render(self, request, template_name, context):
+        return SimpleNamespace(
+            status_code=200,
+            template_name=template_name,
+            context=context,
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_returns_matching_profiles(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        request = self.factory.get(
+            "/members", {"interest": "Digital Humanities"}
+        )
+        response = people_by_username(request)
+        ctx = response.context
+
+        usernames = [p.username for p in ctx["profiles"]]
+        self.assertEqual(usernames, ["alice", "bob"])
+        self.assertEqual(ctx["interest_filter"], "Digital Humanities")
+        self.assertEqual(ctx["total_count"], 2)
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_no_matches(self, mock_get_photo, mock_render):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        request = self.factory.get(
+            "/members", {"interest": "Nonexistent Interest"}
+        )
+        response = people_by_username(request)
+        ctx = response.context
+
+        self.assertEqual(ctx["profiles"], [])
+        self.assertEqual(ctx["interest_filter"], "Nonexistent Interest")
+        self.assertEqual(ctx["total_count"], 0)
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_no_interest_param_returns_all_profiles(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.views.members.PAGE_SIZE", 25
+        ):
+            request = self.factory.get("/members")
+            response = people_by_username(request)
+
+        ctx = response.context
+        self.assertEqual(ctx["total_count"], 4)
+        self.assertIsNone(ctx["interest_filter"])
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_prefetches_interests(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        request = self.factory.get(
+            "/members", {"interest": "Digital Humanities"}
+        )
+        response = people_by_username(request)
+        ctx = response.context
+
+        for p in ctx["profiles"]:
+            self.assertTrue(hasattr(p, "display_interests"))
+            interest_texts = [i.text for i in p.display_interests]
+            self.assertIn("Digital Humanities", interest_texts)
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_regular_listing_prefetches_interests(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.views.members.PAGE_SIZE", 25
+        ):
+            request = self.factory.get("/members")
+            response = people_by_username(request)
+
+        ctx = response.context
+        for p in ctx["profiles"]:
+            self.assertTrue(hasattr(p, "display_interests"))
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_preserves_cursor_pagination(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.views.members.PAGE_SIZE", 1
+        ):
+            request = self.factory.get(
+                "/members", {"interest": "Digital Humanities"}
+            )
+            r1 = people_by_username(request)
+            c1 = r1.context
+
+            self.assertEqual(len(c1["profiles"]), 1)
+            self.assertTrue(c1["has_next"])
+            self.assertEqual(c1["interest_filter"], "Digital Humanities")
+
+            r2 = people_by_username(
+                self.factory.get(
+                    "/members",
+                    {
+                        "interest": "Digital Humanities",
+                        "cursor": c1["next_cursor"],
+                        "dir": "next",
+                    },
+                )
+            )
+            c2 = r2.context
+            self.assertEqual(len(c2["profiles"]), 1)
+            self.assertFalse(c2["has_next"])
+            self.assertEqual(c2["interest_filter"], "Digital Humanities")

@@ -3,14 +3,17 @@ import base64
 import json
 from math import ceil
 
+from django.db.models import Prefetch
 from django.db.models import Q
 from django.db.models import QuerySet
 from django.shortcuts import render
 
+from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 
 PAGE_SIZE = 25
+MAX_DISPLAY_INTERESTS = 5
 
 
 def _encode_cursor(payload: dict) -> str:
@@ -40,13 +43,25 @@ def _page_bounds(page_num: int):
 
 
 def people_by_username(request):
+    interest_filter = request.GET.get("interest")
+
     if request.POST:
         username = request.POST.get("username")
 
         # make a Q query that searches username and name fields
-        rows = Profile.objects.filter(
-            Q(username__icontains=username) | Q(name__icontains=username)
-        ).order_by("username", "id")
+        rows = (
+            Profile.objects.filter(
+                Q(username__icontains=username) | Q(name__icontains=username)
+            )
+            .prefetch_related(
+                Prefetch(
+                    "academic_interests",
+                    queryset=AcademicInterest.objects.all(),
+                    to_attr="display_interests",
+                )
+            )
+            .order_by("username", "id")
+        )
 
         return render(
             request,
@@ -61,6 +76,8 @@ def people_by_username(request):
                 "page_count": 1,
                 "total_count": rows.count(),
                 "page_size": PAGE_SIZE,
+                "interest_filter": interest_filter,
+                "max_display_interests": MAX_DISPLAY_INTERESTS,
             },
         )
 
@@ -69,7 +86,7 @@ def people_by_username(request):
 
     current_page = 1
 
-    page_count, qs, total_count = fetch_member_data()
+    page_count, qs, total_count = fetch_member_data(interest=interest_filter)
 
     rows = []
 
@@ -92,6 +109,8 @@ def people_by_username(request):
             "page_count": page_count,
             "total_count": total_count,
             "page_size": PAGE_SIZE,
+            "interest_filter": interest_filter,
+            "max_display_interests": MAX_DISPLAY_INTERESTS,
         },
     )
 
@@ -170,19 +189,24 @@ def _handle_cursor(
     return has_next, has_prev, next_cursor, prev_cursor, rows
 
 
-def fetch_member_data() -> tuple[int, QuerySet[Profile, Profile], int]:
+def fetch_member_data(
+    interest: str | None = None,
+) -> tuple[int, QuerySet[Profile, Profile], int]:
     qs = (
         Profile.objects.filter(name__isnull=False)
-        .only(
-            "id",
-            "name",
-            "institutional_or_other_affiliation",
-            "profile_image",
-            "username",
-        )
         .exclude(name__exact="")
+        .prefetch_related(
+            Prefetch(
+                "academic_interests",
+                queryset=AcademicInterest.objects.all(),
+                to_attr="display_interests",
+            )
+        )
         .order_by("username", "id")
     )
+
+    if interest:
+        qs = qs.filter(academic_interests__text=interest)
 
     # Cheap total count (uses index-only scans on Postgres if possible)
     total_count = qs.count()
