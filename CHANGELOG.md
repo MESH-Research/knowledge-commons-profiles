@@ -1,3 +1,28 @@
+## 4.0.0 (2026-03-18)
+
+### BREAKING CHANGE
+
+- Profiles now acts as an identity broker for third-party
+apps (WordPress, Works). Instead of forwarding CILogon authorization
+codes for third-party apps to exchange independently, Profiles exchanges
+the code itself and passes encrypted userinfo via a broker_token
+parameter. Third-party apps must implement the new broker callback flow
+and can remove their direct CILogon client credentials.
+
+### Feat
+
+- **auth**: add identity broker for third-party app authentication
+- **templates**: add Register link to header for unauthenticated users
+- **docker**: add SSL support and PyCharm debug compatibility for local dev
+- **docker**: add nano and rsync to all Dockerfile variants, closes #355
+- **groups-api**: add slug to serializer to match previous api structure
+- **cilogon**: add catch-all route for BuddyPress settings URLs
+
+### Fix
+
+- **settings**: remove sah from defaults of open registration networks
+- **groups-api**: strip WordPress backslash escaping from group API output
+
 ## 3.23.1 (2026-03-04)
 
 ### Fix
