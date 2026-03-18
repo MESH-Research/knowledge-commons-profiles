@@ -1,3 +1,9 @@
+## 4.3.1 (2026-03-18)
+
+### Fix
+
+- **tests**: close DB connections in concurrent test threads
+
 ## 4.3.0 (2026-03-18)
 
 ### Feat
