@@ -1,3 +1,9 @@
+## 4.1.0 (2026-03-18)
+
+### Feat
+
+- **members**: add academic interest filtering to members list
+
 ## 4.0.0 (2026-03-18)
 
 ### BREAKING CHANGE
