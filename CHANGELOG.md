@@ -1,3 +1,9 @@
+## 4.2.0 (2026-03-18)
+
+### Feat
+
+- **broker**: add /broker/silent-login/ endpoint for transparent SSO
+
 ## 4.1.1 (2026-03-18)
 
 ### Fix
