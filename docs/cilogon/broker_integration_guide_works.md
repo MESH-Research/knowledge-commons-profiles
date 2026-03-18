@@ -26,6 +26,32 @@ This is being replaced. Works no longer needs its own CILogon `client_id` or
    ```
 3. Works decrypts the token and verifies the nonce.
 
+## Silent Login Check
+
+Works can check if a user already has an active Profiles session without showing
+any login UI. This enables transparent SSO — Works can silently detect existing
+sessions on page load or periodically.
+
+### Endpoint
+
+```
+GET https://profile.hcommons.org/broker/silent-login/?return_to=<callback_url>
+```
+
+### Behavior
+
+- **User is authenticated**: redirects to `return_to` with `broker_token=<encrypted>`
+  (same format as the normal login flow — decrypt and verify the nonce the same way).
+- **User is not authenticated**: redirects to `return_to?no_session=1`.
+- **Missing or invalid `return_to`**: returns HTTP 400. The `return_to` domain must be
+  in the allowed domain list (same allowlist as the login flow).
+
+### Recommended usage
+
+Call this endpoint from an iframe or background request (e.g., every ~30 minutes) to
+detect existing sessions. The `broker_token` returned uses the same payload structure
+and nonce verification as the normal login flow.
+
 ## What Works Needs to Implement
 
 ### 1. A `/broker-callback/` endpoint

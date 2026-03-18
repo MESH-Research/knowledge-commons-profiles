@@ -71,4 +71,9 @@ urlpatterns = [
         views.verify_broker_nonce,
         name="broker_verify_nonce",
     ),
+    path(
+        "broker/silent-login/",
+        views.silent_login,
+        name="broker_silent_login",
+    ),
 ]

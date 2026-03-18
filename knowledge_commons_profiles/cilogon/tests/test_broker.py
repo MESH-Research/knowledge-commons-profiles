@@ -298,6 +298,108 @@ class TestVerifyBrokerNonce(TestCase):
     BROKER_NONCE_TTL=60,
     STATIC_API_BEARER=TEST_SHARED_SECRET,
 )
+class TestSilentLogin(TestCase):
+    """Tests for the silent_login endpoint."""
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass"
+        )
+        self.profile = Profile.objects.create(
+            username="testuser", email="test@example.com"
+        )
+        self.sub = "http://cilogon.org/serverA/users/12345"
+        SubAssociation.objects.create(sub=self.sub, profile=self.profile)
+        self.return_to = "https://hcommons.org/broker-callback/"
+
+    def tearDown(self):
+        cache.clear()
+        super().tearDown()
+
+    def _login_with_userinfo(self):
+        self.client.login(username="testuser", password="testpass")
+        session = self.client.session
+        session["oidc_userinfo"] = {
+            "sub": self.sub,
+            "email": "test@example.com",
+            "name": "Test User",
+            "idp_name": "Test University",
+        }
+        session.save()
+
+    def test_authenticated_user_redirects_with_broker_token(self):
+        self._login_with_userinfo()
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("broker_token=", response.url)
+        self.assertTrue(response.url.startswith("https://hcommons.org/"))
+
+    def test_broker_token_nonce_is_verifiable(self):
+        self._login_with_userinfo()
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        # Extract broker_token and decrypt to get nonce
+        parsed = urlparse(response.url)
+        params = parse_qs(parsed.query)
+        token = params["broker_token"][0]
+
+        encoder = SecureParamEncoder(TEST_SHARED_SECRET)
+        payload = encoder.decode(token)
+        nonce = payload["nonce"]
+
+        # Verify nonce via the verify endpoint
+        verify_response = self.client.post(
+            "/broker/verify-nonce/",
+            data=json.dumps({"nonce": nonce}),
+            content_type="application/json",
+            headers={"authorization": f"Bearer {TEST_SHARED_SECRET}"},
+        )
+        self.assertEqual(verify_response.status_code, 200)
+        self.assertTrue(verify_response.json()["valid"])
+
+    def test_unauthenticated_redirects_with_no_session(self):
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("no_session=1", response.url)
+        self.assertTrue(response.url.startswith("https://hcommons.org/"))
+
+    def test_missing_return_to_returns_400(self):
+        response = self.client.get("/broker/silent-login/")
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_return_to_returns_400(self):
+        response = self.client.get(
+            "/broker/silent-login/?return_to=https://evil.example.com/callback/"
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_authenticated_but_no_userinfo_redirects_no_session(self):
+        self.client.login(username="testuser", password="testpass")
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("no_session=1", response.url)
+
+    def test_post_not_allowed(self):
+        response = self.client.post(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 405)
+
+
+@override_settings(
+    BROKER_REGISTERED_APPS=BROKER_SETTINGS,
+    BROKER_NONCE_TTL=60,
+    STATIC_API_BEARER=TEST_SHARED_SECRET,
+)
 class TestCilogonLoginBrokerFlow(CILogonTestBase):
     """Tests for the broker flow in cilogon_login()."""
 

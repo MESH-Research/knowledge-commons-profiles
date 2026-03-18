@@ -285,6 +285,41 @@ def verify_broker_nonce(request):
     return JsonResponse({"valid": True, "sub": nonce_data.get("sub", "")})
 
 
+@require_http_methods(["GET"])
+def silent_login(request):
+    """
+    Silent SSO check for broker apps.
+
+    If the user has an active authenticated session, generates a broker
+    token and redirects to return_to with it. Otherwise redirects to
+    return_to with no_session=1.
+
+    Does not create or modify session state.
+    """
+    return_to = request.GET.get("return_to", "")
+
+    if not return_to or not validate_return_to(return_to):
+        return JsonResponse(
+            {"error": "Missing or invalid return_to"}, status=400
+        )
+
+    if request.user.is_authenticated:
+        userinfo = request.session.get("oidc_userinfo", {})
+        if userinfo and userinfo.get("sub"):
+            sub_association = SubAssociation.objects.filter(
+                sub=userinfo["sub"]
+            ).first()
+            if sub_association:
+                broker_url = build_broker_redirect(
+                    userinfo, return_to, sub_association.profile
+                )
+                if broker_url:
+                    return redirect(broker_url)
+
+    separator = "&" if "?" in return_to else "?"
+    return redirect(f"{return_to}{separator}no_session=1")
+
+
 # ruff: noqa: PLR0913
 # ruff: noqa: C901
 def app_logout(
