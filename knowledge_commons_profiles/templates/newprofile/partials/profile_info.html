@@ -112,7 +112,7 @@
       <ul class="interests-list">
         {% for interest in academic_interests %}
           <li class="interest-item">
-              <!-- djlint:off --><a href="/?s={{ interest }}&#038;post_type%5B0%5D=user" rel="nofollow" class="interest-link">{{ interest }}</a><!-- djlint:on -->
+              <!-- djlint:off --><a href="{% url 'members' %}?interest={{ interest|urlencode }}" class="interest-link">{{ interest }}</a><!-- djlint:on -->
           </li>
         {% endfor %}
       </ul>
