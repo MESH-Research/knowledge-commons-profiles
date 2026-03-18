@@ -1,3 +1,10 @@
+## 4.1.1 (2026-03-18)
+
+### Fix
+
+- **broker**: add csrf_exempt to verify_broker_nonce endpoint
+- **broker**: add csrf_exempt to verify_broker_nonce endpoint
+
 ## 4.1.0 (2026-03-18)
 
 ### Feat
