@@ -66,4 +66,9 @@ urlpatterns = [
         name="new_email",
     ),
     path("sah/upload-csv/", views.upload_csv_view, name="sah_upload_csv"),
+    path(
+        "broker/verify-nonce/",
+        views.verify_broker_nonce,
+        name="broker_verify_nonce",
+    ),
 ]

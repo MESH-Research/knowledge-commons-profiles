@@ -429,6 +429,21 @@ CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
 CILOGON_TOKEN_CLEAROUT_DAYS = 4
 CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
 
+# Identity broker configuration for third-party app authentication
+BROKER_REGISTERED_APPS = {
+    "wordpress": {
+        "name": "WordPress",
+        "callback_url": env("BROKER_WORDPRESS_CALLBACK", default=""),
+        "allowed_domains": ["hcommons.org", "localhost", "lndo.site"],
+    },
+    "works": {
+        "name": "Works",
+        "callback_url": env("BROKER_WORKS_CALLBACK", default=""),
+        "allowed_domains": ["hcommons.org", "localhost", "lndo.site"],
+    },
+}
+BROKER_NONCE_TTL = 60  # seconds before a broker nonce expires
+
 # OAuth domain mapping for environments sharing CILogon credentials.
 # CILOGON_REGISTERED_DOMAIN: The domain registered with CILogon (used in redirects)
 # CILOGON_ACTUAL_DOMAIN: The actual domain this instance runs on (if different)

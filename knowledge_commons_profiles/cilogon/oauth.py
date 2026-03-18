@@ -6,10 +6,12 @@ import hashlib
 import json
 import logging
 import os
+import secrets
 import time
 import urllib.parse as urlparse
 from json import JSONDecodeError
 from urllib.parse import urlencode
+from urllib.parse import urlparse as stdlib_urlparse
 
 import requests
 import sentry_sdk
@@ -688,6 +690,108 @@ def sync_email_to_wordpress(username: str, email: str) -> bool:
             response.status_code,
         )
         return True
+
+
+def validate_return_to(return_to: str) -> bool:
+    """
+    Validate a return_to URL against BROKER_REGISTERED_APPS allowed domains.
+
+    Uses tldextract to parse the domain and checks it against all registered
+    apps' allowed_domains lists.
+
+    Args:
+        return_to: The URL to validate.
+
+    Returns:
+        True if the domain is allowed, False otherwise.
+    """
+    if not return_to:
+        return False
+
+    try:
+        extract_result = tldextract.extract(return_to)
+        domain_to_check = (
+            (extract_result.domain + "." + extract_result.suffix)
+            if extract_result.suffix and extract_result.suffix != ""
+            else extract_result.domain
+        )
+    except (ValueError, IDNAError, UnicodeDecodeError, OSError):
+        logger.warning("Failed to parse return_to URL: %s", return_to)
+        return False
+
+    for app_config in settings.BROKER_REGISTERED_APPS.values():
+        if domain_to_check in app_config.get("allowed_domains", []):
+            return True
+
+    logger.warning("Rejected broker return_to domain: %s", domain_to_check)
+    return False
+
+
+def build_broker_redirect(
+    userinfo: dict, return_to: str, profile
+) -> str | None:
+    """
+    Build a redirect URL with an encrypted broker token for a third-party app.
+
+    Generates a one-time nonce, constructs an encrypted payload containing
+    userinfo and profile data, and appends it to the return_to URL.
+
+    Args:
+        userinfo: The OIDC userinfo dict (must contain 'sub').
+        return_to: The validated callback URL for the third-party app.
+        profile: The user's Profile object.
+
+    Returns:
+        The redirect URL with broker_token parameter, or None on error.
+    """
+    if not userinfo or not return_to or not profile:
+        return None
+
+    try:
+        nonce = secrets.token_urlsafe(32)
+        now = time.time()
+
+        payload = {
+            "userinfo": {
+                "sub": userinfo.get("sub", ""),
+                "email": userinfo.get("email", ""),
+                "name": userinfo.get("name", ""),
+                "idp_name": userinfo.get("idp_name", ""),
+            },
+            "kc_username": profile.username,
+            "nonce": nonce,
+            "iat": now,
+            "exp": now + settings.BROKER_NONCE_TTL,
+        }
+
+        encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
+        encrypted_token = encoder.encode(payload)
+
+        # Store nonce in cache for verification
+        cache.set(
+            f"broker_nonce:{nonce}",
+            {"used": False, "sub": userinfo.get("sub", "")},
+            timeout=settings.BROKER_NONCE_TTL,
+        )
+
+        # Append broker_token to the return_to URL
+        parsed = stdlib_urlparse(return_to)
+        query = dict(urlparse.parse_qsl(parsed.query))
+        query["broker_token"] = encrypted_token
+        new_query = urlencode(query)
+        redirect_url = parsed._replace(query=new_query).geturl()
+
+        logger.info(
+            "Built broker redirect for user %s to %s",
+            profile.username,
+            parsed.netloc,
+        )
+    except Exception:
+        logger.exception("Failed to build broker redirect")
+        sentry_sdk.capture_exception()
+        return None
+    else:
+        return redirect_url
 
 
 def send_association_message(sub: str, kc_id: str):

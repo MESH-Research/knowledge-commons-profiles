@@ -195,3 +195,29 @@ WORDPRESS_EMAIL_UPDATE_URL = env(
     "WORDPRESS_EMAIL_UPDATE_URL",
     default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-email",
 )
+
+# Identity broker: override allowed domains for dev/staging
+BROKER_REGISTERED_APPS = {
+    "wordpress": {
+        "name": "WordPress",
+        "callback_url": env("BROKER_WORDPRESS_CALLBACK", default=""),
+        "allowed_domains": [
+            "hcommons.org",
+            "hcommons-staging.org",
+            "hcommons-dev.org",
+            "localhost",
+            "lndo.site",
+        ],
+    },
+    "works": {
+        "name": "Works",
+        "callback_url": env("BROKER_WORKS_CALLBACK", default=""),
+        "allowed_domains": [
+            "hcommons.org",
+            "hcommons-staging.org",
+            "hcommons-dev.org",
+            "localhost",
+            "lndo.site",
+        ],
+    },
+}

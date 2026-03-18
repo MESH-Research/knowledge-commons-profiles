@@ -1,0 +1,129 @@
+# Identity Broker Integration Guide for Works
+
+## What Changed
+
+Profiles is now an identity broker. Works no longer exchanges CILogon authorization
+codes directly. Instead, it receives pre-decoded userinfo from Profiles via an
+encrypted `broker_token`.
+
+## Migration from the Old Flow
+
+The old flow forwarded authorization codes via the `callback_next` state parameter,
+and Works then exchanged the code with CILogon using its own client credentials.
+This is being replaced. Works no longer needs its own CILogon `client_id` or
+`client_secret`.
+
+## New Login Flow
+
+1. Works redirects the user to:
+   ```
+   https://profile.hcommons.org/login/?return_to=https://works.hcommons.org/broker-callback/
+   ```
+2. Profiles authenticates the user (or recognizes an existing session) and redirects
+   back to Works with:
+   ```
+   https://works.hcommons.org/broker-callback/?broker_token=<encrypted>
+   ```
+3. Works decrypts the token and verifies the nonce.
+
+## What Works Needs to Implement
+
+### 1. A `/broker-callback/` endpoint
+
+Register a new route that handles the redirect from Profiles and reads the
+`broker_token` query parameter.
+
+### 2. Decryption logic using `SecureParamEncoder`
+
+The `broker_token` is AES-256-CBC encrypted using a shared secret
+(`STATIC_API_BEARER`). Here is a Python reference implementation:
+
+```python
+import base64
+import hashlib
+import json
+import os
+
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
+
+
+class SecureParamEncoder:
+    """Encrypt and decrypt payloads using AES-256-CBC with a shared secret."""
+
+    def __init__(self, secret: str):
+        self.key = hashlib.sha256(secret.encode()).digest()
+
+    def decrypt(self, encrypted_param: str) -> dict:
+        data = base64.urlsafe_b64decode(encrypted_param)
+        iv = data[:16]
+        encrypted = data[16:]
+        cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(encrypted) + decryptor.finalize()
+        unpadder = PKCS7(128).unpadder()
+        plaintext = unpadder.update(padded) + unpadder.finalize()
+        return json.loads(plaintext)
+```
+
+Usage:
+
+```python
+encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
+payload = encoder.decrypt(request.GET["broker_token"])
+```
+
+### 3. Nonce verification
+
+After decrypting the payload, verify the one-time nonce with a back-channel POST
+to Profiles:
+
+```
+POST https://profile.hcommons.org/broker/verify-nonce/
+Authorization: Bearer <STATIC_API_BEARER>
+Content-Type: application/json
+
+{"nonce": "<nonce>"}
+```
+
+A `200` response with `{"valid": true}` means the nonce is good. Any other response
+means the nonce is invalid or already consumed — reject the login.
+
+### 4. Local user lookup/creation
+
+Use the `kc_username` field from the payload to find or create a local user.
+
+## Payload Structure
+
+```json
+{
+    "userinfo": {
+        "sub": "http://cilogon.org/serverA/users/12345",
+        "email": "user@example.com",
+        "name": "Jane Doe",
+        "idp_name": "University of Example"
+    },
+    "kc_username": "jdoe",
+    "nonce": "abc123...",
+    "iat": 1234567890,
+    "exp": 1234567950
+}
+```
+
+- `userinfo` contains the identity attributes from CILogon.
+- `kc_username` is the canonical username in the Knowledge Commons ecosystem.
+- `nonce` is a single-use token that must be verified via the back-channel endpoint.
+- `iat` is the issued-at timestamp (Unix epoch).
+- `exp` is the expiration timestamp (Unix epoch, typically 60 seconds after `iat`).
+  Reject the payload if `exp` has passed.
+
+## Logout
+
+No changes are required. The existing `LOGOUT_ENDPOINTS` mechanism continues to
+work as before.
+
+## What to Remove
+
+- Works' CILogon OAuth client registration (`client_id` / `client_secret`)
+- The token exchange logic that sent authorization codes to CILogon
+- Any CILogon-specific middleware or token refresh logic

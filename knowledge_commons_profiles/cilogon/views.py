@@ -6,6 +6,7 @@ Views for CILogon
 import csv
 import html
 import io
+import json
 import logging
 import re
 import secrets
@@ -26,6 +27,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session as DjangoSession
+from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.validators import validate_email
@@ -44,6 +46,7 @@ from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
+from knowledge_commons_profiles.cilogon.oauth import build_broker_redirect
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import forward_url
@@ -60,6 +63,7 @@ from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
+from knowledge_commons_profiles.cilogon.oauth import validate_return_to
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
 )
@@ -101,12 +105,45 @@ class FlushLogoutBehaviour(IntEnum):
 
 def cilogon_login(request):
     """
-    The login redirect for OAuth
+    The login redirect for OAuth.
+
+    Supports identity broker flow: if a valid return_to parameter is provided,
+    the user will be redirected back to that URL with an encrypted broker token
+    after authentication.
+
+    If the user is already authenticated and return_to is valid, the broker
+    redirect happens immediately without a CILogon round-trip.
+
     :param request: the request
     """
+    return_to = request.GET.get("return_to", "")
+
+    # If user is already authenticated and has a valid return_to,
+    # build broker redirect immediately (no CILogon round-trip)
+    if (
+        request.user.is_authenticated
+        and return_to
+        and validate_return_to(return_to)
+    ):
+        userinfo = request.session.get("oidc_userinfo", {})
+        if userinfo and userinfo.get("sub"):
+            sub_association = SubAssociation.objects.filter(
+                sub=userinfo["sub"]
+            ).first()
+            if sub_association:
+                broker_url = build_broker_redirect(
+                    userinfo, return_to, sub_association.profile
+                )
+                if broker_url:
+                    return redirect(broker_url)
+
     # flush the session
     app_logout(request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT)
     request.session.flush()
+
+    # Store broker return_to in session before CILogon redirect
+    if return_to and validate_return_to(return_to):
+        request.session["broker_return_to"] = return_to
 
     # Build redirect URI, substituting registered domain if using domain proxy
     redirect_uri = get_oauth_redirect_uri(request)
@@ -187,11 +224,63 @@ def callback(request):
         # update user network affiliations (outside transaction - external call)
         ExternalSync.sync(profile=sub_association.profile)
 
+        # Check for broker return_to in session (identity broker flow)
+        return_to = request.session.pop("broker_return_to", None)
+        if return_to:
+            broker_url = build_broker_redirect(
+                userinfo, return_to, sub_association.profile
+            )
+            if broker_url:
+                return redirect(broker_url)
+
         # return to the profile page
         return redirect(reverse("my_profile"))
 
     # no, no user. Redirect to the profile association page
     return redirect(reverse("associate"))
+
+
+@require_http_methods(["POST"])
+def verify_broker_nonce(request):
+    """
+    Back-channel endpoint for third-party apps to verify and consume a
+    one-time broker nonce.
+
+    Requires Authorization: Bearer <STATIC_API_BEARER> header.
+    Accepts JSON body: {"nonce": "<nonce>"}
+    Returns 200 with {"valid": True, "sub": "..."} on success.
+    Returns 401 for bad auth, 410 for expired/used/missing nonce.
+    """
+    # Validate bearer token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return JsonResponse({"error": "Missing authorization"}, status=401)
+
+    bearer_token = auth_header[7:]
+    if bearer_token != settings.STATIC_API_BEARER:
+        return JsonResponse({"error": "Invalid authorization"}, status=401)
+
+    # Parse nonce from body
+    try:
+        body = json.loads(request.body)
+        nonce = body.get("nonce", "")
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({"error": "Invalid request body"}, status=400)
+
+    if not nonce:
+        return JsonResponse({"error": "Missing nonce"}, status=400)
+
+    # Look up and consume nonce
+    cache_key = f"broker_nonce:{nonce}"
+    nonce_data = cache.get(cache_key)
+
+    if not nonce_data:
+        return JsonResponse({"error": "Nonce expired or not found"}, status=410)
+
+    # Delete nonce immediately to prevent replay
+    cache.delete(cache_key)
+
+    return JsonResponse({"valid": True, "sub": nonce_data.get("sub", "")})
 
 
 # ruff: noqa: PLR0913
@@ -1258,7 +1347,6 @@ def upload_csv_view(request):
             errors: list[dict[str, Any]] = []
 
             # now re-add the flag if in the spreadsheet
-            # ruff: noqa: BLE001
             for _, row in enumerate(reader, start=2):  # line 1 is header
 
                 email = row.get("Email", None)
