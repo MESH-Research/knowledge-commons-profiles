@@ -268,6 +268,23 @@ class TestVerifyBrokerNonce(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_csrf_exempt_no_403(self):
+        """POST with valid auth but no CSRF token must not return 403."""
+        cache.set(
+            "broker_nonce:csrf-test-nonce",
+            {"used": False, "sub": "http://cilogon.org/serverA/users/12345"},
+            timeout=60,
+        )
+        csrf_client = self.client_class(enforce_csrf_checks=True)
+        response = csrf_client.post(
+            "/broker/verify-nonce/",
+            data=json.dumps({"nonce": "csrf-test-nonce"}),
+            content_type="application/json",
+            headers={"authorization": f"Bearer {TEST_SHARED_SECRET}"},
+        )
+        self.assertNotEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+
     def test_get_method_not_allowed(self):
         response = self.client.get(
             "/broker/verify-nonce/",
