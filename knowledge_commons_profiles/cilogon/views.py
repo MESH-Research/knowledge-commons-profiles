@@ -121,6 +121,8 @@ def cilogon_login(request):
 
     # If user is already authenticated and has a valid return_to,
     # build broker redirect immediately (no CILogon round-trip)
+    final_redirect = request.GET.get("final_redirect", "")
+
     if (
         request.user.is_authenticated
         and return_to
@@ -133,7 +135,8 @@ def cilogon_login(request):
             ).first()
             if sub_association:
                 broker_url = build_broker_redirect(
-                    userinfo, return_to, sub_association.profile
+                    userinfo, return_to, sub_association.profile,
+                    final_redirect=final_redirect,
                 )
                 if broker_url:
                     return redirect(broker_url)
@@ -145,6 +148,7 @@ def cilogon_login(request):
     # Store broker return_to in session before CILogon redirect
     if return_to and validate_return_to(return_to):
         request.session["broker_return_to"] = return_to
+        request.session["broker_final_redirect"] = final_redirect
 
     # Build redirect URI, substituting registered domain if using domain proxy
     redirect_uri = get_oauth_redirect_uri(request)
@@ -227,9 +231,11 @@ def callback(request):
 
         # Check for broker return_to in session (identity broker flow)
         return_to = request.session.pop("broker_return_to", None)
+        final_redirect = request.session.pop("broker_final_redirect", "")
         if return_to:
             broker_url = build_broker_redirect(
-                userinfo, return_to, sub_association.profile
+                userinfo, return_to, sub_association.profile,
+                final_redirect=final_redirect,
             )
             if broker_url:
                 return redirect(broker_url)
@@ -297,6 +303,7 @@ def silent_login(request):
     Does not create or modify session state.
     """
     return_to = request.GET.get("return_to", "")
+    final_redirect = request.GET.get("final_redirect", "")
 
     if not return_to or not validate_return_to(return_to):
         return JsonResponse(
@@ -311,7 +318,8 @@ def silent_login(request):
             ).first()
             if sub_association:
                 broker_url = build_broker_redirect(
-                    userinfo, return_to, sub_association.profile
+                    userinfo, return_to, sub_association.profile,
+                    final_redirect=final_redirect,
                 )
                 if broker_url:
                     return redirect(broker_url)

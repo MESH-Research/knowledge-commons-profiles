@@ -189,6 +189,40 @@ class TestBuildBrokerRedirect(TestCase):
             build_broker_redirect(self.userinfo, self.return_to, None)
         )
 
+    def test_final_redirect_included_in_payload(self):
+        """final_redirect parameter is included in the encrypted payload."""
+        result = build_broker_redirect(
+            self.userinfo,
+            self.return_to,
+            self.profile,
+            final_redirect="https://hcommons.org/some-article/",
+        )
+        parsed = urlparse(result)
+        params = parse_qs(parsed.query)
+        token = params["broker_token"][0]
+
+        encoder = SecureParamEncoder(TEST_SHARED_SECRET)
+        payload = encoder.decode(token)
+
+        self.assertEqual(
+            payload["final_redirect"],
+            "https://hcommons.org/some-article/",
+        )
+
+    def test_empty_final_redirect_in_payload(self):
+        """Omitting final_redirect results in empty string in payload."""
+        result = build_broker_redirect(
+            self.userinfo, self.return_to, self.profile
+        )
+        parsed = urlparse(result)
+        params = parse_qs(parsed.query)
+        token = params["broker_token"][0]
+
+        encoder = SecureParamEncoder(TEST_SHARED_SECRET)
+        payload = encoder.decode(token)
+
+        self.assertEqual(payload["final_redirect"], "")
+
 
 @override_settings(
     BROKER_REGISTERED_APPS=BROKER_SETTINGS,
@@ -388,6 +422,25 @@ class TestSilentLogin(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("no_session=1", response.url)
 
+    def test_final_redirect_in_broker_token(self):
+        """final_redirect query param is included in the broker token."""
+        self._login_with_userinfo()
+        final = "https://hcommons.org/some-article/"
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+            f"&final_redirect={final}"
+        )
+        self.assertEqual(response.status_code, 302)
+
+        parsed = urlparse(response.url)
+        params = parse_qs(parsed.query)
+        token = params["broker_token"][0]
+
+        encoder = SecureParamEncoder(TEST_SHARED_SECRET)
+        payload = encoder.decode(token)
+
+        self.assertEqual(payload["final_redirect"], final)
+
     def test_post_not_allowed(self):
         response = self.client.post(
             f"/broker/silent-login/?return_to={self.return_to}"
@@ -509,6 +562,78 @@ class TestCilogonLoginBrokerFlow(CILogonTestBase):
             "https://hcommons.org/broker-callback/?broker_token=encrypted",
         )
         mock_build_redirect.assert_called_once()
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy"
+    )
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri"
+    )
+    @patch("knowledge_commons_profiles.cilogon.views.oauth")
+    def test_login_stores_final_redirect_in_session(
+        self, mock_oauth, mock_redirect_uri, mock_state
+    ):
+        """Unauthenticated user with valid return_to stores final_redirect."""
+        mock_oauth.cilogon.authorize_redirect.return_value = (
+            HttpResponseRedirect("https://cilogon.org/authorize")
+        )
+        mock_redirect_uri.return_value = (
+            "https://profile.hcommons.org/callback/"
+        )
+        mock_state.return_value = ""
+
+        self.client.get(
+            "/login/?return_to=https://hcommons.org/broker-callback/"
+            "&final_redirect=https://hcommons.org/some-article/"
+        )
+
+        self.assertEqual(
+            self.client.session.get("broker_final_redirect"),
+            "https://hcommons.org/some-article/",
+        )
+
+    @patch("knowledge_commons_profiles.cilogon.views.build_broker_redirect")
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.SubAssociation"
+    )
+    def test_login_already_authenticated_passes_final_redirect(
+        self, mock_sub_class, mock_build_redirect
+    ):
+        """Authenticated user with return_to passes final_redirect."""
+        User.objects.create_user(
+            username="testuser3", password="testpass"
+        )
+        self.client.login(username="testuser3", password="testpass")
+
+        session = self.client.session
+        session["oidc_userinfo"] = {
+            "sub": "http://cilogon.org/serverA/users/12345"
+        }
+        session.save()
+
+        mock_profile = MagicMock()
+        mock_profile.username = "testuser3"
+        mock_sub = MagicMock()
+        mock_sub.profile = mock_profile
+        mock_sub_class.objects.filter.return_value.first.return_value = (
+            mock_sub
+        )
+
+        mock_build_redirect.return_value = (
+            "https://hcommons.org/broker-callback/?broker_token=encrypted"
+        )
+
+        self.client.get(
+            "/login/?return_to=https://hcommons.org/broker-callback/"
+            "&final_redirect=https://hcommons.org/some-article/"
+        )
+
+        mock_build_redirect.assert_called_once_with(
+            {"sub": "http://cilogon.org/serverA/users/12345"},
+            "https://hcommons.org/broker-callback/",
+            mock_profile,
+            final_redirect="https://hcommons.org/some-article/",
+        )
 
     @patch(
         "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy"
@@ -658,3 +783,69 @@ class TestCallbackBrokerFlow(CILogonTestBase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("my-profile", response.url)
+
+    @patch("knowledge_commons_profiles.cilogon.views.ExternalSync")
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.find_user_and_login"
+    )
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.store_session_variables"
+    )
+    @patch("knowledge_commons_profiles.cilogon.views.forward_url")
+    @patch("knowledge_commons_profiles.cilogon.views.oauth")
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.build_broker_redirect"
+    )
+    def test_callback_passes_final_redirect_from_session(  # noqa: PLR0913
+        self,
+        mock_build_redirect,
+        mock_oauth,
+        mock_forward,
+        mock_store,
+        mock_find_login,
+        mock_sync,
+    ):
+        """callback() passes broker_final_redirect from session."""
+        mock_forward.return_value = None
+
+        userinfo = {
+            "sub": "http://cilogon.org/serverA/users/12345",
+            "email": "test@example.com",
+            "idp_name": "Test University",
+        }
+        mock_oauth.cilogon.authorize_access_token.return_value = {
+            "access_token": "test",
+            "userinfo": userinfo,
+        }
+        mock_store.return_value = userinfo
+
+        profile = Profile.objects.create(
+            username="testuser_fr",
+            email="test@example.com",
+        )
+        SubAssociation.objects.create(
+            sub="http://cilogon.org/serverA/users/12345",
+            profile=profile,
+        )
+
+        mock_build_redirect.return_value = (
+            "https://hcommons.org/broker-callback/?broker_token=encrypted"
+        )
+
+        session = self.client.session
+        session["broker_return_to"] = (
+            "https://hcommons.org/broker-callback/"
+        )
+        session["broker_final_redirect"] = (
+            "https://hcommons.org/some-article/"
+        )
+        session.save()
+
+        self.client.get("/cilogon/callback/")
+
+        mock_build_redirect.assert_called_once_with(
+            userinfo,
+            "https://hcommons.org/broker-callback/",
+            profile,
+            final_redirect="https://hcommons.org/some-article/",
+        )

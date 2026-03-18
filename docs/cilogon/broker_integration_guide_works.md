@@ -17,8 +17,11 @@ This is being replaced. Works no longer needs its own CILogon `client_id` or
 
 1. Works redirects the user to:
    ```
-   https://profile.hcommons.org/login/?return_to=https://works.hcommons.org/broker-callback/
+   https://profile.hcommons.org/login/?return_to=https://works.hcommons.org/broker-callback/&final_redirect=https://works.hcommons.org/original-page/
    ```
+   The `final_redirect` parameter is optional. When provided, it is included in the
+   encrypted `broker_token` payload so Works can redirect the user back to the exact
+   page they came from after completing login.
 2. Profiles authenticates the user (or recognizes an existing session) and redirects
    back to Works with:
    ```
@@ -35,8 +38,10 @@ sessions on page load or periodically.
 ### Endpoint
 
 ```
-GET https://profile.hcommons.org/broker/silent-login/?return_to=<callback_url>
+GET https://profile.hcommons.org/broker/silent-login/?return_to=<callback_url>&final_redirect=<original_page>
 ```
+
+The `final_redirect` parameter is optional and works the same way as in the login flow.
 
 ### Behavior
 
@@ -132,7 +137,8 @@ Use the `kc_username` field from the payload to find or create a local user.
     "kc_username": "jdoe",
     "nonce": "abc123...",
     "iat": 1234567890,
-    "exp": 1234567950
+    "exp": 1234567950,
+    "final_redirect": "https://works.hcommons.org/original-page/"
 }
 ```
 
@@ -142,6 +148,9 @@ Use the `kc_username` field from the payload to find or create a local user.
 - `iat` is the issued-at timestamp (Unix epoch).
 - `exp` is the expiration timestamp (Unix epoch, typically 60 seconds after `iat`).
   Reject the payload if `exp` has passed.
+- `final_redirect` is the URL where the user originally wanted to go. If non-empty,
+  redirect the user there after completing login. If empty, use your default post-login
+  destination.
 
 ## Logout
 

@@ -728,7 +728,7 @@ def validate_return_to(return_to: str) -> bool:
 
 
 def build_broker_redirect(
-    userinfo: dict, return_to: str, profile
+    userinfo: dict, return_to: str, profile, final_redirect: str = ""
 ) -> str | None:
     """
     Build a redirect URL with an encrypted broker token for a third-party app.
@@ -740,6 +740,8 @@ def build_broker_redirect(
         userinfo: The OIDC userinfo dict (must contain 'sub').
         return_to: The validated callback URL for the third-party app.
         profile: The user's Profile object.
+        final_redirect: Optional URL where the consuming app should send
+            the user after completing login.
 
     Returns:
         The redirect URL with broker_token parameter, or None on error.
@@ -762,6 +764,7 @@ def build_broker_redirect(
             "nonce": nonce,
             "iat": now,
             "exp": now + settings.BROKER_NONCE_TTL,
+            "final_redirect": final_redirect,
         }
 
         encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
