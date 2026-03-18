@@ -1,3 +1,9 @@
+## 4.3.0 (2026-03-18)
+
+### Feat
+
+- **broker**: add final_redirect parameter to broker flow
+
 ## 4.2.0 (2026-03-18)
 
 ### Feat
