@@ -1,3 +1,9 @@
+## 4.4.0 (2026-03-19)
+
+### Feat
+
+- **broker**: pass final_redirect in silent login no_session redirect
+
 ## 4.3.1 (2026-03-18)
 
 ### Fix
