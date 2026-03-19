@@ -422,6 +422,27 @@ class TestSilentLogin(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("no_session=1", response.url)
 
+    def test_unauthenticated_no_session_includes_final_redirect(self):
+        """no_session redirect includes final_redirect when provided."""
+        final = "https://hcommons.org/some-article/"
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+            f"&final_redirect={final}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("no_session=1", response.url)
+        parsed = urlparse(response.url)
+        params = parse_qs(parsed.query)
+        self.assertEqual(params["final_redirect"][0], final)
+
+    def test_unauthenticated_no_session_omits_final_redirect_when_empty(self):
+        """no_session redirect omits final_redirect when not provided."""
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("final_redirect", response.url)
+
     def test_final_redirect_in_broker_token(self):
         """final_redirect query param is included in the broker token."""
         self._login_with_userinfo()

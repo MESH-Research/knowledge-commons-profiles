@@ -47,7 +47,9 @@ The `final_redirect` parameter is optional and works the same way as in the logi
 
 - **User is authenticated**: redirects to `return_to` with `broker_token=<encrypted>`
   (same format as the normal login flow — decrypt and verify the nonce the same way).
-- **User is not authenticated**: redirects to `return_to?no_session=1`.
+- **User is not authenticated**: redirects to `return_to?no_session=1`. If `final_redirect`
+  was provided, it is appended as `&final_redirect=<url-encoded>` so the consuming app
+  can redirect the user to the original page after handling the no-session case.
 - **Missing or invalid `return_to`**: returns HTTP 400. The `return_to` domain must be
   in the allowed domain list (same allowlist as the login flow).
 
