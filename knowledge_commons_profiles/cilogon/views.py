@@ -13,6 +13,7 @@ import secrets
 import time
 from enum import IntEnum
 from typing import Any
+from urllib.parse import quote as urlquote
 from uuid import uuid4
 
 import requests
@@ -325,7 +326,10 @@ def silent_login(request):
                     return redirect(broker_url)
 
     separator = "&" if "?" in return_to else "?"
-    return redirect(f"{return_to}{separator}no_session=1")
+    no_session_url = f"{return_to}{separator}no_session=1"
+    if final_redirect:
+        no_session_url += f"&final_redirect={urlquote(final_redirect, safe='')}"
+    return redirect(no_session_url)
 
 
 # ruff: noqa: PLR0913
