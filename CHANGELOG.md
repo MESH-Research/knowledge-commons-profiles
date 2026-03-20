@@ -1,3 +1,9 @@
+## 4.5.0 (2026-03-20)
+
+### Feat
+
+- **broker**: include primary_email and other_emails in broker token payload
+
 ## 4.4.0 (2026-03-19)
 
 ### Feat
