@@ -761,6 +761,8 @@ def build_broker_redirect(
                 "idp_name": userinfo.get("idp_name", ""),
             },
             "kc_username": profile.username,
+            "primary_email": profile.email,
+            "other_emails": profile.emails,
             "nonce": nonce,
             "iat": now,
             "exp": now + settings.BROKER_NONCE_TTL,
