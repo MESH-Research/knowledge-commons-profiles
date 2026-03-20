@@ -1,3 +1,10 @@
+## 4.5.2 (2026-03-20)
+
+### Fix
+
+- **profiles**: set TinyMCE forced_root_block to paragraph element
+- **profiles**: remove linebreaksbr filter from TinyMCE HTML output
+
 ## 4.5.1 (2026-03-20)
 
 ### Fix
