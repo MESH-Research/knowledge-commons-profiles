@@ -94,6 +94,8 @@ class TestBuildBrokerRedirect(TestCase):
         super().setUp()
         self.profile = MagicMock(spec=Profile)
         self.profile.username = "testuser"
+        self.profile.email = "test@example.com"
+        self.profile.emails = ["test@example.com"]
         self.userinfo = {
             "sub": "http://cilogon.org/serverA/users/12345",
             "email": "test@example.com",
