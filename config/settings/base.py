@@ -318,7 +318,7 @@ TINYMCE_DEFAULT_CONFIG = {
     "menubar": False,
     "statusbar": True,
     "promotion": False,
-    "forced_root_block": " ",
+    "forced_root_block": "p",
 }
 
 SELECT2_CACHE_BACKEND = "select2"

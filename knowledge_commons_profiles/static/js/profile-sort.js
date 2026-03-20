@@ -153,7 +153,7 @@ $(document).ready(function() {
           menubar: false,
           statusbar: true,
           promotion: false,
-          forced_root_block: " ",
+          forced_root_block: "p",
         });
       });
     }
