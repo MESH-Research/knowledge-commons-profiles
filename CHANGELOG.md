@@ -1,3 +1,9 @@
+## 4.5.1 (2026-03-20)
+
+### Fix
+
+- **tests**: add email and emails attrs to mock profile in broker tests
+
 ## 4.5.0 (2026-03-20)
 
 ### Feat
