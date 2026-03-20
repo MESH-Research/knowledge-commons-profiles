@@ -2,7 +2,7 @@
 
 <!-- about user -->
 {% if about_user %}
-  {{ about_user|safe|linebreaksbr }}
+  {{ about_user|safe }}
 {% else %}
   <p>This user has not yet completed their profile.</p>
 {% endif %}
@@ -98,7 +98,7 @@
 {% if education and profile_info.profile.show_education %}
   <div class="content-card" id="education" hx-swap-oob="true">
       <h3 class="card-title">Education</h3>
-      {{ education|safe|linebreaksbr }}
+      {{ education|safe }}
   </div>
 {% else %}
   <div id="education" class="hide" hx-swap-oob="true">
@@ -126,7 +126,7 @@
 {% if profile_info.publications and profile_info.profile.show_publications %}
   <div class="content-card" id="publications" hx-swap-oob="true">
     <h3 class="card-title">Publications</h3>
-    {{ profile_info.publications | safe | linebreaksbr }}
+    {{ profile_info.publications | safe }}
   </div>
 {% else %}
   <div class="hide" id="publications" hx-swap-oob="true"></div>
@@ -136,7 +136,7 @@
 {% if profile_info.projects and profile_info.profile.show_projects %}
   <div class="content-card" id="projects" hx-swap-oob="true">
     <h3 class="card-title">Projects</h3>
-    {{ profile_info.projects | safe | linebreaksbr }}
+    {{ profile_info.projects | safe }}
   </div>
 {% else %}
   <div class="hide" id="projects" hx-swap-oob="true"></div>
