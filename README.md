@@ -63,9 +63,7 @@ Knowledge Commons Profiles serves as both the user profile management system and
 
 2. Set up a virtual environment and install dependencies:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements/local.txt
+   uv sync --group local
    ```
 
 3. Configure environment variables:
