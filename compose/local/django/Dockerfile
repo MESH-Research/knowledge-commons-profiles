@@ -6,6 +6,9 @@ FROM python AS python-build-stage
 
 ARG BUILD_ENVIRONMENT=local
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /bin/uv
+
 # Install apt packages
 RUN apt-get update && apt-get install --no-install-recommends -y \
   # dependencies for building Python packages
@@ -15,16 +18,19 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   # mysql dependencies
   libmariadb-dev \
   libmariadb-dev-compat \
-  pkg-config \
-  nano \
-  rsync
+  pkg-config
 
-# Requirements are installed here to ensure they will be cached.
-COPY ./requirements .
+WORKDIR /app
 
-# Create Python Dependency and Sub-Dependency Wheels.
-RUN pip wheel --wheel-dir /usr/src/app/wheels  \
-  -r ${BUILD_ENVIRONMENT}.txt
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies into a virtual environment
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_PYTHON_DOWNLOADS=never
+RUN uv sync --frozen --no-install-project --no-default-groups \
+  --group ${BUILD_ENVIRONMENT}
 
 
 # Python 'run' stage
@@ -66,13 +72,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
 
-# All absolute dir copies ignore workdir instruction. All relative dir copies are wrt to the workdir instruction
-# copy python dependency wheels from python-build-stage
-COPY --from=python-build-stage /usr/src/app/wheels  /wheels/
-
-# use wheels to install python dependencies
-RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
-  && rm -rf /wheels/
+# Copy virtual environment from build stage
+COPY --from=python-build-stage /app/.venv ${APP_HOME}/.venv
+ENV PATH="${APP_HOME}/.venv/bin:$PATH"
 
 COPY ./compose/production/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
