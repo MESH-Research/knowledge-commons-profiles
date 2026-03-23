@@ -9,6 +9,7 @@ from django.db import connections
 from django.http import JsonResponse
 
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.rest_api.utils import check_api_endpoints_health
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,14 @@ def health(request):
         fail = True
     else:
         health_result["Postgres DB"] = "healthy"
+
+    try:
+        api_results = check_api_endpoints_health()
+        if api_results:
+            health_result["API Endpoints"] = api_results
+    except Exception as e:
+        logger.exception("API endpoint health check failed")
+        health_result["API Endpoints"] = f"check failed: {e}"
 
     health_result["Debug Mode"] = settings.DEBUG
 

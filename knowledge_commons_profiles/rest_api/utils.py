@@ -17,6 +17,7 @@ from knowledge_commons_profiles.newprofile.models import Profile
 logger = logging.getLogger(__name__)
 
 LOGOUT_TIMEOUT = 5
+HEALTH_CHECK_TIMEOUT = 5
 
 
 def wp_unslash(value: str) -> str:
@@ -123,6 +124,42 @@ def logout_all_endpoints_sync(username="", request=None):
         }
 
         return [future.result() for future in as_completed(future_to_endpoint)]
+
+
+def check_api_endpoints_health():
+    """Check reachability of LOGOUT_ENDPOINTS for health reporting.
+
+    Sends POST with Bearer token and empty username.
+    401/403 = reachable. Anything else = unreachable.
+    """
+    endpoints = getattr(settings, "LOGOUT_ENDPOINTS", [])
+    if not endpoints:
+        return {}
+
+    headers = {
+        "Authorization": f"Bearer {settings.STATIC_API_BEARER}",
+        "Content-Type": "application/json",
+    }
+    reachable_codes = {200, 401, 403, 404}
+
+    def probe(endpoint):
+        try:
+            response = requests.post(
+                endpoint,
+                headers=headers,
+                params={"username": "zed-stack-a-deh"},
+                timeout=HEALTH_CHECK_TIMEOUT,
+            )
+        except Exception as e:  # noqa: BLE001
+            return (endpoint, f"unreachable: {e}")
+        else:
+            if response.status_code in reachable_codes:
+                return (endpoint, "reachable")
+            return (endpoint, f"unreachable: {response.status_code}")
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = {executor.submit(probe, ep): ep for ep in endpoints}
+        return dict(future.result() for future in as_completed(futures))
 
 
 def get_external_memberships(obj: Profile, api_only=False):

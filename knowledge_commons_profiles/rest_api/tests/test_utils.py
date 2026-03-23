@@ -6,8 +6,10 @@ import requests
 from django.test import TestCase
 from django.test import override_settings
 
+from knowledge_commons_profiles.rest_api.utils import HEALTH_CHECK_TIMEOUT
 from knowledge_commons_profiles.rest_api.utils import LOGOUT_TIMEOUT
 from knowledge_commons_profiles.rest_api.utils import build_metadata
+from knowledge_commons_profiles.rest_api.utils import check_api_endpoints_health
 from knowledge_commons_profiles.rest_api.utils import get_first_name
 from knowledge_commons_profiles.rest_api.utils import get_last_name
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
@@ -588,6 +590,177 @@ class TestLogoutAllEndpointsSync(TestCase):
         called_headers = mock_post.call_args[1]["headers"]
         self.assertEqual(
             called_headers["Authorization"], "Bearer different-token"
+        )
+
+
+class TestCheckApiEndpointsHealth(TestCase):
+    @override_settings(LOGOUT_ENDPOINTS=[], STATIC_API_BEARER="test-token")
+    def test_empty_endpoints(self):
+        """Test function returns empty dict when no endpoints configured."""
+        result = check_api_endpoints_health()
+        self.assertEqual(result, {})
+
+    @override_settings(LOGOUT_ENDPOINTS=None, STATIC_API_BEARER="test-token")
+    def test_missing_setting(self):
+        """Test function handles missing/falsy LOGOUT_ENDPOINTS setting."""
+        result = check_api_endpoints_health()
+        self.assertEqual(result, {})
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_401_is_reachable(self, mock_post):
+        """Test that 401 response means endpoint is reachable."""
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_post.return_value = mock_response
+
+        result = check_api_endpoints_health()
+
+        self.assertEqual(result["https://api1.com/logout"], "reachable")
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_403_is_reachable(self, mock_post):
+        """Test that 403 response means endpoint is reachable."""
+        mock_response = Mock()
+        mock_response.status_code = 403
+        mock_post.return_value = mock_response
+
+        result = check_api_endpoints_health()
+
+        self.assertEqual(result["https://api1.com/logout"], "reachable")
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_503_is_unreachable(self, mock_post):
+        """Test that 503 response means endpoint is unreachable."""
+        mock_response = Mock()
+        mock_response.status_code = 503
+        mock_post.return_value = mock_response
+
+        result = check_api_endpoints_health()
+
+        self.assertEqual(
+            result["https://api1.com/logout"], "unreachable: 503"
+        )
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_404_is_reachable(self, mock_post):
+        """Test that 404 response means endpoint is reachable."""
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_post.return_value = mock_response
+
+        result = check_api_endpoints_health()
+
+        self.assertEqual(result["https://api1.com/logout"], "reachable")
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_200_is_reachable(self, mock_post):
+        """Test that 200 response means endpoint is reachable."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        result = check_api_endpoints_health()
+
+        self.assertEqual(result["https://api1.com/logout"], "reachable")
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_connection_error(self, mock_post):
+        """Test handling of connection errors."""
+        mock_post.side_effect = requests.ConnectionError("Connection refused")
+
+        result = check_api_endpoints_health()
+
+        self.assertIn("unreachable:", result["https://api1.com/logout"])
+        self.assertIn(
+            "Connection refused", result["https://api1.com/logout"]
+        )
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_timeout_error(self, mock_post):
+        """Test handling of timeout errors."""
+        mock_post.side_effect = requests.Timeout("Request timed out")
+
+        result = check_api_endpoints_health()
+
+        self.assertIn("unreachable:", result["https://api1.com/logout"])
+        self.assertIn("Request timed out", result["https://api1.com/logout"])
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=[
+            "https://api1.com/logout",
+            "https://api2.com/logout",
+        ],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_multiple_endpoints_mixed(self, mock_post):
+        """Test mixed results with multiple endpoints."""
+
+        def side_effect(url, **kwargs):
+            if "api1" in url:
+                response = Mock()
+                response.status_code = 401
+                return response
+            msg = "Connection refused"
+            raise requests.ConnectionError(msg)
+
+        mock_post.side_effect = side_effect
+
+        result = check_api_endpoints_health()
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result["https://api1.com/logout"], "reachable")
+        self.assertIn("unreachable:", result["https://api2.com/logout"])
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
+    @patch("requests.post")
+    def test_correct_headers_and_params(self, mock_post):
+        """Test that correct headers, params, and timeout are sent."""
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_post.return_value = mock_response
+
+        check_api_endpoints_health()
+
+        mock_post.assert_called_once_with(
+            "https://api1.com/logout",
+            headers={
+                "Authorization": "Bearer test-token",
+                "Content-Type": "application/json",
+            },
+            params={"username": "zed-stack-a-deh"},
+            timeout=HEALTH_CHECK_TIMEOUT,
         )
 
 
