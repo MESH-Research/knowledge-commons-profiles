@@ -32,6 +32,7 @@ COPY pyproject.toml uv.lock ./
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 ENV UV_PYTHON_DOWNLOADS=never
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 RUN uv sync --frozen --no-install-project --no-default-groups \
   --group local
 
@@ -63,8 +64,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from build stage
-COPY --from=python-build-stage /app/.venv /app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
+COPY --from=python-build-stage /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY ./compose/local/docs/start /start-docs
 RUN sed -i 's/\r$//g' /start-docs
