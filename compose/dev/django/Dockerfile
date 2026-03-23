@@ -98,4 +98,5 @@ USER django
 #  DJANGO_SETTINGS_MODULE="config.settings.test" \
 #  python manage.py compilemessages
 
-ENTRYPOINT ["/start"]
+ENTRYPOINT ["/entrypoint"]
+CMD ["/start"]
