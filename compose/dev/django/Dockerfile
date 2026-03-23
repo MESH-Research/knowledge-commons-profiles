@@ -67,9 +67,13 @@ RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-com
 RUN apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv in the run stage
+COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /uvx /bin/
+
 # Copy virtual environment from build stage
 COPY --from=python-build-stage /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
 
 COPY --chown=django:django ./compose/dev/django/entrypoint /entrypoint
