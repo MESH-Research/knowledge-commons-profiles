@@ -1,3 +1,9 @@
+## 4.6.0 (2026-03-23)
+
+### Feat
+
+- **health**: add API endpoint connectivity checks to health view
+
 ## 4.5.2 (2026-03-20)
 
 ### Fix
