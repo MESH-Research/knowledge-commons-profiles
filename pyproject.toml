@@ -172,7 +172,7 @@ dependencies = [
     "crispy-bootstrap5==2026.3",
     "django-redis==6.0.0",
     # App
-    "djangorestframework==3.16.1",
+    "djangorestframework==3.17.0",
     "grafana-django-saml2-auth==3.20.0",
     "django-tinymce==5.0.0",
     "django-select2==8.4.8",
