@@ -74,6 +74,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /uvx /bin/
 COPY --from=python-build-stage /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV UV_NO_CACHE=1
 
 
 COPY --chown=django:django ./compose/dev/django/entrypoint /entrypoint
