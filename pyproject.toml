@@ -162,7 +162,7 @@ dependencies = [
     "python-slugify==8.0.4",
     "Pillow==12.1.1",
     "argon2-cffi==25.1.0",
-    "redis==7.2.1",
+    "redis==7.4.0",
     "hiredis==3.3.0",
     # Django
     "django==6.0.3",
