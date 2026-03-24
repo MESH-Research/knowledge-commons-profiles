@@ -94,6 +94,26 @@
     <a href="#" class="hide" id="up" hx-swap-oob="true"></a>
 {% endif %}
 
+<!-- HASTAC -->
+{% if HASTAC is True %}
+  <a href="https://hastac.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="hastac" hx-swap-oob="true">
+          <img src="{% static "img/HASTAC.png" %}" alt="HASTAC" class="social-icon"  />
+          <span>HASTAC</span>
+  </a>
+  {% else %}
+    <a href="#" class="hide" id="hastac" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- HASTAC -->
+{% if STEMEDPLUS is True %}
+  <a href="https://stemedplus.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="stemedplus" hx-swap-oob="true">
+          <img src="{% static "img/STEMEDPLUS.png" %}" alt="STEMEd+" class="social-icon"  />
+          <span>STEMEd+</span>
+  </a>
+  {% else %}
+    <a href="#" class="hide" id="hastac" hx-swap-oob="true"></a>
+{% endif %}
+
 <!-- Education -->
 {% if education and profile_info.profile.show_education %}
   <div class="content-card" id="education" hx-swap-oob="true">
