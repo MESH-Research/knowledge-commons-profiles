@@ -1,3 +1,24 @@
+## 4.7.0 (2026-03-24)
+
+### Feat
+
+- **docker**: use uv sync in entrypoints and uv run in start scripts
+- **docker**: include uv binary and env config in run stage
+- **ci**: update RTD and Dependabot configs for uv
+- **docker**: replace pip with uv in all Dockerfiles
+- **deps**: add uv dependency groups to pyproject.toml
+
+### Fix
+
+- **docker**: disable uv cache for production and dev containers
+- **docker**: use PATH-resolved gunicorn instead of hardcoded path
+- **docker**: use /opt/venv for uv virtual environment path
+- **docker**: add .venv to .dockerignore
+
+### Refactor
+
+- **deps**: remove pip requirements files
+
 ## 4.6.0 (2026-03-23)
 
 ### Feat
