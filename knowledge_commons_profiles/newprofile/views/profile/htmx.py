@@ -34,21 +34,15 @@ def profile_info(request, username):
 
         orgs = api.profile.get_external_memberships()
 
-        for org, is_member in orgs.items():
+        for org_name, is_member in orgs.items():
             if is_member:
-                context[org] = (
-                    org in context["profile_info"]["is_member_of"]
-                    and context["profile_info"]["is_member_of"][org]
-                )
+                key = "STEMEDPLUS" if org_name == "STEMED+" else org_name
+                context[key] = True
 
-        return render(
-            request, "newprofile/partials/profile_info.html", context
-        )
+        return render(request, "newprofile/partials/profile_info.html", context)
 
     except django.db.utils.OperationalError as ex:
-        logger.warning(
-            "Unable to connect to database for profile info: %s", ex
-        )
+        logger.warning("Unable to connect to database for profile info: %s", ex)
         # Return safe fallback context
         context = {
             "profile_info": {
@@ -68,9 +62,7 @@ def profile_info(request, username):
             "ARLISNA": False,
             "MSU": False,
         }
-        return render(
-            request, "newprofile/partials/profile_info.html", context
-        )
+        return render(request, "newprofile/partials/profile_info.html", context)
 
 
 def works_deposits(request, username, style=None):
@@ -264,9 +256,7 @@ def header_bar(request):
             )
 
             my_profile_info = api_me.get_profile_info() if api_me else None
-            notifications = (
-                api_me.get_short_notifications() if api_me else None
-            )
+            notifications = api_me.get_short_notifications() if api_me else None
 
             context = {
                 "username": request.user.username,
