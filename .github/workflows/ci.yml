@@ -45,19 +45,19 @@ jobs:
         run: docker compose -f docker-compose.github.yml build django
 
       - name: Check DB Migrations
-        run: docker compose -f docker-compose.github.yml run --rm django python manage.py makemigrations --check
+        run: docker compose -f docker-compose.github.yml run --rm django uv run python manage.py makemigrations --check
 
       - name: Run DB Migrations
-        run: docker compose -f docker-compose.github.yml run --rm django python manage.py migrate
+        run: docker compose -f docker-compose.github.yml run --rm django uv run python manage.py migrate
 
       - name: Run Django Tests
-        run: docker compose -f docker-compose.github.yml run --rm django coverage run manage.py test
+        run: docker compose -f docker-compose.github.yml run --rm django uv run coverage run manage.py test
 
       - name: Run Cron/Monitor Tests (pytest)
-        run: docker compose -f docker-compose.github.yml run --rm django python -m pytest knowledge_commons_profiles/cron/tests/ -v
+        run: docker compose -f docker-compose.github.yml run --rm django uv run python -m pytest knowledge_commons_profiles/cron/tests/ -v
 
       - name: Generate lcov
-        run: docker compose -f docker-compose.github.yml run --rm django coverage lcov
+        run: docker compose -f docker-compose.github.yml run --rm django uv run coverage lcov
 
       - name: Create coverage stats
         uses: gaelgirodon/ci-badges-action@v1

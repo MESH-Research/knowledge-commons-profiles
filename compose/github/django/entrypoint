@@ -14,4 +14,7 @@ wait-for-it "${POSTGRES_HOST}:${POSTGRES_PORT}" -t 30
 
 >&2 echo 'PostgreSQL is available'
 
+echo 'Syncing uv environment...'
+uv sync --frozen --no-install-project --no-default-groups --group "${BUILD_ENV}"
+
 exec "$@"

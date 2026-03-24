@@ -4,6 +4,9 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+echo 'Syncing uv environment...'
+uv sync --frozen --no-install-project --no-default-groups --group "${BUILD_ENV}"
+
 echo 'Launching container...'
 
 exec "$@"

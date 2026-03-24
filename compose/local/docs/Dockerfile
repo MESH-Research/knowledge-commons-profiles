@@ -7,6 +7,9 @@ FROM python AS python-build-stage
 
 ENV PYTHONDONTWRITEBYTECODE=1
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /bin/uv
+
 RUN apt-get update && apt-get install --no-install-recommends -y \
   # dependencies for building Python packages
   build-essential \
@@ -20,13 +23,18 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
 
-# Requirements are installed here to ensure they will be cached.
-COPY ./requirements /requirements
+WORKDIR /app
 
-# create python dependency wheels
-RUN pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels  \
-  -r /requirements/local.txt -r /requirements/production.txt \
-  && rm -rf /requirements
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies (local group includes production deps)
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_PYTHON_DOWNLOADS=never
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+RUN uv sync --frozen --no-install-project --no-default-groups \
+  --group local
 
 
 # Python 'run' stage
@@ -55,12 +63,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/*
 
-# copy python dependency wheels from python-build-stage
-COPY --from=python-build-stage /usr/src/app/wheels /wheels
-
-# use wheels to install python dependencies
-RUN pip install --no-cache /wheels/* \
-  && rm -rf /wheels
+# Copy virtual environment from build stage
+COPY --from=python-build-stage /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY ./compose/local/docs/start /start-docs
 RUN sed -i 's/\r$//g' /start-docs
