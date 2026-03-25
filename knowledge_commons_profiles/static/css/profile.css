@@ -393,10 +393,20 @@
             text-align: center;
         }
 
-        .sidebar-divider {
-            height: 1px;
+        .sidebar-item__divider {
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .sidebar-item__divider::before {
             background-color: var(--border-color);
-            margin: 20px 0;
+            bottom: -20px;
+            content: "";
+            display: inline-block;
+            height: 1px;
+            left: 0;
+            position: absolute;
+            right: 0;
         }
 
         .bluesky {
