@@ -11,8 +11,8 @@
   <!-- notifications -->
   {% if notification_count %}
   <div class="notifications-container" hx-swap-oob="true" id="notifications-container">
-    <div class="notifications">
-      <i class="fas fa-bell"></i>
+    <div class="notifications" role="status" aria-label="Notifications ({{ notification_count }})">
+      <i class="fas fa-bell" aria-hidden="true"></i>
       <span class="notifications-count" id="notifications-count">{{ notification_count }}</span>
       {% if notification_count > 0 %}
         <div class="dropdown-menu">
@@ -31,8 +31,8 @@
   </div>
   {% else %}
     <div class="notifications-container" hx-swap-oob="true" id="notifications-container">
-      <div class="notifications">
-        <i class="fas fa-bell"></i>
+      <div class="notifications" aria-label="Notifications">
+        <i class="fas fa-bell" aria-hidden="true"></i>
       </div>
     </div>
   {% endif %}
