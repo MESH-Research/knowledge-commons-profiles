@@ -1,3 +1,19 @@
+        .skip-to-content {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            z-index: 9999;
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .skip-to-content:focus {
+            left: 0;
+        }
+
 :root {
             --primary-color: #4a7c59;
             --secondary-color: #f8f9fa;
