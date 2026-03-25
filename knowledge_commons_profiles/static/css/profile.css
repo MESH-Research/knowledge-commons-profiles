@@ -1429,6 +1429,7 @@ div {
           .autoComplete_wrapper > input:focus {
             color: var(--primary-color);
             border: 0.06rem solid var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 124, 89, 0.2);
           }
 
           .autoComplete_wrapper > ul {
