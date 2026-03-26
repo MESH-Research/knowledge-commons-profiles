@@ -1,14 +1,5 @@
-{% if username %}
-  <!-- unsure this is used -->
-  {% for badge in memberships %}
-    <a class="society-badge-wrap"
-       href="https://{{ badge|lower }}.hcommons.org/members"><span class="society-badge {{ badge|lower }}">{{ badge }}</span></a>
-  {% endfor %}
-
-{% else %}
-  <div id="membership-badges" class="hide" hx-swap-oob="true">
-  </div>
-{% endif %}
+<div id="membership-badges" class="hide" hx-swap-oob="true">
+</div>
 
 {% if follower_count %}
   <h3 class="stat-header" id="following" hx-swap-oob="true">Following {{ follower_count }} members</h3>
