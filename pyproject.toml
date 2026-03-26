@@ -210,7 +210,7 @@ production = [
     "gunicorn==25.1.0",
     "psycopg[c]==3.3.3",
     "Collectfasta==3.3.3",
-    "sentry-sdk==2.52.0",
+    "sentry-sdk==2.56.0",
     "django-storages[s3]==1.14.6",
     "django-anymail[amazon-ses]==14.0",
 ]
