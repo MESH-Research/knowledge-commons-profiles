@@ -11,8 +11,10 @@ services:
     image: knowledge_commons_profiles_github_django
     container_name: knowledge_commons_profiles_github_django
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - .:/app:z
     env_file:
@@ -25,14 +27,21 @@ services:
   postgres:
     build:
       context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
+      dockerfile: ./compose/github/postgres/Dockerfile
     image: knowledge_commons_profiles_github_postgres
     container_name: knowledge_commons_profiles_github_postgres
     volumes:
-      - knowledge_commons_profiles_github_postgres_data:/var/lib/postgresql/data
+      - knowledge_commons_profiles_github_postgres_data:/var/lib/postgresql
       - knowledge_commons_profiles_github_postgres_data_backups:/backups
     env_file:
       - ./.envs/.github/.postgres
+    environment:
+      POSTGRES_INITDB_ARGS: "--locale-provider=builtin --builtin-locale=C.UTF-8"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: docker.io/redis:6
