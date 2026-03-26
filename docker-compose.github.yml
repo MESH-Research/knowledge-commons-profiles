@@ -35,6 +35,8 @@ services:
       - knowledge_commons_profiles_github_postgres_data_backups:/backups
     env_file:
       - ./.envs/.github/.postgres
+    environment:
+      POSTGRES_INITDB_ARGS: "--locale-provider=builtin --builtin-locale=C.UTF-8"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
       interval: 5s
