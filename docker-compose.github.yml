@@ -25,7 +25,7 @@ services:
   postgres:
     build:
       context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
+      dockerfile: ./compose/github/postgres/Dockerfile
     image: knowledge_commons_profiles_github_postgres
     container_name: knowledge_commons_profiles_github_postgres
     volumes:
