@@ -45,7 +45,7 @@
                    alt="Bluesky" aria-hidden="true"/>
             </a>
             <a href="{% url "profile" user=username %}" class="social-link"
-               id="kc">
+               id="kc" aria-label="Knowledge Commons">
               <i class="fas fa-at" aria-hidden="true"></i>
               <span>{{ username }}{% if user and user.is_staff %} (Knowledge Commons Staff){% endif %}</span>
             </a>
@@ -53,22 +53,22 @@
               <img src="{% static "img/iD-icon.png" %}" alt="ORCID" aria-hidden="true"/>
             </a>
 
-            <a href="#" class="social-link" id="arlisna">
+            <a href="#" class="social-link" id="arlisna" aria-label="ARLIS/NA">
             </a>
 
-            <a href="#" class="social-link" id="mla">
+            <a href="#" class="social-link" id="mla" aria-label="MLA">
             </a>
 
-            <a href="#" class="social-link" id="msu">
+            <a href="#" class="social-link" id="msu" aria-label="MSU">
             </a>
 
-            <a href="#" class="social-link" id="up">
+            <a href="#" class="social-link" id="up" aria-label="UP">
             </a>
 
-            <a href="#" class="social-link" id="hastac">
+            <a href="#" class="social-link" id="hastac" aria-label="HASTAC">
             </a>
 
-            <a href="#" class="social-link" id="stemedplus">
+            <a href="#" class="social-link" id="stemedplus" aria-label="STEMED+">
             </a>
 
             {% if request.user.is_staff %}
