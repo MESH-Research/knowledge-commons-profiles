@@ -35,7 +35,7 @@ updates:
     directories:
       - 'compose/local/node/'
       - 'compose/production/aws/'
-      - 'compose/production/postgres/'
+      - 'compose/github/postgres/'
       - 'compose/production/traefik/'
     target-branch: 'dev'
     # Every weekday

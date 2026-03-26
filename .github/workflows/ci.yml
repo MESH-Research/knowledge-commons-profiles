@@ -42,10 +42,15 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Build the Stack
-        run: docker compose -f docker-compose.github.yml build django
+        run: docker compose -f docker-compose.github.yml build
 
       - name: Check DB Migrations
+        id: check_migrations
         run: docker compose -f docker-compose.github.yml run --rm django uv run python manage.py makemigrations --check
+
+      - name: Show postgres logs on failure
+        if: failure() && steps.check_migrations.outcome == 'failure'
+        run: docker compose -f docker-compose.github.yml logs postgres
 
       - name: Run DB Migrations
         run: docker compose -f docker-compose.github.yml run --rm django uv run python manage.py migrate
