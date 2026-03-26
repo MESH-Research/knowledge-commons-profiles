@@ -1,15 +1,16 @@
 <script src="https://unpkg.com/cropperjs@2/dist/cropper.js"></script>
 <!-- Modal -->
-<div class="modal fade" id="avatarModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="avatarModal" tabindex="-1" aria-hidden="true" aria-labelledby="avatarModalLabel">
   <div class="modal-dialog modal-lg">
     <form id="avatarForm" class="modal-content" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="modal-header">
-        <h5 class="modal-title">Upload & Crop Avatar</h5>
+        <h5 class="modal-title" id="avatarModalLabel">Upload & Crop Avatar</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
+        <label for="avatarInput" class="form-label">Choose an image</label>
         <input type="file" id="avatarInput" name="image" accept="image/*" class="form-control mb-3" required/>
 
         <!-- Cropper container where v2 injects its template -->
