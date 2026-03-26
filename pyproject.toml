@@ -232,7 +232,7 @@ local = [
     "sphinx-autobuild==2025.8.25",
     # Code quality
     "ruff==0.15.6",
-    "coverage==7.13.3",
+    "coverage==7.13.5",
     "djlint==1.36.4",
     "pre-commit==4.5.1",
     # Django dev tools
