@@ -14,7 +14,7 @@
 
 <!-- Mastodon -->
 {% if profile_info.mastodon %}
-  <a href="https://{{ profile_info.mastodon_server }}/@{{ profile_info.mastodon_username }}" class="social-link" id="mastodon" hx-swap-oob="true">
+  <a href="https://{{ profile_info.mastodon_server }}/@{{ profile_info.mastodon_username }}" class="social-link" id="mastodon" aria-label="Mastodon" hx-swap-oob="true">
       <i class="fab fa-mastodon"></i>
       <span>@{{ profile_info.mastodon_username }}</span>
   </a>
@@ -24,94 +24,94 @@
 
 <!-- Twitter -->
 {% if profile_info.twitter %}
-  <a href="https://twitter.com/{{ profile_info.twitter }}" class="social-link" id="twitter" hx-swap-oob="true">
+  <a href="https://twitter.com/{{ profile_info.twitter }}" class="social-link" id="twitter" aria-label="Twitter" hx-swap-oob="true">
       <i class="fab fa-twitter"></i>
       <span>@{{ profile_info.twitter }}</span>
   </a>
   {% else %}
-  <a href="#" class="hide" id="twitter" hx-swap-oob="true"></a>
+  <a href="#" class="hide" id="twitter" aria-label="Twitter" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- Bluesky -->
 {% if profile_info.bluesky %}
   <a href="https://bsky.app/profile/{{ profile_info.bluesky }}"
-     class="social-link" id="bluesky" hx-swap-oob="true">
+     class="social-link" id="bluesky" aria-label="Bluesky" hx-swap-oob="true">
       <img class="bluesky" src="{% static "img/bluesky.png" %}" alt="bluesky" />
       <span>{{ profile_info.bluesky }}</span>
   </a>
   {% else %}
-  <a href="#" class="hide" id="bluesky" hx-swap-oob="true"></a>
+  <a href="#" class="hide" id="bluesky" aria-label="Bluesky" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- ORCID -->
 {% if profile_info.orcid %}
-  <a href="https://orcid.org/{{ profile_info.orcid }}" class="social-link" id="orcid" hx-swap-oob="true">
+  <a href="https://orcid.org/{{ profile_info.orcid }}" class="social-link" aria-label="ORCID" id="orcid" hx-swap-oob="true">
       <img src="{% static "img/iD-icon.png" %}" alt="ORCID" />
       <span>{{ profile_info.orcid }}</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="orcid" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="orcid" aria-label="ORCID" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- ARLISNA -->
 {% if ARLISNA is True %}
-  <a href="https://arlisna.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="arlisna" hx-swap-oob="true">
+  <a href="https://arlisna.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" aria-label="ARLIS/NA" id="arlisna" hx-swap-oob="true">
           <img src="{% static "img/ARLISNA.png" %}" alt="ARLISNA" class="social-icon"  />
           <span>ARLIS/NA</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="arlisna" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="arlisna" aria-label="ARLIS/NA" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 
 <!-- MLA -->
 {% if MLA is True %}
-  <a href="https://mla.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="mla" hx-swap-oob="true">
+  <a href="https://mla.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" aria-label="MLA" id="mla" hx-swap-oob="true">
           <img src="{% static "img/MLA.svg" %}" alt="MLA" class="social-icon"  />
           <span>MLA</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="mla" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="mla" aria-label="MLA" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- MSU -->
 {% if MSU is True %}
-  <a href="https://commons.msu.edu/members/{{ profile_info.profile.username }}" class="social-link" id="msu" hx-swap-oob="true">
+  <a href="https://commons.msu.edu/members/{{ profile_info.profile.username }}" class="social-link" aria-label="MSU" id="msu" hx-swap-oob="true">
           <img src="{% static "img/MSU.png" %}" alt="MSU" class="social-icon"  />
           <span>MSU</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="msu" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="msu" aria-label="MSU" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- UP -->
 {% if UP is True %}
-  <a href="https://up.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="up" hx-swap-oob="true">
+  <a href="https://up.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="up" aria-label="UP" hx-swap-oob="true">
           <img src="{% static "img/UP.png" %}" alt="UP" class="social-icon"  />
           <span>UP</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="up" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="up" aria-label="UP" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- HASTAC -->
 {% if HASTAC is True %}
-  <a href="https://hastac.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="hastac" hx-swap-oob="true">
+  <a href="https://hastac.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" aria-label="HASTAC" id="hastac" hx-swap-oob="true">
           <img src="{% static "img/HASTAC.png" %}" alt="HASTAC" class="social-icon"  />
           <span>HASTAC</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="hastac" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="hastac" aria-label="HASTAC" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
-<!-- HASTAC -->
+<!-- STEMED+ -->
 {% if STEMEDPLUS is True %}
-  <a href="https://stemedplus.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" id="stemedplus" hx-swap-oob="true">
+  <a href="https://stemedplus.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" aria-label="STEMEd+" id="stemedplus" hx-swap-oob="true">
           <img src="{% static "img/STEMEDPLUS.png" %}" alt="STEMEd+" class="social-icon"  />
           <span>STEMEd+</span>
   </a>
   {% else %}
-    <a href="#" class="hide" id="stemedplus" hx-swap-oob="true"></a>
+    <a href="#" class="hide" id="stemedplus" aria-label="STEMED+" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
 <!-- Education -->
