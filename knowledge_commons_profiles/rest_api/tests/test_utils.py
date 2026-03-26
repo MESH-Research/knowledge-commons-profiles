@@ -355,13 +355,19 @@ class TestLogoutAllEndpointsSync(TestCase):
     @override_settings(STATIC_API_BEARER="test-token")
     def test_missing_logout_endpoints_setting(self):
         """Test function handles missing LOGOUT_ENDPOINTS setting."""
-        with patch("django.conf.settings") as mock_settings:
-            # Remove LOGOUT_ENDPOINTS attribute
-            mock_settings.STATIC_API_BEARER = "test-token"
-            del mock_settings.LOGOUT_ENDPOINTS
+        from django.conf import settings
 
+        # Temporarily remove LOGOUT_ENDPOINTS if it exists
+        had_attr = hasattr(settings, "LOGOUT_ENDPOINTS")
+        if had_attr:
+            original = settings.LOGOUT_ENDPOINTS
+            delattr(settings, "LOGOUT_ENDPOINTS")
+        try:
             result = logout_all_endpoints_sync()
             self.assertEqual(result, [])
+        finally:
+            if had_attr:
+                settings.LOGOUT_ENDPOINTS = original
 
     @override_settings(
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],

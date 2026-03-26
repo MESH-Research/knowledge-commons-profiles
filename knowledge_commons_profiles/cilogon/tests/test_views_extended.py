@@ -442,14 +442,27 @@ class LogoutTests(CILogonTestBase):
         request.session.create()
         request.user = self.user
 
-        with patch(
-            "knowledge_commons_profiles.cilogon.views.logout"
-        ) as logout_mock:
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout"
+            ) as logout_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+            ) as client_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout_all_endpoints_sync"
+            ),
+        ):
+            mock_client = MagicMock()
+            mock_client.server_metadata = {
+                "revocation_endpoint": "https://test.com/revoke"
+            }
+            client_mock.return_value = mock_client
+
             app_logout(request)
 
             # Should call Django logout
             logout_mock.assert_called_once_with(request)
-            # Should redirect
 
     def test_app_logout_anonymous_user(self):
         """Test logout for anonymous user"""
@@ -458,9 +471,23 @@ class LogoutTests(CILogonTestBase):
         request.session.create()
         request.user = AnonymousUser()
 
-        with patch(
-            "knowledge_commons_profiles.cilogon.views.logout"
-        ) as logout_mock:
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout"
+            ) as logout_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+            ) as client_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout_all_endpoints_sync"
+            ),
+        ):
+            mock_client = MagicMock()
+            mock_client.server_metadata = {
+                "revocation_endpoint": "https://test.com/revoke"
+            }
+            client_mock.return_value = mock_client
+
             app_logout(request)
 
             # Should still call logout even for anonymous users
@@ -489,6 +516,9 @@ class LogoutTests(CILogonTestBase):
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.create_client"
             ) as client_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout_all_endpoints_sync"
+            ),
         ):
             # Mock the OAuth client
             mock_client = MagicMock()
@@ -538,6 +568,9 @@ class LogoutTests(CILogonTestBase):
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations",
                 side_effect=DatabaseError("DB Error"),
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout_all_endpoints_sync"
             ),
         ):
             # Mock the OAuth client
