@@ -1,14 +1,15 @@
 <!-- Modal -->
-<div class="modal fade" id="coverModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="coverModal" tabindex="-1" aria-hidden="true" aria-labelledby="coverModalLabel">
   <div class="modal-dialog modal-lg">
     <form id="coverForm" class="modal-content" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="modal-header">
-        <h5 class="modal-title">Upload & Crop Cover Image</h5>
+        <h5 class="modal-title" id="coverModalLabel">Upload & Crop Cover Image</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
+        <label for="coverInput" class="form-label">Choose an image</label>
         <input type="file" id="coverInput" name="image" accept="image/*" class="form-control mb-3" required/>
 
         <!-- Cropper container where v2 injects its template -->

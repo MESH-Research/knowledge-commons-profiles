@@ -34,23 +34,23 @@
           </p>
 
           <div class="profile-social">
-            <a href="#" class="social-link" id="mastodon">
-              <i class="fab fa-mastodon"></i>
+            <a href="#" class="social-link" id="mastodon" aria-label="Mastodon">
+              <i class="fab fa-mastodon" aria-hidden="true"></i>
             </a>
-            <a href="#" class="social-link" id="twitter">
-              <i class="fab fa-twitter"></i>
+            <a href="#" class="social-link" id="twitter" aria-label="Twitter">
+              <i class="fab fa-twitter" aria-hidden="true"></i>
             </a>
-            <a href="#" class="social-link" id="bluesky">
+            <a href="#" class="social-link" id="bluesky" aria-label="Bluesky">
               <img class="bluesky" src="{% static "img/bluesky.png" %}"
-                   alt="bluesky"/>
+                   alt="Bluesky" aria-hidden="true"/>
             </a>
             <a href="{% url "profile" user=username %}" class="social-link"
                id="kc">
-              <i class="fas fa-at"></i>
+              <i class="fas fa-at" aria-hidden="true"></i>
               <span>{{ username }}{% if user and user.is_staff %} (Knowledge Commons Staff){% endif %}</span>
             </a>
-            <a href="#" class="social-link" id="orcid">
-              <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
+            <a href="#" class="social-link" id="orcid" aria-label="ORCID">
+              <img src="{% static "img/iD-icon.png" %}" alt="ORCID" aria-hidden="true"/>
             </a>
 
             <a href="#" class="social-link" id="arlisna">
