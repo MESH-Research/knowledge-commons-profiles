@@ -49,18 +49,17 @@
             <div class="header-container">
                 <div class="logo-container">
                   <div class="kc-hero-logo-mark" aria-hidden="true">KC</div>
-                    <button class="mobile-nav-toggle" id="navToggle">
-                        <i class="fas fa-bars"></i>
+                    <button class="mobile-nav-toggle" id="navToggle" aria-label="Toggle navigation menu">
+                        <i class="fas fa-bars" aria-hidden="true"></i>
                     </button>
                 </div>
                 <div class="header-right">
                     <div class="search-container">
-                      <form id="search-form" action="{% url 'search' %}">
-                        <label>
-                          <input type="text" id="q" name="q" placeholder="Search" />
-                        </label>
-                        <button type="submit">
-                            <i class="fas fa-search"></i>
+                      <form id="search-form" action="{% url 'search' %}" role="search">
+                        <label for="q" class="visually-hidden">Search</label>
+                        <input type="text" id="q" name="q" placeholder="Search" />
+                        <button type="submit" aria-label="Submit search" title="Submit search">
+                            <i class="fas fa-search" aria-hidden="true"></i>
                         </button>
                       </form>
                     </div>
@@ -84,9 +83,9 @@
     <!-- Main Content with Sidebar -->
     <div class="main-with-sidebar">
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
+        <nav class="sidebar" id="sidebar" aria-label="Site navigation">
             {% include "nav.html" %}
-        </aside>
+        </nav>
 
         <!-- Main Content Area -->
         <div class="content-wrapper">

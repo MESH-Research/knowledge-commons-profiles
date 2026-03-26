@@ -186,7 +186,7 @@
             cursor: pointer;
             color: var(--text-color);
             margin-left: 10px;
-            display: none;
+            display: inline-block;
         }
 
         .search-container {
@@ -393,10 +393,20 @@
             text-align: center;
         }
 
-        .sidebar-divider {
-            height: 1px;
+        .sidebar-item__divider {
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .sidebar-item__divider::before {
             background-color: var(--border-color);
-            margin: 20px 0;
+            bottom: -20px;
+            content: "";
+            display: inline-block;
+            height: 1px;
+            left: 0;
+            position: absolute;
+            right: 0;
         }
 
         .bluesky {
@@ -769,10 +779,6 @@
             .col-md-6 { flex: 0 0 50%; max-width: 50%; }
             .col-md-8 { flex: 0 0 66.666667%; max-width: 66.666667%; }
             .col-md-4 { flex: 0 0 33.333333%; max-width: 33.333333%; }
-
-            .mobile-nav-toggle {
-                display: inline-block;
-            }
         }
 
         @media (min-width: 992px) {
@@ -857,6 +863,15 @@
             .logo-container {
                 justify-content: space-between;
                 width: 100%;
+            }
+
+            .kc-hero-logo-mark {
+                display: none;
+            }
+
+            .mobile-nav-toggle {
+                margin-left: 0;
+                font-size: 28px;
             }
 
             .header-right {
@@ -1790,6 +1805,7 @@ div {
     }
 
     .kc-hero-logo-mark {
+      min-width: 70px;
       width: 70px;
       height: 70px;
       border-radius: 18px;
