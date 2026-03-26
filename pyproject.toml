@@ -231,7 +231,7 @@ local = [
     "sphinx==9.1.0",
     "sphinx-autobuild==2025.8.25",
     # Code quality
-    "ruff==0.15.6",
+    "ruff==0.15.7",
     "coverage==7.13.3",
     "djlint==1.36.4",
     "pre-commit==4.5.1",
