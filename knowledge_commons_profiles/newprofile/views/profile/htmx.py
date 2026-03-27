@@ -30,6 +30,7 @@ def profile_info(request, username):
             "show_publications": api.profile.show_publications,
             "show_projects": api.profile.show_projects,
             "show_academic_interests": api.profile.show_academic_interests,
+            "show_memberships": api.profile.show_memberships,
         }
 
         orgs = api.profile.get_external_memberships()
@@ -65,6 +66,7 @@ def profile_info(request, username):
             "show_publications": False,
             "show_projects": False,
             "show_academic_interests": False,
+            "show_memberships": False,
             "MLA": False,
             "UP": False,
             "ARLISNA": False,
