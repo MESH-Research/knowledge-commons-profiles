@@ -10,6 +10,9 @@ __pycache__/
 .windsurf
 .windsurf/*
 
+.ai
+.ai/*
+
 .claude
 .claude/*
 
