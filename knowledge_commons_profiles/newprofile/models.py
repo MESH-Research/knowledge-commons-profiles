@@ -490,6 +490,7 @@ class Profile(models.Model):
     show_education = models.BooleanField(default=True)
     show_about_user = models.BooleanField(default=True)
     show_works = models.BooleanField(default=True)
+    show_works_chart = models.BooleanField(default=True)
     show_blog_posts = models.BooleanField(default=True)
     show_commons_groups = models.BooleanField(default=True)
     show_commons_sites = models.BooleanField(default=True)
