@@ -15,10 +15,12 @@
         </ul>
       </li>
     {% endfor %}
+  {% if profile.show_works_chart %}
   <script type="text/javascript">
     let chart = {{ chart|safe }};
     vegaEmbed('#chart', chart, {renderer: "svg", actions: false});
   </script>
+  {% endif %}
 {% else %}
   <div class="hide" id="works" hx-swap-oob="true"></div>
 {% endif %}
