@@ -98,6 +98,9 @@ class ProfileForm(forms.ModelForm):
         if self.instance.pk and self.instance.publications:
             self.initial["publications"] = self.instance.publications
 
+        if self.instance.pk and self.instance.memberships:
+            self.initial["memberships"] = self.instance.memberships
+
     class Meta:
         model = Profile
         fields = [
@@ -132,6 +135,7 @@ class ProfileForm(forms.ModelForm):
             "show_education",
             "show_academic_interests",
             "show_recent_activity",
+            "show_memberships",
             "show_commons_sites",
             "academic_interests",
             "reference_style",
@@ -230,6 +234,12 @@ class ProfileForm(forms.ModelForm):
                 },
             ),
             "show_recent_activity": forms.CheckboxInput(
+                attrs={
+                    "style": "display: inline-block; float:right; "
+                    "margin-top:-4em;"
+                },
+            ),
+            "show_memberships": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
                     "margin-top:-4em;"
