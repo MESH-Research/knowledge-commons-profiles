@@ -332,6 +332,7 @@ PROFILE_FIELDS_LEFT = [
     "education",
     "publications",
     "projects",
+    "memberships",
     "works",
     "blog_posts",
     "mastodon_feed",
