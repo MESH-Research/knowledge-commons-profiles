@@ -385,6 +385,7 @@ class ProfileFactory(factory.django.DjangoModelFactory):
     show_works = True
     show_blog_posts = True
     show_commons_groups = True
+    show_memberships = True
     show_mastodon_feed = True
 
     @factory.post_generation
