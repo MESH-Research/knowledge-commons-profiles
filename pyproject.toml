@@ -209,7 +209,7 @@ dependencies = [
 
 [dependency-groups]
 production = [
-    "gunicorn==25.1.0",
+    "gunicorn==25.3.0",
     "psycopg[c]==3.3.3",
     "Collectfasta==3.3.3",
     "sentry-sdk==2.56.0",
