@@ -1,3 +1,45 @@
+## 4.8.0 (2026-03-27)
+
+### Feat
+
+- **memberships**: add show_memberships to profile_info HTMX view context
+- **memberships**: add display, edit, and HTMX partial templates
+- **memberships**: add show_memberships to ProfileForm with checkbox widget
+- **memberships**: add memberships to PROFILE_FIELDS_LEFT after projects
+- **memberships**: add show_memberships field to Profile model
+
+### Fix
+
+- **badges**: remove unused badge generation code
+- **a11y**: use nav landmark for sidebar navigation
+- **a11y**: show hamburger menu on mobile, replace KC logo
+- **a11y**: replace invalid div separator with CSS pseudo-element in nav
+- **badges**: use case-insensitive comparison for STEMED+ and fix formatting
+- **badges**: hide stemedplus on non-member
+- **badges**: add HASTAC and STEMEd+ badges and fix org membership logic
+- **templates**: correct Bluesky alt text typo
+- **a11y**: add proper aria links and hidden indicators to social media status buttons
+- **a11y**: add labels to social links and photo upload modals
+- **deps**: resolve pyOpenSSL/cryptography incompatibility
+- **a11y**: add title attribute to search submit button
+- **tests**: mock external HTTP calls in logout and utils tests
+- **ci**: mount postgres volume at /var/lib/postgresql for postgres 18
+- **ci**: add initdb locale args for postgres 18 and log on failure
+- **ci**: escape POSTGRES_USER in healthcheck and fix corrupted yaml
+- **a11y**: add labels to search button and mobile nav toggle
+- **a11y**: replace invalid div separator with CSS pseudo-element in nav
+- **a11y**: improve focus indicators and add members search label
+- **a11y**: add skip-to-content link and aria-hidden on nav icons
+- **a11y**: add label to notification bell icon
+- **badges**: use case-insensitive comparison for STEMED+ and fix formatting
+- **badges**: hide stemedplus on non-member
+- **badges**: add HASTAC and STEMEd+ badges and fix org membership logic
+- **templates**: correct Bluesky alt text typo
+
+### Refactor
+
+- **ci**: move postgres compose config from production to github
+
 ## 4.7.0 (2026-03-24)
 
 ### Feat
