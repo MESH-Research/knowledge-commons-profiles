@@ -161,3 +161,13 @@
 {% else %}
   <div class="hide" id="projects" hx-swap-oob="true"></div>
 {% endif %}
+
+<!-- Memberships -->
+{% if profile_info.memberships and profile_info.profile.show_memberships %}
+  <div class="content-card" id="memberships" hx-swap-oob="true">
+    <h3 class="card-title">Memberships</h3>
+    {{ profile_info.memberships | safe }}
+  </div>
+{% else %}
+  <div class="hide" id="memberships" hx-swap-oob="true"></div>
+{% endif %}

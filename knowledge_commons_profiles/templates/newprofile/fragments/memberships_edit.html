@@ -1,0 +1,8 @@
+{% load crispy_forms_tags crispy_forms_field %}
+<!-- Memberships -->
+<div class="content-card sortable-item" id="memberships_edit">
+  <h3 class="card-title">Memberships</h3>
+  {% crispy_field form.show_memberships %}
+  {{ form.memberships.errors }}
+  {{ form.memberships }}
+</div>
