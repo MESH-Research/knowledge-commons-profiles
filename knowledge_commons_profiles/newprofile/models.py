@@ -494,6 +494,7 @@ class Profile(models.Model):
     show_commons_groups = models.BooleanField(default=True)
     show_commons_sites = models.BooleanField(default=True)
     show_mastodon_feed = models.BooleanField(default=True)
+    show_memberships = models.BooleanField(default=True)
     show_recent_activity = models.BooleanField(default=True)
 
     left_order = models.CharField(max_length=255, blank=True, null=True)
