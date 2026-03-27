@@ -126,6 +126,7 @@ class ProfileForm(forms.ModelForm):
             "bluesky",
             "cv_file",
             "show_works",
+            "show_works_chart",
             "show_cv",
             "show_blog_posts",
             "show_mastodon_feed",
@@ -180,6 +181,12 @@ class ProfileForm(forms.ModelForm):
                 build_attrs={},
             ),
             "show_works": forms.CheckboxInput(
+                attrs={
+                    "style": "display: inline-block; float:right; "
+                    "margin-top:-4em;"
+                },
+            ),
+            "show_works_chart": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
                     "margin-top:-4em;"
