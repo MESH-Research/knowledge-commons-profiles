@@ -188,8 +188,8 @@ class ProfileForm(forms.ModelForm):
             ),
             "show_works_chart": forms.CheckboxInput(
                 attrs={
-                    "style": "display: inline-block; float:right; "
-                    "margin-top:-4em;"
+                    "style": "display: inline-block; "
+                    "margin-left:0.5em; vertical-align:middle;"
                 },
             ),
             "show_cv": forms.CheckboxInput(

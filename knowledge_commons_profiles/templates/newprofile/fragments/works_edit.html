@@ -2,11 +2,13 @@
 <div class="content-card sortable-item" id="works_form" hx-swap-oob="true">
   <h3 class="card-title">Works</h3>
   {% crispy_field form.show_works %}
-  <!-- djlint:off H021 -->
-  <label for="id_show_works_chart" style="display: inline-block; float:right; margin-top:-4em; margin-right: 1em;">Show chart</label>
-  <!-- djlint:on -->
-  {% crispy_field form.show_works_chart %}
   {% crispy_field form.reference_style %}
+  <!-- djlint:off H021 -->
+  <div style="clear:both; text-align:right; margin-bottom:0.5em;">
+    <label for="id_show_works_chart">Show chart</label>
+    {% crispy_field form.show_works_chart %}
+  </div>
+  <!-- djlint:on -->
   <ul id="works" class="works-list" hx-trigger="load" hx-post="{% url 'works_deposits_edit' %}">
   </ul>
 </div>
