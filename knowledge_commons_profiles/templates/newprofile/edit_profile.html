@@ -54,16 +54,16 @@
             <div class="profile-social">
               <span class="social-link" id="mastodon_edit">
                 <i class="fab fa-mastodon"></i>
-                <label for="id_mastodon" class="form-label">Mastodon:</label> {% crispy_field form.mastodon %}
+                <label for="id_mastodon" class="form-label">Mastodon:</label> <span class="at-prefix">@</span>{% crispy_field form.mastodon %}
               </span>
               <span class="social-link" id="twitter_edit">
                 <i class="fab fa-twitter"></i>
-                <label for="id_twitter" class="form-label">X:</label> {% crispy_field form.twitter %}
+                <label for="id_twitter" class="form-label">X:</label> <span class="at-prefix">@</span>{% crispy_field form.twitter %}
               </span>
               <span class="social-link" id="bluesky_edit">
                 <img class="bluesky" src="{% static "img/bluesky.png" %}"
                      alt="bluesky"/>
-                <label for="id_bluesky" class="form-label">Bluesky:</label> {% crispy_field form.bluesky %}
+                <label for="id_bluesky" class="form-label">Bluesky:</label> <span class="at-prefix">@</span>{% crispy_field form.bluesky %}
               </span>
               <a href="{% url "profile" user=username %}" class="social-link"
                  id="kc">
