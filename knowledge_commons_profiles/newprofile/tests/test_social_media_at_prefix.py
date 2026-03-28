@@ -2,7 +2,8 @@
 
 These tests verify that the edit profile form displays an @ symbol
 before the Mastodon, Twitter/X, and Bluesky input fields to indicate
-users do not need to enter the @ symbol themselves.
+users do not need to enter the @ symbol themselves, and that leading
+@ symbols are stripped from user input on save.
 """
 
 from django.contrib.auth.models import User
@@ -10,6 +11,7 @@ from django.test import Client
 from django.test import TestCase
 from django.urls import reverse
 
+from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
 
 
@@ -84,4 +86,69 @@ class SocialMediaAtPrefixTests(TestCase):
             'class="at-prefix"',
             orcid_section,
             "ORCID edit section should not contain an @ prefix",
+        )
+
+
+class SocialMediaAtStrippingTests(TestCase):
+    """Tests that leading @ symbols are stripped from social media handles."""
+
+    def setUp(self):
+        self.profile = Profile.objects.create(
+            username="striptest",
+            name="Strip Test",
+        )
+
+    def test_twitter_leading_at_is_stripped(self):
+        """Leading @ should be stripped from Twitter handle."""
+        form = ProfileForm(
+            data={"twitter": "@myhandle", "name": "Strip Test"},
+            instance=self.profile,
+        )
+        form.is_valid()
+        self.assertEqual(form.cleaned_data["twitter"], "myhandle")
+
+    def test_twitter_without_at_is_unchanged(self):
+        """Twitter handle without @ should be left as-is."""
+        form = ProfileForm(
+            data={"twitter": "myhandle", "name": "Strip Test"},
+            instance=self.profile,
+        )
+        form.is_valid()
+        self.assertEqual(form.cleaned_data["twitter"], "myhandle")
+
+    def test_bluesky_leading_at_is_stripped(self):
+        """Leading @ should be stripped from Bluesky handle."""
+        form = ProfileForm(
+            data={"bluesky": "@user.bsky.social", "name": "Strip Test"},
+            instance=self.profile,
+        )
+        form.is_valid()
+        self.assertEqual(form.cleaned_data["bluesky"], "user.bsky.social")
+
+    def test_mastodon_leading_at_is_stripped(self):
+        """Leading @ should be stripped from Mastodon handle."""
+        form = ProfileForm(
+            data={
+                "mastodon": "@user@mastodon.social",
+                "name": "Strip Test",
+            },
+            instance=self.profile,
+        )
+        form.is_valid()
+        self.assertEqual(
+            form.cleaned_data["mastodon"], "user@mastodon.social"
+        )
+
+    def test_mastodon_without_leading_at_is_unchanged(self):
+        """Mastodon handle without leading @ should be left as-is."""
+        form = ProfileForm(
+            data={
+                "mastodon": "user@mastodon.social",
+                "name": "Strip Test",
+            },
+            instance=self.profile,
+        )
+        form.is_valid()
+        self.assertEqual(
+            form.cleaned_data["mastodon"], "user@mastodon.social"
         )
