@@ -116,14 +116,23 @@ class SocialMediaAtStrippingTests(TestCase):
         form.is_valid()
         self.assertEqual(form.cleaned_data["twitter"], "myhandle")
 
-    def test_bluesky_leading_at_is_stripped(self):
-        """Leading @ should be stripped from Bluesky handle."""
+    def test_bluesky_saves_with_at_prepended(self):
+        """Bluesky handle should always be saved with @ prepended."""
+        form = ProfileForm(
+            data={"bluesky": "user.bsky.social", "name": "Strip Test"},
+            instance=self.profile,
+        )
+        form.is_valid()
+        self.assertEqual(form.cleaned_data["bluesky"], "@user.bsky.social")
+
+    def test_bluesky_with_at_does_not_double(self):
+        """Bluesky handle already starting with @ should not get double @."""
         form = ProfileForm(
             data={"bluesky": "@user.bsky.social", "name": "Strip Test"},
             instance=self.profile,
         )
         form.is_valid()
-        self.assertEqual(form.cleaned_data["bluesky"], "user.bsky.social")
+        self.assertEqual(form.cleaned_data["bluesky"], "@user.bsky.social")
 
     def test_mastodon_leading_at_is_stripped(self):
         """Leading @ should be stripped from Mastodon handle."""
@@ -152,3 +161,61 @@ class SocialMediaAtStrippingTests(TestCase):
         self.assertEqual(
             form.cleaned_data["mastodon"], "user@mastodon.social"
         )
+
+
+class SocialMediaEditFormInitialValueTests(TestCase):
+    """Tests that @ is stripped from initial values when loading the edit form.
+
+    When a user opens the edit form, values from the database should have
+    any leading @ stripped so the textbox never shows a leading @.
+    """
+
+    def test_twitter_at_stripped_from_initial(self):
+        """Twitter value starting with @ in DB should show without @ in form."""
+        profile = Profile.objects.create(
+            username="inittwitter",
+            name="Init Twitter",
+            twitter="@myhandle",
+        )
+        form = ProfileForm(instance=profile)
+        self.assertEqual(form.initial["twitter"], "myhandle")
+
+    def test_bluesky_at_stripped_from_initial(self):
+        """Bluesky value starting with @ in DB should show without @ in form."""
+        profile = Profile.objects.create(
+            username="initbluesky",
+            name="Init Bluesky",
+            bluesky="@user.bsky.social",
+        )
+        form = ProfileForm(instance=profile)
+        self.assertEqual(form.initial["bluesky"], "user.bsky.social")
+
+    def test_mastodon_at_stripped_from_initial(self):
+        """Mastodon @ in DB should show without @ in form."""
+        profile = Profile.objects.create(
+            username="initmastodon",
+            name="Init Mastodon",
+            mastodon="@user@mastodon.social",
+        )
+        form = ProfileForm(instance=profile)
+        self.assertEqual(form.initial["mastodon"], "user@mastodon.social")
+
+    def test_twitter_without_at_unchanged_in_initial(self):
+        """Twitter value without @ in DB should remain unchanged in form."""
+        profile = Profile.objects.create(
+            username="inittwitter2",
+            name="Init Twitter 2",
+            twitter="myhandle",
+        )
+        form = ProfileForm(instance=profile)
+        self.assertEqual(form.initial["twitter"], "myhandle")
+
+    def test_bluesky_without_at_unchanged_in_initial(self):
+        """Bluesky value without @ in DB should remain unchanged in form."""
+        profile = Profile.objects.create(
+            username="initbluesky2",
+            name="Init Bluesky 2",
+            bluesky="user.bsky.social",
+        )
+        form = ProfileForm(instance=profile)
+        self.assertEqual(form.initial["bluesky"], "user.bsky.social")
