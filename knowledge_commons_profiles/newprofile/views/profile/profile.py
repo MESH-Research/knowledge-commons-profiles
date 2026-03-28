@@ -211,7 +211,14 @@ def edit_profile(request, username=None):
             send_webhook_user_update(user.username)
 
             # now send an update to the CC search client
-            index_profile_in_cc_search(user)
+            try:
+                index_profile_in_cc_search(user)
+            except django.db.OperationalError:
+                logger.warning(
+                    "Could not index profile for %s in CC search: "
+                    "WordPress database unavailable",
+                    user.username,
+                )
 
             return redirect("profile", user=user.username)
     else:

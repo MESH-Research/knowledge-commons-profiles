@@ -3,6 +3,12 @@
   <h3 class="card-title">Works</h3>
   {% crispy_field form.show_works %}
   {% crispy_field form.reference_style %}
+  <!-- djlint:off H021 -->
+  <div style="clear:both; display:flex; justify-content:flex-end; align-items:center; gap:0.4em; margin-bottom:0.5em;">
+    <label for="id_show_works_chart" style="margin:0; font-weight:normal; font-size:0.9em;">Show chart</label>
+    {% crispy_field form.show_works_chart %}
+  </div>
+  <!-- djlint:on -->
   <ul id="works" class="works-list" hx-trigger="load" hx-post="{% url 'works_deposits_edit' %}">
   </ul>
 </div>
