@@ -52,28 +52,28 @@
             <label for="id_affiliation" class="form-label form-label-fixed">Affiliation:</label> {% crispy_field form.institutional_or_other_affiliation %} <br/><br/>
 
             <div class="profile-social">
-              <a href="#" class="social-link" id="mastodon_edit">
+              <span class="social-link" id="mastodon_edit">
                 <i class="fab fa-mastodon"></i>
                 <label for="id_mastodon" class="form-label">Mastodon:</label> {% crispy_field form.mastodon %}
-              </a>
-              <a href="#" class="social-link" id="twitter_edit">
+              </span>
+              <span class="social-link" id="twitter_edit">
                 <i class="fab fa-twitter"></i>
                 <label for="id_twitter" class="form-label">X:</label> {% crispy_field form.twitter %}
-              </a>
-              <a href="#" class="social-link" id="bluesky_edit">
+              </span>
+              <span class="social-link" id="bluesky_edit">
                 <img class="bluesky" src="{% static "img/bluesky.png" %}"
-                     alt="bluseky"/>
+                     alt="bluesky"/>
                 <label for="id_bluesky" class="form-label">Bluesky:</label> {% crispy_field form.bluesky %}
-              </a>
+              </span>
               <a href="{% url "profile" user=username %}" class="social-link"
                  id="kc">
                 <i class="fas fa-at"></i>
                 <span>{{ username }}</span>
               </a>
-              <a href="#" class="social-link" id="orcid_edit">
+              <span class="social-link" id="orcid_edit">
                 <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
                 <label for="id_orcid" class="form-label">ORCID ID:</label> {% crispy_field form.orcid %}
-              </a>
+              </span>
             </div>
 
             <div class="membership-badges" id="membership-badges"
