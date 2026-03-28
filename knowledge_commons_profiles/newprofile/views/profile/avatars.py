@@ -17,6 +17,9 @@ from knowledge_commons_profiles.newprofile.cc_search import (
 from knowledge_commons_profiles.newprofile.forms import AvatarUploadForm
 from knowledge_commons_profiles.newprofile.models import CoverImage
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.wordpress_sync import (
+    sync_avatar_to_wordpress,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +89,9 @@ def upload_avatar(request, username=None):
 
     # now send an update to the CC search client because avatar has changed
     index_profile_in_cc_search(profile)
+
+    # sync the avatar to WordPress
+    sync_avatar_to_wordpress(username, url)
 
     return JsonResponse({"ok": True, "url": url})
 
