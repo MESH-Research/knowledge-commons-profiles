@@ -1,3 +1,23 @@
+## 4.9.0 (2026-03-28)
+
+### Feat
+
+- **works**: add toggle to show/hide Works chart (PR)
+- **works**: add toggle to show/hide Works chart
+- **works**: add toggle to show/hide Works chart
+- **works**: gate chart display on show_works_chart toggle
+- **works**: add show_works_chart to ProfileForm with checkbox widget
+- **works**: add show_works_chart field to Profile model
+
+### Fix
+
+- **works**: improve chart toggle checkbox layout
+- **works**: handle WordPress DB unavailability when saving profile
+- **profile**: prevent dragged URLs from social media edit fields
+- **profile**: prevent dragged URLs from social media edit fields
+- **profile**: replace anchor tags with spans for social media edit fields
+- **works**: move chart toggle below heading row to prevent overlap
+
 ## 4.8.0 (2026-03-27)
 
 ### Feat

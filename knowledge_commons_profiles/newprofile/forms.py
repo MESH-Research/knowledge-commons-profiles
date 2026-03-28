@@ -101,6 +101,15 @@ class ProfileForm(forms.ModelForm):
         if self.instance.pk and self.instance.memberships:
             self.initial["memberships"] = self.instance.memberships
 
+    def clean_twitter(self):
+        return self.cleaned_data.get("twitter", "").lstrip("@")
+
+    def clean_mastodon(self):
+        return self.cleaned_data.get("mastodon", "").lstrip("@")
+
+    def clean_bluesky(self):
+        return self.cleaned_data.get("bluesky", "").lstrip("@")
+
     class Meta:
         model = Profile
         fields = [
