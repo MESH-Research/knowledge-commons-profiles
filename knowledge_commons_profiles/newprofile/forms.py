@@ -101,6 +101,13 @@ class ProfileForm(forms.ModelForm):
         if self.instance.pk and self.instance.memberships:
             self.initial["memberships"] = self.instance.memberships
 
+        # Strip leading @ from social media handles so the edit textboxes
+        # never show a leading @ (the @ is displayed as a prefix label).
+        for field in ("twitter", "mastodon", "bluesky"):
+            val = self.initial.get(field, "")
+            if val:
+                self.initial[field] = val.lstrip("@")
+
     def clean_twitter(self):
         return self.cleaned_data.get("twitter", "").lstrip("@")
 
@@ -108,7 +115,10 @@ class ProfileForm(forms.ModelForm):
         return self.cleaned_data.get("mastodon", "").lstrip("@")
 
     def clean_bluesky(self):
-        return self.cleaned_data.get("bluesky", "").lstrip("@")
+        value = self.cleaned_data.get("bluesky", "").lstrip("@")
+        if value:
+            return f"@{value}"
+        return value
 
     class Meta:
         model = Profile
