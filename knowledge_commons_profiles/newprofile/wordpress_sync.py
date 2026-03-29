@@ -18,6 +18,16 @@ def sync_avatar_to_wordpress(username: str, image_url: str) -> bool:
     """
     url = settings.WORDPRESS_AVATAR_UPDATE_URL
     bearer = settings.STATIC_API_BEARER
+    debug = settings.DEBUG
+
+    if debug:
+        logger.debug(
+            "Avatar sync initiated for user %s, image_url=%s, "
+            "target=%s",
+            username,
+            image_url,
+            url or "(not configured)",
+        )
 
     if not url:
         logger.warning("WORDPRESS_AVATAR_UPDATE_URL is not configured")
@@ -26,6 +36,11 @@ def sync_avatar_to_wordpress(username: str, image_url: str) -> bool:
     if not bearer:
         logger.warning("STATIC_API_BEARER is not configured")
         return False
+
+    if debug:
+        logger.debug(
+            "Sending avatar sync POST to %s for user %s", url, username
+        )
 
     try:
         response = requests.post(
@@ -37,7 +52,30 @@ def sync_avatar_to_wordpress(username: str, image_url: str) -> bool:
             },
             timeout=10,
         )
+        if debug:
+            logger.debug(
+                "Avatar sync response for %s: status=%s, body=%s",
+                username,
+                response.status_code,
+                response.text[:500],
+            )
         response.raise_for_status()
+    except requests.exceptions.ConnectionError:
+        logger.exception(
+            "Avatar sync connection failed for user %s: "
+            "could not connect to %s",
+            username,
+            url,
+        )
+        return False
+    except requests.exceptions.Timeout:
+        logger.exception(
+            "Avatar sync timed out for user %s: %s did not respond "
+            "within 10 seconds",
+            username,
+            url,
+        )
+        return False
     except requests.exceptions.RequestException:
         logger.exception(
             "Failed to sync avatar to WordPress for user %s", username
