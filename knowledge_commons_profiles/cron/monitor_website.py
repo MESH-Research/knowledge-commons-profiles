@@ -13,6 +13,10 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from dataclasses import field
+from datetime import UTC
+from datetime import datetime
+from enum import Enum
 from typing import Any
 
 import environ
@@ -41,6 +45,14 @@ LISTENER_RULE_ARN = (
 CHECK_INTERVAL = 60  # seconds
 REQUEST_TIMEOUT = 10  # seconds
 SITE_DOWN_THRESHOLD = 2  # Number of consecutive failures before taking action
+
+# Timing constants
+ACTIVATION_DURATION = 3600  # seconds (1 hour) before auto-deactivation
+GRACE_PERIOD_DURATION = 300  # seconds (5 minutes) after deactivation
+
+# S3 configuration
+S3_STATE_BUCKET = env("MONITOR_S3_BUCKET", default="")
+S3_STATE_KEY = "monitor/alb-rule-state.json"
 
 # HTTP status code ranges
 HTTP_STATUS_OK_MIN = 200
@@ -163,12 +175,23 @@ class SparkPostEmailClient:
             }
 
 
+class MonitorPhase(Enum):
+    """Phases of the monitor state machine."""
+
+    MONITORING = "monitoring"
+    ACTIVATED = "activated"
+    GRACE_PERIOD = "grace_period"
+
+
 @dataclass
 class MonitorState:
     """State tracking for the monitor."""
 
     consecutive_failures: int = 0
-    rule_modified: bool = False
+    phase: MonitorPhase = MonitorPhase.MONITORING
+    activated_at: datetime | None = None
+    original_http_methods: list[str] | None = field(default=None)
+    grace_period_start: datetime | None = None
     test_mode: bool = False
 
 
@@ -369,16 +392,18 @@ def send_email():
         html_content=(
             "<h1>Attack Blocked</h1>"
             "<p>The system has automatically engaged the AWS ALB "
-            "listener rule that blocks the members routes. "
-            "When the site has recovered, you should manually "
-            "remove this.</p>"
+            "listener rule that blocks the members routes.</p>"
+            "<p>This protection will be <strong>automatically removed "
+            "after 1 hour</strong>. If the site is still down at that "
+            "point, it will re-activate if downtime continues.</p>"
         ),
         text_content=(
             "Attack Blocked. "
             "The system has automatically engaged the AWS ALB "
             "listener rule that blocks the members routes. "
-            "When the site has recovered, you should manually "
-            "remove this."
+            "This protection will be automatically removed after 1 hour. "
+            "If the site is still down at that point, it will re-activate "
+            "if downtime continues."
         ),
         recipients=RECIPIENTS,
         tags=["system", "ddos"],
@@ -410,16 +435,264 @@ def build_cmd(new_conditions: list[Any], rule_arn: str) -> list[str]:
     ]
 
 
+def _now() -> datetime:
+    """Return current UTC time. Extracted for testability."""
+    return datetime.now(UTC)
+
+
+def save_state_to_s3(
+    bucket: str,
+    key: str,
+    activated_at: datetime,
+    original_http_methods: list[str],
+    rule_arn: str,
+) -> bool:
+    """Save activation state to S3 for persistence across restarts."""
+    if not bucket:
+        logger.warning("No S3 bucket configured, skipping state save")
+        return False
+
+    state_data = {
+        "activated_at": activated_at.isoformat(),
+        "original_http_methods": original_http_methods,
+        "rule_arn": rule_arn,
+        "version": 1,
+    }
+
+    cmd = [
+        "aws", "s3", "cp", "-",
+        f"s3://{bucket}/{key}",
+        "--content-type", "application/json",
+    ]
+
+    try:
+        subprocess.run(  # noqa: S603
+            cmd,
+            input=json.dumps(state_data),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        logger.exception("Failed to save state to S3: %s", e.stderr)
+        return False
+
+    logger.info("Saved activation state to S3")
+    return True
+
+
+def load_state_from_s3(bucket: str, key: str) -> dict | None:
+    """Load activation state from S3. Returns None if no state exists."""
+    if not bucket:
+        return None
+
+    cmd = ["aws", "s3", "cp", f"s3://{bucket}/{key}", "-"]
+
+    try:
+        result = subprocess.run(  # noqa: S603
+            cmd, capture_output=True, text=True, check=False
+        )
+    except subprocess.CalledProcessError:
+        logger.exception("Failed to load state from S3")
+        return None
+
+    if result.returncode != 0:
+        logger.info("No existing state found in S3")
+        return None
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        logger.exception("Failed to parse S3 state JSON")
+        return None
+
+
+def delete_state_from_s3(bucket: str, key: str) -> bool:
+    """Delete activation state from S3 after deactivation."""
+    if not bucket:
+        return False
+
+    cmd = ["aws", "s3", "rm", f"s3://{bucket}/{key}"]
+
+    try:
+        subprocess.run(  # noqa: S603
+            cmd, capture_output=True, text=True, check=True
+        )
+    except subprocess.CalledProcessError as e:
+        logger.exception("Failed to delete state from S3: %s", e.stderr)
+        return False
+
+    logger.info("Deleted activation state from S3")
+    return True
+
+
+def restore_http_method_restriction(
+    rule_arn: str, http_methods: list[str]
+) -> bool:
+    """Restore the HTTP request method restriction on the ALB listener rule."""
+    rule = get_listener_rule_details(rule_arn)
+    if not rule:
+        logger.error("Could not retrieve rule details for restoration")
+        return False
+
+    current_conditions = rule.get("Conditions", [])
+
+    # Check if HTTP method condition already exists (idempotency)
+    for cond in current_conditions:
+        if cond.get("Field") == "http-request-method":
+            logger.info("HTTP method restriction already present")
+            return True
+
+    # Add the HTTP method condition back
+    http_method_condition = {
+        "Field": "http-request-method",
+        "HttpRequestMethodConfig": {"Values": http_methods},
+    }
+    new_conditions = [
+        normalize_condition_format(cond) for cond in current_conditions
+    ] + [http_method_condition]
+
+    cmd = build_cmd(new_conditions, rule_arn)
+
+    logger.info("Restoring HTTP request method restriction on rule")
+    try:
+        subprocess.run(  # noqa: S603
+            cmd, capture_output=True, text=True, check=True
+        )
+    except subprocess.CalledProcessError as e:
+        logger.exception("AWS CLI error restoring rule: %s", e.stderr)
+        return False
+
+    logger.info("Successfully restored HTTP request method restriction")
+    return True
+
+
+def send_deactivation_email():
+    """Send email notifying that DDOS protection has been deactivated."""
+    client = SparkPostEmailClient()
+
+    response = client.send_email(
+        from_email="system@hcommons.org",
+        from_name="Knowledge Commons System",
+        subject="DDOS Protection has been automatically deactivated",
+        html_content=(
+            "<h1>Protection Deactivated</h1>"
+            "<p>The AWS ALB listener rule that blocks the members routes "
+            "has been automatically restored after 1 hour. "
+            "Normal monitoring has resumed after a brief grace period.</p>"
+            "<p>If the site is still experiencing issues, the protection "
+            "will re-activate automatically if downtime is detected.</p>"
+        ),
+        text_content=(
+            "Protection Deactivated. "
+            "The AWS ALB listener rule that blocks the members routes "
+            "has been automatically restored after 1 hour. "
+            "Normal monitoring has resumed after a brief grace period. "
+            "If the site is still experiencing issues, the protection "
+            "will re-activate automatically if downtime is detected."
+        ),
+        recipients=RECIPIENTS,
+        tags=["system", "ddos"],
+    )
+
+    logger.info("Deactivation email response: %s", response)
+    return response
+
+
+def check_activation_timeout():
+    """Check if the activation has exceeded the timeout and deactivate."""
+    if state.phase != MonitorPhase.ACTIVATED or state.activated_at is None:
+        return
+
+    elapsed = (_now() - state.activated_at).total_seconds()
+    if elapsed < ACTIVATION_DURATION:
+        return
+
+    logger.info(
+        "Activation duration exceeded (%s seconds). Restoring rule...",
+        elapsed,
+    )
+
+    if restore_http_method_restriction(
+        LISTENER_RULE_ARN, state.original_http_methods
+    ):
+        logger.info("HTTP method restriction restored successfully")
+        delete_state_from_s3(S3_STATE_BUCKET, S3_STATE_KEY)
+        send_deactivation_email()
+        state.phase = MonitorPhase.GRACE_PERIOD
+        state.grace_period_start = _now()
+        state.activated_at = None
+        state.original_http_methods = None
+        state.consecutive_failures = 0
+    else:
+        logger.error("Failed to restore HTTP method restriction")
+
+
+def check_grace_period():
+    """Check if the grace period has elapsed and return to monitoring."""
+    if (
+        state.phase != MonitorPhase.GRACE_PERIOD
+        or state.grace_period_start is None
+    ):
+        return
+
+    elapsed = (_now() - state.grace_period_start).total_seconds()
+    if elapsed >= GRACE_PERIOD_DURATION:
+        logger.info("Grace period complete. Resuming normal monitoring.")
+        state.phase = MonitorPhase.MONITORING
+        state.grace_period_start = None
+        state.consecutive_failures = 0
+
+
+def initialize_state_from_s3():
+    """Check S3 for existing activation state (handles ECS restarts)."""
+    if not S3_STATE_BUCKET:
+        logger.warning("No S3 bucket configured, state persistence disabled")
+        return
+
+    saved = load_state_from_s3(S3_STATE_BUCKET, S3_STATE_KEY)
+    if saved is None:
+        logger.info("No existing activation state found in S3")
+        return
+
+    if saved.get("rule_arn") != LISTENER_RULE_ARN:
+        logger.warning("S3 state rule_arn mismatch, ignoring")
+        return
+
+    activated_at = datetime.fromisoformat(saved["activated_at"])
+    original_methods = saved.get("original_http_methods", ["GET", "POST"])
+    elapsed = (_now() - activated_at).total_seconds()
+
+    if elapsed >= ACTIVATION_DURATION:
+        logger.info(
+            "Found expired activation state (%s seconds ago). "
+            "Restoring rule...",
+            elapsed,
+        )
+        if restore_http_method_restriction(LISTENER_RULE_ARN, original_methods):
+            delete_state_from_s3(S3_STATE_BUCKET, S3_STATE_KEY)
+            send_deactivation_email()
+            state.phase = MonitorPhase.GRACE_PERIOD
+            state.grace_period_start = _now()
+        else:
+            logger.error("Failed to restore rule from expired S3 state")
+            state.phase = MonitorPhase.ACTIVATED
+            state.activated_at = activated_at
+            state.original_http_methods = original_methods
+    else:
+        logger.info(
+            "Found active activation state (%s seconds ago). "
+            "Resuming activated state.",
+            elapsed,
+        )
+        state.phase = MonitorPhase.ACTIVATED
+        state.activated_at = activated_at
+        state.original_http_methods = original_methods
+
+
 def handle_site_up():
     """Handle the case when the website is up."""
     state.consecutive_failures = 0
-
-    if state.rule_modified:
-        logger.info("Website is back up. Rule modification will remain.")
-        logger.info(
-            "Note: You may want to manually restore the HTTP "
-            "method restriction when ready."
-        )
 
 
 def handle_site_down():
@@ -432,7 +705,7 @@ def handle_site_down():
 
     if (
         state.consecutive_failures >= SITE_DOWN_THRESHOLD
-        and not state.rule_modified
+        and state.phase == MonitorPhase.MONITORING
     ):
         logger.warning(
             "Website down for %s checks. Removing HTTP method restriction...",
@@ -441,15 +714,32 @@ def handle_site_down():
 
         # Get and store original HTTP methods before modifying
         rule = get_listener_rule_details(LISTENER_RULE_ARN)
+        original_methods = ["GET", "POST"]
         if rule:
             for condition in rule.get("Conditions", []):
                 if condition.get("Field") == "http-request-method":
-                    _ = condition.get("Values", ["GET", "POST"])
+                    config = condition.get("HttpRequestMethodConfig", {})
+                    original_methods = config.get(
+                        "Values",
+                        condition.get("Values", ["GET", "POST"]),
+                    )
                     break
 
         if remove_http_method_restriction(LISTENER_RULE_ARN):
-            state.rule_modified = True
+            now = _now()
+            state.phase = MonitorPhase.ACTIVATED
+            state.activated_at = now
+            state.original_http_methods = original_methods
             logger.info("HTTP method restriction removed successfully")
+
+            save_state_to_s3(
+                S3_STATE_BUCKET,
+                S3_STATE_KEY,
+                now,
+                original_methods,
+                LISTENER_RULE_ARN,
+            )
+
             send_email()
         else:
             logger.error("Failed to remove HTTP method restriction")
@@ -467,16 +757,21 @@ def monitor_loop():
     if state.test_mode:
         logger.warning("TEST MODE ENABLED - Site will be simulated as DOWN")
 
+    initialize_state_from_s3()
+
     try:
         while True:
-            is_up = check_website_status(WEBSITE_URL)
+            if state.phase == MonitorPhase.MONITORING:
+                is_up = check_website_status(WEBSITE_URL)
+                if is_up:
+                    handle_site_up()
+                else:
+                    handle_site_down()
+            elif state.phase == MonitorPhase.ACTIVATED:
+                check_activation_timeout()
+            elif state.phase == MonitorPhase.GRACE_PERIOD:
+                check_grace_period()
 
-            if is_up:
-                handle_site_up()
-            else:
-                handle_site_down()
-
-            # Wait before next check
             logger.info("Next check in %s seconds...", CHECK_INTERVAL)
             time.sleep(CHECK_INTERVAL)
 
