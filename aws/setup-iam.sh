@@ -116,6 +116,29 @@ aws iam put-role-policy \
     --policy-name ALBModifyAccess \
     --policy-document "${ALB_POLICY}"
 
+# S3 state persistence policy
+echo "Adding S3 state persistence permissions..."
+S3_STATE_BUCKET="${MONITOR_S3_BUCKET:-hcommons-profiles-storage}"
+S3_STATE_POLICY='{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::'${S3_STATE_BUCKET}'/monitor/*"
+    }
+  ]
+}'
+
+aws iam put-role-policy \
+    --role-name ${TASK_ROLE_NAME} \
+    --policy-name S3StateAccess \
+    --policy-document "${S3_STATE_POLICY}"
+
 echo ""
 echo "=== IAM Setup Complete ==="
 echo ""
