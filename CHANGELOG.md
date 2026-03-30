@@ -1,3 +1,12 @@
+## 4.11.0 (2026-03-30)
+
+### Feat
+
+- **monitor**: add S3-based state persistence and auto-deactivation
+- **profile**: add debug logging to avatar WordPress sync
+- **profile**: call sync_avatar_to_wordpress after avatar upload
+- **settings**: add WORDPRESS_AVATAR_UPDATE_URL setting
+
 ## 4.10.0 (2026-03-28)
 
 ### Feat
