@@ -3,28 +3,127 @@
 <div class="content-card sortable-item" id="cv_edit">
   <h3 class="card-title">Curriculum Vitae (CV)</h3>
   {% crispy_field form.show_cv %}
-
   <div class="section-content">
     <div class="form-group">
-      {% crispy_field form.cv_file %}
+      <label for="cv_file_input" class="form-label">CV File</label>
+      <input type="file"
+             id="cv_file_input"
+             name="cv_file_upload"
+             accept=".pdf,.doc,.docx"
+             class="form-control" />
       <small class="form-text text-muted">
         Accepted formats: PDF, DOC, DOCX. Maximum file size: 10 MB.
-        You can have only one CV file at a time. Uploading a new file will replace the previous one.
+        Your CV will be uploaded automatically when you select a file.
       </small>
+      <div id="cv_upload_status"></div>
     </div>
-
-    {% if profile.cv_file %}
-      <div class="current-cv" id="current_cv">
-        <p><strong>Current CV:</strong> <a href="{{ profile.cv_file.url }}" target="_blank" class="cv-link" id="cv_link">
-            <i class="fas fa-file-pdf"></i>
-            {{ profile.cv_file.name|truncatechars:50 }}
-          </a></p>
-      </div>
-
-    {% else %}
-      <div class="no-cv-message">
-        <p><em>No CV file uploaded yet.</em></p>
-      </div>
-    {% endif %}
+    <div id="current_cv_section">
+      {% if profile.cv_file %}
+        <div class="current-cv" id="current_cv">
+          <p>
+            <strong>Current CV:</strong>
+            <a href="{{ profile.cv_file.url }}"
+               target="_blank"
+               class="cv-link"
+               id="cv_link">
+              <i class="fas fa-file-pdf"></i>
+              {{ profile.cv_file.name|truncatechars:50 }}
+            </a>
+          </p>
+        </div>
+      {% else %}
+        <div class="no-cv-message" id="no_cv_message">
+          <p>
+            <em>No CV file uploaded yet.</em>
+          </p>
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
+<script>
+  (() => {
+    const fileInput = document.getElementById('cv_file_input');
+    const statusEl = document.getElementById('cv_upload_status');
+    const currentCvSection = document.getElementById('current_cv_section');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const uploadUrl = "{{ cv_upload_url }}";
+
+    function showStatus(message, color, iconClass) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = '';
+      const span = document.createElement('span');
+      span.style.color = color;
+      const icon = document.createElement('i');
+      icon.className = iconClass;
+      span.appendChild(icon);
+      span.appendChild(document.createTextNode(' ' + message));
+      statusEl.appendChild(span);
+    }
+
+    function updateCurrentCv(url, filename) {
+      // Clear and rebuild the current CV section using DOM methods
+      while (currentCvSection.firstChild) {
+        currentCvSection.removeChild(currentCvSection.firstChild);
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'current-cv';
+      wrapper.id = 'current_cv';
+
+      const p = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = 'Current CV:';
+      p.appendChild(strong);
+      p.appendChild(document.createTextNode(' '));
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.className = 'cv-link';
+      link.id = 'cv_link';
+
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-file-pdf';
+      link.appendChild(icon);
+      link.appendChild(document.createTextNode(' ' + filename));
+
+      p.appendChild(link);
+      wrapper.appendChild(p);
+      currentCvSection.appendChild(wrapper);
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      showStatus('Uploading CV...', '#666', 'fas fa-spinner fa-spin');
+      fileInput.disabled = true;
+
+      const fd = new FormData();
+      fd.append('cv_file', file);
+
+      try {
+        const resp = await fetch(uploadUrl, {
+          method: 'POST',
+          body: fd,
+          headers: {
+            'X-CSRFToken': csrfToken
+          },
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.ok) {
+          showStatus('CV uploaded successfully.', 'green', 'fas fa-check-circle');
+          updateCurrentCv(data.url, data.filename);
+        } else {
+          showStatus(data.error || 'Upload failed.', 'red', 'fas fa-exclamation-circle');
+        }
+      } catch {
+        showStatus('Upload failed. Please try again.', 'red', 'fas fa-exclamation-circle');
+      }
+
+      fileInput.disabled = false;
+    });
+  })();
+</script>

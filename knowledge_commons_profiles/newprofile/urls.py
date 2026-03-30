@@ -28,6 +28,7 @@ from knowledge_commons_profiles.newprofile.views.profile.avatars import (
 from knowledge_commons_profiles.newprofile.views.profile.avatars import (
     upload_cover,
 )
+from knowledge_commons_profiles.newprofile.views.profile.cv import upload_cv
 from knowledge_commons_profiles.newprofile.views.profile.htmx import blog_posts
 from knowledge_commons_profiles.newprofile.views.profile.htmx import cover_image
 from knowledge_commons_profiles.newprofile.views.profile.htmx import header_bar
@@ -86,6 +87,7 @@ urlpatterns = [
     ),
     path("edit-profile/upload-avatar/", upload_avatar, name="upload_avatar"),
     path("edit-profile/upload-cover/", upload_cover, name="upload_cover"),
+    path("edit-profile/upload-cv/", upload_cv, name="upload_cv"),
     path(
         "members/<str:username>/edit-profile/upload-avatar/",
         upload_avatar,
@@ -95,6 +97,11 @@ urlpatterns = [
         "members/<str:username>/edit-profile/upload-cover/",
         upload_cover,
         name="upload_cover_user",
+    ),
+    path(
+        "members/<str:username>/edit-profile/upload-cv/",
+        upload_cv,
+        name="upload_cv_user",
     ),
     path("members/<str:user>/", profile, name="profile"),
     path("members/<str:user>/profile/", profile, name="alternative_profile_1"),

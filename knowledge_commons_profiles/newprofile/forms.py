@@ -323,3 +323,32 @@ class AvatarUploadForm(forms.Form):
     """
 
     image = forms.ImageField(required=True)
+
+
+class CvUploadForm(forms.Form):
+    """
+    Form for uploading a CV file via AJAX.
+    Validates file extension and size.
+    """
+
+    cv_file = forms.FileField(required=True)
+
+    def clean_cv_file(self):
+        cv_file = self.cleaned_data.get("cv_file")
+        if cv_file:
+            # Check file size (10 MB limit)
+            if cv_file.size > 10 * 1024 * 1024:
+                msg = "File size must not exceed 10 MB."
+                raise ValidationError(msg)
+
+            # Check file extension
+            allowed_extensions = ["pdf", "doc", "docx"]
+            file_ext = cv_file.name.split(".")[-1].lower()
+            if file_ext not in allowed_extensions:
+                msg = (
+                    f"File type '{file_ext}' is not allowed. Use PDF, "
+                    f"DOC, or DOCX."
+                )
+                raise ValidationError(msg)
+
+        return cv_file
