@@ -10,13 +10,12 @@
              id="cv_file_input"
              name="cv_file_upload"
              accept=".pdf,.doc,.docx"
-             class="form-control"
-             style="width:100%" />
+             class="form-control" />
       <small class="form-text text-muted">
         Accepted formats: PDF, DOC, DOCX. Maximum file size: 10 MB.
         Your CV will be uploaded automatically when you select a file.
       </small>
-      <div id="cv_upload_status" style="margin-top: 0.5em; display: none;"></div>
+      <div id="cv_upload_status"></div>
     </div>
     <div id="current_cv_section">
       {% if profile.cv_file %}

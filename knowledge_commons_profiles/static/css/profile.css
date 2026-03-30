@@ -2100,6 +2100,15 @@ div {
     margin-left: auto;
   }
 
+  #cv_file_input {
+    width: 100%;
+  }
+
+  #cv_upload_status {
+    margin-top: 0.5em;
+    display: none;
+  }
+
   .form-check .form-check-input {
     margin-left: 0 !important;
     padding: 0 !important;
