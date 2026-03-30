@@ -1,3 +1,14 @@
+## 4.10.0 (2026-03-28)
+
+### Feat
+
+- **profile**: strip leading @ from social media handles on save
+- **profile**: add @ prefix before social media handle fields
+
+### Fix
+
+- **profile**: prepend @ to Bluesky on save, strip @ from edit initials
+
 ## 4.9.0 (2026-03-28)
 
 ### Feat
