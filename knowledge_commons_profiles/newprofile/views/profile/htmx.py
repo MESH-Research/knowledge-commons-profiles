@@ -416,6 +416,7 @@ def mysql_data(request, username):
                 "show_recent_activity": profile_info_obj[
                     "profile"
                 ].show_recent_activity,
+                "wordpress_domain": settings.WORDPRESS_DOMAIN,
             }
         else:
             context = {

@@ -9,6 +9,8 @@ services:
         - linux/arm64
       context: .
       dockerfile: ./compose/production/django/Dockerfile
+      args:
+        ECR_REGISTRY: ${ECR_REGISTRY:-registry}
       tags:
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:${IMAGE_TAG:-latest}
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django}:latest
