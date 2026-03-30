@@ -1,3 +1,15 @@
+## 4.12.0 (2026-03-30)
+
+### Feat
+
+- **cv**: auto-upload CV on file selection via AJAX
+- **cv**: add AJAX CV upload endpoint
+
+### Fix
+
+- resolve uv.lock merge conflict
+- **cv**: move inline styles to profile.css for linter compliance
+
 ## 4.11.0 (2026-03-30)
 
 ### Feat
