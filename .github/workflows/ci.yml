@@ -7,11 +7,11 @@ env:
 
 on:
   pull_request:
-    branches: ['master', 'main', 'dev']
+    branches: ['main', 'dev']
     paths-ignore: ['docs/**']
 
   push:
-    branches: ['master', 'main', 'dev']
+    branches: ['main', 'dev']
     paths-ignore: ['docs/**']
 
 concurrency:
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   linter:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout Code Repository
         uses: actions/checkout@v6
@@ -29,13 +29,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version-file: '.python-version'
-      # Consider using pre-commit.ci for open source project
+
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.1
 
-  # With no caching at all the entire ci process takes 3m to complete!
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout Code Repository
@@ -72,3 +71,79 @@ jobs:
 
       - name: Tear down the Stack
         run: docker compose -f docker-compose.github.yml down
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-24.04-arm
+    needs: [linter, test]
+    if: github.event_name == 'push'
+    environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+
+    env:
+      AWS_REGION: us-east-1
+      # Branch-based environment config
+      ECR_REPOSITORY: ${{ github.ref_name == 'main' && 'kcprofiles' || 'kcprofiles-dev' }}
+      ECR_REPOSITORY_TRAEFIK: ${{ github.ref_name == 'main' && 'kcprofiles-traefik' || 'kcprofiles-traefik-dev' }}
+      ECR_REPOSITORY_MONITOR: kcprofiles-monitor
+      ECS_CLUSTER: ${{ github.ref_name == 'main' && 'kcprofiles' || 'kcprofiles-dev-2' }}
+      ECS_SERVICE: ${{ github.ref_name == 'main' && 'kcprofiles-blue' || 'kcprofiles-dev' }}
+      AUTOSCALE_GROUP: ${{ github.ref_name == 'main' && 'Infra-ECS-Cluster-kcprofiles-ee645084-ECSAutoScalingGroup-v3MrRnH7laIx' || 'Infra-ECS-Cluster-kcprofiles-dev-2-f89c2350-ECSAutoScalingGroup-zUYaGlEf1GWi' }}
+      COMPOSE_FILE: ${{ github.ref_name == 'main' && 'docker-compose.production.yml' || 'docker-compose.dev.yml' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@a080f59b057d681bf221f98cbdcd9f0defa1a1a9
+
+      - name: Build, tag, and push images to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker compose -f $COMPOSE_FILE build
+
+          # Push Django image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # Push Traefik image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
+
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build, tag, and push monitor image
+        if: github.ref_name == 'main'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:latest
+
+      - name: Force deployment
+        continue-on-error: true
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          aws autoscaling start-instance-refresh --auto-scaling-group-name $AUTOSCALE_GROUP --region $AWS_REGION --preferences '{"SkipMatching": false}'
+
+      - name: Set a Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+          ignore_missing: true
