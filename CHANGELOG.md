@@ -1,3 +1,9 @@
+## 4.14.1 (2026-03-30)
+
+### Fix
+
+- **deploy**: restore monitor container in production compose
+
 ## 4.14.0 (2026-03-30)
 
 ### Feat
