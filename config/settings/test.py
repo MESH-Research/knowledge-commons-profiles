@@ -75,3 +75,7 @@ WORDPRESS_EMAIL_UPDATE_URL = env(
     "WORDPRESS_EMAIL_UPDATE_URL",
     default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-email",
 )
+WORDPRESS_AVATAR_UPDATE_URL = env(
+    "WORDPRESS_AVATAR_UPDATE_URL",
+    default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-avatar",
+)

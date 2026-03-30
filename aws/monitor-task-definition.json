@@ -31,6 +31,10 @@
         {
           "name": "CHECK_INTERVAL",
           "value": "60"
+        },
+        {
+          "name": "MONITOR_S3_BUCKET",
+          "value": "YOUR_BUCKET_NAME"
         }
       ],
       "secrets": [
