@@ -1,3 +1,9 @@
+## 4.13.1 (2026-03-30)
+
+### Fix
+
+- **deploy**: remove monitor container from production compose
+
 ## 4.13.0 (2026-03-30)
 
 ### Feat
