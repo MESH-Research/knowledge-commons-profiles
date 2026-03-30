@@ -1,86 +1,18 @@
-# define an alias for the specific python version used in this file.
-FROM docker.io/python:3.12.13-slim-bookworm AS python
+# Local development Django image — uses pre-built dev base from ECR
+ARG ECR_REGISTRY
+FROM ${ECR_REGISTRY}/kcprofiles-base-dev:latest
 
-# Python build stage
-FROM python AS python-build-stage
-
-ARG BUILD_ENVIRONMENT=local
-
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /bin/uv
-
-# Install apt packages
-RUN apt-get update && apt-get install --no-install-recommends -y \
-  # dependencies for building Python packages
-  build-essential \
-  # psycopg dependencies
-  libpq-dev \
-  # mysql dependencies
-  libmariadb-dev \
-  libmariadb-dev-compat \
-  pkg-config
-
-WORKDIR /app
-
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
-
-# Install dependencies into a virtual environment at /opt/venv
-# (outside /app so volume mounts don't overwrite it)
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_LINK_MODE=copy
-ENV UV_PYTHON_DOWNLOADS=never
-ENV UV_PROJECT_ENVIRONMENT=/opt/venv
-RUN uv sync --frozen --no-install-project --no-default-groups \
-  --group ${BUILD_ENVIRONMENT}
-
-
-# Python 'run' stage
-FROM python AS python-run-stage
-
-ARG BUILD_ENVIRONMENT=local
 ARG APP_HOME=/app
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV BUILD_ENV=${BUILD_ENVIRONMENT}
+ENV BUILD_ENV=local
 
 WORKDIR ${APP_HOME}
-
-
-# devcontainer dependencies and utils
-RUN apt-get update && apt-get install --no-install-recommends -y \
-  sudo git bash-completion nano ssh
-
-RUN apt-get install --no-install-recommends -y libmariadb-dev libmariadb-dev-compat
 
 # Create devcontainer user and add it to sudoers
 RUN groupadd --gid 1000 dev-user \
   && useradd --uid 1000 --gid dev-user --shell /bin/bash --create-home dev-user \
   && echo dev-user ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/dev-user \
   && chmod 0440 /etc/sudoers.d/dev-user
-
-
-# Install required system dependencies
-RUN apt-get update && apt-get install --no-install-recommends -y \
-  # psycopg dependencies
-  libpq-dev  \
-  wait-for-it \
-  # Translations dependencies
-  gettext \
-  nano \
-  rsync \
-  # cleaning up unused files
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && rm -rf /var/lib/apt/lists/*
-
-# Install uv in the run stage for remote interpreter support
-COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /uvx /bin/
-
-# Copy virtual environment from build stage
-COPY --from=python-build-stage /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
 COPY ./compose/production/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
@@ -90,9 +22,7 @@ COPY ./compose/local/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
-
-
-# copy application code to WORKDIR
+# Copy application code to WORKDIR
 COPY . ${APP_HOME}
 
 ENTRYPOINT ["/entrypoint"]

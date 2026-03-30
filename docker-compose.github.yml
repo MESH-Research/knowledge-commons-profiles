@@ -8,6 +8,8 @@ services:
     build:
       context: .
       dockerfile: ./compose/github/django/Dockerfile
+      args:
+        ECR_REGISTRY: ${ECR_REGISTRY:-registry}
     image: knowledge_commons_profiles_github_django
     container_name: knowledge_commons_profiles_github_django
     depends_on:
