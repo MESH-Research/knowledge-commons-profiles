@@ -1,3 +1,9 @@
+## 4.13.0 (2026-03-30)
+
+### Feat
+
+- **ci**: add base image Dockerfile and manual build workflow
+
 ## 4.12.0 (2026-03-30)
 
 ### Feat
