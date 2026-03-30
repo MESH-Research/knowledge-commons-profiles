@@ -1,0 +1,88 @@
+name: Build Base Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which base image to rebuild'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - production
+          - dev
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-production-base:
+    name: Build production base image
+    runs-on: ubuntu-24.04-arm
+    if: inputs.target == 'both' || inputs.target == 'production'
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@a080f59b057d681bf221f98cbdcd9f0defa1a1a9
+
+      - name: Build and push production base image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          DATE_TAG: ${{ github.run_id }}
+        run: |
+          docker build \
+            --build-arg BUILD_ENVIRONMENT=production \
+            -f compose/base/Dockerfile \
+            -t $ECR_REGISTRY/kcprofiles-base:latest \
+            -t $ECR_REGISTRY/kcprofiles-base:$DATE_TAG \
+            .
+
+          docker push $ECR_REGISTRY/kcprofiles-base:latest
+          docker push $ECR_REGISTRY/kcprofiles-base:$DATE_TAG
+
+  build-dev-base:
+    name: Build dev base image
+    runs-on: ubuntu-24.04-arm
+    if: inputs.target == 'both' || inputs.target == 'dev'
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@a080f59b057d681bf221f98cbdcd9f0defa1a1a9
+
+      - name: Build and push dev base image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          DATE_TAG: ${{ github.run_id }}
+        run: |
+          docker build \
+            --build-arg BUILD_ENVIRONMENT=local \
+            -f compose/base/Dockerfile \
+            -t $ECR_REGISTRY/kcprofiles-base-dev:latest \
+            -t $ECR_REGISTRY/kcprofiles-base-dev:$DATE_TAG \
+            .
+
+          docker push $ECR_REGISTRY/kcprofiles-base-dev:latest
+          docker push $ECR_REGISTRY/kcprofiles-base-dev:$DATE_TAG

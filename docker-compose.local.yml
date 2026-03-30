@@ -7,6 +7,8 @@ services:
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
+      args:
+        ECR_REGISTRY: ${ECR_REGISTRY:-registry}
     image: knowledge_commons_profiles_local_django
     container_name: knowledge_commons_profiles_local_django
     volumes:
