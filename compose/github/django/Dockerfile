@@ -4,6 +4,7 @@ FROM ${ECR_REGISTRY}/kcprofiles-base-dev:latest
 
 ARG APP_HOME=/app
 
+ENV BUILD_ENV=local
 ENV PYTHONPATH="${PYTHONPATH}:${APP_HOME}"
 
 WORKDIR ${APP_HOME}

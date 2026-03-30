@@ -4,6 +4,8 @@ FROM ${ECR_REGISTRY}/kcprofiles-base-dev:latest
 
 ARG APP_HOME=/app
 
+ENV BUILD_ENV=local
+
 WORKDIR ${APP_HOME}
 
 # Create devcontainer user and add it to sudoers

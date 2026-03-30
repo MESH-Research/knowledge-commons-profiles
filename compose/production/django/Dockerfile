@@ -4,6 +4,8 @@ FROM ${ECR_REGISTRY}/kcprofiles-base:latest
 
 ARG APP_HOME=/app
 
+ENV BUILD_ENV=production
+
 WORKDIR ${APP_HOME}
 
 RUN addgroup --system django \
