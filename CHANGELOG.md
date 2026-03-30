@@ -1,3 +1,18 @@
+## 4.14.0 (2026-03-30)
+
+### Feat
+
+- **ci**: add ECR-cached base images for faster Docker builds
+
+### Fix
+
+- **docker**: add BUILD_ENV to simplified Dockerfiles
+- **profile**: add wordpress_domain to context for htmx loading of mysql data
+
+### Refactor
+
+- **ci**: unify CI and deploy workflows into single pipeline
+
 ## 4.13.1 (2026-03-30)
 
 ### Fix
