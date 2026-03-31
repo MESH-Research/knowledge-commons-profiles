@@ -1,3 +1,14 @@
+## 4.16.0 (2026-03-31)
+
+### Feat
+
+- **cli**: add audit_duplicate_profiles management command
+
+### Fix
+
+- **docker**: grant django user ownership of /opt/venv
+- **models**: enforce unique username constraint on Profile model
+
 ## 4.15.0 (2026-03-31)
 
 ### Feat
