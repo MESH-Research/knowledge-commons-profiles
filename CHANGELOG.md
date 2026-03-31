@@ -1,3 +1,25 @@
+## 4.14.2 (2026-03-31)
+
+### Fix
+
+- **ci**: show target environment in deploy job name
+- **tests**: update profile photo tests for prefetch-friendly .all()
+- **members**: wrap prefetched queryset in list() to use cache
+- **tests**: update utils tests for improved error handling
+- **api**: improve error handling in logout and health probe
+- **health**: log exceptions so Sentry captures component failures
+- **broker**: normalize quote style for msucommons-dev.org in allowed domains
+
+### Perf
+
+- **members**: fix N+1 query on profileimage_set in /members/
+
+## 4.14.1 (2026-03-30)
+
+### Fix
+
+- **deploy**: restore monitor container in production compose
+
 ## 4.14.0 (2026-03-30)
 
 ### Feat
