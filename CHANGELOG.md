@@ -1,3 +1,24 @@
+## 4.15.0 (2026-03-31)
+
+### Feat
+
+- **dev**: add NO_CACHE option to Makefile build targets
+- **dev**: add Makefile for local development without ECR access
+
+### Fix
+
+- **ci**: revert deploy job name to plain "Deploy"
+- **tests**: move orphaned cilogon tests into class and convert to behavioral assertions
+- **onboarding**: improve Welcome and Registration page wording and layout
+
+### Refactor
+
+- **tests**: remove implementation-detail assertions from remaining test files
+- **tests**: remove logger mock assertions from utils tests
+- **tests**: remove mock-call assertions from API tests
+- **tests**: remove implementation-detail assertions from mastodon tests
+- **tests**: convert view tests from mock-call to response assertions
+
 ## 4.14.2 (2026-03-31)
 
 ### Fix
