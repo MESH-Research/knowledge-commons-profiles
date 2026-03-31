@@ -2,6 +2,7 @@
 #
 # Quick start:
 #   make build   — build base image + local Django container
+#   make build NO_CACHE=1 — same, but without Docker layer cache
 #   make up      — start the local development server (https://localhost)
 #   make down    — stop all containers
 #   make test    — run the test suite inside the container
@@ -16,6 +17,9 @@ BASE_DOCKERFILE := compose/base/Dockerfile
 # We build the base image with this tag so it resolves without ECR access.
 ECR_REGISTRY   := registry
 BASE_IMAGE     := $(ECR_REGISTRY)/kcprofiles-base-dev:latest
+
+# Pass NO_CACHE=1 to force a clean rebuild (e.g. make build NO_CACHE=1)
+DOCKER_BUILD_FLAGS := $(if $(NO_CACHE),--no-cache,)
 
 .PHONY: help build build-base build-app up down restart logs shell test \
         manage migrate lint clean
@@ -32,11 +36,12 @@ build-base: ## Build the base dev image locally (no ECR needed)
 	docker build \
 		-f $(BASE_DOCKERFILE) \
 		--build-arg BUILD_ENVIRONMENT=local \
+		$(DOCKER_BUILD_FLAGS) \
 		-t $(BASE_IMAGE) \
 		.
 
 build-app: ## Build the local Django image (requires base image)
-	$(COMPOSE) build
+	$(COMPOSE) build $(DOCKER_BUILD_FLAGS)
 
 # ── Run ─────────────────────────────────────────────────────────────────
 

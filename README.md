@@ -76,8 +76,9 @@ Makefile. This builds everything locally without needing AWS ECR credentials.
 
 4. Build and start:
    ```bash
-   make build   # builds base image + local Django container
-   make up      # starts the server at https://localhost
+   make build              # builds base image + local Django container
+   make build NO_CACHE=1  # same, but without Docker layer cache
+   make up                # starts the server at https://localhost
    ```
 
 Run `make help` to see all available targets:
