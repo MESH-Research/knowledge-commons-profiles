@@ -244,7 +244,7 @@ def get_profile_photo(profile: Profile):
         )
 
     # fall back to the DB from import (uses prefetched cache if available)
-    images = profile.profileimage_set.all()
+    images = list(profile.profileimage_set.all())
     profile_image = images[0] if images else None
     if profile_image:
         msg = f"Image for {profile.username} has been imported from WordPress"
