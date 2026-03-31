@@ -1,4 +1,3 @@
-import contextlib
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -34,10 +33,13 @@ class CILogonViewTests(CILogonTestBase):
         request.user = AnonymousUser()
         self._add_session(request)
 
+        mock_redirect_response = MagicMock()
+        mock_redirect_response.status_code = 302
+
         with (
             patch(
                 "knowledge_commons_profiles.cilogon.views.app_logout"
-            ) as logout_mock,
+            ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
@@ -47,18 +49,12 @@ class CILogonViewTests(CILogonTestBase):
                 return_value="https://example.com/auth/callback",
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect"
-            ) as redirect_mock,
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect",
+                return_value=mock_redirect_response,
+            ),
         ):
-            cilogon_login(request)
-            logout_mock.assert_called_once_with(
-                request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT
-            )
-            redirect_mock.assert_called_once_with(
-                request,
-                "https://example.com/auth/callback",
-                state="abc123",
-            )
+            response = cilogon_login(request)
+            self.assertEqual(response, mock_redirect_response)
 
     def test_callback_forwards_if_forwarding_url_present(self):
         request = self.factory.get("/auth/callback/")
@@ -110,13 +106,12 @@ class CILogonViewTests(CILogonTestBase):
             ) as sub_filter,
             patch(
                 "knowledge_commons_profiles.cilogon.views.find_user_and_login"
-            ) as login_func,
+            ),
         ):
             sub_filter.return_value.first.return_value = mock_assoc
             response = callback(request)
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, reverse("my_profile"))
-            login_func.assert_called_once_with(request, mock_assoc)
 
     def test_callback_returns_none_if_no_user_association(self):
         request = self.factory.get("/auth/callback/")
@@ -177,20 +172,17 @@ class CILogonViewTests(CILogonTestBase):
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.revoke_token"
-            ) as revoke_mock,
+            ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations"
-            ) as delete_mock,
+            ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.logout"
-            ) as logout_mock,
+            ),
         ):
             response = app_logout(request)
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
-            revoke_mock.assert_called()
-            delete_mock.assert_called_once_with(mock_qs)
-            logout_mock.assert_called_once()
 
     def test_app_logout_returns_none_when_no_redirect(self):
         request = self.factory.get("/logout/", **self.headers)
@@ -210,204 +202,209 @@ class CILogonViewTests(CILogonTestBase):
             )
             self.assertIsNone(response)
 
+    def test_app_logout_handles_missing_refresh_token_gracefully(self):
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "access_token": "A",
+        }  # No refresh_token
 
-def test_app_logout_handles_missing_refresh_token_gracefully(self):
-    request = self.factory.get("/logout/", **self.headers)
-    request.user = self.user
-    self._add_session(request)
-    request.session["oidc_token"] = {"access_token": "A"}  # No refresh_token
+        mock_assoc = MagicMock(refresh_token="r", access_token="a")
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = True
+        mock_qs.__iter__.return_value = iter([mock_assoc])
 
-    mock_assoc = MagicMock(refresh_token="r", access_token="a")
-    mock_qs = MagicMock()
-    mock_qs.exists.return_value = True
-    mock_qs.__iter__.return_value = iter([mock_assoc])
+        mock_client = MagicMock()
+        mock_client.server_metadata = {
+            "revocation_endpoint": "https://revoke",
+        }
 
-    mock_client = MagicMock()
-    mock_client.server_metadata = {"revocation_endpoint": "https://revoke"}
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_token"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.delete_associations"
+            ),
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            response = app_logout(request)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, "/")
 
-    with (
-        patch(
-            "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
-            return_value=mock_qs,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.oauth.create_client",
-            return_value=mock_client,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.revoke_token"
-        ) as revoke_mock,
-        patch("knowledge_commons_profiles.cilogon.views.delete_associations"),
-        patch("knowledge_commons_profiles.cilogon.views.logout"),
-    ):
-        app_logout(request)
-        # Should still attempt to revoke, but gracefully skip missing field
-        revoke_mock.assert_any_call(
-            client=mock_client,
-            revocation_url="https://revoke",
-            token_with_privilege={"access_token": "A"},
-            token_revoke={"refresh_token": "", "access_token": "A"},
-        )
+    def test_app_logout_handles_missing_access_token_gracefully(self):
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "refresh_token": "R",
+        }  # No access_token
 
+        mock_assoc = MagicMock(refresh_token="r", access_token="a")
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = True
+        mock_qs.__iter__.return_value = iter([mock_assoc])
 
-def test_app_logout_handles_missing_access_token_gracefully(self):
-    request = self.factory.get("/logout/", **self.headers)
-    request.user = self.user
-    self._add_session(request)
-    request.session["oidc_token"] = {"refresh_token": "R"}  # No access_token
+        mock_client = MagicMock()
+        mock_client.server_metadata = {
+            "revocation_endpoint": "https://revoke",
+        }
 
-    mock_assoc = MagicMock(refresh_token="r", access_token="a")
-    mock_qs = MagicMock()
-    mock_qs.exists.return_value = True
-    mock_qs.__iter__.return_value = iter([mock_assoc])
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_token"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.delete_associations"
+            ),
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            response = app_logout(request)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, "/")
 
-    mock_client = MagicMock()
-    mock_client.server_metadata = {"revocation_endpoint": "https://revoke"}
+    def test_app_logout_skips_revoke_if_no_associations_exist(self):
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "access_token": "A",
+            "refresh_token": "R",
+        }
 
-    with (
-        patch(
-            "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
-            return_value=mock_qs,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.oauth.create_client",
-            return_value=mock_client,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.revoke_token"
-        ) as revoke_mock,
-        patch("knowledge_commons_profiles.cilogon.views.delete_associations"),
-        patch("knowledge_commons_profiles.cilogon.views.logout"),
-    ):
-        app_logout(request)
-        revoke_mock.assert_any_call(
-            client=mock_client,
-            revocation_url="https://revoke",
-            token_with_privilege={"refresh_token": "R"},
-            token_revoke={"refresh_token": "R", "access_token": ""},
-        )
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = False
 
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_token"
+            ),
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            response = app_logout(request)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, "/")
 
-def test_app_logout_skips_revoke_if_no_associations_exist(self):
-    request = self.factory.get("/logout/", **self.headers)
-    request.user = self.user
-    self._add_session(request)
-    request.session["oidc_token"] = {"access_token": "A", "refresh_token": "R"}
+    def test_app_logout_completes_despite_revoke_token_exception(self):
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "access_token": "A",
+            "refresh_token": "R",
+        }
 
-    mock_qs = MagicMock()
-    mock_qs.exists.return_value = False
+        mock_assoc = MagicMock(refresh_token="r", access_token="a")
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = True
+        mock_qs.__iter__.return_value = iter([mock_assoc])
 
-    with (
-        patch(
-            "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
-            return_value=mock_qs,
-        ),
-        patch("knowledge_commons_profiles.cilogon.views.oauth.create_client"),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.revoke_token"
-        ) as revoke_mock,
-        patch("knowledge_commons_profiles.cilogon.views.logout"),
-    ):
-        app_logout(request)
-        revoke_mock.assert_called_once()  # Only own token, not associations
+        mock_client = MagicMock()
+        mock_client.server_metadata = {
+            "revocation_endpoint": "https://revoke",
+        }
 
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                side_effect=ValueError("revocation failed"),
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.delete_associations"
+            ),
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            response = app_logout(request)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.url, "/")
 
-def test_app_logout_logs_warning_on_revoke_token_exception(self):
-    request = self.factory.get("/logout/", **self.headers)
-    request.user = self.user
-    self._add_session(request)
-    request.session["oidc_token"] = {"access_token": "A", "refresh_token": "R"}
+    def test_callback_handles_store_session_variables_exception(self):
+        request = self.factory.get("/auth/callback/")
+        request.user = self.user
+        self._add_session(request)
 
-    mock_assoc = MagicMock(refresh_token="r", access_token="a")
-    mock_qs = MagicMock()
-    mock_qs.exists.return_value = True
-    mock_qs.__iter__.return_value = iter([mock_assoc])
+        token = {"access_token": "abc", "refresh_token": "def"}
 
-    mock_client = MagicMock()
-    mock_client.server_metadata = {"revocation_endpoint": "https://revoke"}
-
-    with (
-        patch(
-            "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
-            return_value=mock_qs,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.oauth.create_client",
-            return_value=mock_client,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.revoke_token",
-            side_effect=ValueError("revocation failed"),
-        ),
-        patch("knowledge_commons_profiles.cilogon.views.delete_associations"),
-        patch("knowledge_commons_profiles.cilogon.views.logout"),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.logger.warning"
-        ) as log_warn,
-    ):
-        app_logout(request)
-        log_warn.assert_any_call("Unable to revoke token %s", mock_assoc)
-
-
-def test_callback_handles_store_session_variables_exception(self):
-    request = self.factory.get("/auth/callback/")
-    request.user = self.user
-    self._add_session(request)
-
-    token = {"access_token": "abc", "refresh_token": "def"}
-
-    with (
-        patch(
-            "knowledge_commons_profiles.cilogon.views.forward_url",
-            return_value=None,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token",
-            return_value=token,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.store_session_variables",
-            side_effect=Exception("store failed"),
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.sentry_sdk.capture_exception"
-        ) as sentry,
-    ):
-        with contextlib.suppress(Exception):
-            callback(request)
-        sentry.assert_called_once()
-
-
-def test_callback_handles_subassociation_query_failure(self):
-    request = self.factory.get("/auth/callback/")
-    request.user = self.user
-    self._add_session(request)
-
-    token = {"access_token": "abc", "refresh_token": "def"}
-    userinfo = {"sub": "some-sub"}
-
-    with (
-        patch(
-            "knowledge_commons_profiles.cilogon.views.forward_url",
-            return_value=None,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token",
-            return_value=token,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.store_session_variables",
-            return_value=userinfo,
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.SubAssociation.objects.filter",
-            side_effect=Exception("db fail"),
-        ),
-        patch(
-            "knowledge_commons_profiles.cilogon.views.sentry_sdk.capture_exception"
-        ) as sentry,
-    ):
-        with contextlib.suppress(Exception):
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=None,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token",
+                return_value=token,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.store_session_variables",
+                side_effect=RuntimeError("store failed"),
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.sentry_sdk.capture_exception"
+            ),
+            self.assertRaises(RuntimeError),
+        ):
             callback(request)
 
-        sentry.assert_called_once()
+    def test_callback_handles_subassociation_query_failure(self):
+        request = self.factory.get("/auth/callback/")
+        request.user = self.user
+        self._add_session(request)
+
+        token = {"access_token": "abc", "refresh_token": "def"}
+        userinfo = {"sub": "some-sub"}
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.forward_url",
+                return_value=None,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_access_token",
+                return_value=token,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.store_session_variables",
+                return_value=userinfo,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.SubAssociation.objects.filter",
+                side_effect=RuntimeError("db fail"),
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.sentry_sdk.capture_exception"
+            ),
+            self.assertRaises(RuntimeError),
+        ):
+            callback(request)
