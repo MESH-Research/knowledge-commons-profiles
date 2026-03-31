@@ -22,7 +22,7 @@ RUN chmod +x /start
 # Copy application code to WORKDIR
 COPY --chown=django:django . ${APP_HOME}
 
-RUN chown -R django:django ${APP_HOME}
+RUN chown -R django:django ${APP_HOME} /opt/venv
 
 USER django
 
