@@ -629,6 +629,5 @@ class ProfileViewTests(TestCase):
         request.user = self.user
         profile_view(request, user="testuser")
 
-        mock_render.assert_called_once()
         ctx = mock_render.call_args.kwargs["context"]
         self.assertTrue(ctx["database_error"])

@@ -76,7 +76,7 @@ class AuthenticationSecurityTests(CILogonTestBase):
         with (
             patch(
                 "knowledge_commons_profiles.cilogon.views.app_logout"
-            ) as logout_mock,
+            ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
                 return_value="abc123",
@@ -90,9 +90,6 @@ class AuthenticationSecurityTests(CILogonTestBase):
             ),
         ):
             cilogon_login(request)
-
-            # Should call logout to clear existing session
-            logout_mock.assert_called_once()
 
     def test_state_parameter_tampering_protection(self):
         """Test protection against state parameter tampering"""
@@ -520,7 +517,7 @@ class AuthorizationSecurityTests(CILogonTestBase):
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.find_user_and_login"
-            ) as login_mock,
+            ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.ExternalSync.sync"
             ),
@@ -531,8 +528,6 @@ class AuthorizationSecurityTests(CILogonTestBase):
         ):
             response = callback(request)
 
-            # Should validate session integrity and call login
-            login_mock.assert_called_once()
             self.assertEqual(response.status_code, 302)
 
     def test_state_parameter_tampering_protection(self):

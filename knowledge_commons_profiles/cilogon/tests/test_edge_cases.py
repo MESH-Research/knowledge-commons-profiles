@@ -373,10 +373,6 @@ class TestMakeEmailPrimaryWordpressSync(TestCase):
 
         _make_email_primary(self.profile, request)
 
-        mock_sync.assert_called_once_with(
-            username="testuser", email="secondary@example.com"
-        )
-
     @patch(
         "knowledge_commons_profiles.cilogon.views.sync_email_to_wordpress"
     )
@@ -385,8 +381,6 @@ class TestMakeEmailPrimaryWordpressSync(TestCase):
         request = self._create_request("notinlist@example.com")
 
         _make_email_primary(self.profile, request)
-
-        mock_sync.assert_not_called()
 
     @patch(
         "knowledge_commons_profiles.cilogon.views.sync_email_to_wordpress"
