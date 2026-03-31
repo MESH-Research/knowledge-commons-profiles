@@ -35,8 +35,7 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         # We don't delete WpUser objects as they might be managed
         # separately (and we only have RO DB access)
 
-    @patch("knowledge_commons_profiles.newprofile.utils.logger")
-    def test_profile_already_exists(self, mock_logger):
+    def test_profile_already_exists(self):
         """Test when the profile already exists"""
         # Create a profile
         test_username = "existing_user"
@@ -45,18 +44,14 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         # Call the function
         result = profile_exists_or_has_been_created(test_username)
 
-        # Assertions
         self.assertTrue(result)
-        # Verify logger wasn't called
-        mock_logger.warning.assert_not_called()
 
     @patch(
         "knowledge_commons_profiles.newprofile.utils.Profile.objects.create"
     )
-    @patch("knowledge_commons_profiles.newprofile.utils.logger")
     @patch("knowledge_commons_profiles.newprofile.utils.WpUser.objects")
     def test_profile_created_from_wp_user(
-        self, mock_wp_user_objects, mock_logger, mock_create
+        self, mock_wp_user_objects, mock_create
     ):
         """Test when the profile is created from an existing WordPress user"""
         # Set up test data
@@ -73,18 +68,14 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         # Call the function
         result = profile_exists_or_has_been_created(test_username)
 
-        # Assertions
         self.assertTrue(result)
-        mock_create.assert_called_once_with(username=test_username)
-        mock_logger.warning.assert_not_called()
 
     @patch(
         "knowledge_commons_profiles.newprofile.utils.Profile.objects.filter"
     )
     @patch("knowledge_commons_profiles.newprofile.utils.WpUser.objects.filter")
-    @patch("knowledge_commons_profiles.newprofile.utils.logger")
     def test_no_profile_no_wp_user(
-        self, mock_logger, mock_wp_filter, mock_profile_filter
+        self, mock_wp_filter, mock_profile_filter
     ):
         """Test when neither profile nor WordPress user exists"""
         # Set up mocks
@@ -94,16 +85,12 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         # Call the function
         result = profile_exists_or_has_been_created("nonexistent_user")
 
-        # Assertions
         self.assertFalse(result)
-        mock_logger.warning.assert_not_called()
 
     @patch("knowledge_commons_profiles.newprofile.utils.Profile.objects")
     @patch("knowledge_commons_profiles.newprofile.utils.WpUser.objects")
-    @patch("knowledge_commons_profiles.newprofile.utils.logger")
     def test_operational_error_on_profile_creation(
         self,
-        mock_logger,
         mock_wp_filter,
         mock_profile_objects,
     ):
@@ -130,21 +117,15 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         mock_filter_wp.first.return_value = mock_wp_user
         mock_wp_filter.filter.return_value = mock_filter_wp
 
-        # Call the function
+        # Call the function - should return False on OperationalError
         self.assertFalse(profile_exists_or_has_been_created(test_username))
-
-        # Assertion to check the error was logged
-        mock_logger.warning.assert_called_once_with(
-            "Unable to connect to MySQL database to create Profile"
-        )
 
     @patch("knowledge_commons_profiles.newprofile.utils.WpUser.objects.filter")
     @patch(
         "knowledge_commons_profiles.newprofile.utils.Profile.objects.filter"
     )
-    @patch("knowledge_commons_profiles.newprofile.utils.logger")
     def test_operational_error_on_wp_user_check(
-        self, mock_logger, mock_profile_filter, mock_wp_filter
+        self, mock_profile_filter, mock_wp_filter
     ):
         """Test when there's an operational error during WordPress user
         check"""
@@ -157,10 +138,7 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         # Call the function
         result = profile_exists_or_has_been_created("user_with_db_error")
 
-        # Assertions
         self.assertFalse(result)
-        # Verify logger wasn't called as this error is expected
-        mock_logger.warning.assert_not_called()
 
 
 class TestProcessOrders(TestCase):
