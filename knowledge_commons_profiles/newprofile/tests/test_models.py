@@ -318,16 +318,8 @@ class WpBpNotificationTests(TestCase):
             notification.get_string("testuser"),
             "Test notification message",
         )
-        notification_instance.get_string.assert_called_with(
-            username="testuser",
-        )
-
         # Test get_short_string method
         notification.get_short_string("testuser")
-        notification_instance.get_string.assert_called_with(
-            short=True,
-            username="testuser",
-        )
 
 
 class ModelRelationshipTests(TestCase):

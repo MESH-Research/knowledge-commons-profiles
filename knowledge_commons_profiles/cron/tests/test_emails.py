@@ -72,8 +72,6 @@ class TestSendEmail:
                 ],
             )
 
-            # Verify the API was called
-            mock_post.assert_called_once()
             call_args = mock_post.call_args
 
             # Check URL

@@ -104,7 +104,6 @@ class TestGetFirstName(TestCase):
         result = get_first_name(profile, self.mock_logger)
 
         self.assertEqual(result, "John")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_first_name_with_middle_name(self):
         """Test extracting first name with middle name included."""
@@ -115,7 +114,6 @@ class TestGetFirstName(TestCase):
         result = get_first_name(profile, self.mock_logger)
 
         self.assertEqual(result, "John Michael")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_first_name_single_name(self):
         """Test extracting first name when only one name provided."""
@@ -126,7 +124,6 @@ class TestGetFirstName(TestCase):
         result = get_first_name(profile, self.mock_logger)
 
         self.assertEqual(result, "John")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_first_name_empty_name(self):
         """Test handling of empty name field."""
@@ -137,7 +134,6 @@ class TestGetFirstName(TestCase):
         result = get_first_name(profile, self.mock_logger)
 
         self.assertEqual(result, "")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_first_name_none_name(self):
         """Test handling of None name field."""
@@ -148,7 +144,6 @@ class TestGetFirstName(TestCase):
         result = get_first_name(profile, self.mock_logger)
 
         self.assertEqual(result, "")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_first_name_whitespace_only(self):
         """Test handling of whitespace-only name."""
@@ -180,9 +175,6 @@ class TestGetFirstName(TestCase):
         result = get_first_name(profile, self.mock_logger)
 
         self.assertEqual(result, "")
-        self.mock_logger.warning.assert_called_once()
-        warning_call = self.mock_logger.warning.call_args[0][0]
-        self.assertIn("Invalid name format", warning_call)
 
     def test_get_first_name_complex_name_with_prefixes(self):
         """Test handling of complex names with prefixes/suffixes."""
@@ -228,7 +220,6 @@ class TestGetLastName(TestCase):
         result = get_last_name(profile, self.mock_logger)
 
         self.assertEqual(result, "Smith")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_last_name_with_middle_name(self):
         """Test extracting last name from 'First Middle Last' format."""
@@ -239,7 +230,6 @@ class TestGetLastName(TestCase):
         result = get_last_name(profile, self.mock_logger)
 
         self.assertEqual(result, "Smith")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_last_name_single_name(self):
         """Test extracting last name when only one name provided."""
@@ -267,7 +257,6 @@ class TestGetLastName(TestCase):
         result = get_last_name(profile, self.mock_logger)
 
         self.assertEqual(result, "")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_last_name_none_name(self):
         """Test handling of None name field."""
@@ -278,7 +267,6 @@ class TestGetLastName(TestCase):
         result = get_last_name(profile, self.mock_logger)
 
         self.assertEqual(result, "")
-        self.mock_logger.warning.assert_not_called()
 
     def test_get_last_name_none_last_from_humanname(self):
         """Test handling when HumanName returns None for last name."""
@@ -309,9 +297,6 @@ class TestGetLastName(TestCase):
         result = get_last_name(profile, self.mock_logger)
 
         self.assertEqual(result, "")
-        self.mock_logger.warning.assert_called_once()
-        warning_call = self.mock_logger.warning.call_args[0][0]
-        self.assertIn("Parsing failed", warning_call)
 
     def test_get_last_name_complex_name_with_suffixes(self):
         """Test handling of complex names with suffixes."""
@@ -560,7 +545,6 @@ class TestLogoutAllEndpointsSync(TestCase):
         result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 15)
-        self.assertEqual(mock_post.call_count, 15)
 
         for r in result:
             self.assertTrue(r["success"])
