@@ -91,6 +91,10 @@ def logout_all_endpoints_sync(username="", request=None):
         request.user.username if request and username == "" else username
     )
 
+    if not username:
+        logger.warning("Skipping logout: no username provided")
+        return []
+
     def send_request(endpoint):
         msg = f"Sending logout request to {endpoint} for {username}"
         logger.info(msg)
@@ -101,14 +105,25 @@ def logout_all_endpoints_sync(username="", request=None):
                 params={"username": username},
                 timeout=LOGOUT_TIMEOUT,
             )
-        except Exception as e:
-            msg = f"Error sending logout signal to {endpoint} for {username}"
-            logger.exception(msg)
+        except requests.exceptions.Timeout:
+            logger.warning(
+                "Timeout sending logout to %s for %s", endpoint, username
+            )
             return {
                 "endpoint": endpoint,
                 "status": None,
                 "success": False,
-                "error": str(e),
+                "error": "timeout",
+            }
+        except requests.exceptions.RequestException:
+            logger.warning(
+                "Failed to send logout to %s for %s", endpoint, username
+            )
+            return {
+                "endpoint": endpoint,
+                "status": None,
+                "success": False,
+                "error": "connection_error",
             }
         else:
             return {
@@ -150,8 +165,12 @@ def check_api_endpoints_health():
                 params={"username": "zed-stack-a-deh"},
                 timeout=HEALTH_CHECK_TIMEOUT,
             )
-        except Exception as e:  # noqa: BLE001
-            return (endpoint, f"unreachable: {e}")
+        except requests.exceptions.Timeout:
+            logger.warning("Health probe timeout: %s", endpoint)
+            return (endpoint, "unreachable: timeout")
+        except requests.exceptions.RequestException:
+            logger.warning("Health probe failed: %s", endpoint)
+            return (endpoint, "unreachable")
         else:
             if response.status_code in reachable_codes:
                 return (endpoint, "reachable")
