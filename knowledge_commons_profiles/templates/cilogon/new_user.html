@@ -26,7 +26,7 @@
           </div>
         {% endif %}
 
-        <h1 class="h1-associate">Welcome to Knowledge Commons...</h1>
+        <h1 class="h1-associate">Welcome to Knowledge Commons</h1>
         <h3 class="h3-associate">Please complete your registration by providing the following information.</h3>
         <div>
           <form class="form-associate" action="{% url 'user_registration' %}" method="post">
@@ -34,6 +34,7 @@
             <ol class="ol-associate">
               <li>
                 Enter your desired username below. This will be used to identify your account.
+                Username must be 3–30 characters and can contain letters, numbers, underscores, and hyphens.
                 <div>
                   <input type="text" name="username" id="username" value="{{ username }}" placeholder="your_username" required />
                 </div>
@@ -74,12 +75,12 @@
                   </label>
                 </div>
               </li>
-              <li>
-                <input type="submit" value="Register" />
-              </li>
-              <li>For any problems, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a> if you need help.</li>
             </ol>
+            <div class="associate-step">
+              <input type="submit" value="Register" />
+            </div>
           </form>
+          <p class="p-associate">For any problems, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a> if you need help.</p>
           <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
               <div class="modal-content">
