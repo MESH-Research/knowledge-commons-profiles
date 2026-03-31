@@ -89,7 +89,7 @@ jobs:
         run: docker compose -f docker-compose.github.yml down
 
   deploy:
-    name: Deploy
+    name: Deploy (${{ github.ref_name == 'main' && 'production' || 'dev' }})
     runs-on: ubuntu-24.04-arm
     needs: [linter, test]
     if: github.event_name == 'push'
