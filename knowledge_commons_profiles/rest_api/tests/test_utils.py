@@ -373,6 +373,15 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
+    def test_no_username_returns_empty(self):
+        """Test that calling with no username skips all requests."""
+        result = logout_all_endpoints_sync()
+        self.assertEqual(result, [])
+
+    @override_settings(
+        LOGOUT_ENDPOINTS=["https://api1.com/logout"],
+        STATIC_API_BEARER="test-token",
+    )
     @patch("requests.post")
     def test_single_successful_request(self, mock_post):
         """Test successful logout to single endpoint."""
@@ -380,7 +389,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["endpoint"], "https://api1.com/logout")
@@ -399,7 +408,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 401
         mock_post.return_value = mock_response
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["endpoint"], "https://api1.com/logout")
@@ -418,7 +427,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 500
         mock_post.return_value = mock_response
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["endpoint"], "https://api1.com/logout")
@@ -434,14 +443,14 @@ class TestLogoutAllEndpointsSync(TestCase):
         """Test handling of network/connection exceptions."""
         mock_post.side_effect = requests.ConnectionError("Connection failed")
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["endpoint"], "https://api1.com/logout")
         self.assertIsNone(result[0]["status"])
         self.assertFalse(result[0]["success"])
         self.assertIn("error", result[0])
-        self.assertIn("Connection failed", result[0]["error"])
+        self.assertEqual(result[0]["error"], "connection_error")
 
     @override_settings(
         LOGOUT_ENDPOINTS=[
@@ -458,7 +467,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 3)
         endpoints = {r["endpoint"] for r in result}
@@ -500,7 +509,7 @@ class TestLogoutAllEndpointsSync(TestCase):
 
         mock_post.side_effect = side_effect
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 3)
 
@@ -524,7 +533,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        logout_all_endpoints_sync()
+        logout_all_endpoints_sync(username="testuser")
 
         mock_post.assert_called_once_with(
             "https://api1.com/logout",
@@ -532,7 +541,7 @@ class TestLogoutAllEndpointsSync(TestCase):
                 "Authorization": "Bearer test-token",
                 "Content-Type": "application/json",
             },
-            params={"username": ""},
+            params={"username": "testuser"},
             timeout=LOGOUT_TIMEOUT,
         )
 
@@ -548,7 +557,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertEqual(len(result), 15)
         self.assertEqual(mock_post.call_count, 15)
@@ -561,14 +570,14 @@ class TestLogoutAllEndpointsSync(TestCase):
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
         STATIC_API_BEARER="test-token",
     )
-    @patch("requests.get")
+    @patch("requests.post")
     def test_return_value_structure(self, mock_post):
         """Test that return values have correct structure."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        result = logout_all_endpoints_sync()
+        result = logout_all_endpoints_sync(username="testuser")
 
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 1)
@@ -591,7 +600,7 @@ class TestLogoutAllEndpointsSync(TestCase):
         mock_response.status_code = 200
         mock_post.return_value = mock_response
 
-        logout_all_endpoints_sync()
+        logout_all_endpoints_sync(username="testuser")
 
         called_headers = mock_post.call_args[1]["headers"]
         self.assertEqual(
@@ -700,9 +709,8 @@ class TestCheckApiEndpointsHealth(TestCase):
 
         result = check_api_endpoints_health()
 
-        self.assertIn("unreachable:", result["https://api1.com/logout"])
-        self.assertIn(
-            "Connection refused", result["https://api1.com/logout"]
+        self.assertEqual(
+            result["https://api1.com/logout"], "unreachable"
         )
 
     @override_settings(
@@ -716,8 +724,9 @@ class TestCheckApiEndpointsHealth(TestCase):
 
         result = check_api_endpoints_health()
 
-        self.assertIn("unreachable:", result["https://api1.com/logout"])
-        self.assertIn("Request timed out", result["https://api1.com/logout"])
+        self.assertEqual(
+            result["https://api1.com/logout"], "unreachable: timeout"
+        )
 
     @override_settings(
         LOGOUT_ENDPOINTS=[
@@ -744,7 +753,7 @@ class TestCheckApiEndpointsHealth(TestCase):
 
         self.assertEqual(len(result), 2)
         self.assertEqual(result["https://api1.com/logout"], "reachable")
-        self.assertIn("unreachable:", result["https://api2.com/logout"])
+        self.assertEqual(result["https://api2.com/logout"], "unreachable")
 
     @override_settings(
         LOGOUT_ENDPOINTS=["https://api1.com/logout"],
