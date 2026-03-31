@@ -58,7 +58,8 @@ def people_by_username(request):
                     "academic_interests",
                     queryset=AcademicInterest.objects.all(),
                     to_attr="display_interests",
-                )
+                ),
+                "profileimage_set",
             )
             .order_by("username", "id")
         )
@@ -200,7 +201,8 @@ def fetch_member_data(
                 "academic_interests",
                 queryset=AcademicInterest.objects.all(),
                 to_attr="display_interests",
-            )
+            ),
+            "profileimage_set",
         )
         .order_by("username", "id")
     )
