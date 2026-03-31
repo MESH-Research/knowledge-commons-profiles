@@ -211,6 +211,7 @@ BROKER_REGISTERED_APPS = {
             "hcommons-dev.org",
             "localhost",
             "lndo.site",
+            "msucommons-dev.org"
         ],
     },
     "works": {

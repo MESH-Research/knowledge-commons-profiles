@@ -243,8 +243,9 @@ def get_profile_photo(profile: Profile):
             + f"/group-avatars/{profile.central_user_id}/{thumb}"
         )
 
-    # fall back to the DB from import
-    profile_image = profile.profileimage_set.first()
+    # fall back to the DB from import (uses prefetched cache if available)
+    images = list(profile.profileimage_set.all())
+    profile_image = images[0] if images else None
     if profile_image:
         msg = f"Image for {profile.username} has been imported from WordPress"
         logger.info(msg)
