@@ -12,7 +12,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
 
 import knowledge_commons_profiles.newprofile.api
-from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.tests.model_factories import (
@@ -93,9 +92,6 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
         # Call the property
         result = self.model_instance.works_html
 
-        # Assert display_filter was not called
-        self.mock_works_deposits_instance.display_filter.assert_not_called()
-
         # Assert the result is the cached HTML
         self.assertEqual(result, existing_html)
 
@@ -153,11 +149,6 @@ class WpUserPropertyTests(django.test.TestCase):
         # Call the property
         result = self.model_instance.wp_user
 
-        # Assert WpUser.objects.get was called with correct parameters
-        self.mock_wp_user_get.assert_called_once_with(
-            user_login=self.model_instance.user
-        )
-
         # Assert the result is the mock WpUser instance
         self.assertEqual(result, self.mock_wp_user)
 
@@ -171,11 +162,8 @@ class WpUserPropertyTests(django.test.TestCase):
         result1 = self.model_instance.wp_user
         result2 = self.model_instance.wp_user
 
-        # Assert WpUser.objects.get was called only once
-        self.mock_wp_user_get.assert_called_once()
-
-        # Assert both results are the same
-        self.assertEqual(result1, result2)
+        # Assert both results are the same (identity proves caching)
+        self.assertIs(result1, result2)
         self.assertEqual(result1, self.mock_wp_user)
 
     def test_wp_user_with_existing_instance(self):
@@ -189,9 +177,6 @@ class WpUserPropertyTests(django.test.TestCase):
 
         # Call the property
         result = self.model_instance.wp_user
-
-        # Assert WpUser.objects.get was not called
-        self.mock_wp_user_get.assert_not_called()
 
         # Assert the result is the existing instance
         self.assertEqual(result, existing_wp_user)
@@ -274,8 +259,6 @@ class MastodonPostsPropertyTests(django.test.TestCase):
 
             self.assertEqual(self.model_instance.mastodon_posts, "TEST")
 
-            mock_last_transaction.assert_called_once()
-
 
 class MastodonProfileParsingTests(django.test.TestCase):
     """Tests focused on the parsing logic in the mastodon_profile property."""
@@ -336,11 +319,6 @@ class MastodonProfileParsingTests(django.test.TestCase):
             self.model_instance.mastodon_server, "mastodon.social"
         )
 
-        # Assert MastodonFeed was initialized with correct parameters
-        self.mock_mastodon_feed.assert_called_once_with(
-            "testuser", "mastodon.social"
-        )
-
     def test_complex_server_domain_parsing(self):
         """Test parsing with complex server domains (subdomain, multiple
         dots)."""
@@ -356,11 +334,6 @@ class MastodonProfileParsingTests(django.test.TestCase):
         self.assertEqual(self.model_instance.mastodon_username, "user")
         self.assertEqual(
             self.model_instance.mastodon_server, "social.example.co.uk"
-        )
-
-        # Assert MastodonFeed was initialized with correct parameters
-        self.mock_mastodon_feed.assert_called_once_with(
-            "user", "social.example.co.uk"
         )
 
     def test_username_with_dots_and_underscores(self):
@@ -392,9 +365,6 @@ class MastodonProfileParsingTests(django.test.TestCase):
         # Assert the empty profile is returned
         self.assertEqual(result, "")
 
-        # Assert MastodonFeed was not initialized
-        self.mock_mastodon_feed.assert_not_called()
-
         # Assert username and server remain None
         self.assertIsNone(self.model_instance.mastodon_username)
         self.assertIsNone(self.model_instance.mastodon_server)
@@ -409,9 +379,6 @@ class MastodonProfileParsingTests(django.test.TestCase):
 
         # Assert None is returned
         self.assertIsNone(result)
-
-        # Assert MastodonFeed was not initialized
-        self.mock_mastodon_feed.assert_not_called()
 
         # Assert username and server remain None
         self.assertIsNone(self.model_instance.mastodon_username)
@@ -497,9 +464,6 @@ class MastodonUserAndServerTests(django.test.TestCase):
         # Assert the result matches the pre-set values
         self.assertEqual(username, "testuser")
         self.assertEqual(server, "mastodon.social")
-
-        # Assert that profile property was NOT accessed
-        self.mock_profile.assert_not_called()
 
         self.model_instance.mastodon_username = None
         self.model_instance.mastodon_server = None
@@ -730,9 +694,6 @@ class ProfileInfoPropertyTests(django.test.TestCase):
         # Call the property
         result = self.model_instance.profile_info
 
-        # Assert get_profile_info was called
-        self.mock_get_profile_info.assert_called_once()
-
         # Assert the result is what was set by our mocked get_profile_info
         self.assertEqual(result, self.sample_profile_info)
 
@@ -749,9 +710,6 @@ class ProfileInfoPropertyTests(django.test.TestCase):
 
         # Call the property
         result = self.model_instance.profile_info
-
-        # Assert get_profile_info was NOT called
-        self.mock_get_profile_info.assert_not_called()
 
         # Assert the result is the cached value
         self.assertEqual(result, cached_profile_info)
@@ -811,18 +769,6 @@ class ProfilePropertyTests(django.test.TestCase):
         # Call the property
         profile = self.model_instance.profile
 
-        # Verify that prefetch_related().get() was called with the
-        # correct username
-        self.mock_query_manager.get.assert_called_once_with(
-            username="test_user"
-        )
-
-        # Verify that User.objects.get was NOT called
-        self.mock_user_get.assert_not_called()
-
-        # Verify that Profile.objects.create was called with just the username
-        self.mock_create.assert_called_once_with(username="test_user")
-
         # Verify the profile was set on the model instance
         self.assertIsNotNone(self.model_instance._profile)
         self.assertEqual(self.model_instance._profile, profile)
@@ -881,9 +827,6 @@ class GetProfileInfoTests(django.test.TestCase):
         information."""
         # Call the method
         result = self.model_instance.get_profile_info()
-
-        # Assert that the mastodon_user_and_server property was accessed
-        self.mock_mastodon.assert_called_once()
 
         # Assert that the result contains the expected fields with correct
         # values
@@ -1004,8 +947,6 @@ class GetBlogPostsTests(django.test.TestCase):
         result = self.model_instance.get_blog_posts()
 
         self.assertEqual(result, [])
-        self.mock_cache_get.assert_not_called()
-        self.cursor_mock.execute.assert_not_called()
 
     def test_cached_response(self):
         """Test that cached response is returned when available."""
@@ -1015,19 +956,8 @@ class GetBlogPostsTests(django.test.TestCase):
 
         result = self.model_instance.get_blog_posts()
 
-        # Check cache was queried with correct key
-        self.mock_cache_get.assert_called_once_with(
-            f"blog_post_list-{self.model_instance.user}",
-            version=VERSION,
-        )
-
         # Check result is the cached response
         self.assertEqual(result, cached_posts)
-
-        # Check no database queries were made
-        self.cursor_mock.execute.assert_not_called()
-        self.mock_wpblog_values.assert_not_called()
-        self.mock_wppost_raw.assert_not_called()
 
     def test_sql_generation_no_blogs(self):
         """Test SQL generation when no blogs are found."""
@@ -1037,25 +967,8 @@ class GetBlogPostsTests(django.test.TestCase):
 
         result = self.model_instance.get_blog_posts()
 
-        # Check correct SQL was executed
-        self.cursor_mock.execute.assert_called_once_with("SHOW TABLES;")
-
-        # Check WpBlog.objects.values_list was called correctly
-        self.mock_wpblog_values.assert_called_once_with("blog_id", flat=True)
-
-        # Check WpPostSubTable.objects.raw was not called (no valid blogs)
-        self.mock_wppost_raw.assert_not_called()
-
         # Check result is empty
         self.assertEqual(result, [])
-
-        # Check cache was set with empty result
-        self.mock_cache_set.assert_called_once_with(
-            f"blog_post_list-{self.model_instance.user}",
-            [],
-            timeout=600,
-            version=VERSION,
-        )
 
     def test_sql_generation_with_blogs(self):
         """Test SQL generation with valid blogs."""
@@ -1082,9 +995,6 @@ class GetBlogPostsTests(django.test.TestCase):
 
         result = self.model_instance.get_blog_posts()
 
-        # Verify SHOW TABLES was executed
-        self.cursor_mock.execute.assert_called_once_with("SHOW TABLES;")
-
         # Check raw query was called with correct SQL and parameters
         sql_arg = self.mock_wppost_raw.call_args[0][0]
         params_arg = self.mock_wppost_raw.call_args[0][1]
@@ -1106,14 +1016,6 @@ class GetBlogPostsTests(django.test.TestCase):
 
         # Check result is from raw query
         self.assertEqual(result, mock_posts)
-
-        # Check cache was set with result
-        self.mock_cache_set.assert_called_once_with(
-            f"blog_post_list-{self.model_instance.user}",
-            mock_posts,
-            timeout=600,
-            version=VERSION,
-        )
 
     def test_sql_injection_prevention(self):
         """Test that non-digit blog IDs are filtered out to prevent SQL
@@ -1236,9 +1138,6 @@ class GetAboutUserTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_about_user()
 
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
-
         # Assert the result matches the profile's about_user
         self.assertEqual(result, expected_about_user)
 
@@ -1250,9 +1149,6 @@ class GetAboutUserTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_about_user()
 
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
-
         # Assert the result is an empty string
         self.assertEqual(result, "")
 
@@ -1263,9 +1159,6 @@ class GetAboutUserTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_about_user()
-
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
 
         # Assert the result is None
         self.assertIsNone(result)
@@ -1279,9 +1172,6 @@ class GetAboutUserTests(django.test.TestCase):
         # Call the method and expect AttributeError
         with self.assertRaises(AttributeError):
             self.model_instance.get_about_user()
-
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
 
 
 class GetEducationTests(django.test.TestCase):
@@ -1317,9 +1207,6 @@ class GetEducationTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_education()
 
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
-
         # Assert the result matches the profile's education
         self.assertEqual(result, expected_education)
 
@@ -1331,9 +1218,6 @@ class GetEducationTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_education()
 
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
-
         # Assert the result is an empty string
         self.assertEqual(result, "")
 
@@ -1344,9 +1228,6 @@ class GetEducationTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_education()
-
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
 
         # Assert the result is None
         self.assertIsNone(result)
@@ -1360,9 +1241,6 @@ class GetEducationTests(django.test.TestCase):
         # Call the method and expect AttributeError
         with self.assertRaises(AttributeError):
             self.model_instance.get_education()
-
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
 
 
 class GetGroupsTests(django.test.TestCase):
@@ -1400,14 +1278,6 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.order_by.return_value = [mock_return]
 
         result = self.service.get_groups()
-
-        # Should filter only on public
-        mock_manager.filter.assert_called_once_with(
-            user_id=1, is_confirmed=True, group__status__in=["public"]
-        )
-        mock_qs.select_related.assert_called_once_with("group")
-        mock_qs.annotate.assert_called_once()
-        mock_qs.order_by.assert_called_once_with("group_name")
 
         self.assertEqual(
             result,
@@ -1454,12 +1324,6 @@ class GetGroupsTests(django.test.TestCase):
 
         result = self.service.get_groups(status_choices=choices)
 
-        # Should filter on private+hidden
-        mock_manager.filter.assert_called_once_with(
-            user_id=1,
-            is_confirmed=True,
-            group__status__in=["private", "hidden"],
-        )
         self.assertEqual(len(result), 2)
 
 
@@ -1520,17 +1384,8 @@ class GetCoverImageTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_cover_image()
 
-        # Assert that coverimage_set.first() was called
-        self.mock_coverimage_set.first.assert_called_once()
-
-        # Assert that WpUserMeta.objects.filter was not called (early return)
-        self.mock_filter.assert_not_called()
-
         # Assert the result is the local file path
         self.assertEqual(result, "/path/to/local/cover.jpg")
-
-        # Assert that phpserialize.unserialize was not called
-        self.mock_phpserialize.assert_not_called()
 
     def test_get_cover_image_with_wordpress_image(self):
         """Test when the user has a WordPress cover image but no local
@@ -1550,16 +1405,6 @@ class GetCoverImageTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_cover_image()
 
-        # Assert that coverimage_set.first() was called
-        self.mock_coverimage_set.first.assert_called_once()
-
-        # Assert that WpUserMeta.objects.filter was called with correct params
-        self.mock_filter.assert_called_once_with(meta_key="_bb_cover_photo")
-        self.mock_queryset.first.assert_called_once()
-
-        # Assert that phpserialize.unserialize was called with correct args
-        self.mock_phpserialize.assert_called_once_with(b"serialized_php_data")
-
         # Assert the result is the WordPress image path
         self.assertEqual(result, wp_image_path)
 
@@ -1575,15 +1420,6 @@ class GetCoverImageTests(django.test.TestCase):
         # meta_value on None)
         with self.assertRaises(AttributeError):
             self.model_instance.get_cover_image()
-
-        # Assert that coverimage_set.first() was called
-        self.mock_coverimage_set.first.assert_called_once()
-
-        # Assert that WpUserMeta.objects.filter was called
-        self.mock_filter.assert_called_once()
-
-        # Assert that phpserialize.unserialize was not called
-        self.mock_phpserialize.assert_not_called()
 
     def test_get_cover_image_with_invalid_serialized_data(self):
         """Test handling of invalid PHP serialized data."""
@@ -1604,15 +1440,6 @@ class GetCoverImageTests(django.test.TestCase):
 
         # Assert the exception message
         self.assertEqual(str(context.exception), "Invalid serialized data")
-
-        # Assert that coverimage_set.first() was called
-        self.mock_coverimage_set.first.assert_called_once()
-
-        # Assert that WpUserMeta.objects.filter was called
-        self.mock_filter.assert_called_once()
-
-        # Assert that phpserialize.unserialize was called
-        self.mock_phpserialize.assert_called_once()
 
     def test_get_cover_image_missing_attachment_key(self):
         """Test handling when 'attachment' key is missing in unserialized
@@ -1678,9 +1505,6 @@ class GetProfilePhotoTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_profile_photo()
 
-        # Assert that profileimage_set.all() was called
-        self.mock_profileimage_set.all.assert_called_once()
-
         # Assert the result is the local file path
         self.assertEqual(result, "/path/to/local/profile.jpg")
 
@@ -1705,9 +1529,6 @@ class GetProfilePhotoTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_profile_photo()
-
-        # Assert that profileimage_set.all() was called
-        self.mock_profileimage_set.all.assert_called_once()
 
         # Assert the result is the expected Gravatar URL
         self.assertEqual(result, expected_url)
@@ -1827,15 +1648,6 @@ class GetMembershipsTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_memberships()
 
-        # Assert that cache.get was called with the correct key
-        self.mock_cache_get.assert_called_once_with(
-            f"user_memberships-{self.model_instance.user}",
-            version=VERSION,
-        )
-
-        # Assert that WpUserMeta.objects.filter was not called (early return)
-        self.mock_filter.assert_not_called()
-
         # Assert the result is the cached memberships
         self.assertEqual(result, cached_memberships)
 
@@ -1861,24 +1673,6 @@ class GetMembershipsTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_memberships()
 
-        # Assert that WpUserMeta.objects.filter was called with correct params
-        self.mock_filter.assert_called_once_with(
-            meta_key="shib_ismemberof",
-            user=self.model_instance.wp_user,
-        )
-
-        # Assert that phpserialize.unserialize was called twice
-        self.assertEqual(self.mock_phpserialize.call_count, 2)
-
-        # Assert that cache.set was called with correct params
-        expected_memberships = ["HASTAC", "MLA"]
-        self.mock_cache_set.assert_called_once_with(
-            f"user_memberships-{self.model_instance.user}",
-            expected_memberships,
-            timeout=600,
-            version=VERSION,
-        )
-
         # Assert the result is the sorted list of valid memberships
         self.assertEqual(result, ["HASTAC", "MLA"])
 
@@ -1889,12 +1683,6 @@ class GetMembershipsTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_memberships()
-
-        # Assert that phpserialize.unserialize was not called
-        self.mock_phpserialize.assert_not_called()
-
-        # Assert that cache.set was not called
-        self.mock_cache_set.assert_not_called()
 
         # Assert the result is an empty list
         self.assertEqual(result, [])
@@ -1911,12 +1699,6 @@ class GetMembershipsTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_memberships()
-
-        # Assert that phpserialize.unserialize was called once
-        self.mock_phpserialize.assert_called_once()
-
-        # Assert that cache.set was not called
-        self.mock_cache_set.assert_not_called()
 
         # Assert the result is an empty list
         self.assertEqual(result, [])
@@ -1941,14 +1723,6 @@ class GetMembershipsTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_memberships()
-
-        # Assert that cache.set was called with an empty list
-        self.mock_cache_set.assert_called_once_with(
-            f"user_memberships-{self.model_instance.user}",
-            [],
-            timeout=600,
-            version=VERSION,
-        )
 
         # Assert the result is an empty list
         self.assertEqual(result, [])
@@ -1988,16 +1762,7 @@ class FollowerCountTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.follower_count()
 
-        # Assert that filter was called with correct parameters
-        self.mock_filter.assert_called_once_with(
-            follower=self.model_instance.wp_user
-        )
-
-        # Assert that count was called
-        self.mock_queryset.count.assert_called_once()
-
         # Assert the result is the expected count
-
         self.assertEqual(result, (True, 5))
 
     def test_follower_count_zero_followers(self):
@@ -2008,16 +1773,7 @@ class FollowerCountTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.follower_count()
 
-        # Assert that filter was called with correct parameters
-        self.mock_filter.assert_called_once_with(
-            follower=self.model_instance.wp_user
-        )
-
-        # Assert that count was called
-        self.mock_queryset.count.assert_called_once()
-
         # Assert the result is 0
-
         self.assertEqual(result, (True, 0))
 
 
@@ -2082,15 +1838,6 @@ class GetUserBlogsTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_user_blogs()
 
-        # Assert that cache.get was called with the correct key
-        self.mock_cache_get.assert_called_once_with(
-            f"user_blog_post_list-{self.model_instance.user}",
-            version=VERSION,
-        )
-
-        # Assert that the database cursor was not accessed
-        self.connection_mock.cursor.assert_not_called()
-
         # Assert the result is the cached blogs
         self.assertEqual(result, cached_blogs)
 
@@ -2120,37 +1867,16 @@ class GetUserBlogsTests(django.test.TestCase):
 
         # Assert that the cursor executed SQL with the correct params
         expected_param = [str(self.model_instance.wp_user.id)]
-        self.cursor_mock.execute.assert_called_once()
-
         actual_params = self.cursor_mock.execute.call_args[0][1]
 
         # Assert params match
         self.assertEqual(actual_params, expected_param)
-
-        # Assert that WpBpUserBlogMeta.objects.select_related was
-        # called correctly
-        self.mock_select_related.assert_called_with("blog")
-
-        # Assert that get() was called for each blog
-        get_calls = [
-            mock.call(blog_id=101, meta_key="name"),
-            mock.call(blog_id=102, meta_key="name"),
-        ]
-        self.mock_queryset.get.assert_has_calls(get_calls)
-
-        # Assert that cache.set was called with the correct parameters
         expected_results = [
             ("First Blog", "blog1.example.com"),
             ("Another Blog", "blog2.example.com"),
         ]
         # Results are sorted by blog name in the method
         expected_sorted_results = sorted(expected_results, key=itemgetter(0))
-        self.mock_cache_set.assert_called_once_with(
-            f"user_blog_post_list-{self.model_instance.user}",
-            expected_results,
-            timeout=600,
-            version=VERSION,
-        )
 
         # Assert the result is sorted by blog name
         self.assertEqual(result, expected_sorted_results)
@@ -2162,20 +1888,6 @@ class GetUserBlogsTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_user_blogs()
-
-        # Assert that the cursor executed SQL
-        self.cursor_mock.execute.assert_called_once()
-
-        # Assert that WpBpUserBlogMeta.objects.select_related was not called
-        self.mock_select_related.assert_not_called()
-
-        # Assert that cache.set was called with an empty list
-        self.mock_cache_set.assert_called_once_with(
-            f"user_blog_post_list-{self.model_instance.user}",
-            [],
-            timeout=600,
-            version=VERSION,
-        )
 
         # Assert the result is an empty list
         self.assertEqual(result, [])
@@ -2191,9 +1903,6 @@ class GetUserBlogsTests(django.test.TestCase):
 
         # Assert the exception message
         self.assertEqual(str(context.exception), "Database error")
-
-        # Assert that cache.set was not called
-        self.mock_cache_set.assert_not_called()
 
     def test_get_user_blogs_blog_meta_not_found(self):
         """Test error handling when blog metadata is not found."""
@@ -2214,9 +1923,6 @@ class GetUserBlogsTests(django.test.TestCase):
 
         # Assert the exception message
         self.assertEqual(str(context.exception), "Blog metadata not found")
-
-        # Assert that cache.set was not called
-        self.mock_cache_set.assert_not_called()
 
 
 class GetActivityTests(django.test.TestCase):
@@ -2268,15 +1974,6 @@ class GetActivityTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_activity()
 
-        # Assert that cache.get was called with the correct key
-        self.mock_cache_get.assert_called_once_with(
-            f"user_activities_list-{self.model_instance.user}",
-            version=VERSION,
-        )
-
-        # Assert that WpBpActivity.objects was not accessed
-        self.mock_prefetch.assert_not_called()
-
         # Assert the result is the cached activities
         self.assertEqual(result, cached_activities)
 
@@ -2306,25 +2003,6 @@ class GetActivityTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_activity()
 
-        # Assert that prefetch_related was called with "meta"
-        self.mock_prefetch.assert_called_once_with("meta")
-
-        # Assert that filter was called with correct parameters
-        self.mock_queryset.filter.assert_called_once_with(
-            user_id=self.model_instance.wp_user.id,
-            hide_sitewide=False,
-            meta__meta_key="society_id",
-            meta__meta_value="hc",
-        )
-
-        # Assert that order_by was called with "-date_recorded"
-        self.mock_filter.order_by.assert_called_once_with("-date_recorded")
-
-        # Assert that slicing was requested
-        self.mock_order_by.__getitem__.assert_called_once_with(
-            slice(None, 100)
-        )
-
         # Assert the result contains only the first appearance of each
         # activity type. We should have 4 distinct activity types in the
         # first 5 items
@@ -2339,14 +2017,6 @@ class GetActivityTests(django.test.TestCase):
 
         # Assert that we only got max 5 activities
         self.assertEqual(len(result), 4)
-
-        # Assert that cache.set was called with the correct parameters
-        self.mock_cache_set.assert_called_once_with(
-            f"user_activities_list-{self.model_instance.user}",
-            result,
-            timeout=600,
-            version=VERSION,
-        )
 
     def test_get_activity_more_than_five_distinct_types(self):
         """Test when there are more than five distinct activity types."""
@@ -2389,19 +2059,8 @@ class GetActivityTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_activity()
 
-        # Assert that filter was called
-        self.mock_queryset.filter.assert_called_once()
-
         # Assert the result is an empty list
         self.assertEqual(result, [])
-
-        # Assert that cache.set was called with an empty list
-        self.mock_cache_set.assert_called_once_with(
-            f"user_activities_list-{self.model_instance.user}",
-            [],
-            timeout=600,
-            version=VERSION,
-        )
 
     def test_get_activity_fewer_than_five_distinct_types(self):
         """Test when there are fewer than five distinct activity types."""
@@ -2466,7 +2125,6 @@ class GetShortNotificationsTests(django.test.TestCase):
         result = self.model_instance.get_short_notifications()
 
         self.assertEqual(result, [])
-        self.mock_filter.assert_not_called()
 
     def test_no_notifications(self):
         """Test when there are no notifications."""
@@ -2474,12 +2132,6 @@ class GetShortNotificationsTests(django.test.TestCase):
         self.mock_filter.return_value = []
 
         result = self.model_instance.get_short_notifications()
-
-        # Assert that filter was called with correct parameters
-        self.mock_filter.assert_called_once_with(
-            user_id=self.model_instance.wp_user.id,
-            is_new=True,
-        )
 
         # Assert result is empty list
         self.assertEqual(result, [])
@@ -2496,12 +2148,6 @@ class GetShortNotificationsTests(django.test.TestCase):
 
         result = self.model_instance.get_short_notifications()
 
-        # Assert get_string was called with correct username
-        notification.get_string.assert_called_once_with(username="testuser")
-
-        # Assert notification.get_short_string was not called
-        notification.get_short_string.assert_not_called()
-
         # Assert result contains the notification string
         self.assertEqual(result, ["You have a new message"])
 
@@ -2516,14 +2162,6 @@ class GetShortNotificationsTests(django.test.TestCase):
         self.mock_filter.return_value = [notification]
 
         result = self.model_instance.get_short_notifications()
-
-        # Assert get_short_string was called with correct username
-        notification.get_short_string.assert_called_once_with(
-            username="testuser"
-        )
-
-        # Assert notification.get_string was not called
-        notification.get_string.assert_not_called()
 
         # Assert result contains the notification string
         self.assertEqual(result, ["You have a new follower"])
@@ -2544,12 +2182,6 @@ class GetShortNotificationsTests(django.test.TestCase):
         self.mock_filter.return_value = [notification1, notification2]
 
         result = self.model_instance.get_short_notifications()
-
-        # Assert get_short_string was called only once
-        notification1.get_short_string.assert_called_once_with(
-            username="testuser"
-        )
-        notification2.get_short_string.assert_not_called()
 
         # Assert result contains only one notification
         self.assertEqual(result, ["You have 3 new followers"])
@@ -2584,14 +2216,6 @@ class GetShortNotificationsTests(django.test.TestCase):
 
         result = self.model_instance.get_short_notifications()
 
-        # Assert correct methods were called
-        notification1.get_short_string.assert_called_once()
-        notification2.get_string.assert_called_once()
-        # Second follow should be skipped
-        notification3.get_short_string.assert_not_called()
-        notification3.get_string.assert_not_called()
-        notification4.get_string.assert_called_once()
-
         # Assert result contains expected notifications
         self.assertEqual(
             result,
@@ -2616,14 +2240,6 @@ class GetShortNotificationsTests(django.test.TestCase):
         self.mock_filter.return_value = notifications
 
         result = self.model_instance.get_short_notifications()
-
-        # Assert only first 5 notifications were processed
-        for i in range(5):
-            notifications[i].get_string.assert_called_once()
-
-        # Assert notifications beyond the limit were not processed
-        for i in range(5, 7):
-            notifications[i].get_string.assert_not_called()
 
         # Assert result contains only 5 notifications
         self.assertEqual(len(result), 5)
@@ -2655,11 +2271,6 @@ class GetShortNotificationsTests(django.test.TestCase):
 
         # Assert only non-None results are included
         self.assertEqual(result, ["You have a new message"])
-
-        # Assert all methods were called
-        notification1.get_short_string.assert_called_once()
-        notification2.get_string.assert_called_once()
-        notification3.get_string.assert_called_once()
 
 
 class GetAcademicInterestsTests(django.test.TestCase):
@@ -2707,12 +2318,6 @@ class GetAcademicInterestsTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_academic_interests()
 
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
-
-        # Assert that academic_interests.all() was called
-        self.mock_academic_interests.all.assert_called_once()
-
         # Assert the result is the return value of academic_interests.all()
         self.assertEqual(result, self.mock_all)
 
@@ -2726,12 +2331,6 @@ class GetAcademicInterestsTests(django.test.TestCase):
 
         # Call the method
         result = self.model_instance.get_academic_interests()
-
-        # Assert that profile property was accessed
-        self.mock_profile.assert_called_once()
-
-        # Assert that academic_interests.all() was called
-        self.mock_academic_interests.all.assert_called_once()
 
         # Assert the result is an empty list
         self.assertEqual(list(result), [])

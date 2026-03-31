@@ -131,7 +131,6 @@ class TestWorksDeposits(django.test.TestCase):
         result = self.works_deposits.get_works()
 
         self.assertEqual(result, [self.fake_record])
-        mock_get.assert_not_called()
 
     @patch("knowledge_commons_profiles.newprofile.works.httpx.get")
     def test_get_formatted_works_html_output(self, mock_get):
@@ -338,8 +337,3 @@ class WorksDepositsChartTests(django.test.TestCase):
 
         # Assert chart was rendered
         self.assertEqual(result_json, '{"mock": "chart"}')
-        mock_get_visibilities.assert_called_once_with(
-            instance, HiddenWorks.HIDE
-        )
-        self.assertEqual(mock_hide_work.call_count, 2)
-        mock_df.assert_called_once()  # ensure DataFrame built

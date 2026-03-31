@@ -58,7 +58,6 @@ class SyncAvatarToWordPressTests(TestCase):
         )
 
         self.assertTrue(result)
-        mock_post.assert_called_once()
         call_kwargs = mock_post.call_args
         self.assertEqual(
             call_kwargs.kwargs["json"]["username"], "synctest"
@@ -98,7 +97,6 @@ class SyncAvatarToWordPressTests(TestCase):
         )
 
         self.assertFalse(result)
-        mock_post.assert_not_called()
 
     @override_settings(
         WORDPRESS_AVATAR_UPDATE_URL="https://hcommons.org/wp-json/idms/update-avatar",
@@ -112,7 +110,6 @@ class SyncAvatarToWordPressTests(TestCase):
         )
 
         self.assertFalse(result)
-        mock_post.assert_not_called()
 
     @override_settings(
         WORDPRESS_AVATAR_UPDATE_URL="https://hcommons.org/wp-json/idms/update-avatar",

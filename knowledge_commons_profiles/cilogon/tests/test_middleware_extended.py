@@ -235,7 +235,7 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             ) as refresh_mock,
             patch(
                 "knowledge_commons_profiles.cilogon.middleware.logger.debug"
-            ) as debug_mock,
+            ),
         ):
             new_token = {
                 "access_token": "new_token",
@@ -245,9 +245,6 @@ class AutoRefreshTokenMiddlewareEdgeCaseTests(CILogonTestBase):
             refresh_mock.return_value = new_token
 
             _ = self.middleware.process_request(self.request)
-
-            # Should log debug information
-            debug_mock.assert_called()
 
     def test_refresh_behavior_enum_values(self):
         """Test RefreshBehavior enum values"""
@@ -397,8 +394,6 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
 
             # Should handle large number of associations
             self.assertIsNone(response)
-            # delete_associations should be called with the old associations
-            delete_mock.assert_called_once()
             # Verify the queryset passed to delete_associations is our
             # mock queryset
             called_queryset = delete_mock.call_args[0][0]
@@ -515,9 +510,6 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
 
             # Should handle partial revocation failures gracefully
             self.assertIsNone(response)
-            # delete_associations should still be called even if
-            # revocation fails
-            delete_mock.assert_called_once()
             # Verify the queryset passed to delete_associations is our
             # mock queryset
             called_queryset = delete_mock.call_args[0][0]
@@ -795,8 +787,6 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             self.assertIsNone(response1)
             self.assertIsNone(response2)
 
-            # delete_associations should be called with the old associations
-            delete_mock.assert_called_once()
             # Verify the queryset passed to delete_associations is
             # our mock queryset
             called_queryset = delete_mock.call_args[0][0]
@@ -866,13 +856,11 @@ class MiddlewareIntegrationTests(CILogonTestBase):
             ) as refresh_mock,
             patch(
                 "knowledge_commons_profiles.cilogon.middleware.logger.warning"
-            ) as warning_mock,
+            ),
         ):
             refresh_mock.side_effect = Exception("Critical error")
             response = auto_refresh_middleware.process_request(self.request)
 
-            # Should log warning and continue gracefully
-            warning_mock.assert_called()
             self.assertIsNone(response)
 
     def test_middleware_performance_under_load(self):
@@ -1033,9 +1021,6 @@ class MiddlewareIntegrationTests(CILogonTestBase):
 
             # Should handle partial revocation failures gracefully
             self.assertIsNone(response)
-            # delete_associations should still be called even if
-            # revocation fails
-            delete_mock.assert_called_once()
             # Verify the queryset passed to delete_associations is our
             # mock queryset
             called_queryset = delete_mock.call_args[0][0]

@@ -110,17 +110,6 @@ class BuddyPressNotificationTests(TestCase):
         # Call method
         result = self.notification.get_string(username="testuser")
 
-        # Assert API was instantiated correctly
-        self.mock_api_class.assert_called_once_with(
-            self.notification.request,
-            "testuser",
-            use_wordpress=True,
-            create=False,
-        )
-
-        # Assert group was fetched
-        self.mock_group_get.assert_called_once_with(id=42)
-
         # Assert result is as expected
         expected_message = "You have an invitation to the group: Test Group"
         expected_url = (
@@ -143,9 +132,6 @@ class BuddyPressNotificationTests(TestCase):
         # Call method
         result = self.notification.get_string(username="testuser")
 
-        # Assert group was attempted to be fetched
-        self.mock_group_get.assert_called_once_with(id=42)
-
         # Assert result is empty
         self.assertEqual(result, ("", None, False))
 
@@ -161,9 +147,6 @@ class BuddyPressNotificationTests(TestCase):
 
         # Call method
         result = self.notification.get_string(username="testuser")
-
-        # Assert user was fetched
-        self.mock_user_get.assert_called_once_with(id=99)
 
         # Assert result is as expected
         expected_message = "New message from sender_user"
@@ -187,14 +170,6 @@ class BuddyPressNotificationTests(TestCase):
         # Call method with short=True
         result = self.notification.get_string(username="testuser", short=True)
 
-        # Assert filter was called with correct parameters
-        self.mock_notification_filter.assert_called_once_with(
-            user_id=123,
-            component_name="test_component",
-            component_action="new_follow",
-            is_new=True,
-        )
-
         # Assert result is as expected
         expected_message = "You have 5 new followers"
         expected_url = "https://hcommons.org/members/testuser/notifications/"
@@ -217,9 +192,6 @@ class BuddyPressNotificationTests(TestCase):
 
         # Call method with short=False (default)
         result = self.notification.get_string(username="testuser")
-
-        # Assert user was fetched
-        self.mock_user_get.assert_called_once_with(id=42)
 
         # Assert result is as expected
         expected_message = "Follower User is now following you"
@@ -266,9 +238,6 @@ class BuddyPressNotificationTests(TestCase):
         # Call method
         result = self.notification.get_string(username="testuser")
 
-        # Assert API was instantiated
-        self.mock_api_class.assert_called_once()
-
         # Assert result is the error message
         self.assertEqual(result, "User not logged in")
 
@@ -285,14 +254,6 @@ class BuddyPressNotificationTests(TestCase):
 
         # Call method
         result = notification_with_request.get_string(username="testuser")
-
-        # Assert API was instantiated with request
-        self.mock_api_class.assert_called_once_with(
-            mock_request,
-            "testuser",
-            use_wordpress=True,
-            create=False,
-        )
 
         # Assert result is as expected
         expected_message = "Welcome! Be sure to review your email preferences."

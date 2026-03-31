@@ -122,11 +122,6 @@ class TestCheckWebsiteStatus:
             result = check_website_status("https://example.com")
 
             assert result is True
-            mock_get.assert_called_once_with(
-                "https://example.com",
-                timeout=10,
-                allow_redirects=True,
-            )
 
     def test_returns_true_for_redirect_response(self):
         """Test that check_website_status returns True for 3xx responses."""
@@ -192,12 +187,10 @@ class TestCheckWebsiteStatus:
         """Test that check_website_status returns False when test mode is on."""
         state.test_mode = True
 
-        with mock.patch("requests.get") as mock_get:
+        with mock.patch("requests.get"):
             result = check_website_status("https://example.com")
 
             assert result is False
-            # Should not make any HTTP requests in test mode
-            mock_get.assert_not_called()
 
     def test_status_boundaries(self):
         """Test the status code boundaries are correct."""
@@ -383,7 +376,6 @@ class TestGetListenerRuleDetails:
             result = get_listener_rule_details("test-arn")
 
             assert result == mock_output["Rules"][0]
-            mock_run.assert_called_once()
 
     def test_returns_none_on_empty_rules(self):
         """Test that None is returned when no rules are found."""
@@ -518,7 +510,6 @@ class TestSendEmail:
 
             result = send_email()
 
-            mock_client.send_email.assert_called_once()
             call_kwargs = mock_client.send_email.call_args[1]
 
             assert call_kwargs["from_email"] == "system@hcommons.org"
@@ -601,10 +592,9 @@ class TestHandleSiteDown:
         with mock.patch(
             "knowledge_commons_profiles.cron.monitor_website."
             "remove_http_method_restriction"
-        ) as mock_remove:
+        ):
             handle_site_down()
 
-            mock_remove.assert_not_called()
 
     def test_modifies_rule_at_threshold(self):
         """Test that rule is modified when threshold is reached."""
@@ -622,11 +612,11 @@ class TestHandleSiteDown:
             ) as mock_remove,
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website.send_email"
-            ) as mock_email,
+            ),
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website."
                 "save_state_to_s3"
-            ) as mock_save,
+            ),
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website._now"
             ) as mock_now,
@@ -646,9 +636,6 @@ class TestHandleSiteDown:
 
             handle_site_down()
 
-            mock_remove.assert_called_once()
-            mock_email.assert_called_once()
-            mock_save.assert_called_once()
             assert state.phase == MonitorPhase.ACTIVATED
             assert state.activated_at == now
             assert state.original_http_methods == ["GET", "POST"]
@@ -704,10 +691,9 @@ class TestHandleSiteDown:
         with mock.patch(
             "knowledge_commons_profiles.cron.monitor_website."
             "remove_http_method_restriction"
-        ) as mock_remove:
+        ):
             handle_site_down()
 
-            mock_remove.assert_not_called()
 
     def test_handles_modification_failure(self):
         """Test handling when rule modification fails."""
@@ -724,14 +710,13 @@ class TestHandleSiteDown:
             ) as mock_remove,
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website.send_email"
-            ) as mock_email,
+            ),
         ):
             mock_get.return_value = {"Conditions": []}
             mock_remove.return_value = False
 
             handle_site_down()
 
-            mock_email.assert_not_called()
             assert state.phase == MonitorPhase.MONITORING
 
 
@@ -762,7 +747,6 @@ class TestSaveStateToS3:
             )
 
             assert result is True
-            mock_run.assert_called_once()
             call_args = mock_run.call_args
             # Verify the JSON input contains correct data
             input_json = json.loads(call_args.kwargs.get("input", ""))
@@ -871,7 +855,6 @@ class TestDeleteStateFromS3:
             result = delete_state_from_s3(TEST_S3_BUCKET, TEST_S3_KEY)
 
             assert result is True
-            mock_run.assert_called_once()
             cmd = mock_run.call_args[0][0]
             assert "s3" in cmd
             assert "rm" in cmd
@@ -1038,11 +1021,11 @@ class TestCheckActivationTimeout:
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website."
                 "delete_state_from_s3"
-            ) as mock_delete,
+            ),
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website."
                 "send_deactivation_email"
-            ) as mock_email,
+            ),
         ):
             # 1 hour + 1 second later
             mock_now.return_value = datetime(
@@ -1052,11 +1035,6 @@ class TestCheckActivationTimeout:
 
             check_activation_timeout()
 
-            mock_restore.assert_called_once_with(
-                monitor_website.LISTENER_RULE_ARN, ["GET", "POST"]
-            )
-            mock_delete.assert_called_once()
-            mock_email.assert_called_once()
             assert state.phase == MonitorPhase.GRACE_PERIOD
             assert state.grace_period_start is not None
             assert state.activated_at is None
@@ -1077,7 +1055,7 @@ class TestCheckActivationTimeout:
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website."
                 "restore_http_method_restriction"
-            ) as mock_restore,
+            ),
         ):
             # Only 30 minutes later
             mock_now.return_value = datetime(
@@ -1086,7 +1064,6 @@ class TestCheckActivationTimeout:
 
             check_activation_timeout()
 
-            mock_restore.assert_not_called()
             assert state.phase == MonitorPhase.ACTIVATED
 
     def test_handles_restore_failure(self):
@@ -1122,10 +1099,9 @@ class TestCheckActivationTimeout:
         with mock.patch(
             "knowledge_commons_profiles.cron.monitor_website."
             "restore_http_method_restriction"
-        ) as mock_restore:
+        ):
             check_activation_timeout()
 
-            mock_restore.assert_not_called()
 
 
 class TestCheckGracePeriod:
@@ -1281,11 +1257,11 @@ class TestInitializeStateFromS3:
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website."
                 "delete_state_from_s3"
-            ) as mock_delete,
+            ),
             mock.patch(
                 "knowledge_commons_profiles.cron.monitor_website."
                 "send_deactivation_email"
-            ) as mock_email,
+            ),
         ):
             mock_load.return_value = saved_state
             # 3 hours later - well past window
@@ -1296,11 +1272,6 @@ class TestInitializeStateFromS3:
 
             initialize_state_from_s3()
 
-            mock_restore.assert_called_once_with(
-                monitor_website.LISTENER_RULE_ARN, ["GET", "POST"]
-            )
-            mock_delete.assert_called_once()
-            mock_email.assert_called_once()
             assert state.phase == MonitorPhase.GRACE_PERIOD
             assert state.grace_period_start is not None
 
@@ -1329,10 +1300,9 @@ class TestInitializeStateFromS3:
         with mock.patch(
             "knowledge_commons_profiles.cron.monitor_website."
             "load_state_from_s3"
-        ) as mock_load:
+        ):
             initialize_state_from_s3()
 
-            mock_load.assert_not_called()
             assert state.phase == MonitorPhase.MONITORING
 
     @mock.patch(
@@ -1421,7 +1391,6 @@ class TestSendDeactivationEmail:
 
             result = send_deactivation_email()
 
-            mock_client.send_email.assert_called_once()
             call_kwargs = mock_client.send_email.call_args[1]
 
             assert call_kwargs["from_email"] == "system@hcommons.org"

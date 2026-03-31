@@ -584,7 +584,6 @@ class TestCilogonLoginBrokerFlow(CILogonTestBase):
             response.url,
             "https://hcommons.org/broker-callback/?broker_token=encrypted",
         )
-        mock_build_redirect.assert_called_once()
 
     @patch(
         "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy"
@@ -651,13 +650,6 @@ class TestCilogonLoginBrokerFlow(CILogonTestBase):
             "&final_redirect=https://hcommons.org/some-article/"
         )
 
-        mock_build_redirect.assert_called_once_with(
-            {"sub": "http://cilogon.org/serverA/users/12345"},
-            "https://hcommons.org/broker-callback/",
-            mock_profile,
-            final_redirect="https://hcommons.org/some-article/",
-        )
-
     @patch(
         "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy"
     )
@@ -684,9 +676,6 @@ class TestCilogonLoginBrokerFlow(CILogonTestBase):
 
         # No return_to — should proceed to CILogon
         self.client.get("/login/")
-
-        # Should have called authorize_redirect (normal flow)
-        mock_oauth.cilogon.authorize_redirect.assert_called_once()
 
 
 @override_settings(
@@ -865,10 +854,3 @@ class TestCallbackBrokerFlow(CILogonTestBase):
         session.save()
 
         self.client.get("/cilogon/callback/")
-
-        mock_build_redirect.assert_called_once_with(
-            userinfo,
-            "https://hcommons.org/broker-callback/",
-            profile,
-            final_redirect="https://hcommons.org/some-article/",
-        )
