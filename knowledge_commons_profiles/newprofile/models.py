@@ -431,7 +431,7 @@ class Profile(models.Model):
     """
 
     name = models.CharField(max_length=255)
-    username = models.CharField(max_length=255, db_index=True)
+    username = models.CharField(max_length=255, unique=True)
     central_user_id = models.IntegerField(db_index=True, null=True)
     title = models.CharField(max_length=255, null=True)
     affiliation = models.CharField(max_length=255, null=True)

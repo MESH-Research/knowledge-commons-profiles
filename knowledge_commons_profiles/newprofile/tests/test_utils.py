@@ -104,9 +104,9 @@ class TestProfileExistsOrHasBeenCreated(TestCase):
         mock_filter.first.return_value = None
         mock_profile_objects.filter.return_value = mock_filter
 
-        # Set up the error to be raised during creation
-        mock_profile_objects.create = MagicMock()
-        mock_profile_objects.create.side_effect = OperationalError(
+        # Set up the error to be raised during get_or_create
+        mock_profile_objects.get_or_create = MagicMock()
+        mock_profile_objects.get_or_create.side_effect = OperationalError(
             "Could not connect to database"
         )
 
