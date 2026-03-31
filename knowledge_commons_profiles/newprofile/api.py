@@ -351,17 +351,21 @@ class API:
                     "academic_interests",
                     "coverimage_set",
                 ).get(username=self.user)
+            except Profile.MultipleObjectsReturned:
+                self._profile = self._deduplicate_profiles()
             except Profile.DoesNotExist:
                 if self.create:
-                    self._profile = Profile.objects.create(username=self.user)
+                    self._profile, _ = Profile.objects.get_or_create(
+                        username=self.user,
+                    )
                 else:
                     # if the user exists but the Profile doesn't, then create
                     # it
                     try:
                         user_object = User.objects.get(username=self.user)
-                        self._profile = Profile.objects.create(
+                        self._profile, _ = Profile.objects.get_or_create(
                             username=self.user,
-                            email=user_object.email,
+                            defaults={"email": user_object.email},
                         )
                     except User.DoesNotExist as exc:
                         # raise 404
@@ -369,6 +373,36 @@ class API:
                         error_message = f"Profile not found: {self.user}"
                         raise Http404(error_message) from exc
         return self._profile
+
+    def _deduplicate_profiles(self):
+        """Remove duplicate profiles, keeping the most complete one."""
+        profiles = list(
+            Profile.objects.filter(username=self.user).order_by("id")
+        )
+        # Sort by completeness: most non-empty fields first, oldest id
+        # as tiebreaker
+        fields = [
+            "name", "title", "affiliation", "email", "orcid",
+            "twitter", "github", "mastodon",
+        ]
+        profiles.sort(
+            key=lambda p: (
+                -sum(1 for f in fields if getattr(p, f, None)),
+                p.id,
+            )
+        )
+        keep = profiles[0]
+        to_delete = profiles[1:]
+        for p in to_delete:
+            logger.warning(
+                "Deleting duplicate Profile id=%s for username='%s' "
+                "(keeping id=%s)",
+                p.id,
+                self.user,
+                keep.id,
+            )
+            p.delete()
+        return keep
 
     def get_profile_info(self):
         """

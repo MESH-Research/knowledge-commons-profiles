@@ -39,7 +39,9 @@ def profile_exists_or_has_been_created(user):
                 # if here, there is a WpUser but no Profile object, so
                 # we need to create one
                 try:
-                    Profile.objects.create(username=wp_user_obj.user_login)
+                    Profile.objects.get_or_create(
+                        username=wp_user_obj.user_login,
+                    )
                 except OperationalError:
                     # for some reason we can't create a Profile object
                     logger.warning(

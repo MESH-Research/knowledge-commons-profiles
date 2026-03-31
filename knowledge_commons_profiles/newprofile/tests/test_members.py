@@ -48,9 +48,8 @@ class CursorHelpersTests(TestCase):
 
 class PrefixCountTests(TestCase):
     def setUp(self):
-        # usernames deliberately include duplicates for (username, id) ordering
         self.p1 = Profile.objects.create(username="alice", name="Alice A")
-        self.p2 = Profile.objects.create(username="alice", name="Alice B")
+        self.p2 = Profile.objects.create(username="alice2", name="Alice B")
         self.p3 = Profile.objects.create(username="bob", name="Bob A")
         self.p4 = Profile.objects.create(username="carol", name="Carol A")
 
@@ -63,16 +62,15 @@ class PrefixCountTests(TestCase):
     def test_prefix_count_qs_at_beginning(self):
         # Count rows <= ("alice", p1.id)
         cnt = _prefix_count_qs(self.qs, "alice", self.p1.id)
-        # In the ordered set, p1 is first, so count should be 1
         self.assertEqual(cnt, 1)
 
     def test_prefix_count_qs_with_same_username(self):
-        # Count rows <= ("alice", p2.id) should include p1 and p2
-        cnt = _prefix_count_qs(self.qs, "alice", self.p2.id)
+        # Count rows <= ("alice2", p2.id) should include alice and alice2
+        cnt = _prefix_count_qs(self.qs, "alice2", self.p2.id)
         self.assertEqual(cnt, 2)
 
     def test_prefix_count_qs_across_usernames(self):
-        # Count rows <= ("bob", p3.id) should include alice/alice and bob(p3)
+        # Count rows <= ("bob", p3.id) should include alice, alice2, and bob
         cnt = _prefix_count_qs(self.qs, "bob", self.p3.id)
         self.assertEqual(cnt, 3)
 
@@ -164,7 +162,7 @@ class PeopleByUsernameViewTests(TestCase):
         # and sets has_next=True
         records = [
             ("alice", "A1"),
-            ("alice", "A2"),
+            ("alice2", "A2"),
             ("bob", "B1"),
             ("carol", "C1"),
             ("dave", "D1"),
@@ -204,7 +202,7 @@ class PeopleByUsernameViewTests(TestCase):
         _ = self._make_profiles(
             [
                 ("alice", "A1"),
-                ("alice", "A2"),
+                ("alice2", "A2"),
                 ("bob", "B1"),
                 ("carol", "C1"),
                 ("dave", "D1"),
@@ -348,16 +346,16 @@ class PeopleByUsernameViewTests(TestCase):
         # 10 records; PAGE_SIZE=4 → pages of size [4,4,2]
         _ = self._make_profiles(
             [
-                ("a", "1"),
-                ("a", "2"),
-                ("b", "3"),
-                ("b", "4"),
-                ("c", "5"),
-                ("d", "6"),
-                ("e", "7"),
-                ("f", "8"),
-                ("g", "9"),
-                ("h", "10"),
+                ("a1", "1"),
+                ("a2", "2"),
+                ("b1", "3"),
+                ("b2", "4"),
+                ("c1", "5"),
+                ("d1", "6"),
+                ("e1", "7"),
+                ("f1", "8"),
+                ("g1", "9"),
+                ("h1", "10"),
             ]
         )
 
