@@ -1673,13 +1673,13 @@ class GetProfilePhotoTests(django.test.TestCase):
         self.profile_obj.profile_image = ""
         mock_profile_image = mock.MagicMock()
         mock_profile_image.full = "/path/to/local/profile.jpg"
-        self.mock_profileimage_set.first.return_value = mock_profile_image
+        self.mock_profileimage_set.all.return_value = [mock_profile_image]
 
         # Call the method
         result = self.model_instance.get_profile_photo()
 
-        # Assert that profileimage_set.first() was called
-        self.mock_profileimage_set.first.assert_called_once()
+        # Assert that profileimage_set.all() was called
+        self.mock_profileimage_set.all.assert_called_once()
 
         # Assert the result is the local file path
         self.assertEqual(result, "/path/to/local/profile.jpg")
@@ -1688,7 +1688,7 @@ class GetProfilePhotoTests(django.test.TestCase):
         """Test when the user has no local profile image and falls back
         to Gravatar."""
         # Set up mock to return no local profile image
-        self.mock_profileimage_set.first.return_value = None
+        self.mock_profileimage_set.all.return_value = []
         self.profile_obj.profile_image = ""
 
         # Set email for gravatar generation
@@ -1706,8 +1706,8 @@ class GetProfilePhotoTests(django.test.TestCase):
         # Call the method
         result = self.model_instance.get_profile_photo()
 
-        # Assert that profileimage_set.first() was called
-        self.mock_profileimage_set.first.assert_called_once()
+        # Assert that profileimage_set.all() was called
+        self.mock_profileimage_set.all.assert_called_once()
 
         # Assert the result is the expected Gravatar URL
         self.assertEqual(result, expected_url)
@@ -1715,7 +1715,7 @@ class GetProfilePhotoTests(django.test.TestCase):
     def test_get_profile_photo_email_case_insensitivity(self):
         """Test that the email is properly lowercased for Gravatar."""
         # Set up mock to return no local profile image
-        self.mock_profileimage_set.first.return_value = None
+        self.mock_profileimage_set.all.return_value = []
 
         # Set mixed-case email for gravatar generation
         self.profile_obj.email = "Test@Example.COM"
@@ -1740,7 +1740,7 @@ class GetProfilePhotoTests(django.test.TestCase):
     def test_get_profile_photo_no_email(self):
         """Test behavior when the profile has no email."""
         # Set up mock to return no local profile image
-        self.mock_profileimage_set.first.return_value = None
+        self.mock_profileimage_set.all.return_value = []
         self.profile_obj.profile_image = ""
 
         # Set empty email
@@ -1764,7 +1764,7 @@ class GetProfilePhotoTests(django.test.TestCase):
     def test_get_profile_photo_missing_email_attribute(self):
         """Test behavior when the profile has no email attribute."""
         # Set up mock to return no local profile image
-        self.mock_profileimage_set.first.return_value = None
+        self.mock_profileimage_set.all.return_value = []
         self.profile_obj.profile_image = ""
 
         # Remove email attribute
