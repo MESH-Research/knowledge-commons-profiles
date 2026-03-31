@@ -26,28 +26,29 @@ def health(request):
     try:
         cache.set("health", "healthy", REDIS_TEST_TIMEOUT_VALUE)
         _ = cache.get("health")
-    except redis.exceptions.ConnectionError as ce:
-        health_result["REDIS"] = f"unhealthy: {ce}"
+    except redis.exceptions.ConnectionError:
+        logger.exception("Health check: Redis unhealthy")
+        health_result["REDIS"] = "unhealthy"
         fail = True
     else:
         health_result["REDIS"] = "healthy"
 
     try:
-        # Test WordPress database connection
         db_conn = connections["wordpress_dev"]
         _ = db_conn.cursor()
-    except django.db.utils.OperationalError as oe:
-        health_result["WordPress DB"] = f"unhealthy: {oe}"
+    except django.db.utils.OperationalError:
+        logger.exception("Health check: WordPress DB unhealthy")
+        health_result["WordPress DB"] = "unhealthy"
         fail = True
     else:
         health_result["WordPress DB"] = "healthy"
 
     try:
-        # Test Postgres database connection
         db_conn = connections["default"]
         _ = db_conn.cursor()
-    except django.db.utils.OperationalError as oe:
-        health_result["Postgres DB"] = f"unhealthy: {oe}"
+    except django.db.utils.OperationalError:
+        logger.exception("Health check: Postgres DB unhealthy")
+        health_result["Postgres DB"] = "unhealthy"
         fail = True
     else:
         health_result["Postgres DB"] = "healthy"
@@ -56,9 +57,9 @@ def health(request):
         api_results = check_api_endpoints_health()
         if api_results:
             health_result["API Endpoints"] = api_results
-    except Exception as e:
-        logger.exception("API endpoint health check failed")
-        health_result["API Endpoints"] = f"check failed: {e}"
+    except Exception:
+        logger.exception("Health check: API endpoint check failed")
+        health_result["API Endpoints"] = "check failed"
 
     health_result["Debug Mode"] = settings.DEBUG
 
