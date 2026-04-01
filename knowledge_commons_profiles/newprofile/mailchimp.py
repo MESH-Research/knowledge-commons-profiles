@@ -147,21 +147,27 @@ def hcommons_add_new_user_to_mailchimp(user_id: str):
     ExternalSync.sync(user, send_webhook=False)
 
     email = user.email
+    subscriber_hash = hashlib.md5(  # noqa: S324 — Mailchimp API requires MD5
+        email.lower().encode()
+    ).hexdigest()
 
     # Check if Mailchimp already has this user
     existing = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{email}"
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
     )
 
-    mailchimp_user_id = ""
     request_method = "POST"
+    endpoint = f"/lists/{settings.MAILCHIMP_LIST_ID}/members"
 
     if isinstance(existing, dict) and "email_address" in existing:
         trigger_error(f"Mailchimp user exists for email {email}", "notice")
 
         if existing.get("status") == "archived":
-            mailchimp_user_id = existing.get("id", "")
             request_method = "PUT"
+            list_id = settings.MAILCHIMP_LIST_ID
+            endpoint = (
+                f"/lists/{list_id}/members/{subscriber_hash}"
+            )
         else:
             trigger_error(
                 f"Mailchimp user exists and is not archived for email {email}",
@@ -191,7 +197,7 @@ def hcommons_add_new_user_to_mailchimp(user_id: str):
     }
 
     response = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{mailchimp_user_id}",
+        endpoint,
         request_method,
         payload,
     )
