@@ -1,3 +1,9 @@
+## 4.17.0 (2026-04-01)
+
+### Feat
+
+- **nav**: rewrite navigation links based on referrer network address
+
 ## 4.16.1 (2026-04-01)
 
 ### Fix
