@@ -35,7 +35,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@a080f59b057d681bf221f98cbdcd9f0defa1a1a9
+        uses: aws-actions/amazon-ecr-login@5b22aa2a6350274d6f56bf01bf4c4d1bcf479be6
 
       - name: Build and push production base image
         env:
@@ -70,7 +70,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@a080f59b057d681bf221f98cbdcd9f0defa1a1a9
+        uses: aws-actions/amazon-ecr-login@5b22aa2a6350274d6f56bf01bf4c4d1bcf479be6
 
       - name: Build and push dev base image
         env:
