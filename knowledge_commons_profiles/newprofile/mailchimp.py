@@ -3,6 +3,7 @@ Mailchimp functions
 """
 
 import base64
+import hashlib
 import json
 import logging
 from urllib.parse import urlencode
@@ -206,6 +207,76 @@ def hcommons_add_new_user_to_mailchimp(user_id: str):
             f"Mailchimp user creation failed. Response: {response}",
             "warning",
         )
+
+
+# ---------------------------------------------------------------------
+# Update existing subscriber's email in Mailchimp
+# ---------------------------------------------------------------------
+
+
+def hcommons_update_user_email_in_mailchimp(
+    old_email: str, new_email: str
+) -> bool:
+    """
+    Update an existing Mailchimp subscriber's email address.
+
+    Looks up the subscriber by old_email. If found and subscribed, PATCHes
+    the email_address to new_email. Returns True on success, False otherwise.
+    """
+    if old_email == new_email:
+        return False
+
+    if not (
+        settings.MAILCHIMP_LIST_ID
+        and settings.MAILCHIMP_API_KEY
+        and settings.MAILCHIMP_DC
+    ):
+        trigger_error(
+            "Mailchimp email update failed: Mailchimp constants not defined."
+        )
+        return False
+
+    subscriber_hash = hashlib.md5(  # noqa: S324 — Mailchimp API requires MD5
+        old_email.lower().encode()
+    ).hexdigest()
+
+    existing = hcommons_mailchimp_request(
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+    )
+
+    if not isinstance(existing, dict) or "email_address" not in existing:
+        trigger_error(
+            f"Mailchimp email update: no subscriber found for {old_email}",
+            "notice",
+        )
+        return False
+
+    if existing.get("status") != "subscribed":
+        trigger_error(
+            f"Mailchimp email update: subscriber {old_email} is "
+            f"{existing.get('status')}, skipping",
+            "notice",
+        )
+        return False
+
+    response = hcommons_mailchimp_request(
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}",
+        "PATCH",
+        params={"email_address": new_email},
+    )
+
+    if isinstance(response, dict) and "email_address" in response:
+        trigger_error(
+            f"Mailchimp email updated from {old_email} to {new_email}",
+            "notice",
+        )
+        return True
+
+    trigger_error(
+        f"Mailchimp email update failed for {old_email}. "
+        f"Response: {response}",
+    )
+    return False
 
 
 # ---------------------------------------------------------------------

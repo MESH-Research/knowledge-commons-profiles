@@ -75,6 +75,9 @@ from knowledge_commons_profiles.common.profiles_email import (
 from knowledge_commons_profiles.newprofile.mailchimp import (
     hcommons_add_new_user_to_mailchimp,
 )
+from knowledge_commons_profiles.newprofile.mailchimp import (
+    hcommons_update_user_email_in_mailchimp,
+)
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.pages.models import SitePage
@@ -769,6 +772,8 @@ def _make_email_primary(profile: Profile | None, request):
     if not email or email not in profile.emails:
         return
 
+    old_email = profile.email
+
     # first, add the existing primary to the secondaries
     if profile.email not in profile.emails:
         profile.emails.append(profile.email)
@@ -785,6 +790,10 @@ def _make_email_primary(profile: Profile | None, request):
 
     # save the object
     profile.save()
+
+    # Update the subscriber's email in Mailchimp before syncing to WordPress,
+    # so the WP cron script doesn't treat the new email as a new subscriber
+    hcommons_update_user_email_in_mailchimp(old_email, email)
 
     sync_email_to_wordpress(username=profile.username, email=profile.email)
 
