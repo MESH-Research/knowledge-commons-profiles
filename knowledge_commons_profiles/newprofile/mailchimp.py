@@ -312,15 +312,17 @@ def hcommons_remove_user_from_mailchimp(user_id: str):
 
     trigger_error(f"Removing user {user.username} from Mailchimp.", "notice")
 
+    subscriber_hash = hashlib.md5(  # noqa: S324 — Mailchimp API requires MD5
+        user.email.lower().encode()
+    ).hexdigest()
+
     existing = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{user.email}"
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
     )
 
     if isinstance(existing, dict) and "email_address" in existing:
-        mailchimp_user_id = existing.get("id")
-
         response = hcommons_mailchimp_request(
-            f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{mailchimp_user_id}",
+            f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}",
             "DELETE",
             {},
         )
