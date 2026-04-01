@@ -1,3 +1,9 @@
+## 4.16.1 (2026-04-01)
+
+### Fix
+
+- **ci**: switch AWS auth from static keys to OIDC federation
+
 ## 4.16.0 (2026-03-31)
 
 ### Feat
