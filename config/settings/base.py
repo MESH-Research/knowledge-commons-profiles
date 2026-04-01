@@ -153,6 +153,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
+    "knowledge_commons_profiles.common.middleware.RefererNavMiddleware",
     "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
 
@@ -528,6 +529,10 @@ NAV_SUPPORT_URL = env("NAV_SUPPORT_URL", default="https://support.hcommons.org/"
 NAV_ORGANIZATIONS_URL = env("NAV_ORGANIZATIONS_URL", default="https://hcommons.org/societies/")
 NAV_ABOUT_URL = env("NAV_ABOUT_URL", default="https://sustaining.hcommons.org/")
 NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
+
+NAV_NETWORK_DOMAIN_MAP = env.json("NAV_NETWORK_DOMAIN_MAP", default={})
+NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
+NAV_NETWORK_SESSION_TIMEOUT = env.int("NAV_NETWORK_SESSION_TIMEOUT", default=3600)
 
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")
 MAILCHIMP_API_KEY = env("MAILCHIMP_API_KEY")

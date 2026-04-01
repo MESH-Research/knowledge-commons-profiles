@@ -1,3 +1,41 @@
+## 4.16.1 (2026-04-01)
+
+### Fix
+
+- **ci**: switch AWS auth from static keys to OIDC federation
+
+## 4.16.0 (2026-03-31)
+
+### Feat
+
+- **cli**: add audit_duplicate_profiles management command
+
+### Fix
+
+- **docker**: grant django user ownership of /opt/venv
+- **models**: enforce unique username constraint on Profile model
+
+## 4.15.0 (2026-03-31)
+
+### Feat
+
+- **dev**: add NO_CACHE option to Makefile build targets
+- **dev**: add Makefile for local development without ECR access
+
+### Fix
+
+- **ci**: revert deploy job name to plain "Deploy"
+- **tests**: move orphaned cilogon tests into class and convert to behavioral assertions
+- **onboarding**: improve Welcome and Registration page wording and layout
+
+### Refactor
+
+- **tests**: remove implementation-detail assertions from remaining test files
+- **tests**: remove logger mock assertions from utils tests
+- **tests**: remove mock-call assertions from API tests
+- **tests**: remove implementation-detail assertions from mastodon tests
+- **tests**: convert view tests from mock-call to response assertions
+
 ## 4.14.2 (2026-03-31)
 
 ### Fix
