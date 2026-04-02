@@ -1,3 +1,15 @@
+## 4.17.4 (2026-04-02)
+
+### Fix
+
+- **api**: scope cover image query to current user
+
+## 4.17.3 (2026-04-02)
+
+### Fix
+
+- **views**: handle webhook failures gracefully in edit-profile
+
 ## 4.17.2 (2026-04-02)
 
 ### Fix
