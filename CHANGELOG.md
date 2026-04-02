@@ -1,3 +1,9 @@
+## 4.17.5 (2026-04-02)
+
+### Fix
+
+- **logging**: suppress admin error emails from health check endpoint
+
 ## 4.17.4 (2026-04-02)
 
 ### Fix
