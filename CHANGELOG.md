@@ -1,3 +1,9 @@
+## 4.17.6 (2026-04-02)
+
+### Fix
+
+- **groups**: unslash WordPress-escaped group names in template view
+
 ## 4.17.5 (2026-04-02)
 
 ### Fix
