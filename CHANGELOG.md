@@ -1,3 +1,17 @@
+## 4.18.0 (2026-04-02)
+
+### Feat
+
+- **mailchimp**: support --email flag in mailchimp_manage add/unsubscribe
+- **mailchimp**: add mailchimp_manage command for add, update-email, unsubscribe
+- **mailchimp**: add update_email management command with dry-run
+
+### Fix
+
+- **mailchimp**: use subscriber hash in remove function
+- **mailchimp**: use subscriber hash for Mailchimp member lookups
+- **mailchimp**: update subscriber email in Mailchimp before WordPress sync
+
 ## 4.17.7 (2026-04-02)
 
 ### Fix
