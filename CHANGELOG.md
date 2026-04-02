@@ -1,3 +1,9 @@
+## 4.17.7 (2026-04-02)
+
+### Fix
+
+- **tests**: resolve flaky padding oracle resistance test
+
 ## 4.17.6 (2026-04-02)
 
 ### Fix
