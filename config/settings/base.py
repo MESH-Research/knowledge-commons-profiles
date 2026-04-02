@@ -262,14 +262,32 @@ LOGGING = {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
     },
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "suppress_health_check": {
+            "()": "log_config.health_check_filter.HealthCheckFilter",
+        },
+    },
     "handlers": {
         "console": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false", "suppress_health_check"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
     },
     "loggers": {
+        "django.request": {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
         "inotify_buffer": {
             "level": "INFO",
             "handlers": ["console"],
