@@ -1,3 +1,9 @@
+## 4.17.2 (2026-04-02)
+
+### Fix
+
+- **mastodon**: downgrade HTTP errors to warning level logging
+
 ## 4.17.1 (2026-04-02)
 
 ### Fix
