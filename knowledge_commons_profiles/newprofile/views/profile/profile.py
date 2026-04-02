@@ -4,6 +4,7 @@ import json
 import logging
 
 import django.db
+import requests
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -208,7 +209,13 @@ def edit_profile(request, username=None):
 
             # Prepare updates using Pydantic models and send an update command
             # to third-party systems via webhook
-            send_webhook_user_update(user.username)
+            try:
+                send_webhook_user_update(user.username)
+            except (requests.exceptions.RequestException, ValueError):
+                logger.warning(
+                    "Webhook update failed for %s, profile was saved",
+                    user.username,
+                )
 
             # now send an update to the CC search client
             try:

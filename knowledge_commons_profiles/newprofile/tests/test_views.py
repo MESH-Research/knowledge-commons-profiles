@@ -4,6 +4,7 @@ from unittest.mock import PropertyMock
 from unittest.mock import patch
 
 import django.db
+import requests
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
@@ -342,6 +343,118 @@ class EditProfileTests(TestCase):
 
         response = edit_profile(request, username="staffuser2")
         self.assertEqual(response.status_code, 200)
+
+
+class EditProfileWebhookFailureTests(TestCase):
+    """Tests that webhook failures don't block profile saving."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass"
+        )
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.logger"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "index_profile_in_cc_search"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "send_webhook_user_update"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "ProfileForm"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.Profile.objects."
+        "prefetch_related"
+    )
+    def test_webhook_failure_does_not_block_redirect(
+        self,
+        mock_prefetch,
+        mock_form_class,
+        mock_send_webhook,
+        mock_index,
+        mock_logger,
+    ):
+        """Profile edit should redirect even if webhook fails."""
+        mock_queryset = MagicMock()
+        mock_prefetch.return_value = mock_queryset
+        mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
+        type(mock_user).username = PropertyMock(return_value="testuser")
+        mock_queryset.get.return_value = mock_user
+
+        mock_form = MagicMock()
+        mock_form_class.return_value = mock_form
+        mock_form.is_valid.return_value = True
+
+        mock_send_webhook.side_effect = requests.exceptions.ConnectionError(
+            "Webhook failed"
+        )
+
+        request = self.factory.post("/edit-profile/", {"field": "value"})
+        request.user = self.user
+
+        response = edit_profile(request)
+
+        self.assertEqual(response.status_code, 302)
+        mock_form.save.assert_called_once()
+        mock_logger.warning.assert_called()
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile.logger"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "index_profile_in_cc_search"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "send_webhook_user_update"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "ProfileForm"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.Profile.objects."
+        "prefetch_related"
+    )
+    def test_successful_webhook_still_redirects(
+        self,
+        mock_prefetch,
+        mock_form_class,
+        mock_send_webhook,
+        mock_index,
+        mock_logger,
+    ):
+        """Profile edit should redirect when webhook succeeds."""
+        mock_queryset = MagicMock()
+        mock_prefetch.return_value = mock_queryset
+        mock_user = MagicMock()
+        type(mock_user).left_order = PropertyMock(return_value="[]")
+        type(mock_user).right_order = PropertyMock(return_value="[]")
+        type(mock_user).username = PropertyMock(return_value="testuser")
+        mock_queryset.get.return_value = mock_user
+
+        mock_form = MagicMock()
+        mock_form_class.return_value = mock_form
+        mock_form.is_valid.return_value = True
+
+        request = self.factory.post("/edit-profile/", {"field": "value"})
+        request.user = self.user
+
+        response = edit_profile(request)
+
+        self.assertEqual(response.status_code, 302)
+        mock_form.save.assert_called_once()
+        mock_send_webhook.assert_called_once_with("testuser")
 
 
 class BlogPostsTests(TestCase):
