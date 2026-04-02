@@ -746,7 +746,12 @@ class API:
         if cover:
             return cover.file_path
 
-        result = WpUserMeta.objects.filter(meta_key="_bb_cover_photo").first()
+        result = WpUserMeta.objects.filter(
+            meta_key="_bb_cover_photo", user=self.wp_user
+        ).first()
+
+        if not result:
+            return None
 
         return phpserialize.unserialize(result.meta_value.encode())[
             b"attachment"

@@ -1351,6 +1351,16 @@ class GetCoverImageTests(django.test.TestCase):
         self.mock_coverimage_set = mock.MagicMock()
         self.profile_obj.coverimage_set = self.mock_coverimage_set
 
+        # Mock wp_user property
+        self.wp_user_patcher = mock.patch.object(
+            self.model_instance.__class__,
+            "wp_user",
+            new_callable=mock.PropertyMock,
+        )
+        self.mock_wp_user_prop = self.wp_user_patcher.start()
+        self.mock_wp_user = mock.MagicMock()
+        self.mock_wp_user_prop.return_value = self.mock_wp_user
+
         # Mock WpUserMeta.objects.filter
         self.filter_patcher = mock.patch(
             "knowledge_commons_profiles.newprofile.api.WpUserMeta.objects."
@@ -1371,6 +1381,7 @@ class GetCoverImageTests(django.test.TestCase):
     def tearDown(self):
         """Clean up after the tests."""
         self.profile_patcher.stop()
+        self.wp_user_patcher.stop()
         self.filter_patcher.stop()
         self.phpserialize_patcher.stop()
 
@@ -1408,6 +1419,11 @@ class GetCoverImageTests(django.test.TestCase):
         # Assert the result is the WordPress image path
         self.assertEqual(result, wp_image_path)
 
+        # Assert the filter was called with user scope
+        self.mock_filter.assert_called_once_with(
+            meta_key="_bb_cover_photo", user=self.mock_wp_user
+        )
+
     def test_get_cover_image_no_local_or_wordpress_image(self):
         """Test when no cover image is found in either location."""
         # Set up mock to return no local cover image
@@ -1416,10 +1432,9 @@ class GetCoverImageTests(django.test.TestCase):
         # Set up mock to return no WordPress metadata
         self.mock_queryset.first.return_value = None
 
-        # Call the method and expect AttributeError (trying to access
-        # meta_value on None)
-        with self.assertRaises(AttributeError):
-            self.model_instance.get_cover_image()
+        # Should return None, not raise an error
+        result = self.model_instance.get_cover_image()
+        self.assertIsNone(result)
 
     def test_get_cover_image_with_invalid_serialized_data(self):
         """Test handling of invalid PHP serialized data."""
