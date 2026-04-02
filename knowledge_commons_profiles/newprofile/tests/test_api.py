@@ -880,6 +880,41 @@ class GetProfileInfoTests(django.test.TestCase):
         self.assertIsNone(result["mastodon_username"])
         self.assertIsNone(result["mastodon_server"])
 
+    def test_get_profile_info_sanitizes_html_fields(self):
+        """Test that get_profile_info sanitizes publications, projects,
+        and memberships fields."""
+        self.mock_profile.publications = (
+            "<span>A book</span> <div>about things</div>"
+        )
+        self.mock_profile.projects = "<span>Project One</span>"
+        self.mock_profile.memberships = "<font>Group A</font>"
+        self.model_instance._profile_info = None
+
+        result = self.model_instance.get_profile_info()
+
+        self.assertNotIn("<span>", result["publications"])
+        self.assertNotIn("<div>", result["publications"])
+        self.assertIn("A book", result["publications"])
+        self.assertNotIn("<span>", result["projects"])
+        self.assertIn("Project One", result["projects"])
+        self.assertNotIn("<font>", result["memberships"])
+        self.assertIn("Group A", result["memberships"])
+
+    def test_get_profile_info_preserves_allowed_html(self):
+        """Test that get_profile_info keeps allowed HTML in rich fields."""
+        self.mock_profile.publications = "<p><strong>A book</strong></p>"
+        self.mock_profile.projects = "<ul><li>Project</li></ul>"
+        self.mock_profile.memberships = (
+            '<p>Member of <a href="#">Group</a></p>'
+        )
+        self.model_instance._profile_info = None
+
+        result = self.model_instance.get_profile_info()
+
+        self.assertIn("<p><strong>A book</strong></p>", result["publications"])
+        self.assertIn("<ul><li>Project</li></ul>", result["projects"])
+        self.assertIn("Group</a>", result["memberships"])
+
 
 class GetBlogPostsTests(django.test.TestCase):
     """Tests for the get_blog_posts method."""
@@ -1173,6 +1208,29 @@ class GetAboutUserTests(django.test.TestCase):
         with self.assertRaises(AttributeError):
             self.model_instance.get_about_user()
 
+    def test_get_about_user_strips_span_tags(self):
+        """Test that get_about_user sanitizes stray HTML like <span> tags."""
+        self.profile_obj.about_user = (
+            "<span>Jack W. Chen works on literature.</span> "
+            "The Poetics <span>(2010)</span>"
+        )
+        result = self.model_instance.get_about_user()
+        self.assertNotIn("<span>", result)
+        self.assertNotIn("</span>", result)
+        self.assertIn("Jack W. Chen works on literature.", result)
+        self.assertIn("The Poetics", result)
+        self.assertIn("(2010)", result)
+
+    def test_get_about_user_preserves_allowed_html(self):
+        """Test that get_about_user preserves allowed HTML tags."""
+        self.profile_obj.about_user = (
+            "<p>A <strong>bold</strong> and <em>italic</em> bio.</p>"
+        )
+        result = self.model_instance.get_about_user()
+        self.assertIn("<p>", result)
+        self.assertIn("<strong>bold</strong>", result)
+        self.assertIn("<em>italic</em>", result)
+
 
 class GetEducationTests(django.test.TestCase):
     """Tests for the get_education method."""
@@ -1241,6 +1299,22 @@ class GetEducationTests(django.test.TestCase):
         # Call the method and expect AttributeError
         with self.assertRaises(AttributeError):
             self.model_instance.get_education()
+
+    def test_get_education_strips_span_tags(self):
+        """Test that get_education sanitizes stray HTML tags."""
+        self.profile_obj.education = "<span>PhD</span> in <div>Literature</div>"
+        result = self.model_instance.get_education()
+        self.assertNotIn("<span>", result)
+        self.assertNotIn("<div>", result)
+        self.assertIn("PhD", result)
+        self.assertIn("Literature", result)
+
+    def test_get_education_preserves_allowed_html(self):
+        """Test that get_education preserves allowed HTML tags."""
+        self.profile_obj.education = "<p><strong>PhD</strong> in Literature</p>"
+        result = self.model_instance.get_education()
+        self.assertIn("<p>", result)
+        self.assertIn("<strong>PhD</strong>", result)
 
 
 class GetGroupsTests(django.test.TestCase):

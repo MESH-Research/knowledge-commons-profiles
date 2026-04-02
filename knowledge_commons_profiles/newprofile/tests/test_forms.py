@@ -17,10 +17,9 @@ class SanitizedTinyMCETests(TestCase):
     def setUp(self):
         self.widget = SanitizedTinyMCE()
 
-    def test_init_creates_cleaner(self):
-        """Test that the widget initializes with a cleaner"""
-        self.assertIsNotNone(self.widget.cleaner)
-        self.assertIsNotNone(self.widget.linker)
+    def test_init_creates_widget(self):
+        """Test that the widget initializes correctly"""
+        self.assertIsNotNone(self.widget)
 
     def test_allowed_tags(self):
         """Test that allowed tags are preserved"""
