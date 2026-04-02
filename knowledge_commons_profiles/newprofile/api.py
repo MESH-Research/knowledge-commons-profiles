@@ -41,6 +41,7 @@ from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import WorksApiError
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
+from knowledge_commons_profiles.rest_api.utils import wp_unslash
 
 logger = logging.getLogger(__name__)
 
@@ -715,7 +716,7 @@ class API:
             return [
                 {
                     "id": gm.gid,  # group id
-                    "group_name": gm.group_name,  # group name
+                    "group_name": wp_unslash(gm.group_name),
                     "role": gm.role,  # computed role
                     "slug": gm.slug,  # slug
                     "status": gm.group.status,

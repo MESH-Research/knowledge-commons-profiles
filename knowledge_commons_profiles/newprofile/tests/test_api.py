@@ -1326,6 +1326,31 @@ class GetGroupsTests(django.test.TestCase):
 
         self.assertEqual(len(result), 2)
 
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_wp_slashed_group_name_is_unslashed(self, mock_manager):
+        """Group names stored with WordPress addslashes escaping
+        should be returned with the escaping removed."""
+        mock_return = MagicMock()
+        mock_return.gid = 1
+        mock_return.group_name = "Martin\\'s test group"
+        mock_return.role = "member"
+        mock_return.slug = "martins-test-group"
+        mock_return.group.status = "public"
+        mock_return.group.get_avatar.return_value = ""
+        mock_return.inviter_id = 0
+
+        mock_qs = MagicMock()
+        mock_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = [mock_return]
+
+        result = self.service.get_groups()
+
+        self.assertEqual(result[0]["group_name"], "Martin's test group")
+
 
 class GetCoverImageTests(django.test.TestCase):
     """Tests for the get_cover_image method."""
