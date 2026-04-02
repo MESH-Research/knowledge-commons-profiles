@@ -169,6 +169,9 @@ class MastodonFeed:
         try:
             response = requests.get(self.api_url, timeout=self.timeout)
             response.raise_for_status()
+        except requests.exceptions.HTTPError as exc:
+            logger.warning("HTTP error fetching %s: %s", self.api_url, exc)
+            return []
         except requests.exceptions.RequestException:
             logger.exception("Error fetching %s", self.api_url)
             return []

@@ -148,6 +148,59 @@ xmlns:media="http://search.yahoo.com/mrss/">
         result = self.mastodon_feed.latest_posts()
 
         self.assertEqual(result, [])
+        self.mock_logger.exception.assert_called()
+
+    def test_fetch_http_error_uses_warning(self):
+        """Test that HTTP errors (410, 404) use warning, not exception."""
+        response = mock.MagicMock()
+        response.status_code = 410
+        http_error = requests.exceptions.HTTPError(
+            "410 Client Error: Gone", response=response
+        )
+        self.mock_response.raise_for_status.side_effect = http_error
+
+        result = self.mastodon_feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_logger.warning.assert_called()
+        self.mock_logger.exception.assert_not_called()
+
+    def test_fetch_404_uses_warning(self):
+        """Test that 404 errors use warning, not exception."""
+        response = mock.MagicMock()
+        response.status_code = 404
+        http_error = requests.exceptions.HTTPError(
+            "404 Client Error: Not Found", response=response
+        )
+        self.mock_response.raise_for_status.side_effect = http_error
+
+        result = self.mastodon_feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_logger.warning.assert_called()
+        self.mock_logger.exception.assert_not_called()
+
+    def test_fetch_connection_error_uses_exception(self):
+        """Test that connection errors still use logger.exception."""
+        self.mock_requests_get.side_effect = (
+            requests.exceptions.ConnectionError("Connection refused")
+        )
+
+        result = self.mastodon_feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_logger.exception.assert_called()
+
+    def test_fetch_timeout_uses_exception(self):
+        """Test that timeout errors still use logger.exception."""
+        self.mock_requests_get.side_effect = (
+            requests.exceptions.Timeout("Request timed out")
+        )
+
+        result = self.mastodon_feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_logger.exception.assert_called()
 
     def test_fetch_xml_parsing_error(self):
         """Test error handling when XML parsing fails."""
