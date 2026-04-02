@@ -21,6 +21,74 @@ logger = logging.getLogger(__name__)
 # ruff: noqa: PLC0415
 
 
+_HTML_CLEANER = None
+_HTML_LINKER = None
+
+ALLOWED_TAGS = [
+    "p",
+    "b",
+    "i",
+    "u",
+    "em",
+    "strong",
+    "a",
+    "ul",
+    "ol",
+    "li",
+    "br",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "table",
+    "tbody",
+    "thead",
+    "tr",
+    "td",
+    "th",
+    "img",
+]
+
+ALLOWED_ATTRIBUTES = {
+    "a": ["href", "title"],
+    "img": ["src", "alt", "width", "height"],
+    "td": ["colspan", "rowspan"],
+    "th": ["colspan", "rowspan"],
+}
+
+
+def _get_html_cleaner():
+    global _HTML_CLEANER  # noqa: PLW0603
+    if _HTML_CLEANER is None:
+        from bleach.sanitizer import Cleaner
+
+        _HTML_CLEANER = Cleaner(
+            tags=ALLOWED_TAGS,
+            attributes=ALLOWED_ATTRIBUTES,
+            strip=True,
+        )
+    return _HTML_CLEANER
+
+
+def _get_html_linker():
+    global _HTML_LINKER  # noqa: PLW0603
+    if _HTML_LINKER is None:
+        from bleach.linkifier import Linker
+
+        _HTML_LINKER = Linker()
+    return _HTML_LINKER
+
+
+def sanitize_html(value):
+    """Sanitize an HTML string, stripping disallowed tags while preserving
+    their text content. Uses the same allowlist as SanitizedTinyMCE."""
+    if not value:
+        return value
+    return _get_html_linker().linkify(_get_html_cleaner().clean(value))
+
+
 def profile_exists_or_has_been_created(user):
     """
     Check if a user profile exists or, if not, if we can create one

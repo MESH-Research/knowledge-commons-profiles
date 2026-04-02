@@ -38,6 +38,7 @@ from knowledge_commons_profiles.newprofile.models import WpPostSubTable
 from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.models import WpUserMeta
 from knowledge_commons_profiles.newprofile.utils import get_profile_photo
+from knowledge_commons_profiles.newprofile.utils import sanitize_html
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
 from knowledge_commons_profiles.newprofile.works import WorksApiError
 from knowledge_commons_profiles.newprofile.works import WorksDeposits
@@ -430,9 +431,9 @@ class API:
             "mastodon_server": m_server,
             "profile_image": get_profile_photo(self.profile),
             "works_username": self.profile.works_username,
-            "publications": self.profile.publications,
-            "projects": self.profile.projects,
-            "memberships": self.profile.memberships,
+            "publications": sanitize_html(self.profile.publications),
+            "projects": sanitize_html(self.profile.projects),
+            "memberships": sanitize_html(self.profile.memberships),
             "institutional_or_other_affiliation": (
                 self.profile.institutional_or_other_affiliation
             ),
@@ -570,8 +571,7 @@ class API:
         Returns:
             A string about the user.
         """
-        # A string about the user
-        return self.profile.about_user
+        return sanitize_html(self.profile.about_user)
 
     def get_education(self):
         """
@@ -580,7 +580,7 @@ class API:
         Returns:
             A string of the user's education details.
         """
-        return self.profile.education
+        return sanitize_html(self.profile.education)
 
     def get_group_avatar_url(self, group_id: int) -> str:
         """
