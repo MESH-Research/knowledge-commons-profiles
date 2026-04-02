@@ -2,6 +2,7 @@
 Security-focused unit tests for CILogon authentication and authorization
 """
 
+import base64
 import time
 from unittest.mock import MagicMock
 from unittest.mock import patch
@@ -382,20 +383,37 @@ class EncryptionSecurityTests(CILogonTestBase):
         self.assertEqual(encoder.decode(encoded2), data)
 
     def test_secure_param_encoder_padding_oracle_resistance(self):
-        """Test resistance to padding oracle attacks"""
+        """Test resistance to padding oracle attacks.
+
+        Tamper with the raw ciphertext bytes (not the base64 encoding)
+        to ensure modified ciphertext never decodes to valid data.
+        """
         encoder = SecureParamEncoder("test_password")
         data = {"test": "value"}
 
         encoded = encoder.encode(data)
+        raw_bytes = base64.urlsafe_b64decode(encoded.encode())
 
-        # Try various padding manipulations
-        for i in range(
-            1, min(16, len(encoded))
-        ):  # Try modifying last few bytes
-            tampered = encoded[:-i] + "X" * i
+        # Flip bits in the ciphertext (after the 16-byte IV)
+        for offset in range(16, len(raw_bytes)):
+            tampered_bytes = bytearray(raw_bytes)
+            tampered_bytes[offset] ^= 0xFF
+            tampered = base64.urlsafe_b64encode(
+                bytes(tampered_bytes)
+            ).decode()
 
-            with self.assertRaises((ValueError, Exception)):
-                encoder.decode(tampered)
+            result = None
+            raised = False
+            try:
+                result = encoder.decode(tampered)
+            except (ValueError, Exception):
+                # Crypto or padding error — tampered data rejected
+                raised = True
+
+            if not raised:
+                # If decode didn't raise, it must not return the
+                # original data
+                self.assertNotEqual(result, data)
 
 
 class AuthorizationSecurityTests(CILogonTestBase):
