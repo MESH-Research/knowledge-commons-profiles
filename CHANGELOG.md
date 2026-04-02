@@ -1,3 +1,9 @@
+## 4.17.1 (2026-04-02)
+
+### Fix
+
+- **settings**: read WORKS_UPDATE_ENDPOINTS from environment variable
+
 ## 4.17.0 (2026-04-01)
 
 ### Feat
