@@ -514,9 +514,9 @@ KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+"}
 
 LOGOUT_ENDPOINTS = env.list("LOGOUT_ENDPOINTS", default=[])
 
-WORKS_UPDATE_ENDPOINTS = [
-    "https://localhost/" if DEBUG else "https://works.hcommons.org/"
-]
+WORKS_UPDATE_ENDPOINTS = env.list(
+    "WORKS_UPDATE_ENDPOINTS", default=["https://works.hcommons.org/"]
+)
 
 WEBHOOK_TOKEN = env("WEBHOOK_TOKEN")
 WEBHOOK_URLS = env.list("WEBHOOK_URLS", default=[])
