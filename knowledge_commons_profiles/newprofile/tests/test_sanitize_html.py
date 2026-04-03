@@ -144,3 +144,35 @@ class SanitizeHtmlTests(TestCase):
         self.assertNotIn("<span>", result)
         self.assertNotIn("<font>", result)
         self.assertIn("Text", result)
+
+    def test_escaped_span_entities_stripped(self):
+        """HTML-escaped span entities like &lt;span&gt; should be unescaped
+        and then stripped."""
+        html = (
+            "&lt;span&gt;Jack W. Chen works on literature."
+            "&lt;/span&gt; <em>The Poetics</em>"
+        )
+        result = sanitize_html(html)
+        self.assertNotIn("&lt;span&gt;", result)
+        self.assertNotIn("&lt;/span&gt;", result)
+        self.assertNotIn("<span>", result)
+        self.assertIn("Jack W. Chen works on literature.", result)
+        self.assertIn("<em>The Poetics</em>", result)
+
+    def test_escaped_entities_mixed_with_real_tags(self):
+        """Mix of escaped entities and real tags (as seen in production)."""
+        html = (
+            "&lt;span&gt;(2010) and&nbsp;&lt;/span&gt;"
+            "<em>Anecdote, Network</em>"
+        )
+        result = sanitize_html(html)
+        self.assertNotIn("&lt;span&gt;", result)
+        self.assertNotIn("<span>", result)
+        self.assertIn("(2010) and", result)
+        self.assertIn("<em>Anecdote, Network</em>", result)
+
+    def test_escaped_allowed_tags_preserved(self):
+        """Escaped allowed tags should be unescaped and preserved."""
+        html = "&lt;em&gt;italic&lt;/em&gt;"
+        result = sanitize_html(html)
+        self.assertIn("<em>italic</em>", result)
