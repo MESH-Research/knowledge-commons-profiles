@@ -3,6 +3,7 @@ A management command to import data from the SQL file
 """
 
 import contextlib
+import html as html_module
 
 # pylint: disable=import-error,no-name-in-module,too-many-arguments
 # pylint: disable=too-many-positional-arguments,no-member
@@ -15,6 +16,7 @@ from sqloxide import parse_sql
 
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.utils import sanitize_html
 
 
 class Command(BaseCommand):
@@ -347,15 +349,19 @@ class Command(BaseCommand):
                         # and it has the value of the second field set to True
                         # then escape it. Put the value into the associated
                         # field of profile.
-                        setattr(
-                            profile,
-                            self.DATA_MATCHES[data_field["name"]][0],
-                            (
-                                self._unescape(data_value["value"])
-                                if self.DATA_MATCHES[data_field["name"]][1]
-                                else data_value["value"]
-                            ),
+                        field_name = self.DATA_MATCHES[data_field["name"]][0]
+                        should_unescape = self.DATA_MATCHES[
+                            data_field["name"]
+                        ][1]
+                        value = (
+                            self._unescape(data_value["value"])
+                            if should_unescape
+                            else data_value["value"]
                         )
+                        if should_unescape:
+                            value = html_module.unescape(value)
+                            value = sanitize_html(value)
+                        setattr(profile, field_name, value)
                     elif data_field["name"] not in already_printed:
                         rich.print(
                             f'Unhandled field: "{data_field["name"]}"',
