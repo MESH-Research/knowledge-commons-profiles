@@ -3,6 +3,7 @@ A management command to import data from the SQL file
 """
 
 import contextlib
+import html as html_module
 
 # pylint: disable=import-error,no-name-in-module,too-many-arguments
 # pylint: disable=too-many-positional-arguments,no-member
@@ -358,6 +359,7 @@ class Command(BaseCommand):
                             else data_value["value"]
                         )
                         if should_unescape:
+                            value = html_module.unescape(value)
                             value = sanitize_html(value)
                         setattr(profile, field_name, value)
                     elif data_field["name"] not in already_printed:

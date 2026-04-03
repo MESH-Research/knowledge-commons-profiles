@@ -83,15 +83,9 @@ def _get_html_linker():
 
 def sanitize_html(value):
     """Sanitize an HTML string, stripping disallowed tags while preserving
-    their text content. Uses the same allowlist as SanitizedTinyMCE.
-
-    Also handles HTML-escaped entities (e.g. &lt;span&gt;) which can appear
-    in imported profile data that was double-escaped."""
+    their text content. Uses the same allowlist as SanitizedTinyMCE."""
     if not value:
         return value
-    import html
-
-    value = html.unescape(value)
     return _get_html_linker().linkify(_get_html_cleaner().clean(value))
 
 
