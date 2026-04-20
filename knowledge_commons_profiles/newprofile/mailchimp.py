@@ -3,6 +3,7 @@ Mailchimp functions
 """
 
 import base64
+import hashlib
 import json
 import logging
 from urllib.parse import urlencode
@@ -146,21 +147,27 @@ def hcommons_add_new_user_to_mailchimp(user_id: str):
     ExternalSync.sync(user, send_webhook=False)
 
     email = user.email
+    subscriber_hash = hashlib.md5(  # noqa: S324 — Mailchimp API requires MD5
+        email.lower().encode()
+    ).hexdigest()
 
     # Check if Mailchimp already has this user
     existing = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{email}"
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
     )
 
-    mailchimp_user_id = ""
     request_method = "POST"
+    endpoint = f"/lists/{settings.MAILCHIMP_LIST_ID}/members"
 
     if isinstance(existing, dict) and "email_address" in existing:
         trigger_error(f"Mailchimp user exists for email {email}", "notice")
 
         if existing.get("status") == "archived":
-            mailchimp_user_id = existing.get("id", "")
             request_method = "PUT"
+            list_id = settings.MAILCHIMP_LIST_ID
+            endpoint = (
+                f"/lists/{list_id}/members/{subscriber_hash}"
+            )
         else:
             trigger_error(
                 f"Mailchimp user exists and is not archived for email {email}",
@@ -190,7 +197,7 @@ def hcommons_add_new_user_to_mailchimp(user_id: str):
     }
 
     response = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{mailchimp_user_id}",
+        endpoint,
         request_method,
         payload,
     )
@@ -206,6 +213,76 @@ def hcommons_add_new_user_to_mailchimp(user_id: str):
             f"Mailchimp user creation failed. Response: {response}",
             "warning",
         )
+
+
+# ---------------------------------------------------------------------
+# Update existing subscriber's email in Mailchimp
+# ---------------------------------------------------------------------
+
+
+def hcommons_update_user_email_in_mailchimp(
+    old_email: str, new_email: str
+) -> bool:
+    """
+    Update an existing Mailchimp subscriber's email address.
+
+    Looks up the subscriber by old_email. If found and subscribed, PATCHes
+    the email_address to new_email. Returns True on success, False otherwise.
+    """
+    if old_email == new_email:
+        return False
+
+    if not (
+        settings.MAILCHIMP_LIST_ID
+        and settings.MAILCHIMP_API_KEY
+        and settings.MAILCHIMP_DC
+    ):
+        trigger_error(
+            "Mailchimp email update failed: Mailchimp constants not defined."
+        )
+        return False
+
+    subscriber_hash = hashlib.md5(  # noqa: S324 — Mailchimp API requires MD5
+        old_email.lower().encode()
+    ).hexdigest()
+
+    existing = hcommons_mailchimp_request(
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
+    )
+
+    if not isinstance(existing, dict) or "email_address" not in existing:
+        trigger_error(
+            f"Mailchimp email update: no subscriber found for {old_email}",
+            "notice",
+        )
+        return False
+
+    if existing.get("status") != "subscribed":
+        trigger_error(
+            f"Mailchimp email update: subscriber {old_email} is "
+            f"{existing.get('status')}, skipping",
+            "notice",
+        )
+        return False
+
+    response = hcommons_mailchimp_request(
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}",
+        "PATCH",
+        params={"email_address": new_email},
+    )
+
+    if isinstance(response, dict) and "email_address" in response:
+        trigger_error(
+            f"Mailchimp email updated from {old_email} to {new_email}",
+            "notice",
+        )
+        return True
+
+    trigger_error(
+        f"Mailchimp email update failed for {old_email}. "
+        f"Response: {response}",
+    )
+    return False
 
 
 # ---------------------------------------------------------------------
@@ -235,15 +312,17 @@ def hcommons_remove_user_from_mailchimp(user_id: str):
 
     trigger_error(f"Removing user {user.username} from Mailchimp.", "notice")
 
+    subscriber_hash = hashlib.md5(  # noqa: S324 — Mailchimp API requires MD5
+        user.email.lower().encode()
+    ).hexdigest()
+
     existing = hcommons_mailchimp_request(
-        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{user.email}"
+        f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}"
     )
 
     if isinstance(existing, dict) and "email_address" in existing:
-        mailchimp_user_id = existing.get("id")
-
         response = hcommons_mailchimp_request(
-            f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{mailchimp_user_id}",
+            f"/lists/{settings.MAILCHIMP_LIST_ID}/members/{subscriber_hash}",
             "DELETE",
             {},
         )

@@ -1,3 +1,35 @@
+## 4.18.0 (2026-04-02)
+
+### Feat
+
+- **mailchimp**: support --email flag in mailchimp_manage add/unsubscribe
+- **mailchimp**: add mailchimp_manage command for add, update-email, unsubscribe
+- **mailchimp**: add update_email management command with dry-run
+
+### Fix
+
+- **mailchimp**: use subscriber hash in remove function
+- **mailchimp**: use subscriber hash for Mailchimp member lookups
+- **mailchimp**: update subscriber email in Mailchimp before WordPress sync
+
+## 4.17.7 (2026-04-02)
+
+### Fix
+
+- **tests**: resolve flaky padding oracle resistance test
+
+## 4.17.6 (2026-04-02)
+
+### Fix
+
+- **groups**: unslash WordPress-escaped group names in template view
+
+## 4.17.5 (2026-04-02)
+
+### Fix
+
+- **logging**: suppress admin error emails from health check endpoint
+
 ## 4.17.4 (2026-04-02)
 
 ### Fix
