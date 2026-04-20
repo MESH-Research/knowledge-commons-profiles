@@ -15,7 +15,7 @@ ping:
 http:
   routers:
     web-router:
-      rule: 'Host(`profile.hcommons.org`) || Host(`www.profile.hcommons.org`)'
+      rule: 'Host(`profile.hcommons.org`) || Host(`www.profile.hcommons.org`) || Host(`profile.hcommons-test.org`) || Host(`www.profile.hcommons-test.org`)'
       entryPoints:
         - web
       middlewares:
