@@ -9,7 +9,7 @@ ENV BUILD_ENV=production
 WORKDIR ${APP_HOME}
 
 RUN addgroup --system django \
-  && adduser --system --ingroup django django
+  && adduser --system --ingroup django --home /app/djangohome django
 
 COPY --chown=django:django ./compose/production/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
