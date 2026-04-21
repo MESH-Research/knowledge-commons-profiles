@@ -1,3 +1,9 @@
+## 4.18.1 (2026-04-21)
+
+### Fix
+
+- **rest_api**: prepend https:// to scheme-less APIClientConfig base_url
+
 ## 4.18.0 (2026-04-02)
 
 ### Feat
