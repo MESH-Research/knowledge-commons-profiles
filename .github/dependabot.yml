@@ -49,3 +49,7 @@ updates:
     # Every weekday
     schedule:
       interval: 'daily'
+    # sqloxide 0.61+ has breaking serde/JSON layout changes that would
+    # require rewriting import_from_sql's parse-tree walker. Pin to 0.1.56.
+    ignore:
+      - dependency-name: 'sqloxide'
