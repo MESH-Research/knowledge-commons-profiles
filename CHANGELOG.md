@@ -1,3 +1,16 @@
+## 4.19.0 (2026-04-21)
+
+### Feat
+
+- **mailchimp**: add update_email management command with dry-run
+
+### Fix
+
+- **profiles**: revert blanket html.unescape, add sanitize_profile command
+- **profiles**: unescape HTML entities before sanitizing profile content
+- **profiles**: sanitize HTML in profile display and import pipeline
+- **mailchimp**: update subscriber email in Mailchimp before WordPress sync
+
 ## 4.18.1 (2026-04-21)
 
 ### Fix
