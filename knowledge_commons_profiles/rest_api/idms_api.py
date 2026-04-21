@@ -205,6 +205,13 @@ class APIClientConfig(BaseModel):
     backoff_factor: float = Field(0.3, ge=0)
     status_forcelist: list[int] | None = None
 
+    @field_validator("base_url", mode="before")
+    @classmethod
+    def _ensure_scheme(cls, value):
+        if isinstance(value, str) and "://" not in value:
+            return f"https://{value}"
+        return value
+
     class Config:
         validate_assignment = True
 
