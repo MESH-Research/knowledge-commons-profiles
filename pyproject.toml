@@ -185,7 +185,7 @@ dependencies = [
     "pylint==4.0.5",
     # Management commands
     "rich==14.3.3",
-    "sqloxide==0.1.56",
+    "sqloxide==0.61.1",
     "smart-open==7.5.1",
     "pydantic==2.12.5",
     "httpx==0.28.1",
