@@ -1543,17 +1543,14 @@ class GetCoverImageTests(django.test.TestCase):
         # Set up mock for WordPress metadata
         self.mock_user_meta.meta_value = "invalid_serialized_data"
 
-        # Set up phpserialize mock to raise an exception
-        self.mock_phpserialize.side_effect = Exception(
+        # phpserialize raises ValueError for malformed input
+        self.mock_phpserialize.side_effect = ValueError(
             "Invalid serialized data"
         )
 
-        # Call the method and expect the exception to be propagated
-        with self.assertRaises(Exception) as context:
-            self.model_instance.get_cover_image()
-
-        # Assert the exception message
-        self.assertEqual(str(context.exception), "Invalid serialized data")
+        # Should bail gracefully and return None instead of raising
+        result = self.model_instance.get_cover_image()
+        self.assertIsNone(result)
 
     def test_get_cover_image_missing_attachment_key(self):
         """Test handling when 'attachment' key is missing in unserialized
@@ -1567,12 +1564,55 @@ class GetCoverImageTests(django.test.TestCase):
         # Set up phpserialize mock to return dict without 'attachment' key
         self.mock_phpserialize.return_value = {b"some_other_key": b"value"}
 
-        # Call the method and expect KeyError
-        with self.assertRaises(KeyError) as context:
-            self.model_instance.get_cover_image()
+        # Should return None rather than raising KeyError
+        result = self.model_instance.get_cover_image()
+        self.assertIsNone(result)
 
-        # Assert the KeyError is for the attachment key
-        self.assertEqual(context.exception.args[0], b"attachment")
+    def test_get_cover_image_attachment_is_bool(self):
+        """Regression test for #527: WordPress sometimes stores ``False`` as
+        the ``attachment`` value. Calling ``.decode()`` on a bool used to
+        raise ``AttributeError``; we should bail and return ``None``
+        instead so the template falls back to the default banner."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock for WordPress metadata
+        self.mock_user_meta.meta_value = "serialized_php_data"
+
+        # PHP-style ``false`` sentinel under the attachment key
+        self.mock_phpserialize.return_value = {b"attachment": False}
+
+        result = self.model_instance.get_cover_image()
+        self.assertIsNone(result)
+
+    def test_get_cover_image_attachment_is_none(self):
+        """``None`` under the attachment key should also bail gracefully."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock for WordPress metadata
+        self.mock_user_meta.meta_value = "serialized_php_data"
+
+        self.mock_phpserialize.return_value = {b"attachment": None}
+
+        result = self.model_instance.get_cover_image()
+        self.assertIsNone(result)
+
+    def test_get_cover_image_unserialize_returns_non_dict(self):
+        """PHP ``unserialize()`` returns ``False`` for malformed input; the
+        method should treat that as 'no cover image' rather than crashing
+        when we try to subscript it."""
+        # Set up mock to return no local cover image
+        self.mock_coverimage_set.first.return_value = None
+
+        # Set up mock for WordPress metadata
+        self.mock_user_meta.meta_value = "serialized_php_data"
+
+        # phpserialize returned a non-mapping
+        self.mock_phpserialize.return_value = False
+
+        result = self.model_instance.get_cover_image()
+        self.assertIsNone(result)
 
 
 class GetProfilePhotoTests(django.test.TestCase):

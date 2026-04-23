@@ -754,9 +754,36 @@ class API:
         if not result:
             return None
 
-        return phpserialize.unserialize(result.meta_value.encode())[
-            b"attachment"
-        ].decode("utf-8")
+        wp_user_id = getattr(self.wp_user, "id", None)
+
+        try:
+            unserialized = phpserialize.unserialize(
+                result.meta_value.encode()
+            )
+        except (ValueError, TypeError):
+            logger.warning(
+                "Could not unserialize _bb_cover_photo for user %s",
+                wp_user_id,
+                exc_info=True,
+            )
+            return None
+
+        attachment = (
+            unserialized.get(b"attachment")
+            if isinstance(unserialized, dict)
+            else None
+        )
+
+        if not isinstance(attachment, (bytes, bytearray)):
+            logger.warning(
+                "Unexpected _bb_cover_photo attachment value "
+                "(type=%s) for user %s",
+                type(attachment).__name__,
+                wp_user_id,
+            )
+            return None
+
+        return attachment.decode("utf-8")
 
     def get_profile_photo(self):
         """
