@@ -536,7 +536,11 @@ SYNC_HOURS = env.int(
 )  # hours before syncs are considered stale
 
 CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")
-CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
+
+# for now, the ADMIN KEY is used in place of the API KEY
+CC_SEARCH_API_KEY = env("CC_SEARCH_API_KEY", default="")
+CC_SEARCH_ADMIN_KEY = CC_SEARCH_API_KEY
+# CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
 CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)
 
 NAV_NEWS_FEED_URL = env("NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/")
