@@ -214,7 +214,7 @@ production = [
     "Collectfasta==3.3.3",
     "sentry-sdk==2.57.0",
     "django-storages[s3]==1.14.6",
-    "django-anymail[amazon-ses]==14.0",
+    "django-anymail[amazon-ses]==15.0",
 ]
 dev = [
     {include-group = "production"},
