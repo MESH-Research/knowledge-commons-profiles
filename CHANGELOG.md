@@ -1,3 +1,14 @@
+## 4.20.0 (2026-04-24)
+
+### Feat
+
+- **cc_search**: add test_search_update command and CC_SEARCH_API_KEY setting
+
+### Fix
+
+- **mastodon**: guard against None username/server in feed fetch
+- **profiles**: bail gracefully when WordPress cover meta is malformed
+
 ## 4.19.0 (2026-04-21)
 
 ### Feat
