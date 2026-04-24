@@ -1,3 +1,9 @@
+## 4.21.0 (2026-04-24)
+
+### Feat
+
+- **profiles**: allow users to delete their CV from the edit-profile page
+
 ## 4.20.0 (2026-04-24)
 
 ### Feat
