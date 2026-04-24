@@ -226,7 +226,7 @@ local = [
     "psycopg[c]==3.3.3",
     # Testing
     "mypy==1.20.0",
-    "django-stubs[compatible-mypy]==6.0.2",
+    "django-stubs[compatible-mypy]==6.0.3",
     "pytest==9.0.2",
     "pytest-sugar==1.1.1",
     # Documentation
