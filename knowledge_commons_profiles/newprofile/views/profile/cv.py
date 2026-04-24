@@ -54,3 +54,27 @@ def upload_cv(request, username=None):
     return JsonResponse(
         {"ok": True, "url": url, "filename": filename}
     )
+
+
+@login_required
+@require_POST
+def delete_cv(request, username=None):
+    if username is None:
+        username = request.user.username
+    elif not request.user.is_staff and username != request.user.username:
+        return JsonResponse(
+            {"ok": False, "error": "Permission denied."}, status=403
+        )
+
+    profile = Profile.objects.get(username=username)
+
+    # Clearing cv_file triggers the pre_save signal in signals.py, which
+    # deletes the old file from storage (S3 in production).
+    if profile.cv_file:
+        filename = profile.cv_file.name
+        profile.cv_file = None
+        profile.save(update_fields=["cv_file"])
+        msg = f"Deleted CV for {username}: {filename}"
+        logger.info(msg)
+
+    return JsonResponse({"ok": True})

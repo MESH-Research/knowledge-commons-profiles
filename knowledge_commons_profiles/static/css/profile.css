@@ -2124,7 +2124,25 @@ div {
   }
 
   #delete-cv-btn {
-    margin-left: auto;
+    margin-left: 0.5em;
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    color: #888;
+    cursor: pointer;
+    font-size: 0.95em;
+    line-height: 1;
+  }
+
+  #delete-cv-btn:hover,
+  #delete-cv-btn:focus {
+    color: #c82333;
+    outline: none;
+  }
+
+  #delete-cv-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   #cv_file_input {

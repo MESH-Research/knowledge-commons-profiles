@@ -246,6 +246,7 @@ def edit_profile(request, username=None):
         avatar_upload_url = reverse("upload_avatar")
         cover_upload_url = reverse("upload_cover")
         cv_upload_url = reverse("upload_cv")
+        cv_delete_url = reverse("delete_cv")
     else:
         form_action = reverse(
             "edit_profile_user", kwargs={"username": username}
@@ -258,6 +259,9 @@ def edit_profile(request, username=None):
         )
         cv_upload_url = reverse(
             "upload_cv_user", kwargs={"username": username}
+        )
+        cv_delete_url = reverse(
+            "delete_cv_user", kwargs={"username": username}
         )
 
     return render(
@@ -274,6 +278,7 @@ def edit_profile(request, username=None):
             "avatar_upload_url": avatar_upload_url,
             "cover_upload_url": cover_upload_url,
             "cv_upload_url": cv_upload_url,
+            "cv_delete_url": cv_delete_url,
         },
     )
 

@@ -29,6 +29,13 @@
               <i class="fas fa-file-pdf"></i>
               {{ profile.cv_file.name|truncatechars:50 }}
             </a>
+            <button type="button"
+                    id="delete-cv-btn"
+                    class="cv-delete-btn"
+                    title="Delete CV"
+                    aria-label="Delete CV">
+              <i class="fas fa-trash"></i>
+            </button>
           </p>
         </div>
       {% else %}
@@ -48,6 +55,7 @@
     const currentCvSection = document.getElementById('current_cv_section');
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const uploadUrl = "{{ cv_upload_url }}";
+    const deleteUrl = "{{ cv_delete_url }}";
 
     function showStatus(message, color, iconClass) {
       statusEl.style.display = 'block';
@@ -61,11 +69,67 @@
       statusEl.appendChild(span);
     }
 
-    function updateCurrentCv(url, filename) {
-      // Clear and rebuild the current CV section using DOM methods
+    function clearSection() {
       while (currentCvSection.firstChild) {
         currentCvSection.removeChild(currentCvSection.firstChild);
       }
+    }
+
+    function renderNoCv() {
+      clearSection();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'no-cv-message';
+      wrapper.id = 'no_cv_message';
+      const p = document.createElement('p');
+      const em = document.createElement('em');
+      em.textContent = 'No CV file uploaded yet.';
+      p.appendChild(em);
+      wrapper.appendChild(p);
+      currentCvSection.appendChild(wrapper);
+    }
+
+    function attachDeleteHandler() {
+      const btn = document.getElementById('delete-cv-btn');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        const ok = window.confirm(
+          'Delete your CV? This removes the file permanently.'
+        );
+        if (!ok) return;
+        btn.disabled = true;
+        showStatus('Deleting CV...', '#666', 'fas fa-spinner fa-spin');
+        try {
+          const resp = await fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': csrfToken
+            },
+          });
+          const data = await resp.json();
+          if (resp.ok && data.ok) {
+            showStatus('CV deleted.', 'green', 'fas fa-check-circle');
+            renderNoCv();
+          } else {
+            btn.disabled = false;
+            showStatus(
+              data.error || 'Delete failed.',
+              'red',
+              'fas fa-exclamation-circle'
+            );
+          }
+        } catch {
+          btn.disabled = false;
+          showStatus(
+            'Delete failed. Please try again.',
+            'red',
+            'fas fa-exclamation-circle'
+          );
+        }
+      });
+    }
+
+    function updateCurrentCv(url, filename) {
+      clearSection();
 
       const wrapper = document.createElement('div');
       wrapper.className = 'current-cv';
@@ -89,8 +153,23 @@
       link.appendChild(document.createTextNode(' ' + filename));
 
       p.appendChild(link);
+      p.appendChild(document.createTextNode(' '));
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.id = 'delete-cv-btn';
+      delBtn.className = 'cv-delete-btn';
+      delBtn.title = 'Delete CV';
+      delBtn.setAttribute('aria-label', 'Delete CV');
+      const trashIcon = document.createElement('i');
+      trashIcon.className = 'fas fa-trash';
+      delBtn.appendChild(trashIcon);
+      p.appendChild(delBtn);
+
       wrapper.appendChild(p);
       currentCvSection.appendChild(wrapper);
+
+      attachDeleteHandler();
     }
 
     fileInput.addEventListener('change', async () => {
@@ -125,5 +204,7 @@
 
       fileInput.disabled = false;
     });
+
+    attachDeleteHandler();
   })();
 </script>
