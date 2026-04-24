@@ -91,6 +91,20 @@ class GroupMembership(_BaseModel):
     JoinDate: datetime | None = None
 
 
+class Award(_BaseModel):
+    Name: str | None = None
+    Year: str | None = None
+
+
+class Committee(_BaseModel):
+    CommitteeMemberUniqueID: str | None = None
+    CommitteeUniqueID: str | None = None
+    CommitteeName: str | None = None
+    PositionName: str | None = None
+    StartDate: datetime | None = None
+    EndDate: datetime | None = None
+
+
 class MemberResult(_BaseModel):
     # Identifiers & names
     UniqueID: str
@@ -191,11 +205,11 @@ class MemberResult(_BaseModel):
 
     # Collections
     DirectoryGallery: list[str] = Field(default_factory=list)
-    Awards: list[str] = Field(default_factory=list)
+    Awards: list[Award] = Field(default_factory=list)
     VolunteerWorks: list[str] = Field(default_factory=list)
     Education: list[str] = Field(default_factory=list)
     Groups: list[GroupMembership] = Field(default_factory=list)
-    Committees: list[str] = Field(default_factory=list)
+    Committees: list[Committee] = Field(default_factory=list)
 
 
 class MembersSearchResponse(_BaseModel):
