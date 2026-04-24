@@ -247,10 +247,11 @@ class API:
                 ) = self._get_mastodon_user_and_server(
                     mastodon_field=self._mastodon_profile
                 )
-                self._mastodon_posts = mastodon.MastodonFeed(
-                    self.mastodon_username,
-                    self.mastodon_server,
-                )
+                if self.mastodon_username and self.mastodon_server:
+                    self._mastodon_posts = mastodon.MastodonFeed(
+                        self.mastodon_username,
+                        self.mastodon_server,
+                    )
         return self._mastodon_profile
 
     @property

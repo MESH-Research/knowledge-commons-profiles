@@ -396,6 +396,31 @@ class MastodonProfileParsingTests(django.test.TestCase):
         self.assertIsNone(self.model_instance.mastodon_username)
         self.assertIsNone(self.model_instance.mastodon_server)
 
+    def test_invalid_format_does_not_instantiate_mastodon_feed(self):
+        """A malformed mastodon field must not instantiate MastodonFeed,
+        otherwise the feed is created with (None, None) and tries to fetch
+        https://None/@None.rss (which fails DNS resolution as host='none')."""
+        self.model_instance._profile_info = {
+            "mastodon": "testuser.mastodon.social"
+        }
+
+        _ = self.model_instance.mastodon_profile
+
+        self.mock_mastodon_feed.assert_not_called()
+        self.assertIsNone(self.model_instance._mastodon_posts)
+
+    def test_too_many_at_symbols_does_not_instantiate_mastodon_feed(self):
+        """A mastodon field with too many '@' signs must not instantiate
+        MastodonFeed."""
+        self.model_instance._profile_info = {
+            "mastodon": "@test@user@mastodon.social"
+        }
+
+        _ = self.model_instance.mastodon_profile
+
+        self.mock_mastodon_feed.assert_not_called()
+        self.assertIsNone(self.model_instance._mastodon_posts)
+
     def test_invalid_format_too_many_at_symbols(self):
         """Test behavior with an invalid format (too many @ symbols)."""
         # Set up profile_info with invalid format (too many @ symbols)

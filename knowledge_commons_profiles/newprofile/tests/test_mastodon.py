@@ -58,6 +58,34 @@ class MastodonFeedTests(TestCase):
         self.assertEqual(self.mastodon_feed.max_posts, 4)
         self.assertEqual(self.mastodon_feed.cache_time, 1800)
 
+    def test_latest_posts_returns_empty_when_server_is_none(self):
+        """latest_posts returns [] without making HTTP call when server is
+        None."""
+        feed = MastodonFeed(username="someuser", server=None)
+        result = feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_requests_get.assert_not_called()
+
+    def test_latest_posts_returns_empty_when_username_is_none(self):
+        """latest_posts returns [] without making HTTP call when username is
+        None."""
+        feed = MastodonFeed(username=None, server="mastodon.social")
+        result = feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_requests_get.assert_not_called()
+
+    def test_latest_posts_returns_empty_when_both_none(self):
+        """latest_posts returns [] without making HTTP call when both
+        username and server are None (the bug reported: host='none',
+        url='/@None.rss')."""
+        feed = MastodonFeed(username=None, server=None)
+        result = feed.latest_posts()
+
+        self.assertEqual(result, [])
+        self.mock_requests_get.assert_not_called()
+
     def test_latest_posts_cached(self):
         """Test that latest_posts returns cached posts when available."""
         cached_posts = [

@@ -146,11 +146,12 @@ def mastodon_feed(request, username):
             "yes",
         )
 
-        # Get the mastodon posts for this username
+        # Get the mastodon posts for this username. api.mastodon_posts
+        # is None when the stored handle is missing or fails parsing.
         user_mastodon_posts = (
             (
                 api.mastodon_posts.latest_posts(nocache=nocache)
-                if api.profile_info["mastodon"]
+                if api.profile_info["mastodon"] and api.mastodon_posts
                 else []
             )
             if profile_info_obj["profile"].show_mastodon_feed

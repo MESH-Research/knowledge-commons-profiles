@@ -123,6 +123,12 @@ class MastodonFeed:
         - favourites_count: The number of times the post has been favourited
         - reblogged: Whether the post is a reblog or not
         """
+        # Guard against missing username/server: without them the
+        # api_url is https://None/@None.rss which resolves to a DNS
+        # error for host 'none'.
+        if not self.username or not self.server:
+            return []
+
         cache_key = f"{self.username}_{self.server}_latest_posts"
 
         # If nocache is True, skip cache retrieval and force fresh fetch
