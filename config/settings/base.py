@@ -200,10 +200,8 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
-                "knowledge_commons_profiles.newprofile.context_processors."
-                "cc_search",
-                "knowledge_commons_profiles.newprofile.context_processors."
-                "nav_links",
+                "knowledge_commons_profiles.newprofile.context_processors.cc_search",
+                "knowledge_commons_profiles.newprofile.context_processors.nav_links",
             ],
         },
     },
@@ -454,14 +452,36 @@ BROKER_REGISTERED_APPS = {
     "wordpress": {
         "name": "WordPress",
         "callback_url": env("BROKER_WORDPRESS_CALLBACK", default=""),
-        "allowed_domains": ["hcommons.org", "localhost", "lndo.site"],
+        "allowed_domains": env.list(
+            "BROKER_WORDPRESS_ALLOWED_DOMAINS",
+            default=[
+                "hcommons.org",
+                "hcommons-test.org",
+                "hcommons-dev.org",
+                "hcommons-staging.org",
+                "localhost",
+                "lndo.site",
+            ],
+        ),
     },
     "works": {
         "name": "Works",
         "callback_url": env("BROKER_WORKS_CALLBACK", default=""),
-        "allowed_domains": ["hcommons.org", "localhost", "lndo.site"],
+        "allowed_domains": env.list(
+            "BROKER_WORKS_ALLOWED_DOMAINS",
+            default=[
+                "hcommons.org",
+                "hcommons-test.org",
+                "hcommons-dev.org",
+                "hcommons-staging.org",
+                "localhost",
+                "lndo.site",
+            ],
+        ),
     },
 }
+
+
 BROKER_NONCE_TTL = 60  # seconds before a broker nonce expires
 
 # OAuth domain mapping for environments sharing CILogon credentials.
@@ -531,9 +551,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 VERIFICATION_LIMIT_HOURS = env.int(
     "VERIFICATION_LIMIT_HOURS", 48
 )  # hours before email verifications expires
-SYNC_HOURS = env.int(
-    "SYNC_HOURS", 24
-)  # hours before syncs are considered stale
+SYNC_HOURS = env.int("SYNC_HOURS", 24)  # hours before syncs are considered stale
 
 CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")
 
@@ -548,7 +566,9 @@ NAV_GROUPS_URL = env("NAV_GROUPS_URL", default="https://hcommons.org/groups/")
 NAV_SITES_URL = env("NAV_SITES_URL", default="https://hcommons.org/sites/")
 NAV_WORKS_URL = env("NAV_WORKS_URL", default="https://works.hcommons.org/")
 NAV_SUPPORT_URL = env("NAV_SUPPORT_URL", default="https://support.hcommons.org/")
-NAV_ORGANIZATIONS_URL = env("NAV_ORGANIZATIONS_URL", default="https://hcommons.org/societies/")
+NAV_ORGANIZATIONS_URL = env(
+    "NAV_ORGANIZATIONS_URL", default="https://hcommons.org/societies/"
+)
 NAV_ABOUT_URL = env("NAV_ABOUT_URL", default="https://sustaining.hcommons.org/")
 NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
 
