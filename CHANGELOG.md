@@ -1,3 +1,9 @@
+## 4.21.1 (2026-04-24)
+
+### Fix
+
+- **arlisna**: parse dict entries for Awards and Committees
+
 ## 4.21.0 (2026-04-24)
 
 ### Feat
