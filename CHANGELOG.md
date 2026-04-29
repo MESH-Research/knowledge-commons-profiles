@@ -1,3 +1,15 @@
+## 4.22.0 (2026-04-28)
+
+### Feat
+
+- **settings**: load broker allowed_domains from env vars
+
+### Fix
+
+- **deps**: resolve uv.lock merge conflict from main
+- **profiles**: revert blanket html.unescape, add sanitize_profile command
+- **profiles**: unescape HTML entities before sanitizing profile content
+
 ## 4.21.1 (2026-04-24)
 
 ### Fix
