@@ -236,7 +236,7 @@ local = [
     "ruff==0.15.9",
     "coverage==7.13.5",
     "djlint==1.36.4",
-    "pre-commit==4.5.1",
+    "pre-commit==4.6.0",
     # Django dev tools
     "factory-boy==3.3.3",
     "django-debug-toolbar==6.3.0",
