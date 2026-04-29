@@ -195,6 +195,10 @@ class COManageClient:
             verify=self.cfg.verify_ssl,
             auth=basic,
         )
+        # COmanage Registry returns 204 No Content (empty body) when a query
+        # has no matching records. That is normal, not an error.
+        if resp.status_code == HTTPStatus.NO_CONTENT:
+            return {}
         try:
             payload = resp.json()
         except ValueError as ve:
@@ -238,11 +242,15 @@ class COManageClient:
             msg = f"Fetching {user.username}"
             logger.info(msg)
             params = {"coid": 2, "search.identifier": user.username}
+            co_person = self.get("co_people.json", params=params)
+            if not co_person:
+                msg = f"No COmanage person found for {user.username}"
+                logger.warning(msg)
+                continue
             try:
-                co_person = self.get("co_people.json", params=params)
-                co_person_obj = CoPeopleResponse.model_validate(co_person)
-                co_person_obj = co_person_obj.CoPeople[0]
-
+                co_person_obj = CoPeopleResponse.model_validate(
+                    co_person
+                ).CoPeople[0]
             except IndexError:
                 msg = f"Error fetching COmanage person for {user.username}"
                 logger.warning(msg)
@@ -253,18 +261,20 @@ class COManageClient:
             # get email addresses
             params = {"copersonid": co_person_obj.Id}
             emails = self.get("email_addresses.json", params=params)
-            emails_obj = EmailAddressesResponse.model_validate(emails)
-
-            for email in emails_obj.EmailAddresses:
-                if email.Mail not in user.emails:
-                    user.emails.append(email.Mail)
-                logger.info("Found: %s", email)
+            if emails:
+                emails_obj = EmailAddressesResponse.model_validate(emails)
+                for email in emails_obj.EmailAddresses:
+                    if email.Mail not in user.emails:
+                        user.emails.append(email.Mail)
+                    logger.info("Found: %s", email)
 
             user.save()
 
             # now get the roles
             params = {"copersonid": co_person_obj.Id}
             roles = self.get("co_person_roles.json", params=params)
+            if not roles:
+                continue
             roles_obj = CoPersonRolesResponse.model_validate(roles)
 
             for role in roles_obj.CoPersonRoles:
