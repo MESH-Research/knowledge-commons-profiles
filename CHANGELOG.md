@@ -1,3 +1,10 @@
+## 4.22.1 (2026-04-29)
+
+### Fix
+
+- **csrf**: allow test domain
+- **sql_import**: handle sqloxide 0.61 AST shape changes
+
 ## 4.22.0 (2026-04-28)
 
 ### Feat
