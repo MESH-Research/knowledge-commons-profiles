@@ -53,6 +53,24 @@ class Command(BaseCommand):
     }
 
     @staticmethod
+    def _extract_table_name(val):
+        """
+        Pull the table name out of an INSERT statement's AST node.
+
+        sqloxide's AST shape for table identifiers has changed across
+        releases:
+          * legacy (~0.1.x): ``TableName[0]`` is ``{"value": "...", ...}``
+          * current (>=0.61): ``TableName[0]`` is
+            ``{"Identifier": {"value": "...", ...}}``
+
+        Accept either so dependency bumps don't silently break imports.
+        """
+        entry = val["table"]["TableName"][0]
+        if "Identifier" in entry:
+            return entry["Identifier"]["value"]
+        return entry["value"]
+
+    @staticmethod
     def _build_final_dict(desired, field_index, final_dict, row):
         """
         Builds the final dictionary of fields for a given row.
@@ -69,11 +87,16 @@ class Command(BaseCommand):
             None
         """
         final_value = row[field_index[desired]]["Value"]
-        if "SingleQuotedString" in final_value:
-            final_value = final_value["SingleQuotedString"]
-
-        elif "Number" in final_value:
-            final_value = final_value["Number"][0]
+        # sqloxide >=0.61 wraps the literal in an extra {"value": ...,
+        # "span": ...} dict; older releases put the literal dict directly
+        # under "Value". Unwrap when the wrapper is present.
+        if isinstance(final_value, dict) and "value" in final_value:
+            final_value = final_value["value"]
+        if isinstance(final_value, dict):
+            if "SingleQuotedString" in final_value:
+                final_value = final_value["SingleQuotedString"]
+            elif "Number" in final_value:
+                final_value = final_value["Number"][0]
         final_dict[desired] = final_value
 
     def _parse_multiple_tables(
@@ -163,7 +186,7 @@ class Command(BaseCommand):
         if key == "Insert":
             # Check if current table is one we're
             # looking for
-            table_name = val["table"]["TableName"][0]["value"]
+            table_name = self._extract_table_name(val)
 
             if table_name in target_tables:
                 table_idx = self._build_index(
