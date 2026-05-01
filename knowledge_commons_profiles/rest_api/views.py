@@ -151,9 +151,7 @@ class ProfileDetailView(generics.RetrieveAPIView):
         data = serializer.data
 
         return Response(
-            {
-                "results": data,
-            },
+            data,
             status=status.HTTP_200_OK,
         )
 
