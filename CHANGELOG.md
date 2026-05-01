@@ -1,3 +1,9 @@
+## 4.22.2 (2026-04-29)
+
+### Fix
+
+- **comanage**: handle 204 No Content responses without aborting import
+
 ## 4.22.1 (2026-04-29)
 
 ### Fix
