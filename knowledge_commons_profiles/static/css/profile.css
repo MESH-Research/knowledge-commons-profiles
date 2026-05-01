@@ -1176,7 +1176,7 @@ div {
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 20px;
-            width: 200px;
+            min-width: 400px;
         }
 
         .form-associate input[type="submit"]:hover {

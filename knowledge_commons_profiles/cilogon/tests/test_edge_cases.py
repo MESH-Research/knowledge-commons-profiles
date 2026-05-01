@@ -318,13 +318,36 @@ class TestNewEmailVerifiedUnauthenticated(TestCase):
         middleware.process_request(request)
         request.session.save()
 
-    def test_new_email_verified_works_when_authenticated(self):
-        """new_email_verified should work correctly when user is logged in"""
+    def test_new_email_verified_post_appends_and_redirects(self):
+        """POST should append the email and redirect to manage_login."""
         from knowledge_commons_profiles.cilogon.models import EmailVerification
         from knowledge_commons_profiles.cilogon.views import new_email_verified
 
-        # Create verification
-        _ = EmailVerification.objects.create(
+        EmailVerification.objects.create(
+            sub="newemail@example.com",
+            secret_uuid="test-uuid-123",
+            profile=self.profile,
+        )
+
+        request = self.factory.post("/new-email-verified/test-uuid-123/")
+        request.user = self.user
+        self._add_session(request)
+
+        response = new_email_verified(request, "test-uuid-123")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("testuser", response.url)
+
+        self.profile.refresh_from_db()
+        self.assertIn("newemail@example.com", self.profile.emails)
+
+    def test_new_email_verified_get_renders_confirm_does_not_append(self):
+        """GET should render the confirm page and not modify the profile
+        or consume the token (defends against link-scanner pre-fetch)."""
+        from knowledge_commons_profiles.cilogon.models import EmailVerification
+        from knowledge_commons_profiles.cilogon.views import new_email_verified
+
+        verification = EmailVerification.objects.create(
             sub="newemail@example.com",
             secret_uuid="test-uuid-123",
             profile=self.profile,
@@ -336,13 +359,31 @@ class TestNewEmailVerifiedUnauthenticated(TestCase):
 
         response = new_email_verified(request, "test-uuid-123")
 
-        # Should redirect to manage_login with correct username
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("testuser", response.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"<form", response.content)
 
-        # Email should be added to profile
         self.profile.refresh_from_db()
-        self.assertIn("newemail@example.com", self.profile.emails)
+        self.assertNotIn("newemail@example.com", self.profile.emails)
+        self.assertTrue(
+            EmailVerification.objects.filter(id=verification.id).exists()
+        )
+
+    def test_new_email_verified_invalid_token_renders_invalid_page(self):
+        """An unknown secret renders the invalid-link page (410) on both
+        GET and POST rather than 404ing."""
+        from knowledge_commons_profiles.cilogon.views import new_email_verified
+
+        get_request = self.factory.get("/new-email-verified/no-such/")
+        get_request.user = self.user
+        self._add_session(get_request)
+        get_response = new_email_verified(get_request, "no-such")
+        self.assertEqual(get_response.status_code, 410)
+
+        post_request = self.factory.post("/new-email-verified/no-such/")
+        post_request.user = self.user
+        self._add_session(post_request)
+        post_response = new_email_verified(post_request, "no-such")
+        self.assertEqual(post_response.status_code, 410)
 
 
 class TestMakeEmailPrimaryWordpressSync(TestCase):

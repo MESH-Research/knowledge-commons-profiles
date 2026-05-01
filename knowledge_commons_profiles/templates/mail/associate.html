@@ -118,6 +118,12 @@
             border-radius: 0 8px 8px 0;
         }
 
+        /* Confirm-on-next-page note */
+        .confirm-note {
+            font-size: 14px;
+            color: #666666;
+        }
+
         /* Footer styles */
         .footer {
             background-color: #18453b;
@@ -211,6 +217,8 @@
         <div class="highlight-box">
             <strong>To allow access to your Knowledge Commons account with the new login method:</strong> Please <a href="https://{{ request.get_host }}{% url "activate" uuid %}">verify and associate your account</a>.
         </div>
+
+        <p class="confirm-note">For your security, you will be asked to confirm on the next page before the new login method is associated.</p>
 
         <p>Thank you for being part of our growing community. Together, we're building something remarkable.</p>
 

@@ -738,30 +738,48 @@ def _add_secondary_email(profile: Profile | None, request):
 
 
 @login_required
+@require_http_methods(["GET", "HEAD", "POST"])
 def new_email_verified(request, secret_key):
     """
-    The activation view clicked by a user from email
+    Add a secondary email after the user clicks the verification link.
+
+    GET / HEAD render an interstitial confirmation page that does NOT
+    consume the token; POST consumes the token and appends the email.
+    This split defends against email link-safety scanners (Mimecast,
+    ProofPoint URL Defender, MS Defender SafeLinks, etc.) that pre-fetch
+    URLs with GET before the human ever clicks.
     """
 
-    EmailVerification.garbage_collect()
+    try:
+        verify: EmailVerification = EmailVerification.objects.get(
+            secret_uuid=secret_key
+        )
+    except EmailVerification.DoesNotExist:
+        return render(
+            request,
+            "cilogon/verification_invalid.html",
+            {"flow": "new_email"},
+            status=410,
+        )
 
-    # get the verification by secret key or 404
-    verify: EmailVerification = get_object_or_404(
-        EmailVerification, secret_uuid=secret_key
-    )
+    if request.method in ("GET", "HEAD"):
+        return render(
+            request,
+            "cilogon/verification_confirm.html",
+            {
+                "flow": "new_email",
+                "action_url": reverse("new_email", args=[secret_key]),
+            },
+        )
 
-    # add the email
+    # POST: consume token and append email
     if verify.sub not in verify.profile.emails:
         verify.profile.emails.append(verify.sub)
         verify.profile.emails = sorted(verify.profile.emails)
         verify.profile.save()
 
-    # delete the verification as it's no longer needed
     verify.delete()
 
-    # TODO: send a webhook sync request
-
-    # redirect the user to their Profile page
     return redirect(reverse("manage_login", args=[request.user.username]))
 
 
@@ -1284,32 +1302,54 @@ def confirm(request):
     return render(request, "cilogon/confirm.html", {})
 
 
+@require_http_methods(["GET", "HEAD", "POST"])
 def activate(request, secret_key: str):
     """
     The activation view clicked by a user from email.
 
-    This handles both:
+    Handles two flows:
     1. New user registration verification (first SubAssociation for profile)
     2. Existing user adding a new login method (additional SubAssociation)
+
+    GET / HEAD render an interstitial confirmation page that does NOT
+    consume the token; POST consumes the token and runs side effects.
+    The split defends against email link-safety scanners (Mimecast,
+    ProofPoint URL Defender, MS Defender SafeLinks, etc.) that pre-fetch
+    URLs with GET before the human ever clicks. Missing or expired
+    tokens render a friendly invalid-link page (HTTP 410 Gone).
     """
 
-    EmailVerification.garbage_collect()
-
-    # get the verification by secret key or 404
-    verify: EmailVerification = get_object_or_404(
-        EmailVerification, secret_uuid=secret_key
-    )
-
-    # check that this hasn't expired
-    if verify.is_expired():
-        verify.delete()
-        messages.error(
-            request,
-            "This verification link has expired. Please request a new one.",
+    try:
+        verify: EmailVerification = EmailVerification.objects.get(
+            secret_uuid=secret_key
         )
-        return redirect(reverse("login"))
+    except EmailVerification.DoesNotExist:
+        return render(
+            request,
+            "cilogon/verification_invalid.html",
+            {"flow": "activate"},
+            status=410,
+        )
 
-    # Save references before deleting the verification
+    if verify.is_expired():
+        return render(
+            request,
+            "cilogon/verification_invalid.html",
+            {"flow": "activate", "expired": True},
+            status=410,
+        )
+
+    if request.method in ("GET", "HEAD"):
+        return render(
+            request,
+            "cilogon/verification_confirm.html",
+            {
+                "flow": "activate",
+                "action_url": reverse("activate", args=[secret_key]),
+            },
+        )
+
+    # POST: consume the token and run side effects
     profile = verify.profile
     sub = verify.sub
     idp_name = verify.idp_name
