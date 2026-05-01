@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Confirm Your Email
+{% endblock title %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="h1-associate">Confirm Your Email</h1>
+        <h3 class="h3-associate">
+          {% if flow == "new_email" %}
+            One more step to add this email address to your Knowledge Commons account.
+          {% else %}
+            One more step to activate your Knowledge Commons account.
+          {% endif %}
+        </h3>
+        <div>
+          <div class="associate-steps">
+            <div class="associate-step">
+              For your security, please click the button below to confirm that
+              you opened this link yourself.
+              <div>
+                <form class="form-associate" action="{{ action_url }}" method="post">
+                  {% csrf_token %}
+                  <input type="submit" value="Confirm my email" />
+                </form>
+              </div>
+            </div>
+          </div>
+          <p class="p-associate">If you have any trouble, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

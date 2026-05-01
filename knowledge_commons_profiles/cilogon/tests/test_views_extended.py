@@ -14,7 +14,6 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.db import DatabaseError
 from django.db import IntegrityError
-from django.http import Http404
 from django.test import RequestFactory
 from django.test import override_settings
 from django.urls import reverse
@@ -947,17 +946,36 @@ class AssociationTests(CILogonTestBase):
 
 
 class EmailVerificationTests(CILogonTestBase):
-    """Test cases for email verification functionality"""
+    """Test cases for email verification functionality.
+
+    The view splits handling: GET/HEAD render an interstitial confirmation
+    page that does NOT consume the token (defends against link-scanner
+    pre-fetch); POST consumes the token and runs side effects. Missing or
+    expired tokens render a friendly invalid-link page (HTTP 410 Gone).
+    """
 
     def setUp(self):
+        super().setUp()
         self.factory = RequestFactory()
         self.profile = Profile.objects.create(
             username="testuser", email="test@example.com", name="Test User"
         )
+        self.user = User.objects.create_user("testuser", password="pw")
 
-    def test_activate_valid_verification(self):
-        """Test activation with valid verification"""
-        request = self.factory.get("/")
+    def _add_session_and_messages(self, request):
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        request._messages = FallbackStorage(request)
+
+    # ---------- POST: happy paths ----------
+
+    def test_activate_post_consumes_and_logs_in(self):
+        """POST consumes the token, creates SubAssociation, logs the user in."""
+        request = self.factory.post("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
         verification = EmailVerification.objects.create(
             secret_uuid="test-uuid",
             profile=self.profile,
@@ -965,48 +983,225 @@ class EmailVerificationTests(CILogonTestBase):
             idp_name="Test University",
         )
 
-        with patch(
-            "knowledge_commons_profiles.cilogon.views.send_association_message"
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.send_association_message"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.hcommons_add_new_user_to_mailchimp"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.ExternalSync.sync"
+            ),
         ):
-            activate(request, verification.secret_uuid)
+            response = activate(request, verification.secret_uuid)
 
-        # Should redirect to my_profile (302, not 200)
-        # self.assertEqual(response.status_code, 302)
-        # self.assertEqual(response.url, reverse("my_profile"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("my_profile"))
 
-        # Should create SubAssociation with idp_name propagated
         sub_assoc = SubAssociation.objects.get(
             sub="cilogon_sub_123", profile=self.profile
         )
         self.assertEqual(sub_assoc.idp_name, "Test University")
 
-        # Should delete EmailVerification
         self.assertFalse(
             EmailVerification.objects.filter(id=verification.id).exists()
         )
 
-    def test_activate_invalid_secret_uuid(self):
-        """Test activation with invalid secret UUID"""
-        request = self.factory.get("/")
+    # ---------- GET / HEAD: scanner-safe ----------
 
-        with self.assertRaises(Http404):
-            activate(request, "invalid-uuid")
-
-    def test_activate_wrong_secret(self):
-        """Test activation with wrong secret key (different from existing)"""
+    def test_activate_get_renders_confirm_does_not_consume(self):
+        """GET renders the confirm page and does not touch the token or run
+        any side effects."""
         request = self.factory.get("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
+        verification = EmailVerification.objects.create(
+            secret_uuid="test-uuid",
+            profile=self.profile,
+            sub="cilogon_sub_123",
+            idp_name="Test University",
+        )
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.send_association_message"
+            ) as mock_assoc,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.hcommons_add_new_user_to_mailchimp"
+            ) as mock_mc,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.ExternalSync.sync"
+            ) as mock_sync,
+        ):
+            response = activate(request, verification.secret_uuid)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"<form", response.content)
+        # Token still exists
+        self.assertTrue(
+            EmailVerification.objects.filter(id=verification.id).exists()
+        )
+        # No SubAssociation created
+        self.assertFalse(
+            SubAssociation.objects.filter(
+                sub="cilogon_sub_123", profile=self.profile
+            ).exists()
+        )
+        # No side effects
+        mock_assoc.assert_not_called()
+        mock_mc.assert_not_called()
+        mock_sync.assert_not_called()
+
+    def test_activate_head_does_not_consume(self):
+        """HEAD does not consume the token or run side effects."""
+        request = self.factory.generic("HEAD", "/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
+        verification = EmailVerification.objects.create(
+            secret_uuid="test-uuid",
+            profile=self.profile,
+            sub="cilogon_sub_123",
+        )
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.send_association_message"
+            ) as mock_assoc,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.hcommons_add_new_user_to_mailchimp"
+            ) as mock_mc,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.ExternalSync.sync"
+            ) as mock_sync,
+        ):
+            activate(request, verification.secret_uuid)
+
+        self.assertTrue(
+            EmailVerification.objects.filter(id=verification.id).exists()
+        )
+        self.assertFalse(
+            SubAssociation.objects.filter(
+                sub="cilogon_sub_123", profile=self.profile
+            ).exists()
+        )
+        mock_assoc.assert_not_called()
+        mock_mc.assert_not_called()
+        mock_sync.assert_not_called()
+
+    # ---------- Missing / expired token ----------
+
+    def test_activate_get_missing_token_renders_invalid(self):
+        """GET with an unknown token renders the invalid-link page (410)."""
+        request = self.factory.get("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
+        response = activate(request, "no-such-uuid")
+
+        self.assertEqual(response.status_code, 410)
+        self.assertIn(b"no longer valid", response.content.lower())
+
+    def test_activate_post_missing_token_renders_invalid(self):
+        """POST with an unknown token renders the invalid-link page (410)."""
+        request = self.factory.post("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
+        response = activate(request, "no-such-uuid")
+
+        self.assertEqual(response.status_code, 410)
+        self.assertIn(b"no longer valid", response.content.lower())
+
+    def test_activate_post_wrong_secret_renders_invalid(self):
+        """POST with a different valid-shaped secret renders the invalid
+        page (410) rather than 404."""
+        request = self.factory.post("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
         EmailVerification.objects.create(
             secret_uuid="test-uuid",
             profile=self.profile,
             sub="cilogon_sub_123",
         )
 
-        with self.assertRaises(Http404):
-            activate(request, "wrong-secret")
+        response = activate(request, "wrong-secret")
 
-    def test_activate_database_error(self):
-        """Test activation with database error"""
-        request = self.factory.get("/")
+        self.assertEqual(response.status_code, 410)
+
+    def test_activate_repeated_post_renders_invalid(self):
+        """A second POST with the same secret (already consumed) renders
+        the invalid page rather than 500ing."""
+        verification = EmailVerification.objects.create(
+            secret_uuid="test-uuid",
+            profile=self.profile,
+            sub="cilogon_sub_123",
+        )
+
+        request1 = self.factory.post("/")
+        request1.user = AnonymousUser()
+        self._add_session_and_messages(request1)
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.send_association_message"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.hcommons_add_new_user_to_mailchimp"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.ExternalSync.sync"
+            ),
+        ):
+            response1 = activate(request1, verification.secret_uuid)
+        self.assertEqual(response1.status_code, 302)
+
+        request2 = self.factory.post("/")
+        request2.user = AnonymousUser()
+        self._add_session_and_messages(request2)
+        response2 = activate(request2, verification.secret_uuid)
+
+        self.assertEqual(response2.status_code, 410)
+
+    def test_activate_expired_verification_renders_invalid(self):
+        """Expired verification renders 410 invalid page on either verb;
+        the row is NOT deleted by the view (GC handles cleanup separately)."""
+        request = self.factory.post("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
+        verification = EmailVerification.objects.create(
+            secret_uuid="test-uuid",
+            profile=self.profile,
+            sub="cilogon_sub_123",
+        )
+
+        with patch.object(
+            EmailVerification, "is_expired", return_value=True
+        ):
+            response = activate(request, verification.secret_uuid)
+
+        self.assertEqual(response.status_code, 410)
+        self.assertTrue(
+            EmailVerification.objects.filter(id=verification.id).exists()
+        )
+        self.assertFalse(
+            SubAssociation.objects.filter(
+                sub="cilogon_sub_123", profile=self.profile
+            ).exists()
+        )
+
+    # ---------- DB error during POST is still propagated ----------
+
+    def test_activate_post_database_error_propagates(self):
+        """A DB error inside the POST consumption flow is not swallowed."""
+        request = self.factory.post("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
         verification = EmailVerification.objects.create(
             secret_uuid="test-uuid",
             profile=self.profile,
@@ -1022,45 +1217,63 @@ class EmailVerificationTests(CILogonTestBase):
         ):
             activate(request, verification.secret_uuid)
 
-    def test_activate_expired_verification(self):
-        """Test activation with expired verification redirects with error"""
-        from django.contrib.messages.storage.fallback import FallbackStorage
-        from django.contrib.sessions.backends.db import SessionStore
+    # ---------- Regression: do not call garbage_collect ----------
 
-        request = self.factory.get("/")
-        request.session = SessionStore()
-        request.session.create()
-        request._messages = FallbackStorage(request)
-
+    def test_activate_does_not_call_garbage_collect(self):
+        """The view must not invoke EmailVerification.garbage_collect itself
+        — it would write on every scanner pre-fetch."""
         verification = EmailVerification.objects.create(
             secret_uuid="test-uuid",
             profile=self.profile,
             sub="cilogon_sub_123",
         )
 
-        # Mock garbage_collect to prevent it from deleting the verification
-        # and mock is_expired to return True
+        # GET path
+        request = self.factory.get("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+        with patch.object(EmailVerification, "garbage_collect") as mock_gc:
+            activate(request, verification.secret_uuid)
+        mock_gc.assert_not_called()
+
+        # POST path
+        request2 = self.factory.post("/")
+        request2.user = AnonymousUser()
+        self._add_session_and_messages(request2)
         with (
-            patch.object(EmailVerification, "garbage_collect"),
-            patch.object(EmailVerification, "is_expired", return_value=True),
+            patch.object(EmailVerification, "garbage_collect") as mock_gc2,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.send_association_message"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.hcommons_add_new_user_to_mailchimp"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.ExternalSync.sync"
+            ),
         ):
-            response = activate(request, verification.secret_uuid)
+            activate(request2, verification.secret_uuid)
+        mock_gc2.assert_not_called()
 
-        # Should redirect to login
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("login"))
+    # ---------- CSRF ----------
 
-        # Verification should be deleted (by the activate view)
-        self.assertFalse(
-            EmailVerification.objects.filter(id=verification.id).exists()
+    def test_activate_confirm_page_renders_csrf_token_input(self):
+        """The confirm page must include a CSRF token input so the POST
+        survives Django's CSRF middleware."""
+        EmailVerification.objects.create(
+            secret_uuid="csrf-uuid",
+            profile=self.profile,
+            sub="cilogon_sub_999",
         )
 
-        # SubAssociation should NOT be created
-        self.assertFalse(
-            SubAssociation.objects.filter(
-                sub="cilogon_sub_123", profile=self.profile
-            ).exists()
-        )
+        request = self.factory.get("/")
+        request.user = AnonymousUser()
+        self._add_session_and_messages(request)
+
+        response = activate(request, "csrf-uuid")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"csrfmiddlewaretoken", response.content)
 
     def test_confirm_view(self):
         """Test confirmation view"""

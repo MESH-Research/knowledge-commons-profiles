@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Verification Link Unavailable
+{% endblock title %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="h1-associate">This Link Is No Longer Valid</h1>
+        <h3 class="h3-associate">
+          {% if expired %}
+            Your verification link has expired.
+          {% else %}
+            This verification link is no longer valid — it may already have been used.
+          {% endif %}
+        </h3>
+        <div>
+          <div class="associate-steps">
+            <div class="associate-step">
+              Verification links are single-use and expire after a short time.
+              {% if flow == "new_email" %}
+                Please <a class="a-associate" href="{% url 'login' %}">sign in</a> and try adding the email again from your account settings.
+              {% else %}
+                Please <a class="a-associate" href="{% url 'login' %}">sign in again</a> to request a new verification link.
+              {% endif %}
+            </div>
+          </div>
+          <p class="p-associate">If you continue to have trouble, please email <a class="a-associate" href="mailto:hello@hcommons.org">hello@hcommons.org</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
