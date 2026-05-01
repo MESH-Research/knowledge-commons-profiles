@@ -1,3 +1,9 @@
+## 4.22.3 (2026-05-01)
+
+### Fix
+
+- **rest-api**: remove "results" key from ProfileDetailView to tally with swagger api docs
+
 ## 4.22.2 (2026-04-29)
 
 ### Fix
