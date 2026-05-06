@@ -111,15 +111,21 @@ class SanitizeHtmlTests(TestCase):
         self.assertIn("<p>", result)
         self.assertIn("red text", result)
 
-    def test_strips_lists_preserves_text(self):
-        """List tags aren't in the toolbar — text content survives."""
+    def test_preserves_unordered_list(self):
+        """ul/li survive sanitisation (issue #540 — lists are wanted)."""
         html = "<ul><li>item one</li><li>item two</li></ul>"
         result = sanitize_html(html)
-        self.assertNotIn("<ul>", result)
-        self.assertNotIn("<ol>", result)
-        self.assertNotIn("<li>", result)
-        self.assertIn("item one", result)
-        self.assertIn("item two", result)
+        self.assertIn("<ul>", result)
+        self.assertIn("<li>item one</li>", result)
+        self.assertIn("<li>item two</li>", result)
+
+    def test_preserves_ordered_list(self):
+        """ol/li survive sanitisation (issue #540 — lists are wanted)."""
+        html = "<ol><li>first</li><li>second</li></ol>"
+        result = sanitize_html(html)
+        self.assertIn("<ol>", result)
+        self.assertIn("<li>first</li>", result)
+        self.assertIn("<li>second</li>", result)
 
     def test_strips_headings_preserves_text(self):
         """Heading tags aren't in the toolbar — text content survives."""

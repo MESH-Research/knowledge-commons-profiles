@@ -1,3 +1,9 @@
+## 4.22.6 (2026-05-06)
+
+### Fix
+
+- **newprofile**: align rich-text editor and sanitiser allowlist
+
 ## 4.22.5 (2026-05-06)
 
 ### Perf

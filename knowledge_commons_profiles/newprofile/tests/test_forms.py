@@ -23,7 +23,7 @@ class SanitizedTinyMCETests(TestCase):
 
     def test_allowed_tags(self):
         """Allowlist matches the editor toolbar (issue #540): bold,
-        italic, links, anchors, plus the structural p/br."""
+        italic, links, anchors, lists, plus the structural p/br."""
         allowed_tags = [
             "p",
             "br",
@@ -32,6 +32,9 @@ class SanitizedTinyMCETests(TestCase):
             "em",
             "strong",
             "a",
+            "ul",
+            "ol",
+            "li",
         ]
         for tag in allowed_tags:
             html = f"<{tag}>Test</{tag}>"
@@ -48,9 +51,6 @@ class SanitizedTinyMCETests(TestCase):
             "object",
             "embed",
             "u",
-            "ul",
-            "ol",
-            "li",
             "h1",
             "h2",
             "h3",
@@ -283,41 +283,35 @@ class BrTagInjectionTests(TestCase):
 
     # --- Regression guard tests (should PASS before and after fix) ---
 
-    def test_list_html_stripped_without_spurious_br(self):
-        """Lists are no longer in the allowlist (issue #540), so the
-        original #374 problem (<br> injected around <li>) can't recur:
-        the list tags are gone entirely. Text content survives."""
+    def test_list_html_preserved_without_spurious_br(self):
+        """Lists round-trip through sanitisation without #374's <br>
+        injection around <li>."""
         widget = SanitizedTinyMCE()
         result = widget.value_from_datadict(
             {"content": self.LIST_HTML}, {}, "content"
         )
-        self.assertNotIn("<li>", result)
-        self.assertNotIn("<ul>", result)
+        self.assertIn("<ul>", result)
+        self.assertIn("<li>", result)
         self.assertNotRegex(
             result,
             r"<br>\s*<li>",
             "Sanitization added <br> before <li>",
         )
-        self.assertIn("Item one", result)
-        self.assertIn("Item two", result)
 
     def test_mixed_html_content_round_trip(self):
-        """Bold and links survive sanitization; lists do not (issue #540)."""
+        """Bold, links, and lists all survive sanitisation."""
         widget = SanitizedTinyMCE()
         result = widget.value_from_datadict(
             {"content": self.MIXED_HTML}, {}, "content"
         )
         self.assertIn("<strong>", result)
         self.assertIn("<a ", result)
-        self.assertNotIn("<ul>", result)
-        self.assertNotIn("<li>", result)
-        self.assertIn("Item", result)
+        self.assertIn("<ul>", result)
+        self.assertIn("<li>", result)
 
     def test_content_loaded_into_form_preserves_html(self):
-        """Form initial values aren't sanitized — sanitization happens on
-        save, not on load — so stored content (even now-disallowed list
-        markup) round-trips into the edit form unchanged. The next save
-        will scrub it."""
+        """Form initial values aren't sanitised on load — only on save —
+        so stored content round-trips into the edit form unchanged."""
         profile = Profile.objects.create(
             username="htmltestuser",
             name="HTML Test",
@@ -328,13 +322,15 @@ class BrTagInjectionTests(TestCase):
         self.assertEqual(form.initial["about_user"], self.LIST_HTML)
         self.assertEqual(form.initial["education"], self.ORDERED_LIST_HTML)
 
-    def test_nested_list_html_stripped(self):
-        """Nested lists are stripped (issue #540); inner text survives."""
+    def test_nested_list_html_preserved(self):
+        """Nested lists survive sanitisation without <br> injection."""
         widget = SanitizedTinyMCE()
         result = widget.value_from_datadict(
             {"content": self.NESTED_LIST_HTML}, {}, "content"
         )
-        self.assertNotIn("<ul>", result)
-        self.assertNotIn("<li>", result)
-        self.assertIn("Parent", result)
-        self.assertIn("Child", result)
+        self.assertIn("<ul>", result)
+        self.assertNotRegex(
+            result,
+            r"<br>\s*<li>",
+            "Sanitization added <br> before <li> in nested list",
+        )
