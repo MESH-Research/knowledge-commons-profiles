@@ -1,8 +1,12 @@
 
+from unittest.mock import patch
+
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.http import QueryDict
 from django.template import Context
 from django.test import TestCase
+from django.urls import reverse
 
 from knowledge_commons_profiles.newprofile.forms import (
     AcademicInterestsSelect2TagWidget,
@@ -225,6 +229,59 @@ class AcademicInterestsSelect2TagWidgetTests(TestCase):
         new_interest = AcademicInterest.objects.get(text="pig latin")
         self.assertIn(str(self.interest1.pk), result)
         self.assertIn(str(new_interest.pk), result)
+
+
+class EditProfileViewAcademicInterestsTests(TestCase):
+    """Regression test for #522 against the live edit_profile view path."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="alice", password="pass1234"
+        )
+        self.profile = Profile.objects.create(
+            username="alice", name="Alice"
+        )
+        self.existing = AcademicInterest.objects.create(text="Python")
+        self.profile.academic_interests.add(self.existing)
+        self.client.login(username="alice", password="pass1234")
+        self.url = reverse("edit_profile")
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "index_profile_in_cc_search"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "send_webhook_user_update"
+    )
+    def test_post_with_new_free_text_interest_persists_through_view(
+        self, mock_webhook, mock_index
+    ):
+        del mock_webhook, mock_index
+        """A POST that includes a brand-new typed interest succeeds and the
+        new AcademicInterest is attached to the profile (#522)."""
+        new_text = "pig latin"
+        self.assertFalse(
+            AcademicInterest.objects.filter(text=new_text).exists()
+        )
+
+        resp = self.client.post(
+            self.url,
+            {
+                "name": "Alice",
+                "title": "Researcher",
+                "academic_interests": [str(self.existing.pk), new_text],
+                "reference_style": "MHRA",
+            },
+        )
+
+        self.assertEqual(resp.status_code, 302)
+        new_interest = AcademicInterest.objects.get(text=new_text)
+        attached = set(
+            self.profile.academic_interests.values_list("pk", flat=True)
+        )
+        self.assertIn(self.existing.pk, attached)
+        self.assertIn(new_interest.pk, attached)
 
 
 class ProfileFormTests(TestCase):
