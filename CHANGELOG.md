@@ -1,3 +1,9 @@
+## 4.22.5 (2026-05-06)
+
+### Perf
+
+- **rest_api**: bulk-resolve group inviters to kill /api/v1/subs/ n+1
+
 ## 4.22.4 (2026-05-01)
 
 ### Fix
