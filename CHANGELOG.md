@@ -1,3 +1,9 @@
+## 4.23.0 (2026-05-06)
+
+### Feat
+
+- **newprofile**: allow bulleted and numbered lists in profile fields
+
 ## 4.22.6 (2026-05-06)
 
 ### Fix

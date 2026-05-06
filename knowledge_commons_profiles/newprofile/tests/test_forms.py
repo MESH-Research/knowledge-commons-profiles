@@ -1,8 +1,12 @@
+
 from unittest.mock import patch
 
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.http import QueryDict
 from django.template import Context
 from django.test import TestCase
+from django.urls import reverse
 
 from knowledge_commons_profiles.newprofile.forms import (
     AcademicInterestsSelect2TagWidget,
@@ -113,30 +117,200 @@ class SanitizedTinyMCETests(TestCase):
 
 
 class AcademicInterestsSelect2TagWidgetTests(TestCase):
+    """Tests for issue #522: free-text additions must be turned into
+    AcademicInterest rows so the form posts integer PKs, not raw text."""
+
     def setUp(self):
-        # Create some academic interests
         self.interest1 = AcademicInterest.objects.create(text="Python")
         self.interest2 = AcademicInterest.objects.create(text="Django")
         self.widget = AcademicInterestsSelect2TagWidget()
 
+    def _datadict(self, values):
+        qd = QueryDict(mutable=True)
+        qd.setlist("academic_interests", values)
+        return qd
+
     def test_queryset(self):
-        """Test that the widget has the correct queryset"""
+        """Widget keeps the AcademicInterest queryset on the class."""
         queryset = self.widget.queryset
         self.assertEqual(queryset.model, AcademicInterest)
 
+    def test_value_from_datadict_creates_new_interest_for_unknown_text(self):
+        """A typed-in tag that does not match any PK is created and its PK
+        comes back in the cleaned list (regression for #522)."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict(["pig latin"]), {}, "academic_interests"
+        )
+
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        self.assertEqual(result, [str(new_interest.pk)])
+
+    def test_value_from_datadict_returns_pks_for_existing_pk_inputs(self):
+        """When the form posts existing PKs, the widget passes them through
+        as strings without creating new rows."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict([str(self.interest1.pk), str(self.interest2.pk)]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before)
+        self.assertEqual(
+            sorted(result),
+            sorted([str(self.interest1.pk), str(self.interest2.pk)]),
+        )
+
+    def test_value_from_datadict_handles_mixed_existing_and_new(self):
+        """Mix of existing PK and new free text: only the free-text row is
+        created; both come back as PK strings."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict([str(self.interest1.pk), "pig latin"]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertIn(str(self.interest1.pk), result)
+        self.assertIn(str(new_interest.pk), result)
+        self.assertEqual(len(result), 2)
+
+    def test_value_from_datadict_dedupes_text_matching_existing_row(self):
+        """If the typed text exactly matches an existing row's text, reuse
+        that row instead of creating a duplicate."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict(["Python"]), {}, "academic_interests"
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before)
+        self.assertEqual(result, [str(self.interest1.pk)])
+
+    def test_value_from_datadict_strips_whitespace_and_skips_empty(self):
+        """Empty / whitespace-only entries are dropped; surrounding
+        whitespace is stripped before matching/creating."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict(["  ", "", "  pig latin  "]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertEqual(result, [str(new_interest.pk)])
+
+    def test_profile_form_widget_creates_new_interest_on_submit(self):
+        """End-to-end via ProfileForm: the widget bound to the form's
+        academic_interests field also performs the conversion."""
+        profile = Profile.objects.create(
+            username="form_test_user", name="Form Test"
+        )
+        form = ProfileForm(instance=profile)
+        widget = form.fields["academic_interests"].widget
+
+        before = AcademicInterest.objects.count()
+        result = widget.value_from_datadict(
+            self._datadict([str(self.interest1.pk), "pig latin"]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertIn(str(self.interest1.pk), result)
+        self.assertIn(str(new_interest.pk), result)
+
+
+class EditProfileViewAcademicInterestsTests(TestCase):
+    """Regression test for #522 against the live edit_profile view path."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="alice", password="pass1234"
+        )
+        self.profile = Profile.objects.create(
+            username="alice", name="Alice"
+        )
+        self.existing = AcademicInterest.objects.create(text="Python")
+        self.profile.academic_interests.add(self.existing)
+        self.client.login(username="alice", password="pass1234")
+        self.url = reverse("edit_profile")
+
     @patch(
-        "knowledge_commons_profiles.newprofile.forms."
-        "ModelSelect2TagWidget.value_from_datadict"
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "index_profile_in_cc_search"
     )
-    def test_existing_values(self, mock_parent_method):
-        """Test handling of existing values"""
-        mock_parent_method.return_value = ["Python", "Django"]
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "send_webhook_user_update"
+    )
+    def test_post_with_invalid_other_field_still_renders_without_500(
+        self, mock_webhook, mock_index
+    ):
+        """If validation fails on some other field while a new interest was
+        typed in, the re-render of the form must not crash trying to resolve
+        the typed-in text against the AcademicInterest queryset (#522)."""
+        del mock_webhook, mock_index
 
-        result = self.widget.value_from_datadict({}, {}, "academic_interests")
+        resp = self.client.post(
+            self.url,
+            {
+                "academic_interests": [str(self.existing.pk), "pig latin"],
+                "reference_style": "MHRA",
+            },
+        )
 
-        # Should return PKs of existing interests
-        self.assertIn("Python", result)
-        self.assertIn("Django", result)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(
+            AcademicInterest.objects.filter(text="pig latin").exists()
+        )
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "index_profile_in_cc_search"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "send_webhook_user_update"
+    )
+    def test_post_with_new_free_text_interest_persists_through_view(
+        self, mock_webhook, mock_index
+    ):
+        del mock_webhook, mock_index
+        """A POST that includes a brand-new typed interest succeeds and the
+        new AcademicInterest is attached to the profile (#522)."""
+        new_text = "pig latin"
+        self.assertFalse(
+            AcademicInterest.objects.filter(text=new_text).exists()
+        )
+
+        resp = self.client.post(
+            self.url,
+            {
+                "name": "Alice",
+                "title": "Researcher",
+                "academic_interests": [str(self.existing.pk), new_text],
+                "reference_style": "MHRA",
+            },
+        )
+
+        self.assertEqual(resp.status_code, 302)
+        new_interest = AcademicInterest.objects.get(text=new_text)
+        attached = set(
+            self.profile.academic_interests.values_list("pk", flat=True)
+        )
+        self.assertIn(self.existing.pk, attached)
+        self.assertIn(new_interest.pk, attached)
 
 
 class ProfileFormTests(TestCase):

@@ -25,6 +25,31 @@ class SanitizedTinyMCE(TinyMCE):
 class AcademicInterestsSelect2TagWidget(ModelSelect2TagWidget):
     queryset = AcademicInterest.objects.all()
 
+    def value_from_datadict(self, data, files, name):
+        # django-select2's ModelSelect2TagWidget docstring is explicit
+        # that subclasses must turn fresh tag text into PKs themselves;
+        # otherwise free-text additions reach the M2M assignment as
+        # strings and Django raises ValueError trying to coerce them
+        # to integer ids (issue #522).
+        raw = super().value_from_datadict(data, files, name) or []
+        values = {v.strip() for v in raw if v and v.strip()}
+
+        numeric_candidates = {v for v in values if v.isdigit()}
+        existing_pks = set(
+            map(
+                str,
+                self.queryset.filter(
+                    pk__in=numeric_candidates,
+                ).values_list("pk", flat=True),
+            ),
+        )
+
+        cleaned = list(existing_pks)
+        for val in values - existing_pks:
+            interest, _ = AcademicInterest.objects.get_or_create(text=val)
+            cleaned.append(str(interest.pk))
+        return cleaned
+
 
 class ProfileForm(forms.ModelForm):
     cv_file = forms.FileField(
