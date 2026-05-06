@@ -1,3 +1,10 @@
+## 4.24.0 (2026-05-06)
+
+### Feat
+
+- **newprofile**: restore Facebook, LinkedIn, and Website on profile
+- **newprofile**: URL coercion helper for legacy social-link values
+
 ## 4.23.1 (2026-05-06)
 
 ### Fix

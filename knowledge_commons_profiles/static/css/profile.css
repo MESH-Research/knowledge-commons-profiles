@@ -972,6 +972,46 @@ div {
   hyphens: auto;
 }
 
+/* Edit-profile social row: grid with equal-width cells so the pills
+   line up tidily across rows. Display-mode social row is untouched.
+   Issue #544. */
+.profile-social-edit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: stretch;
+}
+
+.profile-social-edit .social-link {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Inputs inside an edit pill flex to fill the remaining space after
+   the icon and label, regardless of any inline width attr the widget
+   ships with. */
+.profile-social-edit .social-link input.form-control,
+.profile-social-edit .social-link input[type="text"],
+.profile-social-edit .social-link input[type="url"],
+.profile-social-edit .social-link input[type="email"] {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto !important;
+}
+
+/* Labels stay on one line. Overrides the global div word-break +
+   hyphens rules above, which were splitting "Facebook" / "LinkedIn"
+   / "Website" across two lines. */
+.profile-social-edit .social-link .form-label {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  hyphens: none;
+  margin-bottom: 0;
+}
+
 
 .sortable-item {
     padding: 10px;
