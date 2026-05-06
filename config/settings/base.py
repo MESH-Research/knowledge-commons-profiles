@@ -311,6 +311,11 @@ LOGGING = {
 # Your stuff...
 # ------------------------------------------------------------------------------
 
+# Editor controls intentionally limited to the four formatting actions
+# that survive sanitisation (issue #540): bold, italic, link, anchor.
+# Any other toolbar button would let users add formatting that the
+# server-side sanitiser then silently strips on save (issue #540 root
+# cause). Plugins are pared back to just what those buttons need.
 TINYMCE_DEFAULT_CONFIG = {
     "license_key": "gpl",
     "height": 360,
@@ -318,20 +323,9 @@ TINYMCE_DEFAULT_CONFIG = {
     "custom_undo_redo_levels": 20,
     "selector": "textarea",
     "theme": "silver",
-    "plugins": """
-        save link image media preview
-        table code lists fullscreen insertdatetime nonbreaking
-        directionality searchreplace wordcount visualblocks
-        visualchars code fullscreen autolink lists charmap
-        anchor pagebreak
-        """,
-    "toolbar1": """
-        fullscreen preview bold italic underline | fontselect,
-        fontsizeselect | forecolor backcolor | alignleft alignright |
-        aligncenter alignjustify | indent outdent | bullist numlist table |
-        | link | code
-        """,
-    "contextmenu": "formats | link image",
+    "plugins": "link anchor autolink",
+    "toolbar1": "bold italic | link anchor",
+    "contextmenu": "link",
     "menubar": False,
     "statusbar": True,
     "promotion": False,
