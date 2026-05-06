@@ -191,6 +191,13 @@ class EditProfileViewSocialLinksTests(TestCase):
         self.assertIn('name="linkedin"', content)
         self.assertIn('name="website"', content)
 
+    def test_edit_social_row_has_grid_modifier_class(self):
+        """The edit-page social row carries the `profile-social-edit`
+        modifier class so the grid CSS rules (issue #544 layout fix)
+        apply only to the editor and not the display view."""
+        resp = self.client.get(self.url)
+        self.assertIn("profile-social-edit", resp.content.decode())
+
 
 class NormaliseLegacySocialUrlsMigrationTests(TestCase):
     """The data migration must normalise legacy values (bare usernames,

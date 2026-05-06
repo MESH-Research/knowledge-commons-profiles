@@ -51,7 +51,7 @@
             <label for="id_title" class="form-label form-label-fixed">Title:</label> {% crispy_field form.title %} <br/>
             <label for="id_affiliation" class="form-label form-label-fixed">Affiliation:</label> {% crispy_field form.institutional_or_other_affiliation %} <br/><br/>
 
-            <div class="profile-social">
+            <div class="profile-social profile-social-edit">
               <span class="social-link" id="mastodon_edit">
                 <i class="fab fa-mastodon"></i>
                 <label for="id_mastodon" class="form-label">Mastodon:</label> <span class="at-prefix">@</span>{% crispy_field form.mastodon %}
