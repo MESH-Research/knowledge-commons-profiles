@@ -254,6 +254,35 @@ class EditProfileViewAcademicInterestsTests(TestCase):
         "knowledge_commons_profiles.newprofile.views.profile.profile."
         "send_webhook_user_update"
     )
+    def test_post_with_invalid_other_field_still_renders_without_500(
+        self, mock_webhook, mock_index
+    ):
+        """If validation fails on some other field while a new interest was
+        typed in, the re-render of the form must not crash trying to resolve
+        the typed-in text against the AcademicInterest queryset (#522)."""
+        del mock_webhook, mock_index
+
+        resp = self.client.post(
+            self.url,
+            {
+                "academic_interests": [str(self.existing.pk), "pig latin"],
+                "reference_style": "MHRA",
+            },
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(
+            AcademicInterest.objects.filter(text="pig latin").exists()
+        )
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "index_profile_in_cc_search"
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.profile.profile."
+        "send_webhook_user_update"
+    )
     def test_post_with_new_free_text_interest_persists_through_view(
         self, mock_webhook, mock_index
     ):
