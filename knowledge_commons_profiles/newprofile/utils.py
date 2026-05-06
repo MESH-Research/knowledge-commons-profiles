@@ -24,38 +24,24 @@ logger = logging.getLogger(__name__)
 _HTML_CLEANER = None
 _HTML_LINKER = None
 
+# Allowlist intentionally mirrors the TinyMCE toolbar (bold, italic,
+# links, anchors) per issue #540. p and br are kept because the editor
+# emits them implicitly for paragraph/line-break structure; without
+# them, saved content collapses into one run-on block.
 ALLOWED_TAGS = [
     "p",
-    "b",
-    "i",
-    "u",
-    "em",
-    "strong",
-    "a",
-    "ul",
-    "ol",
-    "li",
     "br",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "table",
-    "tbody",
-    "thead",
-    "tr",
-    "td",
-    "th",
-    "img",
+    "b",
+    "strong",
+    "i",
+    "em",
+    "a",
 ]
 
 ALLOWED_ATTRIBUTES = {
-    "a": ["href", "title"],
-    "img": ["src", "alt", "width", "height"],
-    "td": ["colspan", "rowspan"],
-    "th": ["colspan", "rowspan"],
+    # href/title cover hyperlinks; id/name cover named anchors (TinyMCE 5+
+    # uses id, older content uses name — preserve both).
+    "a": ["href", "title", "id", "name"],
 }
 
 

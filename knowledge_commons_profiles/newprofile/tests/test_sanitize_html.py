@@ -1,5 +1,9 @@
 """
 Tests for the sanitize_html utility function.
+
+The allowlist deliberately matches the editor toolbar (bold, italic,
+links, anchors) per issue #540 — anything else is stripped so users
+don't see formatting silently disappear after save.
 """
 
 from django.test import TestCase
@@ -18,19 +22,22 @@ class SanitizeHtmlTests(TestCase):
         self.assertNotIn("</span>", result)
         self.assertIn("Hello world", result)
 
-    def test_preserves_allowed_tags(self):
-        """Tags in the allowlist should remain intact."""
+    def test_preserves_paragraph_tag(self):
+        """Paragraphs are kept so editor content has structure."""
         html = "<p>Paragraph</p>"
         result = sanitize_html(html)
         self.assertIn("<p>", result)
         self.assertIn("Paragraph", result)
 
     def test_preserves_emphasis_tags(self):
-        """em, strong, b, i, u tags should be preserved."""
+        """em, strong, b, i tags should be preserved (the toolbar
+        emits em/strong; b/i covered for pasted content)."""
         html = "<em>italic</em> <strong>bold</strong> <b>b</b> <i>i</i>"
         result = sanitize_html(html)
         self.assertIn("<em>italic</em>", result)
         self.assertIn("<strong>bold</strong>", result)
+        self.assertIn("<b>b</b>", result)
+        self.assertIn("<i>i</i>", result)
 
     def test_preserves_links_with_attributes(self):
         """Anchor tags with href and title attributes should be preserved."""
@@ -39,6 +46,21 @@ class SanitizeHtmlTests(TestCase):
         self.assertIn('href="http://example.com"', result)
         self.assertIn("link", result)
 
+    def test_preserves_anchor_id(self):
+        """In-page anchors (TinyMCE 5+ uses id) should be preserved."""
+        html = '<a id="bookmark">section</a>'
+        result = sanitize_html(html)
+        self.assertIn('id="bookmark"', result)
+        self.assertIn("section", result)
+
+    def test_preserves_anchor_name(self):
+        """Legacy named anchors should be preserved for back-compat
+        with content authored before TinyMCE 5."""
+        html = '<a name="bookmark">section</a>'
+        result = sanitize_html(html)
+        self.assertIn('name="bookmark"', result)
+        self.assertIn("section", result)
+
     def test_strips_disallowed_attributes_from_links(self):
         """Attributes not in the allowlist should be removed."""
         html = '<a href="http://example.com" onclick="alert(1)">link</a>'
@@ -46,29 +68,87 @@ class SanitizeHtmlTests(TestCase):
         self.assertNotIn("onclick", result)
         self.assertIn("href", result)
 
-    def test_preserves_lists(self):
-        """ul, ol, li tags should be preserved."""
-        html = "<ul><li>item</li></ul>"
+    def test_strips_underline_preserves_text(self):
+        """Underline isn't in the toolbar (issue #540) so the tag is
+        stripped on save; the text survives."""
+        html = "<u>underlined text</u>"
         result = sanitize_html(html)
-        self.assertIn("<ul>", result)
-        self.assertIn("<li>item</li>", result)
+        self.assertNotIn("<u>", result)
+        self.assertNotIn("</u>", result)
+        self.assertIn("underlined text", result)
 
-    def test_preserves_headings(self):
-        """h1-h6 tags should be preserved."""
+    def test_strips_text_alignment_style(self):
+        """Alignment via style attribute is removed (issue #540)."""
+        html = '<p style="text-align: center">centred</p>'
+        result = sanitize_html(html)
+        self.assertNotIn("text-align", result)
+        self.assertNotIn("style=", result)
+        self.assertIn("<p>", result)
+        self.assertIn("centred", result)
+
+    def test_strips_align_attribute(self):
+        """Legacy align attribute is removed (issue #540)."""
+        html = '<p align="center">centred</p>'
+        result = sanitize_html(html)
+        self.assertNotIn("align=", result)
+        self.assertIn("<p>", result)
+        self.assertIn("centred", result)
+
+    def test_strips_color_via_font_tag(self):
+        """Font tags (with color) are stripped entirely (issue #540)."""
+        html = '<font color="red">red text</font>'
+        result = sanitize_html(html)
+        self.assertNotIn("<font", result)
+        self.assertNotIn("color=", result)
+        self.assertIn("red text", result)
+
+    def test_strips_color_via_style_attribute(self):
+        """Inline color styles are stripped (issue #540)."""
+        html = '<p style="color: red">red text</p>'
+        result = sanitize_html(html)
+        self.assertNotIn("color:", result)
+        self.assertNotIn("style=", result)
+        self.assertIn("<p>", result)
+        self.assertIn("red text", result)
+
+    def test_strips_lists_preserves_text(self):
+        """List tags aren't in the toolbar — text content survives."""
+        html = "<ul><li>item one</li><li>item two</li></ul>"
+        result = sanitize_html(html)
+        self.assertNotIn("<ul>", result)
+        self.assertNotIn("<ol>", result)
+        self.assertNotIn("<li>", result)
+        self.assertIn("item one", result)
+        self.assertIn("item two", result)
+
+    def test_strips_headings_preserves_text(self):
+        """Heading tags aren't in the toolbar — text content survives."""
         html = "<h1>Title</h1><h3>Subtitle</h3>"
         result = sanitize_html(html)
-        self.assertIn("<h1>Title</h1>", result)
-        self.assertIn("<h3>Subtitle</h3>", result)
+        for tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            self.assertNotIn(f"<{tag}>", result)
+            self.assertNotIn(f"</{tag}>", result)
+        self.assertIn("Title", result)
+        self.assertIn("Subtitle", result)
 
-    def test_preserves_table_tags(self):
-        """Table-related tags should be preserved."""
+    def test_strips_tables_preserves_text(self):
+        """Table tags aren't in the toolbar — text content survives."""
         html = (
             "<table><thead><tr><th>H</th></tr></thead>"
             "<tbody><tr><td>D</td></tr></tbody></table>"
         )
         result = sanitize_html(html)
-        self.assertIn("<table>", result)
-        self.assertIn("<td>D</td>", result)
+        for tag in ("table", "thead", "tbody", "tr", "th", "td"):
+            self.assertNotIn(f"<{tag}>", result)
+        self.assertIn("H", result)
+        self.assertIn("D", result)
+
+    def test_strips_img_tags(self):
+        """Images aren't in the toolbar — img tags are removed."""
+        html = '<img src="photo.jpg" alt="Photo" width="100" height="100">'
+        result = sanitize_html(html)
+        self.assertNotIn("<img", result)
+        self.assertNotIn("src=", result)
 
     def test_strips_script_tags(self):
         """Script tags should be stripped (text content remains but is
@@ -117,15 +197,8 @@ class SanitizeHtmlTests(TestCase):
         self.assertIn("The Poetics of Sovereignty", result)
         self.assertIn("(2010) and", result)
 
-    def test_preserves_img_with_allowed_attributes(self):
-        """Img tags with allowed attributes should be preserved."""
-        html = '<img src="photo.jpg" alt="Photo" width="100" height="100">'
-        result = sanitize_html(html)
-        self.assertIn("src=", result)
-        self.assertIn("alt=", result)
-
     def test_preserves_br_tags(self):
-        """br tags should be preserved."""
+        """br tags should be preserved (Shift+Enter line breaks)."""
         html = "Line one<br>Line two"
         result = sanitize_html(html)
         self.assertIn("<br>", result)
