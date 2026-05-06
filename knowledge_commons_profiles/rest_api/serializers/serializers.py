@@ -19,7 +19,6 @@ from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpGroupsGroupmeta
-from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 from knowledge_commons_profiles.rest_api.utils import wp_unslash
 
@@ -41,11 +40,13 @@ class GroupMembershipSerializer(serializers.Serializer):
     inviter = serializers.SerializerMethodField()
 
     def get_inviter(self, obj: dict[str, Any]):
-        try:
-            user = WpUser.objects.get(id=obj["inviter_id"])
-            return reverse("profiles_detail_view", args=[user.username])
-        except WpUser.DoesNotExist:
+        # API.get_groups() resolves inviters in a single bulk query and
+        # stashes the username on each dict, so we never hit the DB here
+        # (see issue #554).
+        username = obj.get("inviter_username")
+        if not username:
             return None
+        return reverse("profiles_detail_view", args=[username])
 
     def get_url(self, obj: dict[str, Any]) -> str:
         """

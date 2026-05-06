@@ -693,7 +693,7 @@ class API:
             )
 
         try:
-            group_members = (
+            group_members = list(
                 WpBpGroupMember.objects.filter(
                     user_id=self.wp_user.id,
                     is_confirmed=True,
@@ -714,6 +714,22 @@ class API:
                 .order_by("group_name")
             )
 
+            # Bulk-resolve inviter usernames in one query rather than
+            # letting GroupMembershipSerializer fire one WpUser.get per
+            # group (the n+1 in #554).
+            inviter_ids = {
+                gm.inviter_id for gm in group_members if gm.inviter_id
+            }
+            inviter_usernames = (
+                dict(
+                    WpUser.objects.filter(id__in=inviter_ids).values_list(
+                        "id", "user_login"
+                    )
+                )
+                if inviter_ids
+                else {}
+            )
+
             return [
                 {
                     "id": gm.gid,  # group id
@@ -723,6 +739,7 @@ class API:
                     "status": gm.group.status,
                     "avatar": gm.group.get_avatar(),
                     "inviter_id": gm.inviter_id,
+                    "inviter_username": inviter_usernames.get(gm.inviter_id),
                 }
                 for gm in group_members
             ]
