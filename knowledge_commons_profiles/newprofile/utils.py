@@ -25,9 +25,9 @@ _HTML_CLEANER = None
 _HTML_LINKER = None
 
 # Allowlist intentionally mirrors the TinyMCE toolbar (bold, italic,
-# links, anchors) per issue #540. p and br are kept because the editor
-# emits them implicitly for paragraph/line-break structure; without
-# them, saved content collapses into one run-on block.
+# links, anchors, lists) per issue #540. p and br are kept because the
+# editor emits them implicitly for paragraph/line-break structure;
+# without them, saved content collapses into one run-on block.
 ALLOWED_TAGS = [
     "p",
     "br",
@@ -36,6 +36,9 @@ ALLOWED_TAGS = [
     "i",
     "em",
     "a",
+    "ul",
+    "ol",
+    "li",
 ]
 
 ALLOWED_ATTRIBUTES = {

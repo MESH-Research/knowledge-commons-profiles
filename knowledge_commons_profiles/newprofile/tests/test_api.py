@@ -927,9 +927,9 @@ class GetProfileInfoTests(django.test.TestCase):
 
     def test_get_profile_info_preserves_allowed_html(self):
         """get_profile_info keeps the toolbar-allowed HTML (issue #540):
-        bold, italic, links, anchors, plus structural p/br."""
+        bold, italic, links, anchors, lists, plus structural p/br."""
         self.mock_profile.publications = "<p><strong>A book</strong></p>"
-        self.mock_profile.projects = "<p><em>Project</em></p>"
+        self.mock_profile.projects = "<ul><li>Project</li></ul>"
         self.mock_profile.memberships = (
             '<p>Member of <a href="#">Group</a></p>'
         )
@@ -938,7 +938,7 @@ class GetProfileInfoTests(django.test.TestCase):
         result = self.model_instance.get_profile_info()
 
         self.assertIn("<p><strong>A book</strong></p>", result["publications"])
-        self.assertIn("<p><em>Project</em></p>", result["projects"])
+        self.assertIn("<ul><li>Project</li></ul>", result["projects"])
         self.assertIn("Group</a>", result["memberships"])
 
 
