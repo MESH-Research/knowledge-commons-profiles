@@ -7,6 +7,7 @@ import json
 import logging
 from pathlib import Path
 from urllib.parse import urlencode
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.db import OperationalError
@@ -328,3 +329,55 @@ def get_profile_photo(profile: Profile):
     # Construct the URL with encoded query parameters
     query_params = urlencode({"s": str(size)})
     return f"https://www.gravatar.com/avatar/{email_hash}?{query_params}"
+
+
+def coerce_social_url(value, platform_url_prefix=None):  # noqa: PLR0911
+    """Coerce a social-link string toward a fully-qualified URL.
+
+    Used by both the form fields (Facebook / LinkedIn / Website on
+    ProfileForm) and the data migration that normalises legacy values
+    (issue #544). The caller is responsible for URL-validating the
+    return value; this helper only normalises shape.
+
+    Rules:
+    - empty / whitespace → ""
+    - already starts with http:// or https:// → returned unchanged
+    - contains "://" (other scheme) → returned unchanged (validator
+      rejects)
+    - has a "/" with a host-like segment before it (contains ".") →
+      treated as scheme-less URL, "https://" prepended
+    - has a "/" with no host-like segment (e.g. "/me", "in/me") →
+      treated as a path under the platform: prefix is prepended and
+      any leading "/" stripped to avoid duplication
+    - bare token (no "/" and no "://") with platform prefix → prefix
+      prepended
+    - bare token without platform prefix → returned unchanged
+    """
+    if not value:
+        return ""
+    value = value.strip()
+    if not value:
+        return ""
+
+    if value.startswith(("http://", "https://")):
+        return value
+    if "://" in value:
+        return value
+
+    if "/" in value:
+        before_slash = value.split("/", 1)[0]
+        if "." in before_slash:
+            return "https://" + value
+        if platform_url_prefix:
+            parsed = urlparse(platform_url_prefix)
+            host_root = f"{parsed.scheme}://{parsed.netloc}/"
+            return host_root + value.lstrip("/")
+        return value
+
+    if platform_url_prefix:
+        return platform_url_prefix + value
+    # No platform prefix and no slash: treat dotted values as a host
+    # (e.g. the Website field — "martineve.com" → "https://martineve.com").
+    if "." in value:
+        return "https://" + value
+    return value
