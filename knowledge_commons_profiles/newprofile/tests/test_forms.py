@@ -1,6 +1,6 @@
-from unittest.mock import patch
 
 from django.conf import settings
+from django.http import QueryDict
 from django.template import Context
 from django.test import TestCase
 
@@ -113,30 +113,118 @@ class SanitizedTinyMCETests(TestCase):
 
 
 class AcademicInterestsSelect2TagWidgetTests(TestCase):
+    """Tests for issue #522: free-text additions must be turned into
+    AcademicInterest rows so the form posts integer PKs, not raw text."""
+
     def setUp(self):
-        # Create some academic interests
         self.interest1 = AcademicInterest.objects.create(text="Python")
         self.interest2 = AcademicInterest.objects.create(text="Django")
         self.widget = AcademicInterestsSelect2TagWidget()
 
+    def _datadict(self, values):
+        qd = QueryDict(mutable=True)
+        qd.setlist("academic_interests", values)
+        return qd
+
     def test_queryset(self):
-        """Test that the widget has the correct queryset"""
+        """Widget keeps the AcademicInterest queryset on the class."""
         queryset = self.widget.queryset
         self.assertEqual(queryset.model, AcademicInterest)
 
-    @patch(
-        "knowledge_commons_profiles.newprofile.forms."
-        "ModelSelect2TagWidget.value_from_datadict"
-    )
-    def test_existing_values(self, mock_parent_method):
-        """Test handling of existing values"""
-        mock_parent_method.return_value = ["Python", "Django"]
+    def test_value_from_datadict_creates_new_interest_for_unknown_text(self):
+        """A typed-in tag that does not match any PK is created and its PK
+        comes back in the cleaned list (regression for #522)."""
+        before = AcademicInterest.objects.count()
 
-        result = self.widget.value_from_datadict({}, {}, "academic_interests")
+        result = self.widget.value_from_datadict(
+            self._datadict(["pig latin"]), {}, "academic_interests"
+        )
 
-        # Should return PKs of existing interests
-        self.assertIn("Python", result)
-        self.assertIn("Django", result)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        self.assertEqual(result, [str(new_interest.pk)])
+
+    def test_value_from_datadict_returns_pks_for_existing_pk_inputs(self):
+        """When the form posts existing PKs, the widget passes them through
+        as strings without creating new rows."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict([str(self.interest1.pk), str(self.interest2.pk)]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before)
+        self.assertEqual(
+            sorted(result),
+            sorted([str(self.interest1.pk), str(self.interest2.pk)]),
+        )
+
+    def test_value_from_datadict_handles_mixed_existing_and_new(self):
+        """Mix of existing PK and new free text: only the free-text row is
+        created; both come back as PK strings."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict([str(self.interest1.pk), "pig latin"]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertIn(str(self.interest1.pk), result)
+        self.assertIn(str(new_interest.pk), result)
+        self.assertEqual(len(result), 2)
+
+    def test_value_from_datadict_dedupes_text_matching_existing_row(self):
+        """If the typed text exactly matches an existing row's text, reuse
+        that row instead of creating a duplicate."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict(["Python"]), {}, "academic_interests"
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before)
+        self.assertEqual(result, [str(self.interest1.pk)])
+
+    def test_value_from_datadict_strips_whitespace_and_skips_empty(self):
+        """Empty / whitespace-only entries are dropped; surrounding
+        whitespace is stripped before matching/creating."""
+        before = AcademicInterest.objects.count()
+
+        result = self.widget.value_from_datadict(
+            self._datadict(["  ", "", "  pig latin  "]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertEqual(result, [str(new_interest.pk)])
+
+    def test_profile_form_widget_creates_new_interest_on_submit(self):
+        """End-to-end via ProfileForm: the widget bound to the form's
+        academic_interests field also performs the conversion."""
+        profile = Profile.objects.create(
+            username="form_test_user", name="Form Test"
+        )
+        form = ProfileForm(instance=profile)
+        widget = form.fields["academic_interests"].widget
+
+        before = AcademicInterest.objects.count()
+        result = widget.value_from_datadict(
+            self._datadict([str(self.interest1.pk), "pig latin"]),
+            {},
+            "academic_interests",
+        )
+
+        self.assertEqual(AcademicInterest.objects.count(), before + 1)
+        new_interest = AcademicInterest.objects.get(text="pig latin")
+        self.assertIn(str(self.interest1.pk), result)
+        self.assertIn(str(new_interest.pk), result)
 
 
 class ProfileFormTests(TestCase):
