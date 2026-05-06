@@ -1,3 +1,9 @@
+## 4.23.1 (2026-05-06)
+
+### Fix
+
+- **newprofile**: persist new academic interests instead of posting raw text
+
 ## 4.23.0 (2026-05-06)
 
 ### Feat
