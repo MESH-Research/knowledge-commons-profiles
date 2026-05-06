@@ -1,3 +1,9 @@
+## 4.22.4 (2026-05-01)
+
+### Fix
+
+- **cilogon**: defend email verification against link-scanner pre-fetch
+
 ## 4.22.3 (2026-05-01)
 
 ### Fix

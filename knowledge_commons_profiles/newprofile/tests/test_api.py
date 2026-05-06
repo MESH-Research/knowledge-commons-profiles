@@ -1355,10 +1355,11 @@ class GetGroupsTests(django.test.TestCase):
         self.service.wp_user = self.wp_user
         self.service.request = self.request
 
+    @patch("knowledge_commons_profiles.newprofile.api.WpUser.objects")
     @patch(
         "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
     )
-    def test_default_public_only(self, mock_manager):
+    def test_default_public_only(self, mock_manager, mock_user_manager):
         # Prepare a mock queryset chain
         mock_return = MagicMock()
         mock_return.gid = 1
@@ -1376,6 +1377,8 @@ class GetGroupsTests(django.test.TestCase):
         mock_qs.annotate.return_value = mock_qs
         mock_qs.order_by.return_value = [mock_return]
 
+        # No real inviters in this fixture (inviter_id=0), so no bulk
+        # WpUser lookup should fire.
         result = self.service.get_groups()
 
         self.assertEqual(
@@ -1389,6 +1392,7 @@ class GetGroupsTests(django.test.TestCase):
                     "status": "public",
                     "avatar": "",
                     "inviter_id": 0,
+                    "inviter_username": None,
                 }
             ],
         )
@@ -1406,6 +1410,7 @@ class GetGroupsTests(django.test.TestCase):
         mock_return.slug = "slug1"
         mock_return.group.status = "public"
         mock_return.group.get_avatar.return_value = ""
+        mock_return.inviter_id = 0
 
         mock_return_two = MagicMock()
         mock_return_two.gid = 2
@@ -1414,6 +1419,7 @@ class GetGroupsTests(django.test.TestCase):
         mock_return_two.slug = "slug2"
         mock_return_two.group.status = "public"
         mock_return_two.group.get_avatar.return_value = ""
+        mock_return_two.inviter_id = 0
 
         mock_qs = MagicMock()
         mock_manager.filter.return_value = mock_qs
@@ -1449,6 +1455,121 @@ class GetGroupsTests(django.test.TestCase):
         result = self.service.get_groups()
 
         self.assertEqual(result[0]["group_name"], "Martin's test group")
+
+    @patch("knowledge_commons_profiles.newprofile.api.WpUser.objects")
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_get_groups_includes_inviter_username(
+        self, mock_member_manager, mock_user_manager
+    ):
+        """Each returned dict carries the inviter's wp username so that
+        downstream serializers don't have to hit the DB."""
+        gm1 = MagicMock()
+        gm1.gid = 1
+        gm1.group_name = "G1"
+        gm1.role = "member"
+        gm1.slug = "g1"
+        gm1.group.status = "public"
+        gm1.group.get_avatar.return_value = ""
+        gm1.inviter_id = 10
+
+        gm2 = MagicMock()
+        gm2.gid = 2
+        gm2.group_name = "G2"
+        gm2.role = "member"
+        gm2.slug = "g2"
+        gm2.group.status = "public"
+        gm2.group.get_avatar.return_value = ""
+        gm2.inviter_id = 20
+
+        mock_qs = MagicMock()
+        mock_member_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = [gm1, gm2]
+
+        user_qs = MagicMock()
+        mock_user_manager.filter.return_value = user_qs
+        user_qs.values_list.return_value = [(10, "alice"), (20, "bob")]
+
+        result = self.service.get_groups()
+
+        self.assertEqual(result[0]["inviter_username"], "alice")
+        self.assertEqual(result[1]["inviter_username"], "bob")
+
+    @patch("knowledge_commons_profiles.newprofile.api.WpUser.objects")
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_get_groups_resolves_inviters_in_single_bulk_query(
+        self, mock_member_manager, mock_user_manager
+    ):
+        """The whole point of this fix: regardless of group count,
+        inviter resolution must do exactly one wp_users lookup."""
+        members = []
+        for i in range(5):
+            gm = MagicMock()
+            gm.gid = i
+            gm.group_name = f"G{i}"
+            gm.role = "member"
+            gm.slug = f"g{i}"
+            gm.group.status = "public"
+            gm.group.get_avatar.return_value = ""
+            gm.inviter_id = 100 + i
+            members.append(gm)
+
+        mock_qs = MagicMock()
+        mock_member_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = members
+
+        user_qs = MagicMock()
+        mock_user_manager.filter.return_value = user_qs
+        user_qs.values_list.return_value = [
+            (100 + i, f"u{i}") for i in range(5)
+        ]
+
+        self.service.get_groups()
+
+        # The .get() per-membership pattern is forbidden — that was the
+        # n+1 in #554.
+        mock_user_manager.get.assert_not_called()
+        # And the bulk filter must run exactly once across all 5 members.
+        self.assertEqual(mock_user_manager.filter.call_count, 1)
+
+    @patch("knowledge_commons_profiles.newprofile.api.WpUser.objects")
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_get_groups_handles_unknown_inviter(
+        self, mock_member_manager, mock_user_manager
+    ):
+        """If the inviter row is missing from wp_users, inviter_username
+        is None — preserves the legacy WpUser.DoesNotExist semantics."""
+        gm = MagicMock()
+        gm.gid = 1
+        gm.group_name = "G1"
+        gm.role = "member"
+        gm.slug = "g1"
+        gm.group.status = "public"
+        gm.group.get_avatar.return_value = ""
+        gm.inviter_id = 999
+
+        mock_qs = MagicMock()
+        mock_member_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = [gm]
+
+        user_qs = MagicMock()
+        mock_user_manager.filter.return_value = user_qs
+        user_qs.values_list.return_value = []  # no rows match
+
+        result = self.service.get_groups()
+
+        self.assertIsNone(result[0]["inviter_username"])
 
 
 class GetCoverImageTests(django.test.TestCase):
