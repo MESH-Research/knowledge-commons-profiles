@@ -4,12 +4,32 @@ Forms for the profile app
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django_select2.forms import ModelSelect2TagWidget
 from tinymce.widgets import TinyMCE
 
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.utils import coerce_social_url
 from knowledge_commons_profiles.newprofile.utils import sanitize_html
+
+
+class CoercedURLField(forms.CharField):
+    """A URL field that runs `coerce_social_url` over the input before
+    validating. Lets users paste a bare username, a path under the
+    platform, a scheme-less URL, or a fully-qualified URL — the form
+    persists a fully-qualified URL either way (issue #544)."""
+
+    def __init__(self, *, platform_url_prefix=None, **kwargs):
+        self.platform_url_prefix = platform_url_prefix
+        super().__init__(**kwargs)
+        self.validators.append(URLValidator(schemes=["http", "https"]))
+
+    def to_python(self, value):
+        value = super().to_python(value)
+        if not value:
+            return value
+        return coerce_social_url(value, self.platform_url_prefix)
 
 
 class SanitizedTinyMCE(TinyMCE):
@@ -62,6 +82,27 @@ class ProfileForm(forms.ModelForm):
         ),
         help_text="Upload your CV (PDF, DOC, or DOCX). "
         'Check "Clear" to remove your current CV.',
+    )
+
+    facebook = CoercedURLField(
+        required=False,
+        platform_url_prefix="https://facebook.com/",
+        widget=forms.TextInput(
+            attrs={"style": "width:100%; line-height:1.6;"}
+        ),
+    )
+    linkedin = CoercedURLField(
+        required=False,
+        platform_url_prefix="https://linkedin.com/in/",
+        widget=forms.TextInput(
+            attrs={"style": "width:100%; line-height:1.6;"}
+        ),
+    )
+    website = CoercedURLField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={"style": "width:100%; line-height:1.6;"}
+        ),
     )
 
     def __init__(self, *args, **kwargs):

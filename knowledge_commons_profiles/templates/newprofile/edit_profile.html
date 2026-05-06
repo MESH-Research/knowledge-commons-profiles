@@ -74,6 +74,18 @@
                 <img src="{% static "img/iD-icon.png" %}" alt="ORCID"/>
                 <label for="id_orcid" class="form-label">ORCID ID:</label> {% crispy_field form.orcid %}
               </span>
+              <span class="social-link" id="facebook_edit">
+                <i class="fab fa-facebook"></i>
+                <label for="id_facebook" class="form-label">Facebook:</label> {% crispy_field form.facebook %}
+              </span>
+              <span class="social-link" id="linkedin_edit">
+                <i class="fab fa-linkedin"></i>
+                <label for="id_linkedin" class="form-label">LinkedIn:</label> {% crispy_field form.linkedin %}
+              </span>
+              <span class="social-link" id="website_edit">
+                <i class="fa fa-globe"></i>
+                <label for="id_website" class="form-label">Website:</label> {% crispy_field form.website %}
+              </span>
             </div>
 
             <div class="membership-badges" id="membership-badges"

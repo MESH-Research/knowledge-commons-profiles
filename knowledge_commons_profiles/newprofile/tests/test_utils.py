@@ -427,3 +427,132 @@ class GetVisibilitiesTests(TestCase):
         visibility, visibility_works = get_visibilities(instance, "SHOW")
         self.assertEqual(visibility, {})
         self.assertEqual(visibility_works, {})
+
+
+class CoerceSocialUrlTests(TestCase):
+    """Tests for issue #544: coercion helper that normalises bare
+    usernames, scheme-less hosts, and full URLs into fully-qualified
+    URLs. Shared by the ProfileForm social fields and the data migration."""
+
+    FB_PREFIX = "https://facebook.com/"
+    LI_PREFIX = "https://linkedin.com/in/"
+
+    def test_empty_input_returns_empty(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(coerce_social_url("", self.FB_PREFIX), "")
+        self.assertEqual(coerce_social_url(None, self.FB_PREFIX), "")
+        self.assertEqual(coerce_social_url("   ", self.FB_PREFIX), "")
+
+    def test_full_https_url_unchanged(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("https://facebook.com/me", self.FB_PREFIX),
+            "https://facebook.com/me",
+        )
+
+    def test_full_http_url_unchanged(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("http://example.com", None),
+            "http://example.com",
+        )
+
+    def test_scheme_less_host_path_gets_https_prefix(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("facebook.com/me", self.FB_PREFIX),
+            "https://facebook.com/me",
+        )
+        self.assertEqual(
+            coerce_social_url("example.com/path/to/page", None),
+            "https://example.com/path/to/page",
+        )
+
+    def test_bare_token_with_platform_prefix(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("martineve", self.FB_PREFIX),
+            "https://facebook.com/martineve",
+        )
+        self.assertEqual(
+            coerce_social_url("martineve", self.LI_PREFIX),
+            "https://linkedin.com/in/martineve",
+        )
+
+    def test_bare_token_without_platform_prefix_unchanged(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(coerce_social_url("martineve", None), "martineve")
+
+    def test_leading_slash_path_uses_platform_prefix(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("/martineve", self.FB_PREFIX),
+            "https://facebook.com/martineve",
+        )
+
+    def test_path_only_segment_uses_platform_prefix(self):
+        """`in/martineve` is a LinkedIn-style path under the platform,
+        not a scheme-less host — there's no dot before the slash."""
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("in/martineve", self.LI_PREFIX),
+            "https://linkedin.com/in/martineve",
+        )
+
+    def test_bare_token_with_dot_uses_platform_prefix(self):
+        """Facebook usernames can contain dots (`first.last`); when no
+        slash is present, treat as a bare token rather than a host."""
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("first.last", self.FB_PREFIX),
+            "https://facebook.com/first.last",
+        )
+
+    def test_whitespace_stripped(self):
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("  martineve  ", self.FB_PREFIX),
+            "https://facebook.com/martineve",
+        )
+
+    def test_other_scheme_unchanged(self):
+        """Non-http(s) schemes are returned untouched so the caller's
+        URL validator can reject them."""
+        from knowledge_commons_profiles.newprofile.utils import (
+            coerce_social_url,
+        )
+
+        self.assertEqual(
+            coerce_social_url("ftp://example.com/file", None),
+            "ftp://example.com/file",
+        )

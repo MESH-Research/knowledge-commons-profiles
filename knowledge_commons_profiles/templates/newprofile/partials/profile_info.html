@@ -53,6 +53,36 @@
     <a href="#" class="hide" id="orcid" aria-label="ORCID" aria-hidden="true" hx-swap-oob="true"></a>
 {% endif %}
 
+<!-- Facebook -->
+{% if profile_info.facebook %}
+  <a href="{{ profile_info.facebook }}" class="social-link" aria-label="Facebook" id="facebook" hx-swap-oob="true" rel="noopener noreferrer" target="_blank">
+      <i class="fab fa-facebook"></i>
+      <span>Facebook</span>
+  </a>
+{% else %}
+  <a href="#" class="hide" id="facebook" aria-label="Facebook" aria-hidden="true" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- LinkedIn -->
+{% if profile_info.linkedin %}
+  <a href="{{ profile_info.linkedin }}" class="social-link" aria-label="LinkedIn" id="linkedin" hx-swap-oob="true" rel="noopener noreferrer" target="_blank">
+      <i class="fab fa-linkedin"></i>
+      <span>LinkedIn</span>
+  </a>
+{% else %}
+  <a href="#" class="hide" id="linkedin" aria-label="LinkedIn" aria-hidden="true" hx-swap-oob="true"></a>
+{% endif %}
+
+<!-- Website -->
+{% if profile_info.website %}
+  <a href="{{ profile_info.website }}" class="social-link" aria-label="Website" id="website" hx-swap-oob="true" rel="noopener noreferrer" target="_blank">
+      <i class="fa fa-globe"></i>
+      <span>Website</span>
+  </a>
+{% else %}
+  <a href="#" class="hide" id="website" aria-label="Website" aria-hidden="true" hx-swap-oob="true"></a>
+{% endif %}
+
 <!-- ARLISNA -->
 {% if ARLISNA is True %}
   <a href="https://arlisna.hcommons.org/members/{{ profile_info.profile.username }}" class="social-link" aria-label="ARLIS/NA" id="arlisna" hx-swap-oob="true">
