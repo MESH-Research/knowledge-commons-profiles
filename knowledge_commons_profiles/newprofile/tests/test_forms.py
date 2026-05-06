@@ -22,27 +22,16 @@ class SanitizedTinyMCETests(TestCase):
         self.assertIsNotNone(self.widget)
 
     def test_allowed_tags(self):
-        """Test that allowed tags are preserved"""
+        """Allowlist matches the editor toolbar (issue #540): bold,
+        italic, links, anchors, plus the structural p/br."""
         allowed_tags = [
             "p",
+            "br",
             "b",
             "i",
-            "u",
             "em",
             "strong",
             "a",
-            "ul",
-            "ol",
-            "li",
-            "br",
-            "h1",
-            "h2",
-            "h3",
-            "h4",
-            "h5",
-            "h6",
-            "table",
-            "img",
         ]
         for tag in allowed_tags:
             html = f"<{tag}>Test</{tag}>"
@@ -52,8 +41,25 @@ class SanitizedTinyMCETests(TestCase):
             self.assertIn(f"<{tag}>", result)
 
     def test_disallowed_tags_removed(self):
-        """Test that disallowed tags are removed"""
-        disallowed_tags = ["script", "iframe", "object", "embed"]
+        """Anything outside the toolbar allowlist is stripped (issue #540)."""
+        disallowed_tags = [
+            "script",
+            "iframe",
+            "object",
+            "embed",
+            "u",
+            "ul",
+            "ol",
+            "li",
+            "h1",
+            "h2",
+            "h3",
+            "table",
+            "img",
+            "font",
+            "div",
+            "span",
+        ]
         for tag in disallowed_tags:
             html = f"<{tag}>Test</{tag}>"
             result = self.widget.value_from_datadict(
@@ -62,7 +68,7 @@ class SanitizedTinyMCETests(TestCase):
             self.assertNotIn(f"<{tag}>", result)
 
     def test_allowed_attributes(self):
-        """Test that allowed attributes are preserved"""
+        """href/title (links) and id/name (anchors) are preserved."""
         html = '<a href="https://example.com" title="Example">Link</a>'
         result = self.widget.value_from_datadict(
             {"content": html}, {}, "content"
@@ -70,14 +76,11 @@ class SanitizedTinyMCETests(TestCase):
         self.assertIn('href="https://example.com"', result)
         self.assertIn('title="Example"', result)
 
-        html = '<img src="image.jpg" alt="Image" width="100" height="100">'
+        html = '<a id="bookmark">Anchor</a>'
         result = self.widget.value_from_datadict(
             {"content": html}, {}, "content"
         )
-        self.assertIn('src="image.jpg"', result)
-        self.assertIn('alt="Image"', result)
-        self.assertIn('width="100"', result)
-        self.assertIn('height="100"', result)
+        self.assertIn('id="bookmark"', result)
 
     def test_disallowed_attributes_removed(self):
         """Test that disallowed attributes are removed"""
@@ -280,31 +283,41 @@ class BrTagInjectionTests(TestCase):
 
     # --- Regression guard tests (should PASS before and after fix) ---
 
-    def test_list_html_preserved_without_spurious_br(self):
-        """Sanitization should not add <br> to clean list HTML."""
+    def test_list_html_stripped_without_spurious_br(self):
+        """Lists are no longer in the allowlist (issue #540), so the
+        original #374 problem (<br> injected around <li>) can't recur:
+        the list tags are gone entirely. Text content survives."""
         widget = SanitizedTinyMCE()
         result = widget.value_from_datadict(
             {"content": self.LIST_HTML}, {}, "content"
         )
+        self.assertNotIn("<li>", result)
+        self.assertNotIn("<ul>", result)
         self.assertNotRegex(
             result,
             r"<br>\s*<li>",
             "Sanitization added <br> before <li>",
         )
+        self.assertIn("Item one", result)
+        self.assertIn("Item two", result)
 
     def test_mixed_html_content_round_trip(self):
-        """Mixed content survives sanitization with structure intact."""
+        """Bold and links survive sanitization; lists do not (issue #540)."""
         widget = SanitizedTinyMCE()
         result = widget.value_from_datadict(
             {"content": self.MIXED_HTML}, {}, "content"
         )
-        self.assertIn("<ul>", result)
-        self.assertIn("<li>", result)
         self.assertIn("<strong>", result)
         self.assertIn("<a ", result)
+        self.assertNotIn("<ul>", result)
+        self.assertNotIn("<li>", result)
+        self.assertIn("Item", result)
 
     def test_content_loaded_into_form_preserves_html(self):
-        """Form initial values should preserve stored HTML unchanged."""
+        """Form initial values aren't sanitized — sanitization happens on
+        save, not on load — so stored content (even now-disallowed list
+        markup) round-trips into the edit form unchanged. The next save
+        will scrub it."""
         profile = Profile.objects.create(
             username="htmltestuser",
             name="HTML Test",
@@ -315,15 +328,13 @@ class BrTagInjectionTests(TestCase):
         self.assertEqual(form.initial["about_user"], self.LIST_HTML)
         self.assertEqual(form.initial["education"], self.ORDERED_LIST_HTML)
 
-    def test_nested_list_html_preserved(self):
-        """Nested lists survive sanitization without <br> injection."""
+    def test_nested_list_html_stripped(self):
+        """Nested lists are stripped (issue #540); inner text survives."""
         widget = SanitizedTinyMCE()
         result = widget.value_from_datadict(
             {"content": self.NESTED_LIST_HTML}, {}, "content"
         )
-        self.assertIn("<ul>", result)
-        self.assertNotRegex(
-            result,
-            r"<br>\s*<li>",
-            "Sanitization added <br> before <li> in nested list",
-        )
+        self.assertNotIn("<ul>", result)
+        self.assertNotIn("<li>", result)
+        self.assertIn("Parent", result)
+        self.assertIn("Child", result)
