@@ -1,0 +1,52 @@
+global:
+  scrape_interval: 10s
+  scrape_timeout: 5s
+  evaluation_interval: 30s
+  external_labels:
+    deployment: loadtest
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: mock-oidc
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["mock-oidc:8080"]
+
+  # Locust's prometheus exporter (locust-prometheus-exporter sidecar OR
+  # `--prometheus` flag on locust 2.30+ if available). Default port 9646.
+  - job_name: locust
+    static_configs:
+      - targets: ["locust-master:9646"]
+
+  # The exporters running on the IDMS test deployment host. Replace
+  # `target-host` with the hostname or IP reachable from the driver host.
+  - job_name: idms-django
+    metrics_path: /metrics
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ["profile.hcommons-test.org"]
+        labels:
+          tier: app
+
+  - job_name: idms-host
+    static_configs:
+      - targets: ["target-host:9100"]
+        labels:
+          tier: host
+
+  - job_name: idms-postgres
+    static_configs:
+      - targets: ["target-host:9187"]
+        labels:
+          tier: db
+
+  - job_name: idms-redis
+    static_configs:
+      - targets: ["target-host:9121"]
+        labels:
+          tier: cache

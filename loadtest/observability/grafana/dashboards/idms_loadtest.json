@@ -1,0 +1,148 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "idms-loadtest",
+  "title": "IDMS Load Test",
+  "tags": ["idms", "loadtest"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-30m", "to": "now"},
+  "templating": {"list": []},
+  "panels": [
+    {
+      "type": "row",
+      "id": 100,
+      "title": "Locust",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 101,
+      "title": "Locust requests/sec by name",
+      "targets": [
+        {"expr": "sum by (name) (rate(locust_requests_total[1m]))", "legendFormat": "{{name}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 1}
+    },
+    {
+      "type": "timeseries",
+      "id": 102,
+      "title": "Locust p95 response time (ms) by name",
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, name) (rate(locust_requests_response_time_bucket[1m])))", "legendFormat": "p95 {{name}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1}
+    },
+    {
+      "type": "row",
+      "id": 200,
+      "title": "Django (django-prometheus)",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 201,
+      "title": "HTTP requests/sec by view",
+      "targets": [
+        {"expr": "sum by (view) (rate(django_http_requests_total_by_view_transport_method_total[1m]))", "legendFormat": "{{view}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10}
+    },
+    {
+      "type": "timeseries",
+      "id": 202,
+      "title": "p95 response latency by view (s)",
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, view) (rate(django_http_responses_total_by_status_view_method_total[1m])))", "legendFormat": "{{view}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10}
+    },
+    {
+      "type": "row",
+      "id": 300,
+      "title": "Postgres",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 301,
+      "title": "Active connections",
+      "targets": [
+        {"expr": "sum by (state) (pg_stat_activity_count)", "legendFormat": "{{state}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 19}
+    },
+    {
+      "type": "timeseries",
+      "id": 302,
+      "title": "Lock waits",
+      "targets": [
+        {"expr": "rate(pg_locks_count[1m])", "legendFormat": "{{mode}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 19}
+    },
+    {
+      "type": "row",
+      "id": 400,
+      "title": "Redis",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 401,
+      "title": "Memory used (bytes)",
+      "targets": [
+        {"expr": "redis_memory_used_bytes", "legendFormat": "{{instance}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28}
+    },
+    {
+      "type": "timeseries",
+      "id": 402,
+      "title": "Connected clients",
+      "targets": [
+        {"expr": "redis_connected_clients", "legendFormat": "{{instance}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28}
+    },
+    {
+      "type": "row",
+      "id": 500,
+      "title": "Host",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 36},
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "id": 501,
+      "title": "CPU usage (%)",
+      "targets": [
+        {"expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)", "legendFormat": "{{instance}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 37}
+    },
+    {
+      "type": "timeseries",
+      "id": 502,
+      "title": "Memory used (%)",
+      "targets": [
+        {"expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "legendFormat": "{{instance}}", "refId": "A"}
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 37}
+    }
+  ]
+}

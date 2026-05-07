@@ -1,0 +1,13 @@
+[project]
+name = "mock-cilogon"
+version = "0.1.0"
+description = "Mock CILogon OIDC provider used by the IDMS load test suite."
+readme = "../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "authlib>=1.6,<2",
+    "cryptography>=43",
+    "python-multipart>=0.0.20",
+]

@@ -1,0 +1,49 @@
+# Target-side overlay for the IDMS load test.
+#
+# Runs alongside the existing test deployment on profile.hcommons-test.org
+# and exposes the metrics that the driver-side Prometheus will scrape:
+#
+#   * node-exporter      — host CPU/RAM/network for the Django host
+#   * postgres-exporter  — connections, queries, pg_stat_statements
+#   * redis-exporter     — memory, evictions, hit ratio, clients
+#
+# `pg_stat_statements` must already be loaded in the RDS parameter group
+# and CREATE EXTENSION run in the target DB. See loadtest/README.md.
+#
+# This file does NOT manage the Django container; that's the existing
+# docker-compose.dev.yml. To put the IDMS in load-test mode, set:
+#   DJANGO_SETTINGS_MODULE=config.settings.loadtest
+#   LOADTEST=1
+#   CILOGON_DISCOVERY_URL=http://<driver-host>:8080/.well-known/openid-configuration
+# in the IDMS container's env and restart it.
+
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    pid: host
+    network_mode: host
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
+    environment:
+      DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DSN}
+      PG_EXPORTER_INCLUDE_DATABASES: ${PG_EXPORTER_INCLUDE_DATABASES:-}
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+    ports:
+      - "9187:9187"
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0-alpine
+    environment:
+      REDIS_ADDR: ${REDIS_EXPORTER_ADDR}
+      REDIS_PASSWORD: ${REDIS_EXPORTER_PASSWORD:-}
+    ports:
+      - "9121:9121"
+    restart: unless-stopped

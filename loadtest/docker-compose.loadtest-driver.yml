@@ -1,0 +1,119 @@
+# Driver-side stack for IDMS load testing.
+#
+# Brings up:
+#   * mock-oidc       — FastAPI mock CILogon
+#   * locust-master   — UI on :8089
+#   * locust-worker   — scaled with --scale locust-worker=N
+#   * prometheus      — scrapes locust + mock + the target-side exporters
+#   * grafana         — :3000, provisioned with the IDMS load-test dashboard
+#
+# The Django app under test runs separately on profile.hcommons-test.org.
+# Point Locust at it via LOCUST_HOST=https://profile.hcommons-test.org.
+
+services:
+  mock-oidc:
+    build:
+      context: ./mock_idp
+    image: kc-loadtest/mock-oidc:latest
+    environment:
+      MOCK_ISSUER: ${MOCK_ISSUER:-http://mock-oidc:8080}
+      MOCK_LATENCY_MS: ${MOCK_LATENCY_MS:-150}
+      MOCK_DEFAULT_AUDIENCE: ${MOCK_DEFAULT_AUDIENCE:-loadtest}
+      MOCK_KEY_FILE: /var/lib/mock-oidc/key.json
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persisted keypair shared across uvicorn workers (same kid in JWKS
+      # and in every signed ID token regardless of which worker handles
+      # the request).
+      - mock_oidc_key:/var/lib/mock-oidc
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8080/health', timeout=2); sys.exit(0)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  locust-master:
+    build:
+      context: ./locust
+    image: kc-loadtest/locust:latest
+    # Host networking so that `https://localhost` (your local IDMS bound on
+    # the host's :443) and `http://localhost:8080` (the mock-oidc port
+    # mapping) resolve correctly from inside the container — without
+    # fighting with /etc/hosts. `ports:` declarations are ignored under
+    # host networking; locust binds 8089/5557 directly on the host.
+    network_mode: host
+    # `host.docker.internal` is normally only auto-mapped on Docker Desktop
+    # (Mac/Windows) or for bridge-networked containers. Under
+    # network_mode: host on Linux we have to populate /etc/hosts ourselves
+    # so locust can follow IDMS redirects whose issuer is host.docker.internal.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      locust --master
+      --host ${LOCUST_HOST:-https://localhost}
+      -f /app/${LOCUSTFILE:-locustfile_login_only.py}
+      --csv /app/results/run
+    environment:
+      MOCK_IDP_BASE: ${MOCK_IDP_BASE:-http://localhost:8080}
+      LOADTEST_SUBJECTS: /app/subjects.txt
+      BROKER_RETURN_TO: ${BROKER_RETURN_TO:-}
+      STATIC_API_BEARER: ${STATIC_API_BEARER:-}
+    volumes:
+      # Bind-mount the whole locust directory (scripts + subjects.txt + results).
+      # Mounting the directory rather than individual files avoids docker's
+      # "auto-create empty directory" pitfall when a referenced host path is
+      # missing.
+      - ./locust:/app
+      - ./results:/app/results
+    depends_on:
+      mock-oidc:
+        condition: service_healthy
+
+  locust-worker:
+    image: kc-loadtest/locust:latest
+    # Host networking for the same reason as the master, and so the worker
+    # can reach the master at `localhost:5557` on the host.
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      locust --worker --master-host localhost
+      -f /app/${LOCUSTFILE:-locustfile_login_only.py}
+    environment:
+      MOCK_IDP_BASE: ${MOCK_IDP_BASE:-http://localhost:8080}
+      LOADTEST_SUBJECTS: /app/subjects.txt
+      BROKER_RETURN_TO: ${BROKER_RETURN_TO:-}
+      STATIC_API_BEARER: ${STATIC_API_BEARER:-}
+    volumes:
+      - ./locust:/app
+    depends_on:
+      locust-master:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=14d
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-loadtest}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  mock_oidc_key:

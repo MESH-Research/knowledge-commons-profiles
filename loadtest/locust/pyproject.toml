@@ -1,0 +1,10 @@
+[project]
+name = "kc-profiles-loadtest"
+version = "0.1.0"
+description = "Locust scripts for stressing the Knowledge Commons IDMS."
+readme = "../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "locust>=2.32",
+    "requests>=2.32",
+]
