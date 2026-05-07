@@ -435,7 +435,10 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = env.list(
     ],
 )
 
-CILOGON_DISCOVERY_URL = "https://cilogon.org/.well-known/openid-configuration"
+CILOGON_DISCOVERY_URL = env(
+    "CILOGON_DISCOVERY_URL",
+    default="https://cilogon.org/.well-known/openid-configuration",
+)
 CILOGON_SCOPE = "openid email profile org.cilogon.userinfo offline_access"
 CILOGON_REFRESH_TOKEN_TIMEOUT = 300
 CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
