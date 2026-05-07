@@ -18,6 +18,8 @@ services:
         - knowledge_commons_profiles_dev_django:${IMAGE_TAG:-latest}
         - knowledge_commons_profiles_dev_django:latest
     image: knowledge_commons_profiles_dev_django
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
     env_file:

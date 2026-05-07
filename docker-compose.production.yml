@@ -17,6 +17,8 @@ services:
         - knowledge_commons_profiles_production_django:${IMAGE_TAG:-latest}
         - knowledge_commons_profiles_production_django:latest
     image: knowledge_commons_profiles_production_django
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
     env_file:
       - ./.envs/.production/.django
     command: /start

@@ -17,5 +17,7 @@ services:
       - ${HOME}/key.pem:/certs/key.pem:ro
     env_file:
       - ./.envs/.local/.django
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - '443:443'
