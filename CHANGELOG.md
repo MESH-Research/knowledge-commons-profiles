@@ -1,3 +1,9 @@
+## 4.24.1 (2026-05-06)
+
+### Fix
+
+- **newprofile**: edit-profile social row layout and label wrapping
+
 ## 4.24.0 (2026-05-06)
 
 ### Feat
