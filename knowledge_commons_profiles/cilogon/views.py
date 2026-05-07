@@ -385,6 +385,18 @@ def app_logout(
         user_agent if user_agent else request.headers.get("user-agent", "")
     )
 
+    # Bail if we have no user to log out. Without this, anonymous /logout/
+    # traffic (browser prefetch, drive-by GETs, etc.) would otherwise run
+    # the token-revocation and session-enumeration loop with user_name=""
+    # and could match/delete TokenUserAgentAssociations rows.
+    if not user_name:
+        logger.warning(
+            "app_logout called without a resolvable user_name; skipping"
+        )
+        if redirect_behaviour == RedirectBehaviour.REDIRECT:
+            return redirect("/")
+        return None
+
     logger.debug(
         "Logging out user %s with user agent %s on %s",
         user_name,
@@ -494,6 +506,19 @@ def app_logout(
         return redirect("/")
 
     return None
+
+
+@login_required
+@require_http_methods(["POST"])
+def logout_view(request):
+    """
+    Public /logout/ URL view.
+
+    Restricts logout to authenticated POST requests so that browser
+    prefetch, link-preview crawlers and drive-by GETs cannot trigger the
+    full logout pipeline. Delegates the actual work to app_logout().
+    """
+    return app_logout(request)
 
 
 @staff_member_required

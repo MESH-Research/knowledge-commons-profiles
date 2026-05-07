@@ -57,10 +57,13 @@
     </li>
     {% if request.user.is_authenticated %}
     <li class="sidebar-item" id="logout">
-        <a href="{% url 'logout' %}" class="sidebar-link">
-            <i class="fas fa-sign-out" aria-hidden="true"></i>
-            <span>Logout</span>
-        </a>
+        <form method="post" action="{% url 'logout' %}" class="sidebar-link-form">
+            {% csrf_token %}
+            <button type="submit" class="sidebar-link sidebar-link--button">
+                <i class="fas fa-sign-out" aria-hidden="true"></i>
+                <span>Logout</span>
+            </button>
+        </form>
     </li>
     {% endif %}
     <li class="version">Version {% version %}</li>

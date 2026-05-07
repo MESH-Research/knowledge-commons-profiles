@@ -387,6 +387,19 @@
             position: relative;
         }
 
+        .sidebar-link-form {
+            margin: 0;
+        }
+
+        .sidebar-link--button {
+            background: none;
+            border: 0;
+            width: 100%;
+            font: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
         .sidebar-link:hover,
         .sidebar-link.active {
             background-color: rgba(74, 124, 89, 0.1);

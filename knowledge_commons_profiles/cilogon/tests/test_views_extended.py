@@ -20,6 +20,7 @@ from django.urls import reverse
 
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
+from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.views import activate
 from knowledge_commons_profiles.cilogon.views import app_logout
 from knowledge_commons_profiles.cilogon.views import (
@@ -573,6 +574,120 @@ class LogoutTests(CILogonTestBase):
 
             with self.assertRaises(DatabaseError):
                 app_logout(request)
+
+    def test_app_logout_with_anonymous_user_does_not_revoke_tokens(self):
+        """
+        When app_logout runs against an anonymous request with no
+        user_name argument, it must not delete any
+        TokenUserAgentAssociations. Today the function falls back to
+        request.user.username (== "" for AnonymousUser) and deletes any
+        rows whose user_name and user_agent are empty - a drive-by /
+        prefetch hit could therefore wipe rows out of the table.
+        """
+        # Row whose user_name and user_agent both match the values the
+        # current code derives for an anonymous request with no
+        # User-Agent header. Without a bail, the existing filter at
+        # views.py:405 matches this row and delete_associations() then
+        # removes it.
+        token_assoc = TokenUserAgentAssociations.objects.create(
+            user_agent="",
+            app="Profiles",
+            refresh_token="rt",
+            access_token="at",
+            user_name="",
+        )
+
+        request = self.factory.post("/logout/")
+        request.session = SessionStore()
+        request.session.create()
+        request.user = AnonymousUser()
+
+        with (
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+            ) as client_mock,
+            patch(
+                "knowledge_commons_profiles.cilogon.views.logout_all_endpoints_sync"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_token"
+            ),
+        ):
+            mock_client = MagicMock()
+            mock_client.server_metadata = {
+                "revocation_endpoint": "https://test.com/revoke"
+            }
+            client_mock.return_value = mock_client
+
+            app_logout(request)
+
+        self.assertTrue(
+            TokenUserAgentAssociations.objects.filter(
+                pk=token_assoc.pk
+            ).exists()
+        )
+
+
+class LogoutURLViewTests(CILogonTestBase):
+    """
+    Test cases for the public /logout/ URL view (logout_view). The URL
+    view must enforce authentication and reject GETs so that prefetch
+    and drive-by traffic cannot trigger logout side effects.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user("urltestuser", password="pw")
+
+    def _add_session(self, request):
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+
+    def test_get_request_to_logout_view_is_rejected(self):
+        """GET to logout_view should be rejected with 405."""
+        from knowledge_commons_profiles.cilogon.views import logout_view
+
+        request = self.factory.get("/logout/")
+        request.user = self.user
+        self._add_session(request)
+
+        response = logout_view(request)
+        self.assertEqual(response.status_code, 405)
+
+    def test_anonymous_post_to_logout_view_redirects_to_login(self):
+        """Anonymous POST should redirect to the login URL, not invoke
+        the logout pipeline against an empty user."""
+        from knowledge_commons_profiles.cilogon.views import logout_view
+
+        request = self.factory.post("/logout/")
+        request.user = AnonymousUser()
+        self._add_session(request)
+
+        response = logout_view(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
+    def test_authenticated_post_to_logout_view_invokes_app_logout(self):
+        """Authenticated POST should delegate to app_logout."""
+        from knowledge_commons_profiles.cilogon.views import logout_view
+
+        request = self.factory.post("/logout/")
+        request.user = self.user
+        self._add_session(request)
+
+        sentinel = MagicMock()
+        sentinel.status_code = 302
+        with patch(
+            "knowledge_commons_profiles.cilogon.views.app_logout",
+            return_value=sentinel,
+        ) as logout_mock:
+            response = logout_view(request)
+            logout_mock.assert_called_once()
+
+        self.assertIs(response, sentinel)
 
 
 class FormValidationTests(CILogonTestBase):
