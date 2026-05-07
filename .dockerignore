@@ -12,3 +12,7 @@ venv
 .venv
 .git
 .envs/
+.ipython/
+.bash_history
+.lesshst
+.python_history
