@@ -80,6 +80,7 @@ def logout_all_endpoints_sync(username="", request=None):
 
     endpoints = getattr(settings, "LOGOUT_ENDPOINTS", [])
     if not endpoints:
+        logger.warning("Skipping logout propagation: no endpoints")
         return []
 
     headers = {
