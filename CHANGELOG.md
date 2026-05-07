@@ -1,3 +1,11 @@
+## 4.25.0 (2026-05-07)
+
+### Feat
+
+- **loadtest**: add stress test suite for the IDMS
+- **docker**: add host.docker.internal extra_hosts to compose files
+- **settings**: allow CILOGON_DISCOVERY_URL to be overridden via env
+
 ## 4.24.3 (2026-05-07)
 
 ### Fix
