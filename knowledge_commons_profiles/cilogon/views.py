@@ -139,7 +139,9 @@ def cilogon_login(request):
             ).first()
             if sub_association:
                 broker_url = build_broker_redirect(
-                    userinfo, return_to, sub_association.profile,
+                    userinfo,
+                    return_to,
+                    sub_association.profile,
                     final_redirect=final_redirect,
                 )
                 if broker_url:
@@ -238,7 +240,9 @@ def callback(request):
         final_redirect = request.session.pop("broker_final_redirect", "")
         if return_to:
             broker_url = build_broker_redirect(
-                userinfo, return_to, sub_association.profile,
+                userinfo,
+                return_to,
+                sub_association.profile,
                 final_redirect=final_redirect,
             )
             if broker_url:
@@ -287,7 +291,9 @@ def verify_broker_nonce(request):
     nonce_data = cache.get(cache_key)
 
     if not nonce_data:
-        return JsonResponse({"error": "Nonce expired or not found"}, status=410)
+        return JsonResponse(
+            {"error": "Nonce expired or not found"}, status=410
+        )
 
     # Delete nonce immediately to prevent replay
     cache.delete(cache_key)
@@ -322,7 +328,9 @@ def silent_login(request):
             ).first()
             if sub_association:
                 broker_url = build_broker_redirect(
-                    userinfo, return_to, sub_association.profile,
+                    userinfo,
+                    return_to,
+                    sub_association.profile,
                     final_redirect=final_redirect,
                 )
                 if broker_url:
@@ -331,12 +339,15 @@ def silent_login(request):
     separator = "&" if "?" in return_to else "?"
     no_session_url = f"{return_to}{separator}no_session=1"
     if final_redirect:
-        no_session_url += f"&final_redirect={urlquote(final_redirect, safe='')}"
+        no_session_url += (
+            f"&final_redirect={urlquote(final_redirect, safe='')}"
+        )
     return redirect(no_session_url)
 
 
 # ruff: noqa: PLR0913
 # ruff: noqa: C901
+# ruff: noqa: PLR0912
 def app_logout(
     request,
     redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT,
@@ -384,7 +395,11 @@ def app_logout(
     # send api requests to logout
     if flush_behaviour == FlushLogoutBehaviour.FLUSH_LOGOUT:
         msg = f"Flushing logout behaviour to all endpoints for {user_name}"
+        logger.info(msg)
         logout_all_endpoints_sync(username=user_name, request=request)
+    else:
+        msg = f"Not flushing as behaviour is set to { flush_behaviour }"
+        logger.info(msg)
 
     # get all token associations for this browser
     token_associations = TokenUserAgentAssociations.objects.filter(
