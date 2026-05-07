@@ -1,3 +1,10 @@
+## 4.24.3 (2026-05-07)
+
+### Fix
+
+- **cilogon**: add logging for misconfigured LOGOUT_ENDPOINTS
+- **cilogon**: restrict /logout/ to authenticated POST
+
 ## 4.24.2 (2026-05-07)
 
 ### Fix
