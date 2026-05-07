@@ -1,3 +1,9 @@
+## 4.24.2 (2026-05-07)
+
+### Fix
+
+- **cilogon**: add debug logging on logout flush
+
 ## 4.24.1 (2026-05-06)
 
 ### Fix
