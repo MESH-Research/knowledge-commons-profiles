@@ -357,3 +357,7 @@ users.csv
 # TLS certificates
 cert.crt
 cert.key
+
+# Load test artefacts
+loadtest/results/
+loadtest/locust/subjects.txt

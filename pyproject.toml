@@ -58,6 +58,7 @@ target-version = "py312"
 extend-exclude = [
     "*/migrations/*.py",
     "staticfiles/*",
+    "loadtest/*",
 ]
 line-length = 80
 
