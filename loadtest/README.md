@@ -137,13 +137,28 @@ Key points that often confuse:
 
 ### Step 1 — Deployment box: enable `pg_stat_statements`
 
-Already covered above ("Prerequisites — On the test deployment host"
-step 1). One-time setup, requires an RDS parameter-group toggle plus
-an instance reboot. Confirm with:
+The parameter to edit is **`shared_preload_libraries`** (a single
+comma-separated list), not any of the `pg_stat_statements.*` knobs —
+those only take effect once the extension is loaded.
 
-```sql
-SELECT * FROM pg_stat_statements LIMIT 1;
-```
+1. RDS console → DB parameter groups. If your instance uses an AWS
+   default group (`default.postgres-N`), you can't edit it; create a
+   new custom group on the same engine version, then point the instance
+   at it under Modify → Apply immediately (or scheduled).
+2. In your custom group, find `shared_preload_libraries`. Set the
+   value to include `pg_stat_statements` (comma-separate if there are
+   already entries).
+3. **Reboot the RDS instance.** `shared_preload_libraries` is a static
+   parameter; nothing changes until Postgres restarts.
+4. Connect to the IDMS database with `psql` and:
+   ```sql
+   SHOW shared_preload_libraries;             -- expect pg_stat_statements
+   CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+   SELECT count(*) FROM pg_stat_statements;   -- 0+ without error
+   ```
+5. The per-extension knobs (`pg_stat_statements.max`, `.track`, `.save`
+   etc.) can stay at defaults; they're tunable as Dynamic parameters
+   without a reboot if you ever need to change them.
 
 ### Step 2 — Deployment box: create a read-only DB role for postgres-exporter
 
