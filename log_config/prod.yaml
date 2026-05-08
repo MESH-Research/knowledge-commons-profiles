@@ -12,10 +12,6 @@ formatters:
 filters:
   add_context:  # register the filter
     (): log_config.log_context.ContextFilter
-  require_debug_false:
-    (): django.utils.log.RequireDebugFalse
-  suppress_health_check:
-    (): log_config.health_check_filter.HealthCheckFilter
 
 handlers:
   console:
@@ -23,16 +19,15 @@ handlers:
     formatter: json_formatter
     level: DEBUG
     filters: [add_context]
-  mail_admins:
-    class: django.utils.log.AdminEmailHandler
-    level: ERROR
-    filters: [require_debug_false, suppress_health_check]
 
 loggers:
+  # Override Django's DEFAULT_LOGGING, which wires mail_admins to
+  # django.request and floods the admin inbox during dependency
+  # outages (issue #561). Sentry is the sole error channel.
   django.request:
-    handlers: [mail_admins]
+    handlers: [console]
     level: ERROR
-    propagate: True
+    propagate: False
   knowledge_commons_profiles:
     handlers: [console]
     level: DEBUG

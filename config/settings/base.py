@@ -260,31 +260,21 @@ LOGGING = {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
     },
-    "filters": {
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse",
-        },
-        "suppress_health_check": {
-            "()": "log_config.health_check_filter.HealthCheckFilter",
-        },
-    },
     "handlers": {
         "console": {
             "level": "DEBUG" if DEBUG else "INFO",
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
-        "mail_admins": {
-            "level": "ERROR",
-            "filters": ["require_debug_false", "suppress_health_check"],
-            "class": "django.utils.log.AdminEmailHandler",
-        },
     },
     "loggers": {
+        # Override Django's DEFAULT_LOGGING, which wires mail_admins to
+        # django.request and floods the admin inbox during dependency
+        # outages (issue #561). Sentry is the sole error channel.
         "django.request": {
-            "handlers": ["mail_admins"],
+            "handlers": ["console"],
             "level": "ERROR",
-            "propagate": True,
+            "propagate": False,
         },
         "inotify_buffer": {
             "level": "INFO",
