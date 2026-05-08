@@ -23,6 +23,13 @@ urlpatterns = [
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
 
+# When the load-test settings module is active and LOADTEST_PROMETHEUS=1,
+# django-prometheus is added to INSTALLED_APPS and its middleware is in
+# the chain — but /metrics still needs an explicit URL pattern. Mount it
+# only under that flag so production never exposes it.
+if "django_prometheus" in settings.INSTALLED_APPS:
+    urlpatterns.append(path("", include("django_prometheus.urls")))
+
 
 if settings.DEBUG:
     # This allows the error pages to be debugged during development, just visit

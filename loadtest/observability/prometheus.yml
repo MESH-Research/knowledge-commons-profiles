@@ -1,3 +1,17 @@
+# Prometheus scrape configuration for the IDMS load test stack.
+#
+# Topology assumed by this file:
+#   * Tester box (where docker compose runs): hosts prometheus, grafana,
+#     mock-oidc, locust. Reaches localhost via host.docker.internal.
+#   * Deployment box (e.g. profile.hcommons-test.org): runs the IDMS plus
+#     node-exporter, postgres-exporter, redis-exporter (the latter three
+#     started via loadtest/docker-compose.loadtest-target.yml).
+#
+# Edit the targets below to match your setup. The defaults assume an SSH
+# tunnel forwarding the deployment-side exporter ports to the Tester
+# (see loadtest/README.md "Wiring up the observability stack" for the
+# exact ssh -L invocation).
+
 global:
   scrape_interval: 10s
   scrape_timeout: 5s
@@ -6,47 +20,63 @@ global:
     deployment: loadtest
 
 scrape_configs:
+  # --- Tester-box-internal ------------------------------------------------
+
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]
 
-  - job_name: mock-oidc
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["mock-oidc:8080"]
-
-  # Locust's prometheus exporter (locust-prometheus-exporter sidecar OR
-  # `--prometheus` flag on locust 2.30+ if available). Default port 9646.
+  # Locust runs with network_mode: host so its Prometheus listener (port
+  # 9646 via locust-prometheus-exporter or the locust --prometheus flag,
+  # depending on your locust version) is bound on the Tester host.
+  # Prometheus reaches it via host.docker.internal.
   - job_name: locust
     static_configs:
-      - targets: ["locust-master:9646"]
+      - targets: ["host.docker.internal:9646"]
 
-  # The exporters running on the IDMS test deployment host. Replace
-  # `target-host` with the hostname or IP reachable from the driver host.
+  # The mock IdP. The current mock_cilogon.py does not expose /metrics;
+  # this stanza is left here as a stub for if/when you add an exporter.
+  # Comment it out otherwise so Prometheus stops alerting "down".
+  # - job_name: mock-oidc
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["host.docker.internal:8080"]
+
+  # --- Deployment-box (over the network or via SSH tunnel) ----------------
+
+  # IDMS Django process — django-prometheus middleware exposes /metrics on
+  # the same port the app is served from. Requires LOADTEST_PROMETHEUS=1
+  # on the IDMS container.
   - job_name: idms-django
     metrics_path: /metrics
     scheme: https
     tls_config:
+      # Set to false (and provide ca_file/cert_file) once the deployment
+      # has a real LE cert. For dev/test boxes with self-signed certs:
       insecure_skip_verify: true
     static_configs:
-      - targets: ["profile.hcommons-test.org"]
+      - targets: ["profile.hcommons-test.org:443"]
         labels:
           tier: app
 
+  # node-exporter, postgres-exporter, redis-exporter on the Deployment
+  # box. Defaults assume you have an SSH tunnel from the Tester to the
+  # Deployment forwarding 9100/9187/9121 to localhost. Replace these
+  # with the real hostname/IP if you've opened those ports directly.
   - job_name: idms-host
     static_configs:
-      - targets: ["target-host:9100"]
+      - targets: ["host.docker.internal:9100"]
         labels:
           tier: host
 
   - job_name: idms-postgres
     static_configs:
-      - targets: ["target-host:9187"]
+      - targets: ["host.docker.internal:9187"]
         labels:
           tier: db
 
   - job_name: idms-redis
     static_configs:
-      - targets: ["target-host:9121"]
+      - targets: ["host.docker.internal:9121"]
         labels:
           tier: cache
