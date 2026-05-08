@@ -1,3 +1,9 @@
+## 4.26.1 (2026-05-08)
+
+### Fix
+
+- **logging**: drop mail_admins, rely on Sentry for request errors
+
 ## 4.26.0 (2026-05-08)
 
 ### Feat
