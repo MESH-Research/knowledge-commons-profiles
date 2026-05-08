@@ -91,8 +91,20 @@ services:
       locust-master:
         condition: service_started
 
+  # The prometheus + grafana stack is opt-in via the `observability` profile
+  # because it only earns its keep against a real test deployment with all
+  # the server-side exporters running (postgres-exporter, redis-exporter,
+  # node-exporter, django-prometheus). For local verification work, the
+  # built-in Locust UI at http://localhost:8089 is enough.
+  #
+  # Bring it up explicitly when needed:
+  #   docker compose -f docker-compose.loadtest-driver.yml \
+  #     --profile observability up -d
   prometheus:
+    profiles: ["observability"]
     image: prom/prometheus:v2.55.0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
@@ -102,6 +114,7 @@ services:
       - "9090:9090"
 
   grafana:
+    profiles: ["observability"]
     image: grafana/grafana:11.3.0
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-loadtest}

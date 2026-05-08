@@ -66,11 +66,25 @@ The IDMS-side support for load testing lives in the main repo:
    docker compose -f docker-compose.loadtest-driver.yml build
    docker compose -f docker-compose.loadtest-driver.yml up -d
    ```
-2. Edit `observability/prometheus.yml` and replace `target-host` with the
-   actual hostname or IP of the test deployment server (reachable from the
-   driver). Restart the prometheus container.
-3. Open Grafana at `http://<driver-host>:3000` (anonymous viewer is on; the
-   admin password defaults to `loadtest`, override via `GRAFANA_ADMIN_PASSWORD`).
+   This brings up the mock IdP and Locust master/workers only. Locust's
+   own web UI at `http://<driver-host>:8089` shows live RPS, p50/p95/p99
+   per named hop, failures, and writes CSVs to `loadtest/results/` —
+   enough for verification, ramp, and same-user runs.
+
+2. **Optional — opt-in observability stack.** Prometheus + Grafana are
+   gated behind the `observability` compose profile because they only
+   add value when the server-side exporters in
+   `docker-compose.loadtest-target.yml` are also running on the test
+   deployment. To bring them up:
+   ```bash
+   docker compose -f docker-compose.loadtest-driver.yml \
+     --profile observability up -d
+   ```
+   Then edit `observability/prometheus.yml` and replace `target-host`
+   with the actual hostname or IP of the test deployment, and open
+   Grafana at `http://<driver-host>:3000` (anonymous viewer is on; the
+   admin password defaults to `loadtest`, override via
+   `GRAFANA_ADMIN_PASSWORD`).
 
 ## Seeding identities
 
