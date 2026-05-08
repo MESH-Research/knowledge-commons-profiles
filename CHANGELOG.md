@@ -1,3 +1,9 @@
+## 4.26.0 (2026-05-08)
+
+### Feat
+
+- **loadtest**: wire up Prometheus /metrics and add observability runbook
+
 ## 4.25.0 (2026-05-07)
 
 ### Feat
