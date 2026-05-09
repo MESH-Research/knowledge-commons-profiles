@@ -1,3 +1,9 @@
+## 4.26.2 (2026-05-09)
+
+### Fix
+
+- **works**: make tenacity retry effective and memoise per-instance failure
+
 ## 4.26.1 (2026-05-08)
 
 ### Fix
