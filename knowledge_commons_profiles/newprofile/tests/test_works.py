@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import django.test
+import httpx
 from django.core.cache import cache
 from django.test import TestCase
 from django.test import override_settings
@@ -337,3 +338,55 @@ class WorksDepositsChartTests(django.test.TestCase):
 
         # Assert chart was rendered
         self.assertEqual(result_json, '{"mock": "chart"}')
+
+
+@override_settings(
+    CACHES={
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+)
+class TestGetWorksRetryAndMemo(django.test.TestCase):
+    """Retry + per-instance failure memoisation for get_works (issue #562)."""
+
+    def setUp(self):
+        self.user = "0000-0000-0000-0001"
+        self.works_url = "https://mock.api"
+        self.works_deposits = WorksDeposits(
+            user=self.user, works_url=self.works_url
+        )
+        cache.delete(
+            f"hc-member-profiles-xprofile-works-json-{self.user}",
+            version=VERSION,
+        )
+
+    @patch("tenacity.nap.time.sleep", lambda *a, **kw: None)
+    @patch("knowledge_commons_profiles.newprofile.works.httpx.get")
+    def test_get_works_retries_transient_request_error(self, mock_get):
+        """tenacity must retry on httpx.RequestError before giving up."""
+        ok_response = MagicMock()
+        ok_response.status_code = 200
+        ok_response.json.return_value = {"hits": {"hits": []}}
+        mock_get.side_effect = [
+            httpx.ReadTimeout("timed out"),
+            httpx.ReadTimeout("timed out"),
+            ok_response,
+        ]
+
+        result = self.works_deposits.get_works()
+
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(result, [])
+
+    @patch("tenacity.nap.time.sleep", lambda *a, **kw: None)
+    @patch("knowledge_commons_profiles.newprofile.works.httpx.get")
+    def test_get_works_memoises_failure_within_instance(self, mock_get):
+        """A failed get_works must not re-hit the network on this instance."""
+        mock_get.side_effect = httpx.ReadTimeout("timed out")
+
+        with self.assertRaises(WorksApiError):
+            self.works_deposits.get_works()
+        with self.assertRaises(WorksApiError):
+            self.works_deposits.get_works()
+
+        # 3 retries on the first call, 0 on the second.
+        self.assertEqual(mock_get.call_count, 3)

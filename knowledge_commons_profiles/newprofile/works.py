@@ -283,6 +283,10 @@ class WorksDeposits:
         self.user: str = user
         self.works_url: str = works_url
         self.user_profile: models.Profile = user_profile
+        # Per-instance failure cache so the second get_works() in a single
+        # profile render (works_html + works_chart_json share the same
+        # instance) doesn't repeat a backend timeout. See issue #562.
+        self._works_failure: WorksApiError | None = None
 
     def get_works_for_backend_edit(
         self,
@@ -324,10 +328,33 @@ class WorksDeposits:
         wait=wait_fixed(2),
         retry=retry_if_exception_type(httpx.RequestError),
     )
+    def _fetch_records(
+        self, endpoint: str, headers: dict
+    ) -> "Hitdict | None":
+        """Issue the HTTP request and parse the response.
+
+        Decorated with tenacity so that transient httpx.RequestError
+        (timeouts, connection drops) is retried up to three times before
+        propagating to ``get_works``. Kept narrow so the retry predicate
+        actually sees the original RequestError; ``get_works`` does the
+        WorksApiError wrapping.
+        """
+        response = httpx.get(
+            endpoint, timeout=HTTP_TIMEOUT, headers=headers
+        )
+        response.raise_for_status()
+        json_to_validate = response.json()
+        if not json_to_validate.get("hits"):
+            return None
+        return Hitdict(**json_to_validate)
+
     def get_works(self):
         """
         Get the works for a user from the API
         """
+        if self._works_failure is not None:
+            raise self._works_failure
+
         cache_key = f"hc-member-profiles-xprofile-works-json-{self.user}"
 
         result = cache.get(cache_key, version=VERSION)
@@ -350,47 +377,41 @@ class WorksDeposits:
         }
 
         try:
-            response = httpx.get(
-                endpoint, timeout=HTTP_TIMEOUT, headers=headers
-            )
-            response.raise_for_status()
-
-            json_to_validate = response.json()
-
-            hits_data = json_to_validate.get("hits")
-            if not hits_data:
-                return []
-
-            validated = Hitdict(**json_to_validate)
-
-            try:
-                cache.set(
-                    key=cache_key,
-                    value=validated.hits.hits,
-                    timeout=CACHE_TIMEOUT,
-                    version=VERSION,
-                )
-            except Exception as e:
-                msg = (
-                    f"Unable to cache works for user: {self.user} "
-                    f"because {e}"
-                )
-                logger.exception(msg)
-
+            validated = self._fetch_records(endpoint, headers)
         except httpx.HTTPStatusError as e:
             logger.exception("HTTP error")
-            raise WorksApiError from e
+            self._works_failure = WorksApiError("HTTP error")
+            raise self._works_failure from e
         except httpx.RequestError as e:
             logger.exception("Request error")
-            raise WorksApiError from e
+            self._works_failure = WorksApiError("Request error")
+            raise self._works_failure from e
         except (ValidationError, ValueError) as e:
             logger.exception("Validation or JSON error")
-            raise WorksApiError from e
+            self._works_failure = WorksApiError("Validation or JSON error")
+            raise self._works_failure from e
         except Exception as e:
             logger.exception("Unknown error")
-            raise WorksApiError from e
-        else:
-            return validated.hits.hits
+            self._works_failure = WorksApiError("Unknown error")
+            raise self._works_failure from e
+
+        if validated is None:
+            return []
+
+        try:
+            cache.set(
+                key=cache_key,
+                value=validated.hits.hits,
+                timeout=CACHE_TIMEOUT,
+                version=VERSION,
+            )
+        except Exception as e:
+            msg = (
+                f"Unable to cache works for user: {self.user} because {e}"
+            )
+            logger.exception(msg)
+
+        return validated.hits.hits
 
     def get_works_for_frontend_display(self, style="MLA"):
         """
