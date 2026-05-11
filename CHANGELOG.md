@@ -1,3 +1,9 @@
+## 4.26.4 (2026-05-11)
+
+### Fix
+
+- **loadtest**: hardcode ALLOWED_HOSTS=['*'] to match production
+
 ## 4.26.3 (2026-05-11)
 
 ### Fix
