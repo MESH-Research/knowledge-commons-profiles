@@ -167,12 +167,28 @@ INSTALLED_APPS = [
     "knowledge_commons_profiles.loadtest_app.apps.LoadTestAppConfig",
 ]
 
-INSTALLED_APPS += ["django_extensions", "sslserver"]
+# django_extensions and sslserver are convenient when running loadtest mode
+# locally (the `local` dep group installs them) but aren't available in the
+# `dev`/`production` groups used to build the ECS image. Only add them when
+# they can actually be imported, so the same settings module works in both
+# environments without forcing extra deps into the production install.
+import importlib.util as _importlib_util  # noqa: E402
+
+for _optional_app in ("django_extensions", "sslserver"):
+    if _importlib_util.find_spec(_optional_app) is not None:
+        INSTALLED_APPS.append(_optional_app)
 
 
 # --- Optional django-prometheus ----------------------------------------
 
 if env.bool("LOADTEST_PROMETHEUS", default=False):
+    if _importlib_util.find_spec("django_prometheus") is None:
+        msg = (
+            "LOADTEST_PROMETHEUS=1 was set but django-prometheus is not "
+            "installed. Add it to the deployment image via "
+            "`uv sync --group loadtest` or unset the env var."
+        )
+        raise RuntimeError(msg)
     INSTALLED_APPS = ["django_prometheus", *INSTALLED_APPS]
     MIDDLEWARE = [
         "django_prometheus.middleware.PrometheusBeforeMiddleware",
