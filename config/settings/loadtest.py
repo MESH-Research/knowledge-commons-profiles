@@ -73,7 +73,15 @@ if (
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="loadtest-not-a-real-secret")
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["*"])
+
+# Match production.py: accept any Host header. The deployment sits behind
+# an ALB and the ECS task's health-check probes come in with the container
+# IP and `localhost:5000`, neither of which can be hardcoded ahead of time.
+# Reading DJANGO_ALLOWED_HOSTS from env (as an earlier revision did) makes
+# operators set it in their .envs file — which then bites them when health
+# probes start failing with DisallowedHost. So we hardcode the wildcard
+# here just like production does.
+ALLOWED_HOSTS = ["*"]
 
 ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
 
