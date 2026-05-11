@@ -1,3 +1,9 @@
+## 4.26.3 (2026-05-11)
+
+### Fix
+
+- **loadtest**: gate optional dev apps on import availability
+
 ## 4.26.2 (2026-05-09)
 
 ### Fix
