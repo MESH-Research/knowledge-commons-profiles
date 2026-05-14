@@ -1,3 +1,9 @@
+## 4.27.2 (2026-05-14)
+
+### Perf
+
+- **newprofile**: trim mysql_data view to what the partial actually uses
+
 ## 4.27.1 (2026-05-14)
 
 ### Fix
