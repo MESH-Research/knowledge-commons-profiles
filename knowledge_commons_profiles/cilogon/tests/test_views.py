@@ -350,6 +350,70 @@ class CILogonViewTests(CILogonTestBase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
 
+    def test_app_logout_revocations_run_in_parallel_and_survive_failure(self):
+        """Each (association x token_type_hint) revocation is submitted as
+        its own future. A failure in one must not skip the others, and the
+        request still returns 302."""
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "access_token": "A",
+            "refresh_token": "R",
+        }
+
+        n_assocs = 3
+        mock_assocs = [
+            MagicMock(refresh_token=f"r{i}", access_token=f"a{i}")
+            for i in range(n_assocs)
+        ]
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = True
+        mock_qs.__iter__.return_value = iter(mock_assocs)
+
+        mock_client = MagicMock()
+        mock_client.server_metadata = {"revocation_endpoint": "https://revoke"}
+
+        seen_tokens = []
+
+        def fake_revoke(*args, **kwargs):
+            token_value = kwargs.get("token_value")
+            seen_tokens.append(token_value)
+            # First call fails; others must still run.
+            if len(seen_tokens) == 1:
+                msg = "synthetic"
+                raise ValueError(msg)
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token",
+                side_effect=fake_revoke,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.delete_associations"
+            ),
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            response = app_logout(request)
+
+        self.assertEqual(response.status_code, 302)
+        # n_assocs * 2 hints + 2 hints for the current session token
+        expected_calls = (n_assocs + 1) * 2
+        self.assertEqual(
+            len(seen_tokens),
+            expected_calls,
+            "every (association x token_type_hint) pair must be revoked "
+            f"(expected {expected_calls}, got {len(seen_tokens)})",
+        )
+
     def test_app_logout_deletes_associations_once_per_call(self):
         """N associations must still result in exactly one delete pass."""
         request = self.factory.get("/logout/", **self.headers)

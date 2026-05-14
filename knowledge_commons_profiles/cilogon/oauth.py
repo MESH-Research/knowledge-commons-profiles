@@ -350,6 +350,30 @@ def token_expired(token, user):
     return True
 
 
+def revoke_single_token(
+    *,
+    client,
+    revocation_url,
+    token_with_privilege,
+    token_value,
+    token_type_hint,
+):
+    """Revoke one token via one HTTP POST. Designed for use inside a
+    ThreadPoolExecutor so the (association x token_type_hint) work items
+    can be issued in parallel."""
+    logger.debug(
+        "Revoking %s %s using %s", token_type_hint, token_value, client
+    )
+    client.post(
+        revocation_url,
+        data={"token": token_value, "token_type_hint": token_type_hint},
+        auth=(client.client_id, client.client_secret),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        token=token_with_privilege,
+        timeout=settings.CILOGON_REVOCATION_TIMEOUT,
+    )
+
+
 def revoke_token(
     client,
     revocation_url,
@@ -358,13 +382,9 @@ def revoke_token(
     token_type_hints=None,
 ):
     """
-    Revoke a token
-    :param client: the client
-    :param revocation_url: the revocation url
-    :param token_with_privilege: the token with permission to revoke
-    :param token_revoke: the token to revoke
-    :param token_type_hints: the types of token
-    :return:
+    Revoke a token (serially, one HTTP POST per hint). Kept for callers
+    outside the hot logout path. app_logout uses revoke_single_token in a
+    ThreadPoolExecutor for parallelism.
     """
 
     if token_type_hints is None:
@@ -374,21 +394,12 @@ def revoke_token(
         token_revoke = {}
 
     for token_type_hint in token_type_hints:
-        message = (
-            f"Revoking {token_type_hint} {token_revoke[token_type_hint]} "
-            f"using {client}"
-        )
-        logger.debug(message)
-        client.post(
-            revocation_url,
-            data={
-                "token": token_revoke[token_type_hint],
-                "token_type_hint": token_type_hint,
-            },
-            auth=(client.client_id, client.client_secret),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            token=token_with_privilege,
-            timeout=settings.CILOGON_REVOCATION_TIMEOUT,
+        revoke_single_token(
+            client=client,
+            revocation_url=revocation_url,
+            token_with_privilege=token_with_privilege,
+            token_value=token_revoke[token_type_hint],
+            token_type_hint=token_type_hint,
         )
 
 

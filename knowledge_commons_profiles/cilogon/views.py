@@ -11,6 +11,8 @@ import logging
 import re
 import secrets
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
 from enum import IntEnum
 from typing import Any
 from urllib.parse import quote as urlquote
@@ -61,7 +63,7 @@ from knowledge_commons_profiles.cilogon.oauth import (
     is_request_from_actual_domain,
 )
 from knowledge_commons_profiles.cilogon.oauth import oauth
-from knowledge_commons_profiles.cilogon.oauth import revoke_token
+from knowledge_commons_profiles.cilogon.oauth import revoke_single_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
@@ -417,57 +419,45 @@ def app_logout(
     )
 
     if token_associations.exists():
-        # for each relevant token, revoke on CILogon
-        for token_association in token_associations:
-            # for each relevant token, revoke on CILogon, with this token
-            # last
-            try:
-                revoke_token(
+        # Build a flat list of (token_value, token_type_hint) work items
+        # spanning every association plus the current session's token, then
+        # fan out the HTTP POSTs across a ThreadPoolExecutor. Each
+        # revoke_single_token call has its own bounded timeout
+        # (CILOGON_REVOCATION_TIMEOUT) so a stalled IDP cannot extend the
+        # overall response.
+        work_items: list[tuple[str, str]] = []
+        for assoc in token_associations:
+            work_items.append((assoc.refresh_token, "refresh_token"))
+            work_items.append((assoc.access_token, "access_token"))
+        work_items.append((token.get("refresh_token", ""), "refresh_token"))
+        work_items.append((token.get("access_token", ""), "access_token"))
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [
+                executor.submit(
+                    revoke_single_token,
                     client=client,
                     revocation_url=revocation_endpoint,
                     token_with_privilege=token,
-                    token_revoke={
-                        "refresh_token": token_association.refresh_token,
-                        "access_token": token_association.access_token,
-                    },
+                    token_value=value,
+                    token_type_hint=hint,
                 )
-            except (
-                TypeError,
-                KeyError,
-                ValueError,
-                OAuthError,
-                requests.RequestException,
-            ):
-                logger.warning(
-                    "Unable to revoke token %s",
-                    token_association,
-                )
+                for value, hint in work_items
+            ]
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except (
+                    TypeError,
+                    KeyError,
+                    ValueError,
+                    OAuthError,
+                    requests.RequestException,
+                ):
+                    logger.warning("Unable to revoke a token during logout")
 
         # delete these token associations that have now been revoked
         delete_associations(token_associations)
-
-        # now revoke our token, in case it wasn't in the list
-        try:
-            revoke_token(
-                client=client,
-                revocation_url=revocation_endpoint,
-                token_with_privilege=token,
-                token_revoke={
-                    "refresh_token": token.get("refresh_token", ""),
-                    "access_token": token.get("access_token", ""),
-                },
-            )
-        except (
-            TypeError,
-            KeyError,
-            ValueError,
-            OAuthError,
-            requests.RequestException,
-        ):
-            logger.warning(
-                "Unable to revoke token %s",
-                token,
-            )
 
     # Kill the local Django session immediately
     try:
