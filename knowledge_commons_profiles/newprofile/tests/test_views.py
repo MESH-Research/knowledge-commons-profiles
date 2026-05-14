@@ -100,6 +100,73 @@ class WorksDepositsTests(django.test.TransactionTestCase):
             username="testuser", password="testpass"
         )
 
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache"
+            }
+        }
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
+    def test_works_deposits_caches_response(self, mock_api):
+        """A second hit on the same URL inside the cache window must reuse
+        the rendered HTML and skip the API entirely."""
+        from django.core.cache import cache
+
+        cache.clear()
+
+        api_instance = MagicMock()
+        profile_mock = MagicMock()
+        profile_mock.show_works = True
+        profile_mock.reference_style = "MLA"
+        api_instance.profile = profile_mock
+        type(api_instance).works_html = property(lambda self: {})
+        type(api_instance).works_chart_json = property(lambda self: "{}")
+        mock_api.return_value = api_instance
+
+        request1 = self.factory.get("/profile/testuser/works")
+        request1.user = self.user
+        response1 = works_deposits(request1, "testuser")
+
+        request2 = self.factory.get("/profile/testuser/works")
+        request2.user = self.user
+        response2 = works_deposits(request2, "testuser")
+
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response1.content, response2.content)
+        self.assertEqual(
+            mock_api.call_count,
+            1,
+            "second call should hit the cache and not rebuild the API",
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
+    def test_works_deposits_skips_chart_when_show_works_false(self, mock_api):
+        """works_chart_json must not be computed when show_works is False —
+        building the chart pulls and re-shapes the works data on each call,
+        which is wasted work if the user has hidden the panel."""
+        api_instance = MagicMock()
+        profile_mock = MagicMock()
+        profile_mock.show_works = False
+        profile_mock.reference_style = "MLA"
+        api_instance.profile = profile_mock
+
+        chart_calls = MagicMock(return_value="{}")
+        type(api_instance).works_chart_json = property(
+            lambda self: chart_calls()
+        )
+
+        mock_api.return_value = api_instance
+
+        request = self.factory.get("/profile/testuser/works")
+        request.user = self.user
+
+        response = works_deposits(request, "testuser")
+
+        self.assertEqual(response.status_code, 200)
+        chart_calls.assert_not_called()
+
     @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
     async def test_works_deposits(self, mock_api):
         # Set up mock

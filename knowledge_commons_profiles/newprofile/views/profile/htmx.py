@@ -3,11 +3,20 @@ import logging
 
 import django.db
 from django.conf import settings
+from django.core.cache import cache
+from django.http import HttpResponse
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 from knowledge_commons_profiles.newprofile.api import API
 from knowledge_commons_profiles.newprofile.works import WorksApiError
+
+# Short TTL for HTMX fragment caches. Long enough that the second hit of a
+# profile page (same user clicks through and comes back) is a Redis GET;
+# short enough that user-visible profile edits show up within a minute
+# without explicit invalidation.
+HTMX_FRAGMENT_CACHE_TTL = 60
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +92,11 @@ def works_deposits(request, username, style=None):
     """
     logger.debug("Getting works deposits for %s", username)
 
+    cache_key = f"htmx_works_deposits:{username}:{style or 'default'}"
+    cached_html = cache.get(cache_key)
+    if cached_html is not None:
+        return HttpResponse(cached_html)
+
     try:
         api = API(
             request,
@@ -96,20 +110,29 @@ def works_deposits(request, username, style=None):
             api.profile.reference_style if style is None else style
         )
 
-        # Get the works deposits for this username
-        user_works_deposits = api.works_html if api.profile.show_works else []
+        # Skip both the works data and the chart when the user has hidden
+        # the panel — the chart pulls and reshapes the works data, so it's
+        # pure waste when the panel won't render.
+        if api.profile.show_works:
+            user_works_deposits = api.works_html
+            chart = api.works_chart_json
+        else:
+            user_works_deposits = []
+            chart = "{}"
 
-        return render(
-            request,
+        html = render_to_string(
             "newprofile/partials/works_deposits.html",
             {
                 "works_headings_ordered": user_works_deposits,
                 "works_html": user_works_deposits,
                 "profile": api.profile,
                 "show_works": api.profile.show_works,
-                "chart": api.works_chart_json,
+                "chart": chart,
             },
+            request=request,
         )
+        cache.set(cache_key, html, timeout=HTMX_FRAGMENT_CACHE_TTL)
+        return HttpResponse(html)
 
     except (django.db.utils.OperationalError, WorksApiError) as ex:
         logger.warning(
