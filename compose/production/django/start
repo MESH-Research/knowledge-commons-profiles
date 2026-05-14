@@ -8,4 +8,16 @@ echo "Collecting static files"
 uv run python /app/manage.py collectstatic --noinput
 
 echo "Running gunicorn..."
-exec uv run gunicorn config.wsgi --bind 0.0.0.0:5000 --timeout 30 --chdir=/app
+exec uv run gunicorn config.wsgi \
+    --bind 0.0.0.0:5000 \
+    --chdir=/app \
+    --workers "${GUNICORN_WORKERS:-3}" \
+    --threads "${GUNICORN_THREADS:-8}" \
+    --worker-class gthread \
+    --worker-tmp-dir /dev/shm \
+    --timeout 30 \
+    --graceful-timeout 30 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --access-logfile -
