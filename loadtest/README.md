@@ -384,6 +384,7 @@ Then open `http://<driver-host>:8089` and start the run.
 | `locustfile_same_user.py` | Pool of 10 subjects hammered by every VU; validates `select_for_update` upsert. |
 | `locustfile_broker.py` | Cross-app SSO via `?return_to=…` and back-channel nonce verify. |
 | `locustfile_soak.py` | Steady mixed load, designed for 4–6h soak. |
+| `locustfile_profile.py` | Profile-page workload — shell + 7 HTMX fragments per view. Anonymous by default; set `PROFILE_REQUIRE_LOGIN=1` to log VUs in first. |
 
 ## Test sequence
 
