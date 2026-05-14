@@ -1,0 +1,57 @@
+# Remote-worker stack for distributed Locust runs.
+#
+# Use on boxes that should connect back to a Locust master running on a
+# different host. The master + its own local workers live in
+# docker-compose.loadtest-driver.yml; this file only spins up additional
+# worker processes that join the master's pool over TCP 5557.
+#
+# Requirements before bringing this up:
+#   * MASTER_HOST set to the address of the master box (private IP if
+#     the worker box and master box share a VPC, otherwise public IP /
+#     DNS). The worker must be able to reach MASTER_HOST:5557.
+#   * The same locust/ directory (locustfiles + _common.py + subjects.txt)
+#     present on this box at ./locust — workers import the locustfile and
+#     read subjects.txt locally, so the contents MUST match the master.
+#   * Same Locust version on master and workers — easiest way is to build
+#     the image from the same git revision on every box.
+#
+# Bring up N worker processes:
+#   MASTER_HOST=10.0.1.42 \
+#   LOCUST_HOST=https://profile.hcommons-test.org \
+#   docker compose -f docker-compose.loadtest-worker.yml \
+#       up --build --scale locust-worker=8
+#
+# Notes on scale:
+#   * One worker = one Python process. With FastHttpUser, a single worker
+#     process can drive hundreds of greenlet-backed VUs. Rule of thumb:
+#     one worker per CPU core on this box, then let the master assign as
+#     many users as you want. 32 worker processes on an 8-core box just
+#     means context-switch overhead and lower aggregate RPS.
+
+services:
+  locust-worker:
+    build:
+      context: ./locust
+    image: kc-loadtest/locust:latest
+    # Host networking so the worker can reach MASTER_HOST directly and
+    # so that any DNS the IDMS hands back (e.g. a public mock-oidc URL)
+    # resolves using the box's own resolver rather than docker's.
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      locust --worker
+      --master-host ${MASTER_HOST:?MASTER_HOST is required (master box IP/DNS)}
+      --master-port ${MASTER_PORT:-5557}
+      -f /app/${LOCUSTFILE:-locustfile_login_only.py}
+    environment:
+      # MOCK_IDP_BASE is only read by _common.py if a locustfile needs it
+      # directly; the OIDC flow itself follows whatever URL the IDMS hands
+      # back in the 302 to /authorize.
+      MOCK_IDP_BASE: ${MOCK_IDP_BASE:-}
+      LOADTEST_SUBJECTS: /app/subjects.txt
+      BROKER_RETURN_TO: ${BROKER_RETURN_TO:-}
+      STATIC_API_BEARER: ${STATIC_API_BEARER:-}
+      LOADTEST_SSL_VERIFY: ${LOADTEST_SSL_VERIFY:-0}
+    volumes:
+      - ./locust:/app
