@@ -1,3 +1,9 @@
+## 4.27.0 (2026-05-14)
+
+### Feat
+
+- **loadtest**: add profile-page locustfile with per-HTMX-fragment hops
+
 ## 4.26.7 (2026-05-14)
 
 ### Fix
