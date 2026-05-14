@@ -1,3 +1,13 @@
+## 4.27.1 (2026-05-14)
+
+### Fix
+
+- **loadtest**: declare WORDPRESS_DOMAIN/WORKS_DOMAIN in loadtest settings
+
+### Perf
+
+- **newprofile**: cache works_deposits HTMX fragment and skip chart when works hidden
+
 ## 4.27.0 (2026-05-14)
 
 ### Feat
