@@ -17,13 +17,14 @@ import os
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
+from _common import LOADTEST_INSECURE
 from _common import callback_path_with_query
 from _common import inject_login_hint
 from _common import load_subjects
 from _common import pick_subject
-from locust import HttpUser
 from locust import between
 from locust import task
+from locust.contrib.fasthttp import FastHttpUser
 
 SUBJECTS = load_subjects()
 RETURN_TO = os.environ.get(
@@ -34,7 +35,8 @@ FINAL_REDIRECT = os.environ.get("BROKER_FINAL_REDIRECT", "")
 STATIC_API_BEARER = os.environ.get("STATIC_API_BEARER", "")
 
 
-class BrokerUser(HttpUser):
+class BrokerUser(FastHttpUser):
+    insecure = LOADTEST_INSECURE
     wait_time = between(1, 4)
 
     @task

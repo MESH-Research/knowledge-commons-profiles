@@ -7,18 +7,20 @@ back in to keep ~5% of traffic on the login path.
 
 from __future__ import annotations
 
+from _common import LOADTEST_INSECURE
 from _common import load_subjects
 from _common import perform_login
 from _common import perform_logout
 from _common import pick_subject
-from locust import HttpUser
 from locust import between
 from locust import task
+from locust.contrib.fasthttp import FastHttpUser
 
 SUBJECTS = load_subjects()
 
 
-class MixedUser(HttpUser):
+class MixedUser(FastHttpUser):
+    insecure = LOADTEST_INSECURE
     wait_time = between(3, 10)
 
     def on_start(self) -> None:

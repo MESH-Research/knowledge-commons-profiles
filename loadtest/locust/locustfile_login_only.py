@@ -6,18 +6,20 @@ then logs out. Used to find the sustainable logins/sec ceiling.
 
 from __future__ import annotations
 
+from _common import LOADTEST_INSECURE
 from _common import load_subjects
 from _common import perform_login
 from _common import perform_logout
 from _common import pick_subject
-from locust import HttpUser
 from locust import between
 from locust import task
+from locust.contrib.fasthttp import FastHttpUser
 
 SUBJECTS = load_subjects()
 
 
-class LoginOnlyUser(HttpUser):
+class LoginOnlyUser(FastHttpUser):
+    insecure = LOADTEST_INSECURE
     wait_time = between(1, 3)
 
     @task

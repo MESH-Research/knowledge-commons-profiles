@@ -11,12 +11,13 @@ from __future__ import annotations
 import os
 import random
 
+from _common import LOADTEST_INSECURE
 from _common import load_subjects
 from _common import perform_login
 from _common import perform_logout
-from locust import HttpUser
 from locust import between
 from locust import task
+from locust.contrib.fasthttp import FastHttpUser
 
 POOL_SIZE = int(os.environ.get("LOADTEST_SAME_USER_POOL", "10"))
 SUBJECTS = load_subjects()[:POOL_SIZE]
@@ -25,7 +26,8 @@ if not SUBJECTS:
     raise RuntimeError(msg)
 
 
-class SameUserContentionUser(HttpUser):
+class SameUserContentionUser(FastHttpUser):
+    insecure = LOADTEST_INSECURE
     wait_time = between(0.1, 0.5)
 
     @task

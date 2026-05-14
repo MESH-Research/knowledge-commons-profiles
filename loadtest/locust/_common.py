@@ -3,6 +3,20 @@
 Drives the real CILogon-shaped OIDC flow against the mock IdP. The tasks
 elsewhere import the helpers from here so the four scenarios stay
 consistent in how they name hops, harvest CSRF, and parse redirects.
+
+These helpers target Locust's FastHttpUser (geventhttpclient under the
+hood) rather than the requests-backed HttpUser, because FastHttpUser
+sustains ~5-10x the per-VU request rate the suite was previously
+bottlenecked on. The client surface used here (`get`, `post`,
+`base_url`, `r.status_code`, `r.headers.get(...)`) is identical between
+the two, with two exceptions that this file abstracts away:
+
+- SSL verification: FastHttpSession takes `insecure=` at construction
+  via the `insecure` class attribute on the User (see LOADTEST_INSECURE
+  below) rather than a `verify=False` on a requests.Session.
+- Cookie access: FastHttpSession exposes `cookiejar` (a stdlib
+  http.cookiejar.CookieJar) instead of requests' `cookies` dict, so the
+  CSRF lookup uses `get_cookie()` below.
 """
 
 from __future__ import annotations
@@ -13,28 +27,11 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 # --- TLS verification toggle ---------------------------------------------
-# Locust's HttpUser.client is a requests.Session subclass. By default we
-# disable certificate verification so the suite can hit a local IDMS with
-# a self-signed dev cert without exploding. Set LOADTEST_SSL_VERIFY=1 to
-# re-enable verification (the right setting for any non-dev target).
+# Set LOADTEST_SSL_VERIFY=1 to enable certificate verification (the right
+# setting for any non-dev target). Default off so the suite can hit a
+# local IDMS with a self-signed dev cert.
 LOADTEST_SSL_VERIFY = os.environ.get("LOADTEST_SSL_VERIFY", "0") == "1"
-
-if not LOADTEST_SSL_VERIFY:
-    import urllib3
-
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    try:
-        from locust.clients import HttpSession
-
-        _orig_session_init = HttpSession.__init__
-
-        def _patched_session_init(self, *args, **kwargs):
-            _orig_session_init(self, *args, **kwargs)
-            self.verify = False
-
-        HttpSession.__init__ = _patched_session_init
-    except ImportError:  # pragma: no cover — only matters when locust is installed
-        pass
+LOADTEST_INSECURE = not LOADTEST_SSL_VERIFY
 
 DEFAULT_SUBJECTS_PATH = Path(
     os.environ.get("LOADTEST_SUBJECTS", "/tmp/loadtest_subjects.txt")  # noqa: S108
@@ -74,6 +71,14 @@ def callback_path_with_query(callback_url: str) -> str:
     if parsed.query:
         path = f"{path}?{parsed.query}"
     return path
+
+
+def get_cookie(client, name: str) -> str | None:
+    """Look up a cookie by name from a FastHttpSession's cookiejar."""
+    for cookie in client.cookiejar:
+        if cookie.name == name:
+            return cookie.value
+    return None
 
 
 def perform_login(client, sub: str, *, name_prefix: str = "") -> bool:
@@ -116,21 +121,18 @@ def perform_login(client, sub: str, *, name_prefix: str = "") -> bool:
         allow_redirects=False,
         name=f"{p}03 /cilogon/callback",
     )
-    if r.status_code not in (302, 200):
-        return False
-
-    return True
+    return r.status_code in (302, 200)
 
 
 def perform_logout(client, *, name_prefix: str = "") -> bool:
     """POST /logout/ using the csrftoken cookie. Returns True on success."""
     p = name_prefix
-    csrf = client.cookies.get("csrftoken")
+    csrf = get_cookie(client, "csrftoken")
     if not csrf:
         # Touch a page that emits the cookie. /my-profile/ requires login;
         # if we hit it after a successful login, Django sets csrftoken.
         client.get("/my-profile/", allow_redirects=False, name=f"{p}04a /my-profile")
-        csrf = client.cookies.get("csrftoken") or ""
+        csrf = get_cookie(client, "csrftoken") or ""
 
     headers = {
         "X-CSRFToken": csrf,
