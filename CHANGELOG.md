@@ -1,3 +1,16 @@
+## 4.26.7 (2026-05-14)
+
+### Fix
+
+- **cilogon**: collapse N delete_associations calls into one, drop dead hard_refresh write
+- **cilogon**: bound revoke_token HTTP calls with a 5s timeout
+
+### Perf
+
+- **cilogon**: replace django_session full scan with Redis user→sessions index
+- **cilogon**: fan out token revocation in app_logout via ThreadPoolExecutor
+- **cilogon**: add compound index on TokenUserAgentAssociations(user_agent, user_name, app)
+
 ## 4.26.6 (2026-05-14)
 
 ### Perf
