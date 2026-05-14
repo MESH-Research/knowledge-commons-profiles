@@ -1,3 +1,9 @@
+## 4.26.6 (2026-05-14)
+
+### Perf
+
+- **django**: tune gunicorn for I/O-bound concurrency on shared-CPU container
+
 ## 4.26.5 (2026-05-14)
 
 ### Perf
