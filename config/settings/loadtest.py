@@ -117,6 +117,21 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 DEFAULT_FROM_EMAIL = "loadtest@example.invalid"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
+# --- WordPress / Works domains read by the profile HTMX views -----------
+# Not defined in base.py; every environment-specific settings module
+# declares its own. Without these, `settings.WORDPRESS_DOMAIN` raises
+# AttributeError when /htmx/mysql-data/ and /htmx/works-deposits/ render.
+WORDPRESS_DOMAIN = env("WORDPRESS_DOMAIN", default="hcommons.org")
+WORKS_DOMAIN = env("WORKS_DOMAIN", default="works.hcommons.org")
+WORDPRESS_EMAIL_UPDATE_URL = env(
+    "WORDPRESS_EMAIL_UPDATE_URL",
+    default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-email",
+)
+WORDPRESS_AVATAR_UPDATE_URL = env(
+    "WORDPRESS_AVATAR_UPDATE_URL",
+    default=f"https://{WORDPRESS_DOMAIN}/wp-json/idms/update-avatar",
+)
+
 # --- Storage: keep it local. Loads tests don't write static/media. ------
 
 STORAGES = {
