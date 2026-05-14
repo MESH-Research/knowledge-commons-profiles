@@ -374,10 +374,6 @@ def app_logout(
     client.load_server_metadata()
     revocation_endpoint = client.server_metadata.get("revocation_endpoint")
 
-    # set flag to middleware
-    request.session["hard_refresh"] = True
-    request.session.save()
-
     # get current username
     user_name = user_name if user_name else request.user.username
 
@@ -447,8 +443,8 @@ def app_logout(
                     token_association,
                 )
 
-            # delete these token associations that have now been revoked
-            delete_associations(token_associations)
+        # delete these token associations that have now been revoked
+        delete_associations(token_associations)
 
         # now revoke our token, in case it wasn't in the list
         try:

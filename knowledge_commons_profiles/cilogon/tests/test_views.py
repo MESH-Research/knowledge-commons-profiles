@@ -350,6 +350,54 @@ class CILogonViewTests(CILogonTestBase):
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
 
+    def test_app_logout_deletes_associations_once_per_call(self):
+        """N associations must still result in exactly one delete pass."""
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "access_token": "A",
+            "refresh_token": "R",
+        }
+
+        mock_assocs = [
+            MagicMock(refresh_token=f"r{i}", access_token=f"a{i}")
+            for i in range(5)
+        ]
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = True
+        mock_qs.__iter__.return_value = iter(mock_assocs)
+
+        mock_client = MagicMock()
+        mock_client.server_metadata = {"revocation_endpoint": "https://revoke"}
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client",
+                return_value=mock_client,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.revoke_token"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.delete_associations"
+            ) as delete_mock,
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            app_logout(request)
+
+            self.assertEqual(
+                delete_mock.call_count,
+                1,
+                "delete_associations must run once for the whole queryset, "
+                "not once per association "
+                f"(was called {delete_mock.call_count} times)",
+            )
+
     def test_callback_handles_store_session_variables_exception(self):
         request = self.factory.get("/auth/callback/")
         request.user = self.user
