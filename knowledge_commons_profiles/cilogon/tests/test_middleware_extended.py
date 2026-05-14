@@ -499,7 +499,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
                 mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 side_effect=mock_revoke_token,
             ),
             patch(
@@ -536,7 +536,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
                 return_value=True,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 return_value=True,
             ),
             patch.object(
@@ -575,7 +575,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
 
         with (
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 side_effect=corrupt_session,
             ),
             patch(
@@ -622,7 +622,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
                 return_value=True,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 side_effect=concurrent_delete,
             ),
             patch(
@@ -657,7 +657,7 @@ class GarbageCollectionMiddlewareEdgeCaseTests(CILogonTestBase):
                 return_value=True,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 return_value=True,
             ),
             patch(
@@ -773,7 +773,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
                 mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 return_value=True,
             ),
             patch(
@@ -1002,7 +1002,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
                 mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 side_effect=mock_revoke_token,
             ),
             patch(
@@ -1047,7 +1047,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
                 return_value=True,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 return_value=True,
             ),
             patch.object(
@@ -1088,7 +1088,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
                 return_value=True,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 side_effect=concurrent_delete,
             ),
             patch(
@@ -1123,7 +1123,7 @@ class MiddlewareIntegrationTests(CILogonTestBase):
                 return_value=True,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.middleware.revoke_token",
                 return_value=True,
             ),
             patch(

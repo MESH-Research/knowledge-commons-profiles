@@ -171,7 +171,7 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token"
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token"
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations"
@@ -230,7 +230,7 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token"
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token"
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations"
@@ -269,7 +269,7 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token"
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token"
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations"
@@ -301,7 +301,7 @@ class CILogonViewTests(CILogonTestBase):
                 "knowledge_commons_profiles.cilogon.views.oauth.create_client"
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token"
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token"
             ),
             patch("knowledge_commons_profiles.cilogon.views.logout"),
         ):
@@ -338,7 +338,7 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token",
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token",
                 side_effect=ValueError("revocation failed"),
             ),
             patch(
@@ -349,6 +349,63 @@ class CILogonViewTests(CILogonTestBase):
             response = app_logout(request)
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, "/")
+
+    def test_app_logout_uses_redis_index_to_delete_user_sessions(self):
+        """Logout must consume the auth-user session index and delete
+        each session via SessionStore, not scan django_session.all()."""
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+        request.session["oidc_token"] = {
+            "access_token": "A",
+            "refresh_token": "R",
+        }
+
+        mock_qs = MagicMock()
+        mock_qs.exists.return_value = False
+
+        fake_redis = MagicMock()
+        fake_redis.smembers.return_value = {b"sess-1", b"sess-2"}
+
+        deleted_keys: list[str] = []
+
+        class FakeSessionStore:
+            def __init__(self, key):
+                deleted_keys.append(key)
+
+            def delete(self):
+                pass
+
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.views.TokenUserAgentAssociations.objects.filter",
+                return_value=mock_qs,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_redis_connection",
+                return_value=fake_redis,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.SessionStore",
+                FakeSessionStore,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.DjangoSession.objects.all"
+            ) as dj_all,
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+        ):
+            response = app_logout(request)
+
+        self.assertEqual(response.status_code, 302)
+        fake_redis.smembers.assert_called_once()
+        smembers_args, _ = fake_redis.smembers.call_args
+        self.assertIn(str(self.user.id), smembers_args[0])
+        self.assertEqual(sorted(deleted_keys), ["sess-1", "sess-2"])
+        fake_redis.delete.assert_called_once()
+        dj_all.assert_not_called()
 
     def test_app_logout_revocations_run_in_parallel_and_survive_failure(self):
         """Each (association x token_type_hint) revocation is submitted as
@@ -445,7 +502,7 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=mock_client,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token"
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token"
             ),
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations"

@@ -26,9 +26,9 @@ from django.utils.deprecation import MiddlewareMixin
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import oauth
+from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import token_expired
-from knowledge_commons_profiles.cilogon.views import revoke_token
 
 logger = logging.getLogger(__name__)
 

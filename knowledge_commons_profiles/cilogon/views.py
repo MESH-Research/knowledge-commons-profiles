@@ -29,6 +29,7 @@ from django.contrib.auth import login
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.sessions.models import Session as DjangoSession
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -44,6 +45,8 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django_redis import get_redis_connection
+from redis.exceptions import RedisError
 
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
@@ -68,6 +71,7 @@ from knowledge_commons_profiles.cilogon.oauth import send_association_message
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import validate_return_to
+from knowledge_commons_profiles.cilogon.signals import user_session_key
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
 )
@@ -350,6 +354,7 @@ def silent_login(request):
 # ruff: noqa: PLR0913
 # ruff: noqa: C901
 # ruff: noqa: PLR0912
+# ruff: noqa: PLR0915
 def app_logout(
     request,
     redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT,
@@ -474,15 +479,34 @@ def app_logout(
         )
         logger.info(msg)
 
-        to_delete: list[DjangoSession] = []
-
-        for session in DjangoSession.objects.all():
-            decoded = session.get_decoded()
-            if decoded.get("_auth_user_id") == str(user.pk):
-                to_delete.append(session)
-
-        for session in to_delete:
-            session.delete()
+        try:
+            redis = get_redis_connection("default")
+            index_key = user_session_key(user.id)
+            session_keys = redis.smembers(index_key)
+            for raw_key in session_keys:
+                key = (
+                    raw_key.decode()
+                    if isinstance(raw_key, bytes)
+                    else raw_key
+                )
+                # SessionStore(key).delete() is a silent no-op for a key
+                # that's already been swept by clearsessions, so we don't
+                # need to guard the call.
+                SessionStore(key).delete()
+            redis.delete(index_key)
+        except RedisError:
+            # If the index is unreachable, fall back to the safe (slower)
+            # behaviour rather than leaving sessions live.
+            logger.warning(
+                "Redis user-session index unavailable; falling back to "
+                "full django_session scan for %s",
+                user_name,
+                exc_info=True,
+            )
+            for session in DjangoSession.objects.all():
+                decoded = session.get_decoded()
+                if decoded.get("_auth_user_id") == str(user.pk):
+                    session.delete()
 
     logout(request)
 

@@ -498,7 +498,7 @@ class LogoutTests(CILogonTestBase):
             patch(
                 "knowledge_commons_profiles.cilogon.views.delete_associations"
             ) as delete_mock,
-            patch("knowledge_commons_profiles.cilogon.views.revoke_token"),
+            patch("knowledge_commons_profiles.cilogon.views.revoke_single_token"),
             patch(
                 "knowledge_commons_profiles.cilogon.views.oauth.create_client"
             ) as client_mock,
@@ -611,7 +611,7 @@ class LogoutTests(CILogonTestBase):
                 "knowledge_commons_profiles.cilogon.views.logout_all_endpoints_sync"
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.revoke_token"
+                "knowledge_commons_profiles.cilogon.views.revoke_single_token"
             ),
         ):
             mock_client = MagicMock()
