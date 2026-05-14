@@ -1,3 +1,9 @@
+## 4.26.5 (2026-05-14)
+
+### Perf
+
+- **loadtest**: switch Locust users to FastHttpUser for higher per-VU throughput
+
 ## 4.26.4 (2026-05-11)
 
 ### Fix
