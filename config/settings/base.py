@@ -434,6 +434,10 @@ CILOGON_REFRESH_TOKEN_TIMEOUT = 300
 CILOGON_LOGOUT_URL = "https://cilogon.org/logout"
 CILOGON_TOKEN_CLEAROUT_DAYS = 4
 CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
+# Per-request timeout (seconds) for CILogon /revoke calls. Logout fires one
+# of these per token-type-hint per association; without a bound, a stalled
+# IDP would block the response indefinitely.
+CILOGON_REVOCATION_TIMEOUT = env.float("CILOGON_REVOCATION_TIMEOUT", default=5.0)
 
 # Identity broker configuration for third-party app authentication
 BROKER_REGISTERED_APPS = {

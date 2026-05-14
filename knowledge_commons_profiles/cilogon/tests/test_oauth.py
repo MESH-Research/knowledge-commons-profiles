@@ -311,6 +311,25 @@ class TokenManagementTests(CILogonTestBase):
 
         self.assertIsNone(result)
 
+    def test_revoke_token_passes_bounded_timeout(self):
+        """A misbehaving IDP must not be able to stall logout forever."""
+        client = Mock()
+        client.post.return_value = Mock(status_code=200)
+        revoke_token(
+            client,
+            "https://test.cilogon.org/oauth2/revoke",
+            "access_token_123",
+            {"refresh_token": "r", "access_token": "a"},
+        )
+
+        for call in client.post.call_args_list:
+            timeout = call.kwargs.get("timeout")
+            self.assertIsNotNone(
+                timeout,
+                "revoke_token must pass timeout= to client.post",
+            )
+            self.assertGreater(float(timeout), 0)
+
 
 class AssociationManagementTests(CILogonTestBase):
     """Test cases for user association management"""

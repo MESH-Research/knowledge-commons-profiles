@@ -388,6 +388,7 @@ def revoke_token(
             auth=(client.client_id, client.client_secret),
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             token=token_with_privilege,
+            timeout=settings.CILOGON_REVOCATION_TIMEOUT,
         )
 
 
