@@ -635,6 +635,46 @@ class MySQLDataTests(TestCase):
         # Assert template was rendered with correct context
         self.assertEqual(response.status_code, 200)
 
+    @patch("knowledge_commons_profiles.newprofile.views.profile.htmx.API")
+    def test_mysql_data_does_not_build_second_api_for_other_profile(
+        self, mock_api
+    ):
+        """Authenticated viewer on someone else's profile must not trigger
+        a second API() instantiation just to populate template fields the
+        partial doesn't use."""
+        mock_profile = MagicMock()
+        mock_profile.show_commons_groups = True
+        mock_profile.show_commons_sites = True
+        mock_profile.show_recent_activity = True
+
+        api_instance = MagicMock()
+        api_instance.get_profile_info.return_value = {
+            "name": "Other User",
+            "profile": mock_profile,
+        }
+        api_instance.follower_count.return_value = (True, 7)
+        api_instance.get_groups.return_value = []
+        api_instance.get_user_blogs.return_value = []
+        api_instance.get_activity.return_value = []
+        mock_api.return_value = api_instance
+
+        other_user = User.objects.create_user(
+            username="otheruser", password="testpass"
+        )
+
+        request = self.factory.get("/profile/otheruser/mysql_data")
+        request.user = self.user  # viewer != profile owner
+
+        response = mysql_data(request, other_user.username)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            mock_api.call_count,
+            1,
+            "API should be instantiated once for the viewed profile, "
+            "not again for the viewer",
+        )
+
     @patch(
         "knowledge_commons_profiles.newprofile.views.profile.htmx.API",
         side_effect=django.db.utils.OperationalError,

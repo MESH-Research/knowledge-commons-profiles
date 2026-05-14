@@ -380,90 +380,42 @@ def mysql_data(request, username):
         api = API(request, username, use_wordpress=True, create=False)
 
         profile_info_obj = api.get_profile_info()
-
-        if username == request.user.username:
-            api_me = api
-            my_profile_info = profile_info_obj
-        else:
-            # get logged in user profile
-            api_me = (
-                API(
-                    request,
-                    request.user.username,
-                    use_wordpress=True,
-                    create=False,
-                )
-                if request.user.is_authenticated
-                else None
-            )
-
-            my_profile_info = api_me.get_profile_info() if api_me else None
+        profile_model = profile_info_obj["profile"]
 
         # this method is special and returns a boolean for MySql connection
         success, follower_count = api.follower_count()
 
         if success:
-            context = {
-                "username": username,
-                "profile_image": api.get_profile_photo(),
-                "groups": (
-                    api.get_groups()
-                    if profile_info_obj["profile"].show_commons_groups
-                    else None
-                ),
-                "logged_in_profile": my_profile_info,
-                "logged_in_user": (
-                    request.user if request.user.is_authenticated else None
-                ),
-                "memberships": api.get_memberships(),
-                "follower_count": (
-                    follower_count if follower_count != "None" else 0
-                ),
-                "commons_sites": (
-                    api.get_user_blogs()
-                    if profile_info_obj["profile"].show_commons_sites
-                    else None
-                ),
-                "activities": (
-                    api.get_activity()
-                    if profile_info_obj["profile"].show_recent_activity
-                    else None
-                ),
-                "logout_url": reverse("logout"),
-                "profile": profile_info_obj,
-                "show_commons_groups": profile_info_obj[
-                    "profile"
-                ].show_commons_groups,
-                "show_commons_sites": profile_info_obj[
-                    "profile"
-                ].show_commons_sites,
-                "show_recent_activity": profile_info_obj[
-                    "profile"
-                ].show_recent_activity,
-                "wordpress_domain": settings.WORDPRESS_DOMAIN,
-            }
+            groups = (
+                api.get_groups() if profile_model.show_commons_groups else []
+            )
+            commons_sites = (
+                api.get_user_blogs()
+                if profile_model.show_commons_sites
+                else []
+            )
+            activities = (
+                api.get_activity()
+                if profile_model.show_recent_activity
+                else []
+            )
+            follower_count_value = (
+                follower_count if follower_count != "None" else 0
+            )
         else:
-            context = {
-                "username": username,
-                "cover_image": api.get_cover_image(),
-                "groups": [],
-                "logged_in_profile": my_profile_info,
-                "logged_in_user": (
-                    request.user if request.user.is_authenticated else None
-                ),
-                "memberships": [],
-                "follower_count": None,
-                "commons_sites": [],
-                "activities": [],
-                "short_notifications": None,
-                "notification_count": 0,
-                "logged_in_profile_image": (
-                    api_me.get_profile_photo() if api_me else None
-                ),
-                "logout_url": reverse("logout"),
-                "profile": profile_info_obj,
-                "wordpress_domain": settings.WORDPRESS_DOMAIN,
-            }
+            groups = []
+            commons_sites = []
+            activities = []
+            follower_count_value = None
+
+        context = {
+            "follower_count": follower_count_value,
+            "groups": groups,
+            "activities": activities,
+            "commons_sites": commons_sites,
+            "profile": profile_info_obj,
+            "wordpress_domain": settings.WORDPRESS_DOMAIN,
+        }
 
         return render(
             request,
@@ -473,22 +425,14 @@ def mysql_data(request, username):
 
     except django.db.utils.OperationalError as ex:
         logger.warning("Unable to connect to database for MySQL data: %s", ex)
-        # Return safe fallback context
+        # Safe fallback. profile=None makes the template's
+        # `profile.profile.show_*` lookups silently falsy, so every panel
+        # renders in its hide-state without raising.
         context = {
-            "username": username,
-            "cover_image": None,
-            "profile_image": None,
-            "groups": None,
-            "logged_in_profile": None,
-            "logged_in_user": None,
-            "memberships": None,
             "follower_count": None,
-            "commons_sites": None,
-            "activities": None,
-            "short_notifications": None,
-            "notification_count": 0,
-            "logged_in_profile_image": None,
-            "logout_url": reverse("logout"),
+            "groups": [],
+            "activities": [],
+            "commons_sites": [],
             "profile": None,
             "wordpress_domain": settings.WORDPRESS_DOMAIN,
         }
