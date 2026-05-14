@@ -52,6 +52,14 @@ class TokenUserAgentAssociations(models.Model):
     # auto date field updated at time of creation
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["user_agent", "user_name", "app"],
+                name="tua_ua_user_app_idx",
+            ),
+        ]
+
     def __str__(self):
         return (
             f"{self.app} - [REFRESH] {self.refresh_token} [ACCESS] "
