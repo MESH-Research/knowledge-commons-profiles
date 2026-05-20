@@ -8,10 +8,13 @@ implementation passed the resulting empty dict straight through to
 Pydantic, which raised a ValidationError and aborted the entire import.
 """
 
+from io import StringIO
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
+from django.core.management import call_command
 from django.test import SimpleTestCase
+from django.test import TestCase
 
 from knowledge_commons_profiles.newprofile.management.commands.import_comanage import (  # noqa: E501
     ClientConfig,
@@ -260,3 +263,150 @@ class IterRolesEmptyResponseTests(SimpleTestCase):
         self.assertEqual(person.Id, "42")
         self.assertIs(user, profile)
         self.assertIn("carol@example.test", profile.emails)
+
+
+class MembershipRefreshTests(TestCase):
+    """``import_comanage`` should refresh Profile.is_member_of by default."""
+
+    def _profile(self, username="alice"):
+        profile = MagicMock()
+        profile.username = username
+        profile.emails = []
+        profile.save = MagicMock()
+        return profile
+
+    def _yielded_role(self, profile):
+        """A single (role, person, profile) tuple shaped like iter_roles."""
+        role = MagicMock()
+        role.CouId = "11"
+        role.Affiliation = "member"
+        role.Title = ""
+        role.O = "Hastac"
+        role.Ou = ""
+        role.ValidThrough = None
+        role.Status = "Active"
+        role.SourceOrgIdentityId = None
+        person = MagicMock()
+        person.Id = "42"
+        return (role, person, profile)
+
+    def test_default_run_calls_membership_refresh_per_profile(self):
+        """Each touched profile is refreshed via ExternalSync."""
+        profile_alice = self._profile("alice")
+        profile_bob = self._profile("bob")
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.COManageClient.iter_roles",
+            return_value=iter(
+                [
+                    self._yielded_role(profile_alice),
+                    self._yielded_role(profile_bob),
+                ]
+            ),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage._upsert_role",
+            return_value=(MagicMock(), True),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.ExternalSync.refresh_local_memberships"
+        ) as mock_refresh:
+            call_command(
+                "import_comanage",
+                "--username",
+                "u",
+                "--password",
+                "p",
+                stdout=StringIO(),
+            )
+
+        refreshed = {c.args[0] for c in mock_refresh.call_args_list}
+        self.assertEqual(refreshed, {profile_alice, profile_bob})
+
+    def test_skip_flag_suppresses_membership_refresh(self):
+        profile = self._profile("alice")
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.COManageClient.iter_roles",
+            return_value=iter([self._yielded_role(profile)]),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage._upsert_role",
+            return_value=(MagicMock(), True),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.ExternalSync.refresh_local_memberships"
+        ) as mock_refresh:
+            call_command(
+                "import_comanage",
+                "--username",
+                "u",
+                "--password",
+                "p",
+                "--skip-membership-refresh",
+                stdout=StringIO(),
+            )
+
+        mock_refresh.assert_not_called()
+
+    def test_dry_run_does_not_refresh(self):
+        """Dry-run must not write to is_member_of."""
+        profile = self._profile("alice")
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.COManageClient.iter_roles",
+            return_value=iter([self._yielded_role(profile)]),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage._upsert_role",
+            return_value=(MagicMock(), True),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.ExternalSync.refresh_local_memberships"
+        ) as mock_refresh:
+            call_command(
+                "import_comanage",
+                "--username",
+                "u",
+                "--password",
+                "p",
+                "--dry-run",
+                stdout=StringIO(),
+            )
+
+        mock_refresh.assert_not_called()
+
+    def test_refresh_called_once_per_profile_across_multiple_roles(self):
+        """Two roles for the same user must only trigger one refresh."""
+        profile = self._profile("alice")
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.COManageClient.iter_roles",
+            return_value=iter(
+                [
+                    self._yielded_role(profile),
+                    self._yielded_role(profile),
+                ]
+            ),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage._upsert_role",
+            return_value=(MagicMock(), True),
+        ), patch(
+            "knowledge_commons_profiles.newprofile.management.commands."
+            "import_comanage.ExternalSync.refresh_local_memberships"
+        ) as mock_refresh:
+            call_command(
+                "import_comanage",
+                "--username",
+                "u",
+                "--password",
+                "p",
+                stdout=StringIO(),
+            )
+
+        self.assertEqual(mock_refresh.call_count, 1)
