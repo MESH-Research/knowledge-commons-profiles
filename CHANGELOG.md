@@ -1,3 +1,9 @@
+## 4.27.3 (2026-05-20)
+
+### Fix
+
+- **members**: skip empty affiliation links on members list
+
 ## 4.27.2 (2026-05-14)
 
 ### Perf
