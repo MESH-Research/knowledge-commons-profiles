@@ -1,3 +1,9 @@
+## 4.28.1 (2026-05-20)
+
+### Perf
+
+- **docker**: own /opt/venv at copy time in base image
+
 ## 4.28.0 (2026-05-20)
 
 ### Feat
