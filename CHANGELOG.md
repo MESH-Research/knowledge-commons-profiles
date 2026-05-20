@@ -1,3 +1,9 @@
+## 4.29.0 (2026-05-20)
+
+### Feat
+
+- **import_comanage**: refresh local membership JSON after import
+
 ## 4.28.1 (2026-05-20)
 
 ### Perf
