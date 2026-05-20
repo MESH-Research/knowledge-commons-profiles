@@ -1,3 +1,9 @@
+## 4.28.0 (2026-05-20)
+
+### Feat
+
+- **broker**: allow msu.edu in WordPress and Works broker domains
+
 ## 4.27.4 (2026-05-20)
 
 ### Fix
