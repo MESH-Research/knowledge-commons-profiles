@@ -522,7 +522,7 @@ OPEN_REGISTRATION_NETWORKS = env(
     ],
 )
 
-KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+"}
+KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
 
 LOGOUT_ENDPOINTS = env.list("LOGOUT_ENDPOINTS", default=[])
 
