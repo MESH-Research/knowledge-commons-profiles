@@ -161,6 +161,32 @@ class ExternalSync:
                     )
 
     @staticmethod
+    def refresh_local_memberships(profile: Profile) -> dict:
+        """
+        Refresh ``Profile.is_member_of`` from local ``Role`` rows only.
+
+        Performs no external HTTP calls and does not bump ``last_sync``.
+        Use after any path that writes ``Role`` rows locally (e.g. the
+        ``import_comanage`` management command) so the cached membership
+        JSON tracks the database without hammering external partner APIs.
+
+        Existing keys in ``is_member_of`` for non-COmanage societies (e.g.
+        MLA, MSU, ARLISNA, UP) are preserved; only the keys listed in
+        ``settings.KNOWN_SOCIETY_MAPPINGS`` are recomputed from roles.
+        """
+        try:
+            is_member_of = json.loads(profile.is_member_of or "{}")
+        except (TypeError, json.JSONDecodeError):
+            is_member_of = {}
+
+        ExternalSync._handle_comanage_roles(is_member_of, profile)
+
+        profile.is_member_of = json.dumps(is_member_of)
+        profile.save(update_fields=["is_member_of"])
+
+        return is_member_of
+
+    @staticmethod
     def _handle_comanage_roles(
         is_member_of: dict[Any, Any] | Any, profile: Profile
     ):

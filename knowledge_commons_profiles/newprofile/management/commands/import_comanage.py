@@ -35,6 +35,7 @@ from knowledge_commons_profiles.newprofile.models import Person
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.newprofile.models import RoleStatus
+from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -426,6 +427,16 @@ class Command(BaseCommand):
             default=None,
             help="Just run on a single user",
         )
+        parser.add_argument(
+            "--skip-membership-refresh",
+            action="store_true",
+            help=(
+                "Do not recompute Profile.is_member_of from the newly "
+                "imported Role rows. Use to keep this run strictly local "
+                "to the Role table (the default refresh path is also "
+                "local-only and does no external HTTP)."
+            ),
+        )
 
     def handle(self, *args, **options):
         base_url: str = options["base_url"]
@@ -434,6 +445,7 @@ class Command(BaseCommand):
         verify_ssl: bool = not options["no_verify_ssl"]
         dry_run: bool = options["dry_run"]
         single_user: str | None = options["single_user"]
+        skip_membership_refresh: bool = options["skip_membership_refresh"]
 
         if not (username and password):
             msg = (
@@ -453,6 +465,7 @@ class Command(BaseCommand):
         total = 0
         created_count = 0
         updated_count = 0
+        touched_profiles: dict[int, Profile] = {}
 
         # Wrap the whole import in a transaction unless we're dry-running
         ctx = transaction.atomic() if not dry_run else _NullContext()
@@ -467,6 +480,9 @@ class Command(BaseCommand):
                     if dry_run:
                         msg = f"Dry-run inserted {role}"
                         logger.info(msg)
+                    else:
+                        profile = item[2]
+                        touched_profiles[id(profile)] = profile
                     total += 1
                     if created:
                         # created True in dry-run means "would create"
@@ -476,6 +492,9 @@ class Command(BaseCommand):
 
                     if total % 100 == 0:
                         self.stdout.write(f"Processed {total} roles...")
+
+                if not dry_run and not skip_membership_refresh:
+                    self._refresh_memberships(touched_profiles.values())
 
                 if dry_run:
                     self.stdout.write(
@@ -498,6 +517,16 @@ class Command(BaseCommand):
         except Exception as e:
             msg = f"Import failed: {e}"
             raise CommandError(msg) from e
+
+    def _refresh_memberships(self, profiles):
+        for profile in profiles:
+            try:
+                ExternalSync.refresh_local_memberships(profile)
+            except Exception:
+                logger.exception(
+                    "Failed to refresh memberships for %s",
+                    getattr(profile, "username", "<unknown>"),
+                )
 
 
 class _NullContext:
