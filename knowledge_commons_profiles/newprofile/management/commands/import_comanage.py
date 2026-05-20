@@ -278,6 +278,7 @@ class COManageClient:
             roles_obj = CoPersonRolesResponse.model_validate(roles)
 
             for role in roles_obj.CoPersonRoles:
+                logger.info("Found: %s for %s", role, user.username)
                 yield role, co_person_obj, user
 
 
