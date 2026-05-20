@@ -164,21 +164,19 @@ class ExternalSync:
     def _handle_comanage_roles(
         is_member_of: dict[Any, Any] | Any, profile: Profile
     ):
-        for role in Role.objects.filter(
-            person__user__username=profile.username
-        ):
-            # names here correlate to the map in
-            # humanities-commons/society-settings.php
-            # the mapping configuration is in the base settings file
-            for key, val in settings.KNOWN_SOCIETY_MAPPINGS.items():
-                if (
-                    role.organization
-                    and role.organization.lower() == key
-                    and role.affiliation == "member"
-                ):
-                    is_member_of[val] = True
-                else:
-                    is_member_of[val] = False
+        # names here correlate to the map in
+        # humanities-commons/society-settings.php
+        # the mapping configuration is in the base settings file
+        roles = list(
+            Role.objects.filter(person__user__username=profile.username)
+        )
+        for key, val in settings.KNOWN_SOCIETY_MAPPINGS.items():
+            is_member_of[val] = any(
+                role.organization
+                and role.organization.lower() == key
+                and role.affiliation == "member"
+                for role in roles
+            )
 
     # ruff: noqa: PLR0913
     @staticmethod
