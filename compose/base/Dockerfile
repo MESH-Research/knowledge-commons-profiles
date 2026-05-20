@@ -68,8 +68,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Install uv in the run stage
 COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /uvx /bin/
 
-# Copy virtual environment from build stage
-COPY --from=python-build-stage /opt/venv /opt/venv
+# Copy virtual environment from build stage. Ownership is set at copy time
+# (numeric UID/GID matches the django user in the downstream Django images)
+# so downstream builds do not have to recursively chown thousands of files.
+COPY --chown=1000:1000 --from=python-build-stage /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV UV_NO_CACHE=1
