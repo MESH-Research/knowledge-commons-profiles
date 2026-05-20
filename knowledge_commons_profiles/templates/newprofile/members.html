@@ -26,7 +26,9 @@
             <a href="{% url "profile" p.username %}"><img alt="{{ p.name }}" class="avatar" src="{{ p.final_image }}"/></a>
             <div>
               <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }} ({{ p.username }})</a></p>
-              <div class="aff"><a href="{% url "profile" p.username %}">{% if p.institutional_or_other_affiliation %}{{ p.institutional_or_other_affiliation }}{% endif %}</a></div>
+              {% if p.institutional_or_other_affiliation %}
+                <div class="aff"><a href="{% url "profile" p.username %}">{{ p.institutional_or_other_affiliation }}</a></div>
+              {% endif %}
               {% if p.display_interests %}
                 <div class="member-interests">
                   {% for interest in p.display_interests|slice:":5" %}
