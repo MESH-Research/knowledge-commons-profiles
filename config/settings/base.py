@@ -437,7 +437,9 @@ CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
 # Per-request timeout (seconds) for CILogon /revoke calls. Logout fires one
 # of these per token-type-hint per association; without a bound, a stalled
 # IDP would block the response indefinitely.
-CILOGON_REVOCATION_TIMEOUT = env.float("CILOGON_REVOCATION_TIMEOUT", default=5.0)
+CILOGON_REVOCATION_TIMEOUT = env.float(
+    "CILOGON_REVOCATION_TIMEOUT", default=5.0
+)
 
 # Identity broker configuration for third-party app authentication
 BROKER_REGISTERED_APPS = {
@@ -453,6 +455,7 @@ BROKER_REGISTERED_APPS = {
                 "hcommons-staging.org",
                 "localhost",
                 "lndo.site",
+                "msu.edu",
             ],
         ),
     },
@@ -468,6 +471,7 @@ BROKER_REGISTERED_APPS = {
                 "hcommons-staging.org",
                 "localhost",
                 "lndo.site",
+                "msu.edu",
             ],
         ),
     },
@@ -543,7 +547,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 VERIFICATION_LIMIT_HOURS = env.int(
     "VERIFICATION_LIMIT_HOURS", 48
 )  # hours before email verifications expires
-SYNC_HOURS = env.int("SYNC_HOURS", 24)  # hours before syncs are considered stale
+SYNC_HOURS = env.int(
+    "SYNC_HOURS", 24
+)  # hours before syncs are considered stale
 
 CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")
 
@@ -553,20 +559,28 @@ CC_SEARCH_ADMIN_KEY = CC_SEARCH_API_KEY
 # CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
 CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)
 
-NAV_NEWS_FEED_URL = env("NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/")
+NAV_NEWS_FEED_URL = env(
+    "NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/"
+)
 NAV_GROUPS_URL = env("NAV_GROUPS_URL", default="https://hcommons.org/groups/")
 NAV_SITES_URL = env("NAV_SITES_URL", default="https://hcommons.org/sites/")
 NAV_WORKS_URL = env("NAV_WORKS_URL", default="https://works.hcommons.org/")
-NAV_SUPPORT_URL = env("NAV_SUPPORT_URL", default="https://support.hcommons.org/")
+NAV_SUPPORT_URL = env(
+    "NAV_SUPPORT_URL", default="https://support.hcommons.org/"
+)
 NAV_ORGANIZATIONS_URL = env(
     "NAV_ORGANIZATIONS_URL", default="https://hcommons.org/societies/"
 )
-NAV_ABOUT_URL = env("NAV_ABOUT_URL", default="https://sustaining.hcommons.org/")
+NAV_ABOUT_URL = env(
+    "NAV_ABOUT_URL", default="https://sustaining.hcommons.org/"
+)
 NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
 
 NAV_NETWORK_DOMAIN_MAP = env.json("NAV_NETWORK_DOMAIN_MAP", default={})
 NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
-NAV_NETWORK_SESSION_TIMEOUT = env.int("NAV_NETWORK_SESSION_TIMEOUT", default=3600)
+NAV_NETWORK_SESSION_TIMEOUT = env.int(
+    "NAV_NETWORK_SESSION_TIMEOUT", default=3600
+)
 
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")
 MAILCHIMP_API_KEY = env("MAILCHIMP_API_KEY")
