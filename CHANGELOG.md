@@ -1,3 +1,9 @@
+## 4.33.1 (2026-05-21)
+
+### Fix
+
+- **sync**: stop role_overrides leaking into is_member_of
+
 ## 4.33.0 (2026-05-21)
 
 ### Feat
