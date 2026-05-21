@@ -35,14 +35,20 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+# URL names that must never trigger the auto-refresh or garbage-collection
+# work the cilogon middleware would otherwise do on every Nth hit. The
+# healthcheck must survive a Redis outage; the broker silent-login endpoint
+# must stay fast and is hit on every page load by every browser (#590).
+_SKIP_MIDDLEWARE_URL_NAMES = frozenset({"healthcheck", "broker_silent_login"})
+
+
 def should_run_middleware(
     request: HttpRequest, key: str, interval: int = 10
 ) -> bool:
-    # if this is the health endpoint, identified by name "healthcheck" in
-    # urls/request, return false
-    if resolve(request.path_info).url_name == "healthcheck":
-        # this ensures that we don't touch the REDIS cache on the healthcheck
-        # as it can be down
+    if resolve(request.path_info).url_name in _SKIP_MIDDLEWARE_URL_NAMES:
+        # Avoid touching Redis on these paths — either because the cache
+        # can be down (healthcheck) or because the path is on the hot
+        # path for cross-site SSO (broker silent-login).
         return False
 
     now = timezone.now()
@@ -71,20 +77,22 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
 
     def fast_fail(self, request):
         """
-        Determine whether we should run the middleware
-        """
-        if not should_run_middleware(request, "auto-refresh"):
-            return True
+        Determine whether we should run the middleware.
 
-        # Grab the stored token
+        In-memory checks first (session lookup, user check) so anonymous
+        or token-less requests do not pay for a Redis throttle round-trip.
+        """
         token = request.session.get("oidc_token")
         if not token:
             # could be during login cycle
             return True
 
-        # determine whether we have a user
         user = getattr(request, "user", None)
-        return not user or not user.is_authenticated
+        if not user or not user.is_authenticated:
+            return True
+
+        # Only after we know there is work to do, consult the throttle.
+        return not should_run_middleware(request, "auto-refresh")
 
     def process_request(self, request):
         if self.fast_fail(request):

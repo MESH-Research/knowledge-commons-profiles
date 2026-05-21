@@ -141,9 +141,11 @@ def cilogon_login(request):
     ):
         userinfo = request.session.get("oidc_userinfo", {})
         if userinfo and userinfo.get("sub"):
-            sub_association = SubAssociation.objects.filter(
-                sub=userinfo["sub"]
-            ).first()
+            sub_association = (
+                SubAssociation.objects.select_related("profile")
+                .filter(sub=userinfo["sub"])
+                .first()
+            )
             if sub_association:
                 broker_url = build_broker_redirect(
                     userinfo,
@@ -209,9 +211,11 @@ def callback(request):
 
     # our linking logic:
     # see whether we have a sub object
-    sub_association: SubAssociation = SubAssociation.objects.filter(
-        sub=userinfo.get("sub", "")
-    ).first()
+    sub_association: SubAssociation = (
+        SubAssociation.objects.select_related("profile")
+        .filter(sub=userinfo.get("sub", ""))
+        .first()
+    )
 
     # do we have a sub->profile?
     if sub_association:
@@ -329,9 +333,11 @@ def silent_login(request):
     if request.user.is_authenticated:
         userinfo = request.session.get("oidc_userinfo", {})
         if userinfo and userinfo.get("sub"):
-            sub_association = SubAssociation.objects.filter(
-                sub=userinfo["sub"]
-            ).first()
+            sub_association = (
+                SubAssociation.objects.select_related("profile")
+                .filter(sub=userinfo["sub"])
+                .first()
+            )
             if sub_association:
                 broker_url = build_broker_redirect(
                     userinfo,
@@ -340,7 +346,9 @@ def silent_login(request):
                     final_redirect=final_redirect,
                 )
                 if broker_url:
-                    return redirect(broker_url)
+                    response = redirect(broker_url)
+                    response["Cache-Control"] = "no-store"
+                    return response
 
     separator = "&" if "?" in return_to else "?"
     no_session_url = f"{return_to}{separator}no_session=1"
@@ -348,7 +356,9 @@ def silent_login(request):
         no_session_url += (
             f"&final_redirect={urlquote(final_redirect, safe='')}"
         )
-    return redirect(no_session_url)
+    response = redirect(no_session_url)
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 # ruff: noqa: PLR0913

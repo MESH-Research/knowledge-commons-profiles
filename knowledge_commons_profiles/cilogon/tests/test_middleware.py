@@ -15,9 +15,71 @@ from knowledge_commons_profiles.cilogon.middleware import (
 from knowledge_commons_profiles.cilogon.middleware import (
     GarbageCollectionMiddleware,
 )
+from knowledge_commons_profiles.cilogon.middleware import should_run_middleware
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 
 from .test_base import CILogonTestBase
+
+
+class ShouldRunMiddlewareUrlSkipTests(CILogonTestBase):
+    """The throttle helper must skip URL names that have no business
+    invoking auto-refresh or garbage-collection work."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.request = self.factory.get("/broker/silent-login/")
+        self.request.user = AnonymousUser()
+
+    def test_skips_for_broker_silent_login(self):
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.resolve"
+        ) as resolve_mock:
+            resolve_mock.return_value.url_name = "broker_silent_login"
+            self.assertFalse(
+                should_run_middleware(self.request, "auto-refresh"),
+            )
+
+    def test_skips_for_healthcheck(self):
+        # Regression: existing healthcheck skip must still hold.
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.resolve"
+        ) as resolve_mock:
+            resolve_mock.return_value.url_name = "healthcheck"
+            self.assertFalse(
+                should_run_middleware(self.request, "auto-refresh"),
+            )
+
+
+class AutoRefreshTokenMiddlewareFastFailOrderTests(CILogonTestBase):
+    """The cheap in-memory checks must run before the Redis throttle so
+    anonymous traffic doesn't pay for a cache round-trip."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.middleware = AutoRefreshTokenMiddleware(get_response=MagicMock())
+        self.request = self.factory.get("/")
+        self.request.user = AnonymousUser()
+        # Empty session — no oidc_token
+        session_middleware = SessionMiddleware(get_response=MagicMock())
+        session_middleware.process_request(self.request)
+        self.request.session.save()
+
+    def test_anonymous_request_does_not_touch_throttle_cache(self):
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.should_run_middleware"
+        ) as throttle_mock:
+            self.assertTrue(self.middleware.fast_fail(self.request))
+            throttle_mock.assert_not_called()
+
+    def test_authenticated_but_no_token_does_not_touch_throttle_cache(self):
+        self.request.user = User.objects.create_user(username="u")
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.should_run_middleware"
+        ) as throttle_mock:
+            self.assertTrue(self.middleware.fast_fail(self.request))
+            throttle_mock.assert_not_called()
 
 
 class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
