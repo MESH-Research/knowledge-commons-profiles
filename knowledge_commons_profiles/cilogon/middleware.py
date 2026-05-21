@@ -96,13 +96,17 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
         # get the user's browser user-agent
         user_agent = request.headers.get("user-agent", "")
 
-        # store the user's browser user-agent, token, and app
-        _, created = TokenUserAgentAssociations.objects.get_or_create(
+        # Store/refresh the row for (user_agent, app, user_name).
+        # Encrypted columns are kept in defaults so Fernet's random IV
+        # doesn't defeat the lookup (#588).
+        _, created = TokenUserAgentAssociations.objects.update_or_create(
             user_agent=user_agent,
             app="Profiles",
-            refresh_token=token["refresh_token"],
-            access_token=token["access_token"],
             user_name=user.username,
+            defaults={
+                "refresh_token": token["refresh_token"],
+                "access_token": token["access_token"],
+            },
         )
 
         if created:
