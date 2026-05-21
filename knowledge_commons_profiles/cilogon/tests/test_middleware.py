@@ -91,6 +91,77 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             self.assertEqual(assoc.access_token, "a")
             self.assertEqual(assoc.refresh_token, "r")
 
+    def test_repeated_calls_do_not_duplicate_token_association(self):
+        """
+        Bug #588: Fernet's random IV meant that get_or_create could never
+        match the encrypted token columns, so every middleware run inserted
+        a fresh row. The lookup must use the natural key only.
+        """
+        self.request.session["oidc_token"] = {
+            "access_token": "a",
+            "refresh_token": "r",
+        }
+        self.request.headers = {"user-agent": "TestAgent"}
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.should_run_middleware",
+                return_value=True,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.token_expired",
+                return_value=False,
+            ),
+        ):
+            self.middleware.process_request(self.request)
+            self.middleware.process_request(self.request)
+
+        rows = TokenUserAgentAssociations.objects.filter(
+            user_agent="TestAgent",
+            user_name=self.user.username,
+            app="Profiles",
+        )
+        self.assertEqual(rows.count(), 1)
+
+    def test_rotated_tokens_update_existing_association_row(self):
+        """
+        When a user's access/refresh token rotates, the association row for
+        (user_agent, user_name, app) must be updated in place rather than
+        accumulating duplicates.
+        """
+        self.request.headers = {"user-agent": "TestAgent"}
+        self.request.session["oidc_token"] = {
+            "access_token": "first-access",
+            "refresh_token": "first-refresh",
+        }
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.should_run_middleware",
+                return_value=True,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.token_expired",
+                return_value=False,
+            ),
+        ):
+            self.middleware.process_request(self.request)
+
+            self.request.session["oidc_token"] = {
+                "access_token": "second-access",
+                "refresh_token": "second-refresh",
+            }
+            self.middleware.process_request(self.request)
+
+        rows = list(
+            TokenUserAgentAssociations.objects.filter(
+                user_agent="TestAgent",
+                user_name=self.user.username,
+                app="Profiles",
+            )
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].access_token, "second-access")
+        self.assertEqual(rows[0].refresh_token, "second-refresh")
+
     def test_skips_if_token_not_expired(self):
         self.request.session["oidc_token"] = {
             "access_token": "a",
