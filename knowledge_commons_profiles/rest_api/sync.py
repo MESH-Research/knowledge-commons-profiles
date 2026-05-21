@@ -200,13 +200,18 @@ class ExternalSync:
     ):
         # names here correlate to the map in
         # humanities-commons/society-settings.php
-        # the mapping configuration is in the base settings file
+        # the mapping configuration is in the base settings file.
+        # role_overrides are deliberately NOT considered here:
+        # is_member_of is the API/COmanage source of truth, role_overrides
+        # is the manual layer, and the manage_roles UI separates them by
+        # checking each membership against is_member_of vs role_overrides
+        # — merging the two would collapse that distinction. The merge is
+        # done at read time by rest_api.utils.get_external_memberships.
         roles = list(
             Role.objects.filter(person__user__username=profile.username)
         )
-        overrides = list(profile.role_overrides or [])
         for key, val in settings.KNOWN_SOCIETY_MAPPINGS.items():
-            is_member_of[val] = val in overrides or any(
+            is_member_of[val] = any(
                 role.organization
                 and role.organization.lower() == key
                 and role.affiliation == "member"

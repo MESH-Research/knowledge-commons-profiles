@@ -1,3 +1,23 @@
+## 4.33.0 (2026-05-21)
+
+### Feat
+
+- **sync**: honour role_overrides in is_member_of and expose notify_subscribers
+
+### Fix
+
+- **cilogon**: collapse legacy duplicate token-association rows on first hit
+- **cilogon**: de-duplicate TokenUserAgentAssociations via natural-key update_or_create
+
+### Refactor
+
+- **enrol**: use role_overrides for HASTAC/STEMED+ bulk enrolment
+
+### Perf
+
+- **cilogon**: cut /broker/silent-login/ latency to a cookie-and-cache check
+- **settings**: route Django sessions through Redis via cached_db backend
+
 ## 4.32.0 (2026-05-21)
 
 ### Feat
