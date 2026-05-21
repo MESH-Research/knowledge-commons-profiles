@@ -34,6 +34,7 @@ from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import APIError
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import rate_limit
+from knowledge_commons_profiles.common.profiles_email import normalize_email
 
 MEMBERS_URL = "members"
 MAX_CALLS = 100
@@ -358,7 +359,10 @@ class ARLISNA(SyncClass):
         Search for a user
         :param emails: the emails to search for; first hit will be returned
         """
-        for email in emails:
+        for raw_email in emails:
+            email = normalize_email(raw_email)
+            if not email:
+                continue
             cache_key = f"ARLISNA_api_search_{email}"
 
             search_params = {
@@ -397,6 +401,7 @@ class ARLISNA(SyncClass):
         Search for a user
         :param email: the email to search for
         """
+        email = normalize_email(email)
         try:
             validate_email(email)
         except ValidationError as ve:

@@ -72,6 +72,7 @@ from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import validate_return_to
 from knowledge_commons_profiles.cilogon.signals import user_session_key
+from knowledge_commons_profiles.common.profiles_email import normalize_email
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
 )
@@ -228,15 +229,14 @@ def callback(request):
             logger.info("Received userinfo: %s", userinfo)
 
             # test whether the userinfo has an email that we don't know about
+            userinfo_email = normalize_email(userinfo.get("email"))
             if (
-                userinfo.get("email")
-                and userinfo.get("email") != sub_association.profile.email
+                userinfo_email
+                and userinfo_email != sub_association.profile.email
+                and userinfo_email not in sub_association.profile.emails
             ):
-                if userinfo.get("email") not in sub_association.profile.emails:
-                    sub_association.profile.emails.append(
-                        userinfo.get("email")
-                    )
-                    sub_association.profile.save()
+                sub_association.profile.emails.append(userinfo_email)
+                sub_association.profile.save()
 
         # update user network affiliations (outside transaction - external call)
         ExternalSync.sync(profile=sub_association.profile)
@@ -761,14 +761,14 @@ def _build_organizations_list(
 
 
 def _remove_secondary_email(profile: Profile | None, request):
-    email = request.POST.get("email_remove", "")
+    email = normalize_email(request.POST.get("email_remove", ""))
     if email and email in profile.emails:
         profile.emails.remove(email)
         profile.save()
 
 
 def _add_secondary_email(profile: Profile | None, request):
-    email = request.POST.get("new_email", "")
+    email = normalize_email(request.POST.get("new_email", ""))
 
     # check the email doesn't exist somewhere else
     profiles = Profile.objects.filter(email=email)
@@ -823,8 +823,9 @@ def new_email_verified(request, secret_key):
         )
 
     # POST: consume token and append email
-    if verify.sub not in verify.profile.emails:
-        verify.profile.emails.append(verify.sub)
+    new_secondary = normalize_email(verify.sub) or ""
+    if new_secondary and new_secondary not in verify.profile.emails:
+        verify.profile.emails.append(new_secondary)
         verify.profile.emails = sorted(verify.profile.emails)
         verify.profile.save()
 
@@ -834,7 +835,7 @@ def new_email_verified(request, secret_key):
 
 
 def _make_email_primary(profile: Profile | None, request):
-    email = request.POST.get("email_primary", "")
+    email = normalize_email(request.POST.get("email_primary", ""))
 
     # Only proceed if email is valid and in the secondaries list
     if not email or email not in profile.emails:
@@ -843,7 +844,7 @@ def _make_email_primary(profile: Profile | None, request):
     old_email = profile.email
 
     # first, add the existing primary to the secondaries
-    if profile.email not in profile.emails:
+    if profile.email and profile.email not in profile.emails:
         profile.emails.append(profile.email)
         profile.emails = sorted(profile.emails)
 
@@ -922,7 +923,7 @@ def register(request):
             messages.error(request, "This username already exists")
             return render(request, "cilogon/new_user.html", context)
 
-        if Profile.objects.filter(email=email).exists():
+        if Profile.objects.filter(email__iexact=email).exists():
             messages.error(request, "This email already exists")
             return render(request, "cilogon/new_user.html", context)
 
@@ -993,8 +994,9 @@ def register(request):
 
 
 def extract_form_data(context, request, userinfo):
-    # get the form data
-    email = request.POST.get("email", None)
+    # get the form data; normalise the email so every downstream lookup
+    # and the eventual stored value is canonical (lowercase, stripped)
+    email = normalize_email(request.POST.get("email", None))
     username = request.POST.get("username", None)
     full_name = request.POST.get("full_name", None)
 
@@ -1032,6 +1034,10 @@ def validate_form(email, full_name, request, username):
     """
     errored = False
     start_time = time.monotonic()
+
+    # Always work with the canonical (lowercase) form. Callers may forget,
+    # so we normalise here defensively.
+    email = normalize_email(email)
 
     # check none of these are blank
     if not email or not username or not full_name:
@@ -1079,7 +1085,9 @@ def validate_form(email, full_name, request, username):
     # Check email/username existence using exists() for more consistent timing.
     # Always run all three queries regardless of earlier validation failures
     # to prevent enumeration via timing differences.
-    email_exists_primary = Profile.objects.filter(email=email).exists()
+    email_exists_primary = Profile.objects.filter(
+        email__iexact=email
+    ).exists()
     email_exists_secondary = Profile.objects.filter(
         emails__contains=[email]
     ).exists()
@@ -1200,10 +1208,10 @@ def association(request):
 
     # check if we have an email POSTed
     if request.method == "POST":
-        email = request.POST.get("email")
+        email = normalize_email(request.POST.get("email"))
         if email:
             # search for a Profile with this email
-            profile = Profile.objects.filter(email=email).first()
+            profile = Profile.objects.filter(email__iexact=email).first()
 
             # if we have a profile, generate a UUID4
             if profile:
@@ -1497,11 +1505,11 @@ def upload_csv_view(request):
             # now re-add the flag if in the spreadsheet
             for _, row in enumerate(reader, start=2):  # line 1 is header
 
-                email = row.get("Email", None)
+                email = normalize_email(row.get("Email", None))
 
                 if email:
                     try:
-                        user = Profile.objects.get(email=email)
+                        user = Profile.objects.get(email__iexact=email)
                     except Profile.DoesNotExist:
                         user = Profile.objects.filter(
                             emails__contains=[email]

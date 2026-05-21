@@ -116,3 +116,16 @@ def sanitize_email_for_dev(email):
     :return: a replaced email
     """
     return email.replace("martin@martineve.com", "martin@eve.gd")
+
+
+def normalize_email(email):
+    """
+    Normalise an email address to a canonical form used for comparison
+    and storage: stripped of surrounding whitespace and lowercased.
+
+    ``None`` is returned unchanged so callers can distinguish "no email"
+    from "empty email".
+    """
+    if email is None:
+        return None
+    return email.strip().lower()
