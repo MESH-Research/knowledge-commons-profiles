@@ -135,6 +135,14 @@ class ExternalSync:
         return is_member_of
 
     @staticmethod
+    def notify_subscribers(profile: Profile) -> None:
+        """Ping ``settings.WEBHOOK_URLS`` so downstream services
+        (BuddyPress) re-fetch this profile's memberships. Per-user signal
+        — the webhook URL takes ``?username=…``, so the caller must fire
+        it once per affected profile."""
+        ExternalSync._send_webhooks(profile, send_webhook=True)
+
+    @staticmethod
     def _send_webhooks(profile: Profile, send_webhook):
         if send_webhook:
             # send a ping to other services
@@ -196,8 +204,9 @@ class ExternalSync:
         roles = list(
             Role.objects.filter(person__user__username=profile.username)
         )
+        overrides = list(profile.role_overrides or [])
         for key, val in settings.KNOWN_SOCIETY_MAPPINGS.items():
-            is_member_of[val] = any(
+            is_member_of[val] = val in overrides or any(
                 role.organization
                 and role.organization.lower() == key
                 and role.affiliation == "member"
