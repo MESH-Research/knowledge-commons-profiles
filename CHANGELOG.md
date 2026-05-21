@@ -1,3 +1,9 @@
+## 4.32.0 (2026-05-21)
+
+### Feat
+
+- **cilogon**: normalise stored emails to lowercase for case-insensitive matching
+
 ## 4.31.0 (2026-05-21)
 
 ### Feat
