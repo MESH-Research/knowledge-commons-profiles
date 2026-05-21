@@ -1,3 +1,9 @@
+## 4.31.0 (2026-05-21)
+
+### Feat
+
+- **enrol_hastac**: bulk-enrol users on HASTAC from an email file
+
 ## 4.30.0 (2026-05-21)
 
 ### Feat
