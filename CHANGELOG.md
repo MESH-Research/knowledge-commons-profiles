@@ -1,3 +1,9 @@
+## 4.34.0 (2026-05-21)
+
+### Feat
+
+- **remediation**: add fix_role_override_leak management command
+
 ## 4.33.1 (2026-05-21)
 
 ### Fix
