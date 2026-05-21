@@ -1,5 +1,5 @@
 """
-Bulk-enrol users on STEMEd+ from a file of email addresses.
+Bulk-enrol users on HASTAC from a file of email addresses.
 
 Thin wrapper over ``society_enrolment.enrol_from_file``.
 """
@@ -12,16 +12,16 @@ from knowledge_commons_profiles.newprofile.society_enrolment import (
 )
 
 SPEC = SocietySpec(
-    slug="stemedplus",
-    name="STEMEDPLUS",
-    role_organization="Stemedplus",
+    slug="hastac",
+    name="HASTAC",
+    role_organization="Hastac",
 )
 
 
 class Command(BaseCommand):
     help = (
         "Enrol the users associated with the email addresses in the given "
-        "file on STEMEd+. One email per line; blank lines ignored."
+        "file on HASTAC. One email per line; blank lines ignored."
     )
 
     def add_arguments(self, parser):

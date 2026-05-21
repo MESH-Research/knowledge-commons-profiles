@@ -1,4 +1,4 @@
-"""Tests for the enrol_stemedplus management command."""
+"""Tests for the enrol_hastac management command."""
 
 import json
 import os
@@ -28,8 +28,8 @@ def _write_file(emails):
 
 
 @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
-class EnrolStemedplusTests(TestCase):
-    """``enrol_stemedplus`` enrols users by email and refreshes membership."""
+class EnrolHastacTests(TestCase):
+    """``enrol_hastac`` enrols users by email and refreshes membership."""
 
     def setUp(self):
         self.alice = Profile.objects.create(
@@ -47,7 +47,7 @@ class EnrolStemedplusTests(TestCase):
         out = StringIO()
         err = StringIO()
         call_command(
-            "enrol_stemedplus",
+            "enrol_hastac",
             file_path,
             *extra,
             stdout=out,
@@ -62,7 +62,7 @@ class EnrolStemedplusTests(TestCase):
         roles = Role.objects.filter(person__user=self.alice)
         self.assertEqual(roles.count(), 1)
         role = roles.first()
-        self.assertEqual(role.organization.lower(), "stemedplus")
+        self.assertEqual(role.organization.lower(), "hastac")
         self.assertEqual(role.affiliation, "member")
         self.assertEqual(role.status, RoleStatus.ACTIVE)
 
@@ -126,20 +126,19 @@ class EnrolStemedplusTests(TestCase):
         mock_refresh.assert_not_called()
 
     def test_membership_json_reflects_enrolment(self):
-        """After running, the profile's is_member_of records STEMED+."""
+        """After running, the profile's is_member_of records HASTAC."""
         path = _write_file(["alice@example.test"])
         self._run(path)
         self.alice.refresh_from_db()
         stored = json.loads(self.alice.is_member_of)
-        self.assertTrue(stored["STEMED+"])
+        self.assertTrue(stored["HASTAC"])
 
     def test_missing_file_raises_command_error(self):
         bogus = str(Path(tempfile.gettempdir()) / "does-not-exist.txt")
         with self.assertRaises(CommandError):
-            call_command("enrol_stemedplus", bogus, stdout=StringIO())
+            call_command("enrol_hastac", bogus, stdout=StringIO())
 
     def test_multiple_matches_skips_user(self):
-        """When two profiles share an email, do not pick one arbitrarily."""
         Profile.objects.create(
             username="alice2", email="alice@example.test", emails=[]
         )
@@ -154,3 +153,12 @@ class EnrolStemedplusTests(TestCase):
         ) as mock_get:
             self._run(path)
         mock_get.assert_not_called()
+
+    def test_enrolling_in_hastac_does_not_grant_stemedplus(self):
+        """Enrolling in HASTAC only flips HASTAC, not STEMED+."""
+        path = _write_file(["alice@example.test"])
+        self._run(path)
+        self.alice.refresh_from_db()
+        stored = json.loads(self.alice.is_member_of)
+        self.assertTrue(stored["HASTAC"])
+        self.assertFalse(stored["STEMED+"])
