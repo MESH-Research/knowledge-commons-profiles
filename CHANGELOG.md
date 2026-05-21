@@ -1,3 +1,9 @@
+## 4.30.0 (2026-05-21)
+
+### Feat
+
+- **enrol_stemedplus**: bulk-enrol users on STEMEd+ from an email file
+
 ## 4.29.0 (2026-05-20)
 
 ### Feat
