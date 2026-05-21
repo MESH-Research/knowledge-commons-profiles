@@ -5,6 +5,7 @@ The MLA API for synchronising user data
 import logging
 
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
+from knowledge_commons_profiles.common.profiles_email import normalize_email
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,12 @@ class MSU(SyncClass):
         Search for a user
         :param emails: the emails to search for; first hit will be returned
         """
-        for email in emails:
+        for raw_email in emails:
+            email = normalize_email(raw_email)
+            if not email:
+                continue
             try:
-                if email.lower().endswith(self.search_url.lower()):
+                if email.endswith(self.search_url.lower()):
                     return {"MSU": email}
 
             except ValueError:
@@ -73,8 +77,11 @@ class MSU(SyncClass):
         Search for a user
         :param email: the email to search for
         """
+        email = normalize_email(email)
+        if not email:
+            return {"MSU": None}
         try:
-            if email.lower().endswith(self.search_url.lower()):
+            if email.endswith(self.search_url.lower()):
                 return {"MSU": email}
         except ValueError:
             logger.exception("Error parsing email in MSU search")

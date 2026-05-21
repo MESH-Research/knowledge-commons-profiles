@@ -33,6 +33,7 @@ from knowledge_commons_profiles.__version__ import VERSION
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import APIError
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
 from knowledge_commons_profiles.cilogon.sync_apis.sync_class import rate_limit
+from knowledge_commons_profiles.common.profiles_email import normalize_email
 
 MEMBERS_URL = "query"
 MAX_CALLS = 100
@@ -442,7 +443,10 @@ class UP(SyncClass):
         Search for a user
         :param emails: the emails to search for; first hit will be returned
         """
-        for email in emails:
+        for raw_email in emails:
+            email = normalize_email(raw_email)
+            if not email:
+                continue
             cache_key = f"UP_api_search_{email}"
 
             # Validate email

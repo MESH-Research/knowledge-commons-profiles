@@ -11,6 +11,7 @@ from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
+from knowledge_commons_profiles.common.profiles_email import normalize_email
 from knowledge_commons_profiles.newprofile.mailchimp import (
     hcommons_update_user_email_in_mailchimp,
 )
@@ -33,7 +34,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         username = options["username"]
-        new_email = options["new_email"]
+        new_email = normalize_email(options["new_email"])
         dry_run = options["dry_run"]
 
         try:

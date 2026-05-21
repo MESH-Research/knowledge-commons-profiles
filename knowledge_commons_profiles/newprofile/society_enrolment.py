@@ -18,6 +18,7 @@ from django.core.management.base import CommandError
 from django.db import transaction
 from django.db.models import Q
 
+from knowledge_commons_profiles.common.profiles_email import normalize_email
 from knowledge_commons_profiles.newprofile.models import CO
 from knowledge_commons_profiles.newprofile.models import Person
 from knowledge_commons_profiles.newprofile.models import Profile
@@ -44,13 +45,14 @@ class SocietySpec:
 def read_emails(path: Path) -> list[str]:
     emails = []
     for raw in path.read_text(encoding="utf-8").splitlines():
-        email = raw.strip()
+        email = normalize_email(raw)
         if email:
             emails.append(email)
     return emails
 
 
 def find_profiles(email: str) -> list[Profile]:
+    email = normalize_email(email) or ""
     return list(
         Profile.objects.filter(
             Q(email__iexact=email) | Q(emails__contains=[email])
