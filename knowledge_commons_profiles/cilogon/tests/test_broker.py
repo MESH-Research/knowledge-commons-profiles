@@ -470,6 +470,22 @@ class TestSilentLogin(TestCase):
         )
         self.assertEqual(response.status_code, 405)
 
+    def test_authenticated_response_is_uncacheable(self):
+        """Silent-login redirects must not be cached by any intermediary."""
+        self._login_with_userinfo()
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Cache-Control"], "no-store")
+
+    def test_unauthenticated_response_is_uncacheable(self):
+        response = self.client.get(
+            f"/broker/silent-login/?return_to={self.return_to}"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Cache-Control"], "no-store")
+
 
 @override_settings(
     BROKER_REGISTERED_APPS=BROKER_SETTINGS,

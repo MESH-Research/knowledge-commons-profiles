@@ -15,9 +15,71 @@ from knowledge_commons_profiles.cilogon.middleware import (
 from knowledge_commons_profiles.cilogon.middleware import (
     GarbageCollectionMiddleware,
 )
+from knowledge_commons_profiles.cilogon.middleware import should_run_middleware
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 
 from .test_base import CILogonTestBase
+
+
+class ShouldRunMiddlewareUrlSkipTests(CILogonTestBase):
+    """The throttle helper must skip URL names that have no business
+    invoking auto-refresh or garbage-collection work."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.request = self.factory.get("/broker/silent-login/")
+        self.request.user = AnonymousUser()
+
+    def test_skips_for_broker_silent_login(self):
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.resolve"
+        ) as resolve_mock:
+            resolve_mock.return_value.url_name = "broker_silent_login"
+            self.assertFalse(
+                should_run_middleware(self.request, "auto-refresh"),
+            )
+
+    def test_skips_for_healthcheck(self):
+        # Regression: existing healthcheck skip must still hold.
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.resolve"
+        ) as resolve_mock:
+            resolve_mock.return_value.url_name = "healthcheck"
+            self.assertFalse(
+                should_run_middleware(self.request, "auto-refresh"),
+            )
+
+
+class AutoRefreshTokenMiddlewareFastFailOrderTests(CILogonTestBase):
+    """The cheap in-memory checks must run before the Redis throttle so
+    anonymous traffic doesn't pay for a cache round-trip."""
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.middleware = AutoRefreshTokenMiddleware(get_response=MagicMock())
+        self.request = self.factory.get("/")
+        self.request.user = AnonymousUser()
+        # Empty session — no oidc_token
+        session_middleware = SessionMiddleware(get_response=MagicMock())
+        session_middleware.process_request(self.request)
+        self.request.session.save()
+
+    def test_anonymous_request_does_not_touch_throttle_cache(self):
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.should_run_middleware"
+        ) as throttle_mock:
+            self.assertTrue(self.middleware.fast_fail(self.request))
+            throttle_mock.assert_not_called()
+
+    def test_authenticated_but_no_token_does_not_touch_throttle_cache(self):
+        self.request.user = User.objects.create_user(username="u")
+        with patch(
+            "knowledge_commons_profiles.cilogon.middleware.should_run_middleware"
+        ) as throttle_mock:
+            self.assertTrue(self.middleware.fast_fail(self.request))
+            throttle_mock.assert_not_called()
 
 
 class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
@@ -90,6 +152,77 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             self.assertIsNotNone(assoc)
             self.assertEqual(assoc.access_token, "a")
             self.assertEqual(assoc.refresh_token, "r")
+
+    def test_repeated_calls_do_not_duplicate_token_association(self):
+        """
+        Bug #588: Fernet's random IV meant that get_or_create could never
+        match the encrypted token columns, so every middleware run inserted
+        a fresh row. The lookup must use the natural key only.
+        """
+        self.request.session["oidc_token"] = {
+            "access_token": "a",
+            "refresh_token": "r",
+        }
+        self.request.headers = {"user-agent": "TestAgent"}
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.should_run_middleware",
+                return_value=True,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.token_expired",
+                return_value=False,
+            ),
+        ):
+            self.middleware.process_request(self.request)
+            self.middleware.process_request(self.request)
+
+        rows = TokenUserAgentAssociations.objects.filter(
+            user_agent="TestAgent",
+            user_name=self.user.username,
+            app="Profiles",
+        )
+        self.assertEqual(rows.count(), 1)
+
+    def test_rotated_tokens_update_existing_association_row(self):
+        """
+        When a user's access/refresh token rotates, the association row for
+        (user_agent, user_name, app) must be updated in place rather than
+        accumulating duplicates.
+        """
+        self.request.headers = {"user-agent": "TestAgent"}
+        self.request.session["oidc_token"] = {
+            "access_token": "first-access",
+            "refresh_token": "first-refresh",
+        }
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.should_run_middleware",
+                return_value=True,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.token_expired",
+                return_value=False,
+            ),
+        ):
+            self.middleware.process_request(self.request)
+
+            self.request.session["oidc_token"] = {
+                "access_token": "second-access",
+                "refresh_token": "second-refresh",
+            }
+            self.middleware.process_request(self.request)
+
+        rows = list(
+            TokenUserAgentAssociations.objects.filter(
+                user_agent="TestAgent",
+                user_name=self.user.username,
+                app="Profiles",
+            )
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].access_token, "second-access")
+        self.assertEqual(rows[0].refresh_token, "second-refresh")
 
     def test_skips_if_token_not_expired(self):
         self.request.session["oidc_token"] = {
