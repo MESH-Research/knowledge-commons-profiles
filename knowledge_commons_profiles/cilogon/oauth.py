@@ -48,6 +48,24 @@ from knowledge_commons_profiles.rest_api.idms_api import EventType
 
 logger = logging.getLogger(__name__)
 
+# Reusable tldextract instance with the on-disk suffix list disabled so
+# request-time calls never attempt a network fetch (#590).
+_TLD_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
+
+_BROKER_ENCODER = None
+
+
+def _broker_encoder():
+    """
+    Return a module-level :class:`SecureParamEncoder` keyed on
+    ``STATIC_API_BEARER``. Rebuilding it on every silent-login was costing
+    a sha256 per request (#590).
+    """
+    global _BROKER_ENCODER  # noqa: PLW0603
+    if _BROKER_ENCODER is None:
+        _BROKER_ENCODER = SecureParamEncoder(settings.STATIC_API_BEARER)
+    return _BROKER_ENCODER
+
 oauth = OAuth()
 
 oauth.register(
@@ -220,7 +238,7 @@ def forward_url(request):
 
             try:
                 # parse netloc into subdomain, base domain etc.
-                extract_result = tldextract.extract(next_url)
+                extract_result = _TLD_EXTRACT(next_url)
 
                 # validate that the next URL is in the allowed list
                 # settings.ALLOWED_CILOGON_FORWARDING_DOMAINS
@@ -600,7 +618,7 @@ def get_secure_userinfo(request) -> tuple[bool, dict | None]:
     userinfo_session = request.session.get("oidc_userinfo", {})
 
     # Now we try external parameters
-    encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
+    encoder = _broker_encoder()
 
     # decode the GET parameter with secure userinfo on AES
     try:
@@ -721,7 +739,7 @@ def validate_return_to(return_to: str) -> bool:
         return False
 
     try:
-        extract_result = tldextract.extract(return_to)
+        extract_result = _TLD_EXTRACT(return_to)
         domain_to_check = (
             (extract_result.domain + "." + extract_result.suffix)
             if extract_result.suffix and extract_result.suffix != ""
@@ -781,7 +799,7 @@ def build_broker_redirect(
             "final_redirect": final_redirect,
         }
 
-        encoder = SecureParamEncoder(settings.STATIC_API_BEARER)
+        encoder = _broker_encoder()
         encrypted_token = encoder.encode(payload)
 
         # Store nonce in cache for verification

@@ -102,13 +102,14 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=userinfo,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.SubAssociation.objects.filter"
-            ) as sub_filter,
+                "knowledge_commons_profiles.cilogon.views.SubAssociation.objects.select_related"
+            ) as sub_select_related,
             patch(
                 "knowledge_commons_profiles.cilogon.views.find_user_and_login"
             ),
         ):
-            sub_filter.return_value.first.return_value = mock_assoc
+            sr_filter = sub_select_related.return_value.filter
+            sr_filter.return_value.first.return_value = mock_assoc
             response = callback(request)
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, reverse("my_profile"))
@@ -568,7 +569,7 @@ class CILogonViewTests(CILogonTestBase):
                 return_value=userinfo,
             ),
             patch(
-                "knowledge_commons_profiles.cilogon.views.SubAssociation.objects.filter",
+                "knowledge_commons_profiles.cilogon.views.SubAssociation.objects.select_related",
                 side_effect=RuntimeError("db fail"),
             ),
             patch(
