@@ -103,6 +103,26 @@ class HandleComanageRolesTests(TestCase):
         ExternalSync._handle_comanage_roles(member_data, self.profile)
         self.assertTrue(member_data["HASTAC"])
 
+    @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
+    def test_role_override_alone_sets_is_member_of_true(self):
+        """A society in ``role_overrides`` with no Role row still counts."""
+        self.profile.role_overrides = ["HASTAC"]
+        self.profile.save(update_fields=["role_overrides"])
+        member_data: dict = {}
+        ExternalSync._handle_comanage_roles(member_data, self.profile)
+        self.assertTrue(member_data["HASTAC"])
+        self.assertFalse(member_data["STEMED+"])
+
+    @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
+    def test_role_override_and_role_both_set_true(self):
+        """Override and Role row for same society do not conflict."""
+        self._make_role(self.co_hastac, "Hastac")
+        self.profile.role_overrides = ["HASTAC"]
+        self.profile.save(update_fields=["role_overrides"])
+        member_data: dict = {}
+        ExternalSync._handle_comanage_roles(member_data, self.profile)
+        self.assertTrue(member_data["HASTAC"])
+
 
 class RefreshLocalMembershipsTests(TestCase):
     """Tests for ExternalSync.refresh_local_memberships()."""

@@ -3,9 +3,10 @@ Shared logic for bulk-enrolling users on a society from a list of emails.
 
 Used by the per-society management commands (``enrol_stemedplus``,
 ``enrol_hastac``). Reading a flat file of email addresses, matching them
-to ``Profile`` rows, writing the corresponding ``Role``, and refreshing
-``Profile.is_member_of`` are all the same regardless of which society
-the run targets — only a handful of identifying strings differ.
+to ``Profile`` rows, writing the society identifier onto
+``Profile.role_overrides``, refreshing ``Profile.is_member_of`` and
+pinging BuddyPress are all the same regardless of which society the run
+targets — only the identifier differs.
 """
 
 from __future__ import annotations
@@ -19,27 +20,23 @@ from django.db import transaction
 from django.db.models import Q
 
 from knowledge_commons_profiles.common.profiles_email import normalize_email
-from knowledge_commons_profiles.newprofile.models import CO
-from knowledge_commons_profiles.newprofile.models import Person
 from knowledge_commons_profiles.newprofile.models import Profile
-from knowledge_commons_profiles.newprofile.models import Role
-from knowledge_commons_profiles.newprofile.models import RoleStatus
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 
 logger = logging.getLogger(__name__)
 
 
-ROLE_AFFILIATION = "member"
-ROLE_SOURCE_SYSTEM = "manual-enrolment"
-
-
 @dataclass(frozen=True)
 class SocietySpec:
-    """Identifying values for a society used by the enrolment helper."""
+    """
+    Identifying value for a society used by the enrolment helper.
 
-    slug: str
+    ``name`` is the string written to ``Profile.role_overrides`` and the
+    key under which the society appears in ``Profile.is_member_of`` —
+    e.g. ``"HASTAC"``, ``"STEMED+"``.
+    """
+
     name: str
-    role_organization: str
 
 
 def read_emails(path: Path) -> list[str]:
@@ -95,11 +92,8 @@ def enrol_from_file(
 
     ctx = transaction.atomic() if not dry_run else _NullContext()
     with ctx:
-        co = _get_co(spec, dry_run=dry_run)
         for email in emails:
-            _process_email(
-                spec, email, co, stdout, style, counts, dry_run=dry_run
-            )
+            _process_email(spec, email, stdout, style, counts, dry_run=dry_run)
 
     stdout.write(
         style.SUCCESS(
@@ -114,18 +108,10 @@ def enrol_from_file(
     return counts
 
 
-def _get_co(spec: SocietySpec, *, dry_run: bool) -> CO:
-    if dry_run:
-        return CO(slug=spec.slug, name=spec.name)
-    co, _ = CO.objects.get_or_create(slug=spec.slug, name=spec.name)
-    return co
-
-
 # ruff: noqa: PLR0913
 def _process_email(
     spec: SocietySpec,
     email: str,
-    co: CO,
     stdout,
     style,
     counts: dict[str, int],
@@ -148,41 +134,39 @@ def _process_email(
 
     if dry_run:
         stdout.write(
-            f"[DRY-RUN] would enrol {profile.username} ({email})"
+            f"[DRY-RUN] would enrol {profile.username} ({email}) "
+            f"in {spec.name}"
         )
         counts["enrolled"] += 1
         return
 
-    try:
-        person, _ = Person.objects.get_or_create(user=profile)
-        _, created = Role.objects.get_or_create(
-            person=person,
-            co=co,
-            cou=None,
-            affiliation=ROLE_AFFILIATION,
-            status=RoleStatus.ACTIVE,
-            source_system=ROLE_SOURCE_SYSTEM,
-            defaults={"organization": spec.role_organization},
-        )
-    except Exception:
-        counts["errors"] += 1
-        logger.exception(
-            "Failed to enrol %s (%s)", profile.username, email
-        )
-        return
-
-    if created:
-        counts["enrolled"] += 1
-        stdout.write(f"ENROLLED: {profile.username} ({email})")
-    else:
+    overrides = list(profile.role_overrides or [])
+    if spec.name in overrides:
         counts["already"] += 1
         stdout.write(f"ALREADY ENROLLED: {profile.username} ({email})")
+    else:
+        profile.role_overrides = sorted({*overrides, spec.name})
+        profile.save(update_fields=["role_overrides"])
+        counts["enrolled"] += 1
+        stdout.write(f"ENROLLED: {profile.username} ({email})")
 
+    # Update the cached membership JSON locally...
     try:
         ExternalSync.refresh_local_memberships(profile)
     except Exception:
         logger.exception(
             "Failed to refresh memberships for %s", profile.username
+        )
+
+    # ...then ping BuddyPress ourselves. The bulk command MUST fire this
+    # — relying on a later passive sync would leave BP out of date until
+    # the user's next session. Wrapped in its own try/except so a
+    # webhook failure for one profile does not abort the rest.
+    try:
+        ExternalSync.notify_subscribers(profile)
+    except Exception:
+        logger.exception(
+            "Failed to notify subscribers for %s", profile.username
         )
 
 
