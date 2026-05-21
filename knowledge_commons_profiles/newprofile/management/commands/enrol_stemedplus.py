@@ -11,11 +11,7 @@ from knowledge_commons_profiles.newprofile.society_enrolment import (
     enrol_from_file,
 )
 
-SPEC = SocietySpec(
-    slug="stemedplus",
-    name="STEMEDPLUS",
-    role_organization="Stemedplus",
-)
+SPEC = SocietySpec(name="STEMED+")
 
 
 class Command(BaseCommand):
