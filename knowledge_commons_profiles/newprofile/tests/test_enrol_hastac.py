@@ -13,6 +13,7 @@ from django.test import TestCase
 from django.test import override_settings
 
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 
 SOCIETY_MAPPINGS = {"hastac": "HASTAC", "stemedplus": "STEMED+"}
 
@@ -138,13 +139,14 @@ class EnrolHastacTests(TestCase):
             )
         mock_refresh.assert_not_called()
 
-    def test_membership_json_reflects_enrolment(self):
-        """After running, the profile's is_member_of records HASTAC."""
+    def test_membership_api_reflects_enrolment(self):
+        """The merged membership view (what BuddyPress consumes via the
+        REST API) records HASTAC after the override is written."""
         path = _write_file(["alice@example.test"])
         self._run(path)
         self.alice.refresh_from_db()
-        stored = json.loads(self.alice.is_member_of)
-        self.assertTrue(stored["HASTAC"])
+        memberships = get_external_memberships(self.alice)
+        self.assertTrue(memberships["HASTAC"])
 
     def test_missing_file_raises_command_error(self):
         bogus = str(Path(tempfile.gettempdir()) / "does-not-exist.txt")
@@ -226,6 +228,16 @@ class EnrolHastacTests(TestCase):
         path = _write_file(["alice@example.test"])
         self._run(path)
         self.alice.refresh_from_db()
-        stored = json.loads(self.alice.is_member_of)
-        self.assertTrue(stored["HASTAC"])
-        self.assertFalse(stored["STEMED+"])
+        memberships = get_external_memberships(self.alice)
+        self.assertTrue(memberships["HASTAC"])
+        self.assertFalse(memberships["STEMED+"])
+
+    def test_override_does_not_leak_into_raw_is_member_of(self):
+        """The override must NOT appear in the raw is_member_of JSON —
+        that field is the API/COmanage source layer; the manage_roles
+        UI uses it to distinguish "Roles from API" from "Role Overrides"."""
+        path = _write_file(["alice@example.test"])
+        self._run(path)
+        self.alice.refresh_from_db()
+        stored = json.loads(self.alice.is_member_of or "{}")
+        self.assertFalse(stored.get("HASTAC", False))

@@ -104,24 +104,16 @@ class HandleComanageRolesTests(TestCase):
         self.assertTrue(member_data["HASTAC"])
 
     @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
-    def test_role_override_alone_sets_is_member_of_true(self):
-        """A society in ``role_overrides`` with no Role row still counts."""
+    def test_role_overrides_do_not_leak_into_is_member_of(self):
+        """role_overrides is the manual layer; is_member_of must stay
+        a faithful record of API/COmanage source so the manage_roles UI
+        can categorise memberships correctly."""
         self.profile.role_overrides = ["HASTAC"]
         self.profile.save(update_fields=["role_overrides"])
         member_data: dict = {}
         ExternalSync._handle_comanage_roles(member_data, self.profile)
-        self.assertTrue(member_data["HASTAC"])
+        self.assertFalse(member_data["HASTAC"])
         self.assertFalse(member_data["STEMED+"])
-
-    @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
-    def test_role_override_and_role_both_set_true(self):
-        """Override and Role row for same society do not conflict."""
-        self._make_role(self.co_hastac, "Hastac")
-        self.profile.role_overrides = ["HASTAC"]
-        self.profile.save(update_fields=["role_overrides"])
-        member_data: dict = {}
-        ExternalSync._handle_comanage_roles(member_data, self.profile)
-        self.assertTrue(member_data["HASTAC"])
 
 
 class RefreshLocalMembershipsTests(TestCase):
