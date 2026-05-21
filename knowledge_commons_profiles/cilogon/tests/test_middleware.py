@@ -153,6 +153,54 @@ class AutoRefreshTokenMiddlewareTest(CILogonTestBase):
             self.assertEqual(assoc.access_token, "a")
             self.assertEqual(assoc.refresh_token, "r")
 
+    def test_collapses_pre_existing_duplicate_rows(self):
+        """
+        Bug #588 follow-up: before the fix landed, the table accumulated
+        multiple rows per (user_agent, app, user_name). The first
+        post-fix call must not raise MultipleObjectsReturned — it must
+        converge the duplicates back to a single row carrying the latest
+        tokens.
+        """
+        # Seed two pre-existing rows with the same natural key, as if
+        # they had been written by the buggy get_or_create.
+        for token_value in ("old-1", "old-2"):
+            TokenUserAgentAssociations.objects.create(
+                user_agent="TestAgent",
+                app="Profiles",
+                user_name=self.user.username,
+                refresh_token=token_value,
+                access_token=token_value,
+            )
+
+        self.request.session["oidc_token"] = {
+            "access_token": "fresh-access",
+            "refresh_token": "fresh-refresh",
+        }
+        self.request.headers = {"user-agent": "TestAgent"}
+        with (
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.should_run_middleware",
+                return_value=True,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.middleware.token_expired",
+                return_value=False,
+            ),
+        ):
+            # The buggy code would raise here.
+            self.middleware.process_request(self.request)
+
+        rows = list(
+            TokenUserAgentAssociations.objects.filter(
+                user_agent="TestAgent",
+                app="Profiles",
+                user_name=self.user.username,
+            )
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].access_token, "fresh-access")
+        self.assertEqual(rows[0].refresh_token, "fresh-refresh")
+
     def test_repeated_calls_do_not_duplicate_token_association(self):
         """
         Bug #588: Fernet's random IV meant that get_or_create could never

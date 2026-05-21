@@ -107,15 +107,37 @@ class AutoRefreshTokenMiddleware(MiddlewareMixin):
         # Store/refresh the row for (user_agent, app, user_name).
         # Encrypted columns are kept in defaults so Fernet's random IV
         # doesn't defeat the lookup (#588).
-        _, created = TokenUserAgentAssociations.objects.update_or_create(
-            user_agent=user_agent,
-            app="Profiles",
-            user_name=user.username,
-            defaults={
-                "refresh_token": token["refresh_token"],
-                "access_token": token["access_token"],
-            },
-        )
+        natural_key = {
+            "user_agent": user_agent,
+            "app": "Profiles",
+            "user_name": user.username,
+        }
+        token_defaults = {
+            "refresh_token": token["refresh_token"],
+            "access_token": token["access_token"],
+        }
+        try:
+            _, created = TokenUserAgentAssociations.objects.update_or_create(
+                **natural_key,
+                defaults=token_defaults,
+            )
+        except TokenUserAgentAssociations.MultipleObjectsReturned:
+            # Legacy duplicates from before #588 landed: every middleware
+            # run inserted a fresh row because Fernet's random IV defeated
+            # the lookup. Collapse them to a single row carrying the
+            # latest tokens. Self-healing — once converged, the happy
+            # path is taken on every subsequent request.
+            logger.info(
+                "Collapsing duplicate TokenUserAgentAssociations rows "
+                "for user %s on app Profiles",
+                user.username,
+            )
+            TokenUserAgentAssociations.objects.filter(**natural_key).delete()
+            TokenUserAgentAssociations.objects.create(
+                **natural_key,
+                **token_defaults,
+            )
+            created = True
 
         if created:
             logger.debug(
