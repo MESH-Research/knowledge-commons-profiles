@@ -1,3 +1,9 @@
+## 4.34.2 (2026-05-22)
+
+### Fix
+
+- **cilogon**: delete Redis session copies on logout, not just DB rows
+
 ## 4.34.1 (2026-05-22)
 
 ### Perf
