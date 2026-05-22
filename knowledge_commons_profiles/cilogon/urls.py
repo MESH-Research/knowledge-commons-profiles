@@ -19,6 +19,7 @@ from django.conf import settings
 from django.urls import path
 
 from knowledge_commons_profiles.cilogon import views
+from knowledge_commons_profiles.cilogon import views_debug
 
 urlpatterns = [
     path("login/", views.cilogon_login, name="login"),
@@ -75,5 +76,12 @@ urlpatterns = [
         "broker/silent-login/",
         views.silent_login,
         name="broker_silent_login",
+    ),
+    # DEBUG-only profiler. The view itself also enforces the DEBUG gate
+    # so it stays inert if accidentally exposed in production.
+    path(
+        "broker/_timings/",
+        views_debug.broker_timings_debug,
+        name="broker_timings_debug",
     ),
 ]
