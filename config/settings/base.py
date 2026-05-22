@@ -235,6 +235,14 @@ X_FRAME_OPTIONS = "DENY"
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = "default"
 
+# BROKER TIMING
+# ------------------------------------------------------------------------------
+# Emit Server-Timing headers on the broker views so we can chase
+# silent-login latency from Chrome DevTools and curl. Off by default in
+# production; on under DEBUG. Set BROKER_TIMING_ENABLED=true in a prod
+# env to temporarily enable for diagnostics.
+BROKER_TIMING_ENABLED = env.bool("BROKER_TIMING_ENABLED", default=DEBUG)
+
 # EMAIL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend

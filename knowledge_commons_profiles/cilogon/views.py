@@ -72,6 +72,8 @@ from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import validate_return_to
 from knowledge_commons_profiles.cilogon.signals import user_session_key
+from knowledge_commons_profiles.cilogon.timing import TimingCollector
+from knowledge_commons_profiles.cilogon.timing import apply_header
 from knowledge_commons_profiles.common.profiles_email import normalize_email
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
@@ -277,6 +279,8 @@ def verify_broker_nonce(request):
     Returns 200 with {"valid": True, "sub": "..."} on success.
     Returns 401 for bad auth, 410 for expired/used/missing nonce.
     """
+    timings = TimingCollector()
+
     # Validate bearer token
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
@@ -298,7 +302,8 @@ def verify_broker_nonce(request):
 
     # Look up and consume nonce
     cache_key = f"broker_nonce:{nonce}"
-    nonce_data = cache.get(cache_key)
+    with timings.span("cache_lookup"):
+        nonce_data = cache.get(cache_key)
 
     if not nonce_data:
         return JsonResponse(
@@ -306,9 +311,14 @@ def verify_broker_nonce(request):
         )
 
     # Delete nonce immediately to prevent replay
-    cache.delete(cache_key)
+    with timings.span("cache_delete"):
+        cache.delete(cache_key)
 
-    return JsonResponse({"valid": True, "sub": nonce_data.get("sub", "")})
+    response = JsonResponse(
+        {"valid": True, "sub": nonce_data.get("sub", "")}
+    )
+    apply_header(response, timings)
+    return response
 
 
 @require_http_methods(["GET"])
@@ -322,10 +332,13 @@ def silent_login(request):
 
     Does not create or modify session state.
     """
+    timings = TimingCollector()
     return_to = request.GET.get("return_to", "")
     final_redirect = request.GET.get("final_redirect", "")
 
-    if not return_to or not validate_return_to(return_to):
+    with timings.span("validate"):
+        return_to_ok = bool(return_to) and validate_return_to(return_to)
+    if not return_to_ok:
         return JsonResponse(
             {"error": "Missing or invalid return_to"}, status=400
         )
@@ -333,21 +346,24 @@ def silent_login(request):
     if request.user.is_authenticated:
         userinfo = request.session.get("oidc_userinfo", {})
         if userinfo and userinfo.get("sub"):
-            sub_association = (
-                SubAssociation.objects.select_related("profile")
-                .filter(sub=userinfo["sub"])
-                .first()
-            )
-            if sub_association:
-                broker_url = build_broker_redirect(
-                    userinfo,
-                    return_to,
-                    sub_association.profile,
-                    final_redirect=final_redirect,
+            with timings.span("sub_lookup"):
+                sub_association = (
+                    SubAssociation.objects.select_related("profile")
+                    .filter(sub=userinfo["sub"])
+                    .first()
                 )
+            if sub_association:
+                with timings.span("redirect_build"):
+                    broker_url = build_broker_redirect(
+                        userinfo,
+                        return_to,
+                        sub_association.profile,
+                        final_redirect=final_redirect,
+                    )
                 if broker_url:
                     response = redirect(broker_url)
                     response["Cache-Control"] = "no-store"
+                    apply_header(response, timings)
                     return response
 
     separator = "&" if "?" in return_to else "?"
@@ -358,6 +374,7 @@ def silent_login(request):
         )
     response = redirect(no_session_url)
     response["Cache-Control"] = "no-store"
+    apply_header(response, timings)
     return response
 
 
