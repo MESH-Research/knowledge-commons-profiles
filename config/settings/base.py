@@ -455,6 +455,12 @@ CILOGON_APP_LIST = ["Profiles", "Works", "WordPress"]
 CILOGON_REVOCATION_TIMEOUT = env.float(
     "CILOGON_REVOCATION_TIMEOUT", default=5.0
 )
+# Preload the OIDC discovery document at worker startup so the first
+# user request doesn't pay the cold HTTP cost (#594). Disable in tests /
+# local dev to keep boot hermetic.
+CILOGON_PRELOAD_METADATA = env.bool(
+    "CILOGON_PRELOAD_METADATA", default=True
+)
 
 # Identity broker configuration for third-party app authentication
 BROKER_REGISTERED_APPS = {
