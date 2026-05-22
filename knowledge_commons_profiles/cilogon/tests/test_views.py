@@ -1,6 +1,8 @@
+from importlib import import_module
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -9,6 +11,7 @@ from django.test import RequestFactory
 from django.test import override_settings
 from django.urls import reverse
 
+from knowledge_commons_profiles.cilogon.views import FlushLogoutBehaviour
 from knowledge_commons_profiles.cilogon.views import RedirectBehaviour
 from knowledge_commons_profiles.cilogon.views import app_logout
 from knowledge_commons_profiles.cilogon.views import callback
@@ -202,6 +205,67 @@ class CILogonViewTests(CILogonTestBase):
                 request, redirect_behaviour=RedirectBehaviour.NO_REDIRECT
             )
             self.assertIsNone(response)
+
+    @override_settings(
+        SESSION_ENGINE="django.contrib.sessions.backends.cached_db",
+        SESSION_CACHE_ALIAS="default",
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            },
+        },
+    )
+    def test_app_logout_terminates_session_in_cache_not_just_db(self):
+        """
+        Universal logout must end the user's other sessions in every
+        layer of the configured store, not only the django_session row.
+
+        Regression guard for the cached_db backend: it reads its cache
+        copy before the database, so a logout that deletes only the
+        django_session row leaves the cached copy behind and the
+        "logged-out" user stays authenticated. app_logout must delete
+        through the SessionStore so the cache copy is cleared too.
+        """
+        engine = import_module(settings.SESSION_ENGINE)
+
+        # the user is signed in on another device: a session carrying
+        # their _auth_user_id, persisted by cached_db to both the cache
+        # and the django_session table
+        other_device = engine.SessionStore()
+        other_device["_auth_user_id"] = str(self.user.pk)
+        other_device.save()
+        session_key = other_device.session_key
+
+        # precondition: that session really does authenticate the user
+        self.assertEqual(
+            engine.SessionStore(session_key).get("_auth_user_id"),
+            str(self.user.pk),
+        )
+
+        request = self.factory.get("/logout/", **self.headers)
+        request.user = self.user
+        self._add_session(request)
+
+        with (
+            patch("knowledge_commons_profiles.cilogon.views.logout"),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+            ) as create_client,
+        ):
+            create_client.return_value.server_metadata = {
+                "revocation_endpoint": "https://revoke.test"
+            }
+            app_logout(
+                request,
+                redirect_behaviour=RedirectBehaviour.NO_REDIRECT,
+                flush_behaviour=FlushLogoutBehaviour.NO_FLUSH_LOGOUT,
+            )
+
+        # after logout the session must authenticate nobody: a fresh
+        # load (cache first, then DB) comes back empty
+        self.assertIsNone(
+            engine.SessionStore(session_key).get("_auth_user_id"),
+        )
 
     def test_app_logout_handles_missing_refresh_token_gracefully(self):
         request = self.factory.get("/logout/", **self.headers)
