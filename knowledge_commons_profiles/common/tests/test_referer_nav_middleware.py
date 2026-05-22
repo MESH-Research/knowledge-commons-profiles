@@ -128,6 +128,68 @@ class RefererNavMiddlewareTest(TestCase):
             "mla.hcommons-staging.org",
         )
 
+    @override_settings(**TEST_NAV_SETTINGS)
+    def test_skips_write_on_broker_silent_login(self):
+        """Issue #591: the broker silent-login path must never trigger
+        a session write — it's the hot SSO check that runs on every
+        first-page load, and writing the session there causes a Postgres
+        UPDATE on every hit."""
+        request = self.factory.get(
+            "/broker/silent-login/",
+            HTTP_REFERER="https://msucommons-dev.org/some/page",
+        )
+        request.session = {}
+        middleware = RefererNavMiddleware(_make_get_response())
+        middleware(request)
+        self.assertNotIn("nav_network_domain", request.session)
+        self.assertNotIn("nav_network_domain_ts", request.session)
+
+    @override_settings(**TEST_NAV_SETTINGS)
+    def test_skips_write_on_broker_verify_nonce(self):
+        """Issue #591: the back-channel verify-nonce endpoint must
+        never trigger a session write — it's a server-to-server POST
+        with no user session."""
+        request = self.factory.post(
+            "/broker/verify-nonce/",
+            HTTP_REFERER="https://msucommons-dev.org/some/page",
+        )
+        request.session = {}
+        middleware = RefererNavMiddleware(_make_get_response())
+        middleware(request)
+        self.assertNotIn("nav_network_domain", request.session)
+        self.assertNotIn("nav_network_domain_ts", request.session)
+
+    @override_settings(**TEST_NAV_SETTINGS)
+    def test_still_writes_session_on_non_broker_url(self):
+        """The skip must be narrow. The healthcheck URL has a known
+        name that is NOT in the skip set, so a matching referer must
+        still populate the session."""
+        request = self.factory.get(
+            "/health/",
+            HTTP_REFERER="https://msucommons-dev.org/some/page",
+        )
+        request.session = {}
+        middleware = RefererNavMiddleware(_make_get_response())
+        middleware(request)
+        self.assertEqual(
+            request.session["nav_network_domain"], "msucommons-dev.org"
+        )
+
+    @override_settings(**TEST_NAV_SETTINGS)
+    def test_unresolvable_path_does_not_skip(self):
+        """A path that resolves to nothing must not silently skip the
+        write — we fall through to default behaviour."""
+        request = self.factory.get(
+            "/this-path-does-not-exist-anywhere/",
+            HTTP_REFERER="https://msucommons-dev.org/some/page",
+        )
+        request.session = {}
+        middleware = RefererNavMiddleware(_make_get_response())
+        middleware(request)
+        self.assertEqual(
+            request.session["nav_network_domain"], "msucommons-dev.org"
+        )
+
 
 class RewriteDomainTest(TestCase):
     def test_exact_domain_match_rewrites(self):
