@@ -14,6 +14,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from enum import IntEnum
+from importlib import import_module
 from typing import Any
 from urllib.parse import quote as urlquote
 from uuid import uuid4
@@ -310,9 +311,7 @@ def verify_broker_nonce(request):
     with timings.span("cache_delete"):
         cache.delete(cache_key)
 
-    response = JsonResponse(
-        {"valid": True, "sub": nonce_data.get("sub", "")}
-    )
+    response = JsonResponse({"valid": True, "sub": nonce_data.get("sub", "")})
     apply_header(response, timings)
     return response
 
@@ -377,6 +376,7 @@ def silent_login(request):
 # ruff: noqa: PLR0913
 # ruff: noqa: C901
 # ruff: noqa: PLR0912
+# ruff: noqa: PLR0915
 def app_logout(
     request,
     redirect_behaviour: RedirectBehaviour = RedirectBehaviour.REDIRECT,
@@ -386,7 +386,9 @@ def app_logout(
     flush_behaviour: FlushLogoutBehaviour = FlushLogoutBehaviour.FLUSH_LOGOUT,
 ):
     """
-    Log the user out of all sessions sharing this user agent
+    Log the user out of all sessions sharing this user agent.
+
+    NB: user_agent is not currently used.
     """
 
     if not apps:
@@ -423,7 +425,8 @@ def app_logout(
         return None
 
     logger.debug(
-        "Logging out user %s with user agent %s on %s",
+        "Logging out user %s with user agent %s on %s. NB: user_agent "
+        "is ignored. User will be logged out on all user agents.",
         user_name,
         user_agent,
         apps,
@@ -438,9 +441,8 @@ def app_logout(
         msg = f"Not flushing as behaviour is set to { flush_behaviour }"
         logger.info(msg)
 
-    # get all token associations for this browser
+    # get all token associations for this user
     token_associations = TokenUserAgentAssociations.objects.filter(
-        user_agent=user_agent,
         app__in=apps,
         user_name=user_name,
     )
@@ -502,10 +504,19 @@ def app_logout(
         logger.info(msg)
 
         to_delete: list[DjangoSession] = []
+        session_store = import_module(settings.SESSION_ENGINE).SessionStore
 
         for session in DjangoSession.objects.all():
             decoded = session.get_decoded()
             if decoded.get("_auth_user_id") == str(user.pk):
+                logger.info("Killing a session for %s", user_name)
+
+                # this kills sessions in REDIS
+                session_store(session.session_key).delete()
+
+                # and this kills sessions in the DjangoSession table
+                # which could be in the DB or in the Cache
+                # depending on what SessionStore is set
                 to_delete.append(session)
 
         for session in to_delete:
@@ -1088,9 +1099,7 @@ def validate_form(email, full_name, request, username):
     # Check email/username existence using exists() for more consistent timing.
     # Always run all three queries regardless of earlier validation failures
     # to prevent enumeration via timing differences.
-    email_exists_primary = Profile.objects.filter(
-        email__iexact=email
-    ).exists()
+    email_exists_primary = Profile.objects.filter(email__iexact=email).exists()
     email_exists_secondary = Profile.objects.filter(
         emails__contains=[email]
     ).exists()
