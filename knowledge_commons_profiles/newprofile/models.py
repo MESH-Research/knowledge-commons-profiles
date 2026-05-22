@@ -26,6 +26,8 @@ from django.utils import timezone
 from django_bleach.models import BleachField
 from requests import Response
 
+from knowledge_commons_profiles.newprofile.fields import CICharField
+
 if TYPE_CHECKING:
     from django.db.models.query import QuerySet
 
@@ -431,7 +433,7 @@ class Profile(models.Model):
     """
 
     name = models.CharField(max_length=255)
-    username = models.CharField(max_length=255, unique=True)
+    username = CICharField(max_length=255, unique=True)
     central_user_id = models.IntegerField(db_index=True, null=True)
     title = models.CharField(max_length=255, null=True)
     affiliation = models.CharField(max_length=255, null=True)

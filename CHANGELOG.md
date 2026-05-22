@@ -1,3 +1,15 @@
+## 4.35.0 (2026-05-22)
+
+### Feat
+
+- **ui**: use Knowledge Commons logo image and refine header branding
+
+## 4.34.2 (2026-05-22)
+
+### Fix
+
+- **cilogon**: delete Redis session copies on logout, not just DB rows
+
 ## 4.34.1 (2026-05-22)
 
 ### Perf
