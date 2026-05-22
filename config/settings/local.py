@@ -14,6 +14,9 @@ from .base import env
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = True
+# Skip the OIDC discovery preload here so dev / test boot stays hermetic
+# (no HTTP to cilogon.org on app startup).
+CILOGON_PRELOAD_METADATA = False
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env(
     "DJANGO_SECRET_KEY",
