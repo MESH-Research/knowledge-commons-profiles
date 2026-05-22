@@ -99,15 +99,9 @@ class CILogonConfigReadyTests(SimpleTestCase):
     def test_ready_invokes_preload(self):
         from knowledge_commons_profiles.cilogon.apps import CILogonConfig
 
-        with (
-            patch(
-                "knowledge_commons_profiles.cilogon.apps._preload_oidc_metadata"
-            ) as preload,
-            patch(
-                "knowledge_commons_profiles.cilogon.signals",
-                create=True,
-            ),
-        ):
+        with patch(
+            "knowledge_commons_profiles.cilogon.apps._preload_oidc_metadata"
+        ) as preload:
             config = CILogonConfig.create("knowledge_commons_profiles.cilogon")
             config.ready()
 

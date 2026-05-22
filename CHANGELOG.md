@@ -1,3 +1,11 @@
+## 4.34.1 (2026-05-22)
+
+### Perf
+
+- **cilogon**: preload OIDC discovery metadata at worker startup
+- **common**: skip RefererNavMiddleware session write on broker URLs
+- **cilogon**: instrument broker views with Server-Timing + DEBUG profiler
+
 ## 4.34.0 (2026-05-21)
 
 ### Feat
