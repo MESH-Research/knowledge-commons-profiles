@@ -1274,7 +1274,7 @@ div {
 
         /* Avatar / initial */
         .avatar, .initial{
-          width: 150px; height: 150px; flex: 0 0 56px;
+          width: 75px; height: 75px; flex: 0 0 56px;
           border-radius: 50%;
           object-fit: cover;
           background: #e6eef2;
@@ -1793,7 +1793,6 @@ div {
       width: 40px;
       height: 40px;
       border-radius: 12px;
-      background: var(--kc-green);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1912,7 +1911,6 @@ div {
       width: 70px;
       height: 70px;
       border-radius: 18px;
-      background: var(--kc-green);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1921,6 +1919,8 @@ div {
       font-size: 1.8rem;
       letter-spacing: 0.04em;
     }
+
+
 
     .kc-hero-logo-text {
       font-size: 1.6rem;
@@ -1932,7 +1932,7 @@ div {
     }
 
     .kc-hero-tagline {
-      max-width: 620px;
+      max-width: 800px;
       font-size: 1.05rem;
       line-height: 1.7;
       color: var(--kc-muted);
