@@ -1,6 +1,16 @@
 
 from basicauth.compat import MiddlewareMixin
 from django.conf import settings
+from django.urls import Resolver404
+from django.urls import resolve
+
+# URL names where RefererNavMiddleware must never write to the session.
+# The broker silent-login is hit on every page load by every browser and
+# its callers don't want a Postgres UPDATE on every check; verify-nonce
+# is a server-to-server back-channel with no user session at all (#591).
+_NAV_SKIP_URL_NAMES = frozenset(
+    {"broker_silent_login", "broker_verify_nonce"}
+)
 
 
 class RequestMiddleware(MiddlewareMixin):
@@ -29,11 +39,19 @@ class RefererNavMiddleware:
         self.domain_map = getattr(settings, "NAV_NETWORK_DOMAIN_MAP", {})
 
     def __call__(self, request):
-        if self.domain_map:
+        if self.domain_map and not self._is_skipped_url(request):
             referer = request.headers.get("referer")
             if referer:
                 self._process_referer(request, referer)
         return self.get_response(request)
+
+    @staticmethod
+    def _is_skipped_url(request):
+        try:
+            url_name = resolve(request.path_info).url_name
+        except Resolver404:
+            return False
+        return url_name in _NAV_SKIP_URL_NAMES
 
     def _process_referer(self, request, referer):
         from time import time
