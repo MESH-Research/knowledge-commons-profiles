@@ -509,6 +509,16 @@ BROKER_ALLOWED_REFERER_DOMAINS = env.list(
     default=["hcommons.org", "msu.edu", "localhost"],
 )
 
+# Where to send the browser when /broker/silent-login/ can't even build a
+# graceful no_session response (e.g. missing or invalid return_to). The
+# previous behaviour was a JSON 400, which left the user looking at a raw
+# error page; redirecting to a public homepage is friendlier and lets us
+# point at different commons sites per environment.
+BROKER_FALLBACK_REDIRECT_URL = env(
+    "BROKER_FALLBACK_REDIRECT_URL",
+    default="https://hcommons.org",
+)
+
 # OAuth domain mapping for environments sharing CILogon credentials.
 # CILOGON_REGISTERED_DOMAIN: The domain registered with CILogon (used in redirects)
 # CILOGON_ACTUAL_DOMAIN: The actual domain this instance runs on (if different)

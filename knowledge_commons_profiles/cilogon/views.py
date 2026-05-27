@@ -317,6 +317,20 @@ def verify_broker_nonce(request):
     return response
 
 
+def _build_no_session_redirect(return_to, final_redirect, timings):
+    """Build the standard no_session=1 redirect used by silent_login."""
+    separator = "&" if "?" in return_to else "?"
+    no_session_url = f"{return_to}{separator}no_session=1"
+    if final_redirect:
+        no_session_url += (
+            f"&final_redirect={urlquote(final_redirect, safe='')}"
+        )
+    response = redirect(no_session_url)
+    response["Cache-Control"] = "no-store"
+    apply_header(response, timings)
+    return response
+
+
 @require_http_methods(["GET"])
 def silent_login(request):
     """
@@ -328,11 +342,6 @@ def silent_login(request):
 
     Does not create or modify session state.
     """
-    if not referer_is_allowed(request):
-        return JsonResponse(
-            {"error": "Referer not allowed"}, status=403
-        )
-
     timings = TimingCollector()
     return_to = request.GET.get("return_to", "")
     final_redirect = request.GET.get("final_redirect", "")
@@ -340,8 +349,30 @@ def silent_login(request):
     with timings.span("validate"):
         return_to_ok = bool(return_to) and validate_return_to(return_to)
     if not return_to_ok:
-        return JsonResponse(
-            {"error": "Missing or invalid return_to"}, status=400
+        # No safe URL to bounce back to: log and send the browser to the
+        # configured fallback (e.g. a public homepage) instead of leaving
+        # the user staring at a JSON error.
+        logger.warning(
+            "silent_login: missing or invalid return_to=%r, "
+            "redirecting to fallback",
+            return_to,
+        )
+        response = redirect(settings.BROKER_FALLBACK_REDIRECT_URL)
+        response["Cache-Control"] = "no-store"
+        return response
+
+    if not referer_is_allowed(request):
+        # We have a usable return_to, so degrade gracefully through the
+        # standard no_session path instead of a hard 403 — the broker app
+        # then handles the "log in" prompt itself.
+        logger.warning(
+            "silent_login: referer %r not in allowlist; "
+            "routing through no_session path for return_to=%r",
+            request.headers.get("referer", ""),
+            return_to,
+        )
+        return _build_no_session_redirect(
+            return_to, final_redirect, timings
         )
 
     if request.user.is_authenticated:
@@ -367,16 +398,7 @@ def silent_login(request):
                     apply_header(response, timings)
                     return response
 
-    separator = "&" if "?" in return_to else "?"
-    no_session_url = f"{return_to}{separator}no_session=1"
-    if final_redirect:
-        no_session_url += (
-            f"&final_redirect={urlquote(final_redirect, safe='')}"
-        )
-    response = redirect(no_session_url)
-    response["Cache-Control"] = "no-store"
-    apply_header(response, timings)
-    return response
+    return _build_no_session_redirect(return_to, final_redirect, timings)
 
 
 # ruff: noqa: PLR0913

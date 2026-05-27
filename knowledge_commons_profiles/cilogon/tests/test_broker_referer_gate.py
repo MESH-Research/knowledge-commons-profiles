@@ -148,18 +148,22 @@ class TestSilentLoginRefererGate(TestCase):
         cache.clear()
         super().tearDown()
 
-    def test_missing_referer_returns_403(self):
+    def test_missing_referer_redirects_via_no_session(self):
         response = self.client.get(
             f"/broker/silent-login/?return_to={self.return_to}"
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("no_session=1", response.url)
+        self.assertTrue(response.url.startswith("https://hcommons.org/"))
 
-    def test_disallowed_referer_returns_403(self):
+    def test_disallowed_referer_redirects_via_no_session(self):
         response = self.client.get(
             f"/broker/silent-login/?return_to={self.return_to}",
-            headers={"referer": "https://evil.example.com/"}
+            headers={"referer": "https://evil.example.com/"},
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("no_session=1", response.url)
+        self.assertTrue(response.url.startswith("https://hcommons.org/"))
 
     def test_allowed_bare_domain_referer_passes_gate(self):
         response = self.client.get(
@@ -188,23 +192,27 @@ class TestSilentLoginRefererGate(TestCase):
         self.assertIn("no_session=1", response.url)
 
     def test_gate_is_configurable(self):
-        """With env-overridden domain list, only the new list is allowed."""
+        """With env-overridden domain list, the gate uses the new list."""
         with override_settings(
             BROKER_ALLOWED_REFERER_DOMAINS=["example.org"]
         ):
-            # hcommons.org no longer allowed under this override
+            # hcommons.org no longer allowed under this override: gate
+            # fails but the response still degrades to no_session, not 403.
             blocked = self.client.get(
                 f"/broker/silent-login/?return_to={self.return_to}",
-                headers={"referer": "https://hcommons.org/page"}
+                headers={"referer": "https://hcommons.org/page"},
             )
-            self.assertEqual(blocked.status_code, 403)
+            self.assertEqual(blocked.status_code, 302)
+            self.assertIn("no_session=1", blocked.url)
 
-            # example.org now allowed
+            # example.org now allowed -> gate passes, falls through to
+            # the unauthenticated no_session path as well.
             allowed = self.client.get(
                 f"/broker/silent-login/?return_to={self.return_to}",
-                headers={"referer": "https://example.org/page"}
+                headers={"referer": "https://example.org/page"},
             )
             self.assertEqual(allowed.status_code, 302)
+            self.assertIn("no_session=1", allowed.url)
 
     def test_verify_nonce_not_gated_by_referer(self):
         """verify-nonce is server-to-server; must not require a Referer."""
