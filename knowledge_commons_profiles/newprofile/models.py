@@ -541,6 +541,16 @@ class Profile(models.Model):
         """
         return str(self.name)
 
+    def admin_display(self):
+        """
+        Return a human-readable representation of the Profile model instance
+        as a string.
+
+        Returns:
+            str: The name of the profile and the username.
+        """
+        return f"{self.name!s} ({self.username})"
+
     def get_external_memberships(self, api_only=False):
         from knowledge_commons_profiles.rest_api.utils import (
             get_external_memberships as gem,

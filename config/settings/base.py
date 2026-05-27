@@ -78,7 +78,8 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
-    "django.contrib.admin",
+    # "django.contrib.admin",
+    "knowledge_commons_profiles.newprofile.apps.CustomAdminConfig",
     "django.contrib.postgres",
     "django.forms",
 ]
