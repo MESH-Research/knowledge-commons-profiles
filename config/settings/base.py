@@ -501,6 +501,14 @@ BROKER_REGISTERED_APPS = {
 
 BROKER_NONCE_TTL = 60  # seconds before a broker nonce expires
 
+# Referer allowlist for browser-facing broker endpoints (e.g. silent-login).
+# A request's Referer host must equal one of these domains or be a subdomain
+# of one. The server-to-server verify-nonce endpoint is NOT gated by this.
+BROKER_ALLOWED_REFERER_DOMAINS = env.list(
+    "BROKER_ALLOWED_REFERER_DOMAINS",
+    default=["hcommons.org", "msu.edu"],
+)
+
 # OAuth domain mapping for environments sharing CILogon credentials.
 # CILOGON_REGISTERED_DOMAIN: The domain registered with CILogon (used in redirects)
 # CILOGON_ACTUAL_DOMAIN: The actual domain this instance runs on (if different)

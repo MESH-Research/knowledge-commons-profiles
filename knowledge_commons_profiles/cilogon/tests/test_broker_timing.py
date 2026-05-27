@@ -121,7 +121,8 @@ class SilentLoginServerTimingTests(TestCase):
 
     def test_no_session_branch_emits_server_timing_header(self):
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": "https://hcommons.org/page/"}
         )
         self.assertEqual(response.status_code, 302)
         header = response.get("Server-Timing", "")
@@ -143,7 +144,8 @@ class SilentLoginServerTimingTests(TestCase):
         _ = user
 
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": "https://hcommons.org/page/"}
         )
         self.assertEqual(response.status_code, 302)
         header = response.get("Server-Timing", "")
@@ -171,7 +173,8 @@ class SilentLoginServerTimingDisabledTests(TestCase):
 
     def test_no_header_when_flag_off(self):
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": "https://hcommons.org/page/"}
         )
         self.assertEqual(response.status_code, 302)
         self.assertNotIn("Server-Timing", response)
@@ -284,7 +287,8 @@ class SilentLoginQueryCountTests(TestCase):
         budget = 4
         with CaptureQueriesContext(connection) as captured:
             response = self.client.get(
-                f"/broker/silent-login/?return_to={self.return_to}"
+                f"/broker/silent-login/?return_to={self.return_to}",
+                headers={"referer": "https://hcommons.org/page/"}
             )
 
         self.assertEqual(response.status_code, 302)
