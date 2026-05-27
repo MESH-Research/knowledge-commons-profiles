@@ -11,12 +11,12 @@ echo "Running gunicorn..."
 exec uv run gunicorn config.wsgi \
     --bind 0.0.0.0:5000 \
     --chdir=/app \
-    --workers "${GUNICORN_WORKERS:-3}" \
+    --workers "${GUNICORN_WORKERS:-5}" \
     --threads "${GUNICORN_THREADS:-8}" \
     --worker-class gthread \
     --worker-tmp-dir /dev/shm \
-    --timeout 30 \
-    --graceful-timeout 30 \
+    --timeout 15 \
+    --graceful-timeout 15 \
     --keep-alive 5 \
     --max-requests 1000 \
     --max-requests-jitter 100 \
