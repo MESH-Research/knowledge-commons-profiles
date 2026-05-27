@@ -506,7 +506,7 @@ BROKER_NONCE_TTL = 60  # seconds before a broker nonce expires
 # of one. The server-to-server verify-nonce endpoint is NOT gated by this.
 BROKER_ALLOWED_REFERER_DOMAINS = env.list(
     "BROKER_ALLOWED_REFERER_DOMAINS",
-    default=["hcommons.org", "msu.edu"],
+    default=["hcommons.org", "msu.edu", "localhost"],
 )
 
 # OAuth domain mapping for environments sharing CILogon credentials.
