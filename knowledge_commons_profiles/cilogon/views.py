@@ -46,7 +46,6 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from knowledge_commons_profiles.cilogon.broker_referer import referer_is_allowed
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
@@ -328,11 +327,6 @@ def silent_login(request):
 
     Does not create or modify session state.
     """
-    if not referer_is_allowed(request):
-        return JsonResponse(
-            {"error": "Referer not allowed"}, status=403
-        )
-
     timings = TimingCollector()
     return_to = request.GET.get("return_to", "")
     final_redirect = request.GET.get("final_redirect", "")
