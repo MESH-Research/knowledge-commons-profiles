@@ -1,3 +1,10 @@
+## 4.36.0 (2026-05-22)
+
+### Feat
+
+- **profiles**: make Profile.username case-insensitive via citext
+- **profiles**: add command to resolve case-insensitive username collisions
+
 ## 4.35.0 (2026-05-22)
 
 ### Feat
