@@ -311,16 +311,33 @@ class WorksDeposits:
         # Start with ordered types from user profile that exist in work_types
 
     def format_date_parts(
-        self, date_string: str
+        self, date_string: str | None
     ) -> dict[str, list[list[int]]]:
         """
-        Format a date string to be used in a dictionary
+        Format a date string into a CSL date-parts dict.
+
+        Accepts standard ``YYYY-MM-DD`` values, bare years, and academic
+        year ranges like ``"2005/2006"`` (rendered as a CSL date range
+        with two sub-arrays). Non-numeric tokens are skipped; missing or
+        unparseable input returns an empty dict.
         """
-        return {
-            "date-parts": [
-                [int(date_val) for date_val in date_string.split("-")]
+        if not date_string:
+            return {}
+
+        segments: list[list[int]] = []
+        for segment in date_string.split("/"):
+            parts = [
+                int(token)
+                for token in segment.split("-")
+                if token.isdigit()
             ]
-        }
+            if parts:
+                segments.append(parts)
+
+        if not segments:
+            return {}
+
+        return {"date-parts": segments}
 
     @retry(
         reraise=True,

@@ -225,8 +225,61 @@ class TestWorksDeposits(django.test.TestCase):
         self.assertEqual(result["Journal article"], [])
 
     def test_format_date_parts_with_invalid_date(self):
-        with self.assertRaises(ValueError):
-            self.works_deposits.format_date_parts("invalid-date")
+        self.assertEqual(
+            self.works_deposits.format_date_parts("invalid-date"), {}
+        )
+
+    def test_format_date_parts_with_academic_year_range(self):
+        self.assertEqual(
+            self.works_deposits.format_date_parts("2005/2006"),
+            {"date-parts": [[2005], [2006]]},
+        )
+
+    def test_format_date_parts_with_year_only(self):
+        self.assertEqual(
+            self.works_deposits.format_date_parts("2005"),
+            {"date-parts": [[2005]]},
+        )
+
+    def test_format_date_parts_with_empty_string(self):
+        self.assertEqual(self.works_deposits.format_date_parts(""), {})
+
+    def test_format_date_parts_with_none(self):
+        self.assertEqual(self.works_deposits.format_date_parts(None), {})
+
+    def test_format_date_parts_with_partial_non_numeric(self):
+        self.assertEqual(
+            self.works_deposits.format_date_parts("2020-foo"),
+            {"date-parts": [[2020]]},
+        )
+
+    def test_format_date_parts_with_range_and_partial_segment(self):
+        self.assertEqual(
+            self.works_deposits.format_date_parts("2005/foo"),
+            {"date-parts": [[2005]]},
+        )
+
+    def test_build_work_entry_survives_academic_year_range(self):
+        ranged_record = Record(
+            id="range123",
+            links={"latest_html": "https://example.com/record/range123"},
+            metadata=Metadata(
+                title="Paper across an academic year",
+                publication_date="2005/2006",
+                publisher="University Press",
+                resource_type=ResourceType(
+                    id="article",
+                    title=ResourceTypeInLanguage(en="Journal article"),
+                ),
+                creators=[],
+            ),
+            pids={},
+            custom_fields=None,
+        )
+        entry = self.works_deposits.build_work_entry(ranged_record)
+        self.assertEqual(
+            entry["issued"], {"date-parts": [[2005], [2006]]}
+        )
 
     def test_build_work_entry_with_malformed_name(self):
         malformed_creator = Creator(
