@@ -1,3 +1,10 @@
+## 4.37.0 (2026-05-27)
+
+### Feat
+
+- **cilogon**: include localhost in BROKER_ALLOWED_REFERER_DOMAINS default
+- **cilogon**: gate browser-facing broker silent-login by Referer
+
 ## 4.36.1 (2026-05-27)
 
 ### Perf
