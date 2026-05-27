@@ -458,9 +458,7 @@ CILOGON_REVOCATION_TIMEOUT = env.float(
 # Preload the OIDC discovery document at worker startup so the first
 # user request doesn't pay the cold HTTP cost (#594). Disable in tests /
 # local dev to keep boot hermetic.
-CILOGON_PRELOAD_METADATA = env.bool(
-    "CILOGON_PRELOAD_METADATA", default=True
-)
+CILOGON_PRELOAD_METADATA = env.bool("CILOGON_PRELOAD_METADATA", default=True)
 
 # Identity broker configuration for third-party app authentication
 BROKER_REGISTERED_APPS = {
@@ -500,14 +498,6 @@ BROKER_REGISTERED_APPS = {
 
 
 BROKER_NONCE_TTL = 60  # seconds before a broker nonce expires
-
-# Referer allowlist for browser-facing broker endpoints (e.g. silent-login).
-# A request's Referer host must equal one of these domains or be a subdomain
-# of one. The server-to-server verify-nonce endpoint is NOT gated by this.
-BROKER_ALLOWED_REFERER_DOMAINS = env.list(
-    "BROKER_ALLOWED_REFERER_DOMAINS",
-    default=["hcommons.org", "msu.edu", "localhost"],
-)
 
 # Where to send the browser when /broker/silent-login/ can't even build a
 # graceful no_session response (e.g. missing or invalid return_to). The

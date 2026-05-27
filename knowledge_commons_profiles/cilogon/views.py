@@ -46,7 +46,6 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from knowledge_commons_profiles.cilogon.broker_referer import referer_is_allowed
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import SubAssociation
@@ -317,20 +316,6 @@ def verify_broker_nonce(request):
     return response
 
 
-def _build_no_session_redirect(return_to, final_redirect, timings):
-    """Build the standard no_session=1 redirect used by silent_login."""
-    separator = "&" if "?" in return_to else "?"
-    no_session_url = f"{return_to}{separator}no_session=1"
-    if final_redirect:
-        no_session_url += (
-            f"&final_redirect={urlquote(final_redirect, safe='')}"
-        )
-    response = redirect(no_session_url)
-    response["Cache-Control"] = "no-store"
-    apply_header(response, timings)
-    return response
-
-
 @require_http_methods(["GET"])
 def silent_login(request):
     """
@@ -361,20 +346,6 @@ def silent_login(request):
         response["Cache-Control"] = "no-store"
         return response
 
-    if not referer_is_allowed(request):
-        # We have a usable return_to, so degrade gracefully through the
-        # standard no_session path instead of a hard 403 — the broker app
-        # then handles the "log in" prompt itself.
-        logger.warning(
-            "silent_login: referer %r not in allowlist; "
-            "routing through no_session path for return_to=%r",
-            request.headers.get("referer", ""),
-            return_to,
-        )
-        return _build_no_session_redirect(
-            return_to, final_redirect, timings
-        )
-
     if request.user.is_authenticated:
         userinfo = request.session.get("oidc_userinfo", {})
         if userinfo and userinfo.get("sub"):
@@ -398,7 +369,16 @@ def silent_login(request):
                     apply_header(response, timings)
                     return response
 
-    return _build_no_session_redirect(return_to, final_redirect, timings)
+    separator = "&" if "?" in return_to else "?"
+    no_session_url = f"{return_to}{separator}no_session=1"
+    if final_redirect:
+        no_session_url += (
+            f"&final_redirect={urlquote(final_redirect, safe='')}"
+        )
+    response = redirect(no_session_url)
+    response["Cache-Control"] = "no-store"
+    apply_header(response, timings)
+    return response
 
 
 # ruff: noqa: PLR0913
