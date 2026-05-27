@@ -1,3 +1,9 @@
+## 4.36.1 (2026-05-27)
+
+### Perf
+
+- **gunicorn**: increase workers to 5 and tighten timeouts to 15s
+
 ## 4.36.0 (2026-05-22)
 
 ### Feat

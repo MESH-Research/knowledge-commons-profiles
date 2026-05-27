@@ -61,9 +61,19 @@ def broker_timings_debug(request):
     if final_redirect:
         params["final_redirect"] = final_redirect
 
+    # The silent-login endpoint enforces a Referer allowlist; pass an
+    # allowed referer so the synthetic profiler isn't blocked by the gate.
+    allowed_referer_host = next(
+        iter(getattr(settings, "BROKER_ALLOWED_REFERER_DOMAINS", [])),
+        "hcommons.org",
+    )
+    referer = f"https://{allowed_referer_host}/"
+
     for _ in range(n):
         start = time.perf_counter()
-        response = client.get("/broker/silent-login/", data=params)
+        response = client.get(
+            "/broker/silent-login/", data=params, HTTP_REFERER=referer
+        )
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         totals_ms.append(elapsed_ms)
 

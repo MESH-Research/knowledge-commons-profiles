@@ -333,6 +333,7 @@ class TestVerifyBrokerNonce(TestCase):
     BROKER_REGISTERED_APPS=BROKER_SETTINGS,
     BROKER_NONCE_TTL=60,
     STATIC_API_BEARER=TEST_SHARED_SECRET,
+    BROKER_ALLOWED_REFERER_DOMAINS=["hcommons.org", "msu.edu"],
 )
 class TestSilentLogin(TestCase):
     """Tests for the silent_login endpoint."""
@@ -349,6 +350,7 @@ class TestSilentLogin(TestCase):
         self.sub = "http://cilogon.org/serverA/users/12345"
         SubAssociation.objects.create(sub=self.sub, profile=self.profile)
         self.return_to = "https://hcommons.org/broker-callback/"
+        self.referer = "https://hcommons.org/page/"
 
     def tearDown(self):
         cache.clear()
@@ -368,7 +370,8 @@ class TestSilentLogin(TestCase):
     def test_authenticated_user_redirects_with_broker_token(self):
         self._login_with_userinfo()
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("broker_token=", response.url)
@@ -377,7 +380,8 @@ class TestSilentLogin(TestCase):
     def test_broker_token_nonce_is_verifiable(self):
         self._login_with_userinfo()
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         # Extract broker_token and decrypt to get nonce
         parsed = urlparse(response.url)
@@ -400,26 +404,31 @@ class TestSilentLogin(TestCase):
 
     def test_unauthenticated_redirects_with_no_session(self):
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("no_session=1", response.url)
         self.assertTrue(response.url.startswith("https://hcommons.org/"))
 
     def test_missing_return_to_returns_400(self):
-        response = self.client.get("/broker/silent-login/")
+        response = self.client.get(
+            "/broker/silent-login/", headers={"referer": self.referer}
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_invalid_return_to_returns_400(self):
         response = self.client.get(
-            "/broker/silent-login/?return_to=https://evil.example.com/callback/"
+            "/broker/silent-login/?return_to=https://evil.example.com/callback/",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 400)
 
     def test_authenticated_but_no_userinfo_redirects_no_session(self):
         self.client.login(username="testuser", password="testpass")
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("no_session=1", response.url)
@@ -429,7 +438,8 @@ class TestSilentLogin(TestCase):
         final = "https://hcommons.org/some-article/"
         response = self.client.get(
             f"/broker/silent-login/?return_to={self.return_to}"
-            f"&final_redirect={final}"
+            f"&final_redirect={final}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("no_session=1", response.url)
@@ -440,7 +450,8 @@ class TestSilentLogin(TestCase):
     def test_unauthenticated_no_session_omits_final_redirect_when_empty(self):
         """no_session redirect omits final_redirect when not provided."""
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertNotIn("final_redirect", response.url)
@@ -451,7 +462,8 @@ class TestSilentLogin(TestCase):
         final = "https://hcommons.org/some-article/"
         response = self.client.get(
             f"/broker/silent-login/?return_to={self.return_to}"
-            f"&final_redirect={final}"
+            f"&final_redirect={final}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
 
@@ -466,7 +478,8 @@ class TestSilentLogin(TestCase):
 
     def test_post_not_allowed(self):
         response = self.client.post(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 405)
 
@@ -474,14 +487,16 @@ class TestSilentLogin(TestCase):
         """Silent-login redirects must not be cached by any intermediary."""
         self._login_with_userinfo()
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Cache-Control"], "no-store")
 
     def test_unauthenticated_response_is_uncacheable(self):
         response = self.client.get(
-            f"/broker/silent-login/?return_to={self.return_to}"
+            f"/broker/silent-login/?return_to={self.return_to}",
+            headers={"referer": self.referer}
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Cache-Control"], "no-store")
