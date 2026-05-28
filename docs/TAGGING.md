@@ -20,25 +20,23 @@ build time. `<sha7>` is the first 7 characters of the commit SHA.
 
 ## Why the `-<sha7>` suffix?
 
-Disambiguation. On `dev`, commitizen never bumps the version (the
-`Bump version` workflow only runs on pushes to `main`), so every dev
-deploy would otherwise compete for the same `v<version>` tag and the
-previous build would be untaggable by name. Appending the short SHA
-gives every build its own immutable, version-anchored handle.
+Disambiguation. On `dev`, commitizen never bumps the version, so every
+dev deploy would otherwise compete for the same `v<version>` tag and
+the previous build would be untaggable by name. Appending the short
+SHA gives every build its own immutable, version-anchored handle.
 
-On `main` the same suffix is still pushed for two reasons:
-
-1. Between a feature merge and the commitizen bump that follows, two
-   commits can deploy with the same `v<version>` value, so the suffix
-   keeps each build addressable.
-2. Symmetry: rollback procedures are the same on both environments.
+On `main` the same suffix is still pushed for symmetry — the rollback
+procedure is identical on both environments, and the suffix gives a
+guaranteed-unique handle even if the same release is rebuilt (for
+example, a CI retry on the same commit).
 
 ## Why `v<version>` is `main`-only
 
-`main` runs commitizen on every push and guarantees a fresh version per
-release, so `v<version>` is a stable name for "the build that
-corresponds to release X.Y.Z." On `dev` the same tag would change
-meaning every push, which is misleading — so we don't publish it there.
+`main` runs commitizen as part of every release run, which bumps the
+version before the build, so `v<version>` is a stable name for "the
+build that corresponds to release X.Y.Z." On `dev` the same tag would
+change meaning every push, which is misleading — so we don't publish
+it there.
 
 ## Example
 
@@ -79,7 +77,13 @@ build is published it moves forward.
 
 ## Where the tagging is configured
 
-`.github/workflows/ci.yml`, in the `deploy` job. The `Extract project
-version` step reads `pyproject.toml` via `tomllib`; subsequent build
-and push steps consume `steps.project_version.outputs.version`
-(`v<version>`) and `.build` (`v<version>-<sha7>`).
+`.github/workflows/ci.yml`. The `release-main` job (on `main`) runs
+commitizen first, then extracts the version, builds, and pushes; the
+`deploy-dev` job (on `dev`) skips the bump. Both jobs read
+`pyproject.toml` via `tomllib` in the `Extract project version` step,
+and subsequent build/push steps consume
+`steps.project_version.outputs.version` (`v<version>`) and `.build`
+(`v<version>-<sha7>`). On `main`, the SHA used in `<sha7>` and as the
+exact-commit tag is the **bump commit** (the one created by
+commitizen inside the same workflow run), not the merge commit that
+triggered the run.

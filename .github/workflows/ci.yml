@@ -16,7 +16,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -92,23 +92,156 @@ jobs:
       - name: Tear down the Stack
         run: docker compose -f docker-compose.github.yml down
 
-  deploy:
-    name: Deploy
+  release-main:
+    # Bumps the version with commitizen, then builds, pushes images, and
+    # deploys — all in one workflow run so every main release is deployed
+    # at exactly the version it claims. The bump commit is only pushed
+    # back to main after the ECR push succeeds, so a failed build never
+    # leaves a stranded bump on the branch. Skipped on bump: commits
+    # (already deployed by the run that created them) to avoid recursion.
+    name: Release (main)
     runs-on: ubuntu-24.04-arm
     needs: [linter, test]
-    if: github.event_name == 'push'
-    environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+    if: github.event_name == 'push' && github.ref_name == 'main' && !startsWith(github.event.head_commit.message, 'bump:')
+    environment: production
 
     env:
       AWS_REGION: us-east-1
-      # Branch-based environment config
-      ECR_REPOSITORY: ${{ github.ref_name == 'main' && 'kcprofiles' || 'kcprofiles-dev' }}
-      ECR_REPOSITORY_TRAEFIK: ${{ github.ref_name == 'main' && 'kcprofiles-traefik' || 'kcprofiles-traefik-dev' }}
+      ECR_REPOSITORY: kcprofiles
+      ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik
       ECR_REPOSITORY_MONITOR: kcprofiles-monitor
-      ECS_CLUSTER: ${{ github.ref_name == 'main' && 'kcprofiles' || 'kcprofiles-dev-2' }}
-      ECS_SERVICE: ${{ github.ref_name == 'main' && 'kcprofiles-blue' || 'kcprofiles-dev' }}
-      AUTOSCALE_GROUP: ${{ github.ref_name == 'main' && 'Infra-ECS-Cluster-kcprofiles-ee645084-ECSAutoScalingGroup-v3MrRnH7laIx' || 'Infra-ECS-Cluster-kcprofiles-dev-2-f89c2350-ECSAutoScalingGroup-zUYaGlEf1GWi' }}
-      COMPOSE_FILE: ${{ github.ref_name == 'main' && 'docker-compose.production.yml' || 'docker-compose.dev.yml' }}
+      ECS_CLUSTER: kcprofiles
+      ECS_SERVICE: kcprofiles-blue
+      AUTOSCALE_GROUP: Infra-ECS-Cluster-kcprofiles-ee645084-ECSAutoScalingGroup-v3MrRnH7laIx
+      COMPOSE_FILE: docker-compose.production.yml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.COMMIT_KEY }}
+
+      - name: Bump version with commitizen
+        uses: commitizen-tools/commitizen-action@master
+        with:
+          push: false
+
+      - name: Identify bump commit
+        id: bump_commit
+        run: |
+          BUMP_SHA=$(git rev-parse HEAD)
+          echo "sha=$BUMP_SHA" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::755997884632:role/github-actions-kcprofiles
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract project version
+        id: project_version
+        run: |
+          VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "build=v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build, tag, and push images to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.bump_commit.outputs.sha }}
+          VERSION_TAG: ${{ steps.project_version.outputs.version }}
+          BUILD_TAG: ${{ steps.project_version.outputs.build }}
+        run: |
+          docker compose -f $COMPOSE_FILE build
+
+          # Re-tag the freshly built images with the meaningful version-anchored
+          # names used for emergency rollback. BUILD_TAG (vX.Y.Z-<sha7>) is
+          # always unique; VERSION_TAG (vX.Y.Z) tracks the latest build of a
+          # given release on main.
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$VERSION_TAG
+
+          # Push Django image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          # Push Traefik image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$VERSION_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
+
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Build, tag, and push monitor image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.bump_commit.outputs.sha }}
+          VERSION_TAG: ${{ steps.project_version.outputs.version }}
+          BUILD_TAG: ${{ steps.project_version.outputs.build }}
+        run: |
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
+
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:latest
+
+      - name: Push bump commit and tag to main
+        # Only happens after every ECR push above has succeeded; a failure
+        # in the build leaves no stranded bump on the branch.
+        run: |
+          git push origin main --tags
+
+      - name: Force deployment
+        continue-on-error: true
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          aws autoscaling start-instance-refresh --auto-scaling-group-name $AUTOSCALE_GROUP --region $AWS_REGION --preferences '{"SkipMatching": false}'
+
+      - name: Set a Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          environment: production
+          ignore_missing: true
+
+  deploy-dev:
+    name: Deploy (dev)
+    runs-on: ubuntu-24.04-arm
+    needs: [linter, test]
+    if: github.event_name == 'push' && github.ref_name == 'dev'
+    environment: dev
+
+    env:
+      AWS_REGION: us-east-1
+      ECR_REPOSITORY: kcprofiles-dev
+      ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik-dev
+      ECS_CLUSTER: kcprofiles-dev-2
+      ECS_SERVICE: kcprofiles-dev
+      AUTOSCALE_GROUP: Infra-ECS-Cluster-kcprofiles-dev-2-f89c2350-ECSAutoScalingGroup-zUYaGlEf1GWi
+      COMPOSE_FILE: docker-compose.dev.yml
 
     steps:
       - name: Checkout
@@ -129,7 +262,6 @@ jobs:
         run: |
           VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           SHORT_SHA="${GITHUB_SHA::7}"
-          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
           echo "build=v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Build, tag, and push images to Amazon ECR
@@ -137,63 +269,24 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
-          VERSION_TAG: ${{ steps.project_version.outputs.version }}
           BUILD_TAG: ${{ steps.project_version.outputs.build }}
         run: |
           docker compose -f $COMPOSE_FILE build
 
-          # Re-tag the freshly built images with the meaningful version-anchored
-          # names used for emergency rollback. BUILD_TAG (vX.Y.Z-<sha7>) is
-          # always unique; VERSION_TAG (vX.Y.Z) is published only on main, where
-          # commitizen guarantees a unique version per release.
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
             $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
 
-          # Push Django image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-          # Push Traefik image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
 
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Tag and push canonical version tag (main only)
-        if: github.ref_name == 'main'
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-          VERSION_TAG: ${{ steps.project_version.outputs.version }}
-        run: |
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$VERSION_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$VERSION_TAG
-
-      - name: Build, tag, and push monitor image
-        if: github.ref_name == 'main'
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-          VERSION_TAG: ${{ steps.project_version.outputs.version }}
-          BUILD_TAG: ${{ steps.project_version.outputs.build }}
-        run: |
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
-
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:latest
 
       - name: Force deployment
         continue-on-error: true
@@ -208,5 +301,5 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         with:
-          environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+          environment: dev
           ignore_missing: true
