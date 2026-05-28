@@ -1,3 +1,9 @@
+## 4.39.0 (2026-05-28)
+
+### Feat
+
+- **urls**: route legacy BuddyPress profile URLs to edit page
+
 ## 4.38.0 (2026-05-28)
 
 ### Feat
