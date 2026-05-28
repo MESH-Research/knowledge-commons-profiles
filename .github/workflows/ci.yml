@@ -124,31 +124,75 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Extract project version
+        id: project_version
+        run: |
+          VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "build=v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
       - name: Build, tag, and push images to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          VERSION_TAG: ${{ steps.project_version.outputs.version }}
+          BUILD_TAG: ${{ steps.project_version.outputs.build }}
         run: |
           docker compose -f $COMPOSE_FILE build
 
+          # Re-tag the freshly built images with the meaningful version-anchored
+          # names used for emergency rollback. BUILD_TAG (vX.Y.Z-<sha7>) is
+          # always unique; VERSION_TAG (vX.Y.Z) is published only on main, where
+          # commitizen guarantees a unique version per release.
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
+
           # Push Django image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
           # Push Traefik image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
 
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Tag and push canonical version tag (main only)
+        if: github.ref_name == 'main'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          VERSION_TAG: ${{ steps.project_version.outputs.version }}
+        run: |
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$VERSION_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$VERSION_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$VERSION_TAG
 
       - name: Build, tag, and push monitor image
         if: github.ref_name == 'main'
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          VERSION_TAG: ${{ steps.project_version.outputs.version }}
+          BUILD_TAG: ${{ steps.project_version.outputs.build }}
         run: |
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
+
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:latest
 
       - name: Force deployment
