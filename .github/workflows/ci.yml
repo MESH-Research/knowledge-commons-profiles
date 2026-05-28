@@ -123,9 +123,30 @@ jobs:
           ssh-key: ${{ secrets.COMMIT_KEY }}
 
       - name: Bump version with commitizen
-        uses: commitizen-tools/commitizen-action@master
-        with:
-          push: false
+        id: bump
+        env:
+          COMMITIZEN_VERSION: "4.16.2"
+        run: |
+          python3 -m pip install --user "commitizen==${COMMITIZEN_VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          PRE_SHA=$(git rev-parse HEAD)
+          set +e
+          "$HOME/.local/bin/cz" bump --yes
+          EXIT_CODE=$?
+          set -e
+          POST_SHA=$(git rev-parse HEAD)
+          if [ "$EXIT_CODE" = "0" ] && [ "$PRE_SHA" != "$POST_SHA" ]; then
+            echo "bumped=true" >> $GITHUB_OUTPUT
+          elif [ "$EXIT_CODE" = "0" ] || [ "$EXIT_CODE" = "21" ]; then
+            # cz returned 21 (NoCommitsFoundError) or succeeded without
+            # changing HEAD: nothing semantic to bump, deploy at the
+            # existing version.
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          else
+            echo "cz bump failed unexpectedly with exit code $EXIT_CODE" >&2
+            exit "$EXIT_CODE"
+          fi
 
       - name: Identify bump commit
         id: bump_commit
@@ -207,7 +228,9 @@ jobs:
 
       - name: Push bump commit and tag to main
         # Only happens after every ECR push above has succeeded; a failure
-        # in the build leaves no stranded bump on the branch.
+        # in the build leaves no stranded bump on the branch. Skipped when
+        # commitizen had nothing semantic to bump.
+        if: steps.bump.outputs.bumped == 'true'
         run: |
           git push origin main --tags
 
