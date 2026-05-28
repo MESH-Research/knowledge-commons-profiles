@@ -44,13 +44,13 @@ def works_deposits_edit(request):
     # contains keys such as "Show_Book section" with JavaScript booleans
     try:
         works_show_map = json.loads(user.works_show)
-    except TypeError:
+    except (TypeError, ValueError):
         works_show_map = {}
 
     # contains keys such as show_axde-4213 with JavaScript booleans
     try:
         works_work_show_map = json.loads(user.works_work_show)
-    except TypeError:
+    except (TypeError, ValueError):
         works_work_show_map = {}
 
     user.reference_style = id_reference_style
