@@ -406,15 +406,31 @@ class TestSilentLogin(TestCase):
         self.assertIn("no_session=1", response.url)
         self.assertTrue(response.url.startswith("https://hcommons.org/"))
 
-    def test_missing_return_to_returns_400(self):
-        response = self.client.get("/broker/silent-login/")
-        self.assertEqual(response.status_code, 400)
+    def test_missing_return_to_redirects_to_fallback(self):
+        with override_settings(
+            BROKER_FALLBACK_REDIRECT_URL="https://hcommons.org/"
+        ):
+            response = self.client.get("/broker/silent-login/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "https://hcommons.org/")
 
-    def test_invalid_return_to_returns_400(self):
-        response = self.client.get(
-            "/broker/silent-login/?return_to=https://evil.example.com/callback/"
-        )
-        self.assertEqual(response.status_code, 400)
+    def test_invalid_return_to_redirects_to_fallback(self):
+        with override_settings(
+            BROKER_FALLBACK_REDIRECT_URL="https://hcommons.org/"
+        ):
+            response = self.client.get(
+                "/broker/silent-login/?return_to=https://evil.example.com/callback/",
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "https://hcommons.org/")
+
+    def test_fallback_redirect_url_is_configurable(self):
+        with override_settings(
+            BROKER_FALLBACK_REDIRECT_URL="https://example.org/welcome"
+        ):
+            response = self.client.get("/broker/silent-login/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "https://example.org/welcome")
 
     def test_authenticated_but_no_userinfo_redirects_no_session(self):
         self.client.login(username="testuser", password="testpass")

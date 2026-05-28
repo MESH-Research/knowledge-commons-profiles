@@ -78,7 +78,8 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
-    "django.contrib.admin",
+    # "django.contrib.admin",
+    "knowledge_commons_profiles.newprofile.apps.CustomAdminConfig",
     "django.contrib.postgres",
     "django.forms",
 ]
@@ -458,9 +459,7 @@ CILOGON_REVOCATION_TIMEOUT = env.float(
 # Preload the OIDC discovery document at worker startup so the first
 # user request doesn't pay the cold HTTP cost (#594). Disable in tests /
 # local dev to keep boot hermetic.
-CILOGON_PRELOAD_METADATA = env.bool(
-    "CILOGON_PRELOAD_METADATA", default=True
-)
+CILOGON_PRELOAD_METADATA = env.bool("CILOGON_PRELOAD_METADATA", default=True)
 
 # Identity broker configuration for third-party app authentication
 BROKER_REGISTERED_APPS = {
@@ -500,6 +499,16 @@ BROKER_REGISTERED_APPS = {
 
 
 BROKER_NONCE_TTL = 60  # seconds before a broker nonce expires
+
+# Where to send the browser when /broker/silent-login/ can't even build a
+# graceful no_session response (e.g. missing or invalid return_to). The
+# previous behaviour was a JSON 400, which left the user looking at a raw
+# error page; redirecting to a public homepage is friendlier and lets us
+# point at different commons sites per environment.
+BROKER_FALLBACK_REDIRECT_URL = env(
+    "BROKER_FALLBACK_REDIRECT_URL",
+    default="https://hcommons.org",
+)
 
 # OAuth domain mapping for environments sharing CILogon credentials.
 # CILOGON_REGISTERED_DOMAIN: The domain registered with CILogon (used in redirects)

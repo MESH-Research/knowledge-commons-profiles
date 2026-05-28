@@ -334,9 +334,17 @@ def silent_login(request):
     with timings.span("validate"):
         return_to_ok = bool(return_to) and validate_return_to(return_to)
     if not return_to_ok:
-        return JsonResponse(
-            {"error": "Missing or invalid return_to"}, status=400
+        # No safe URL to bounce back to: log and send the browser to the
+        # configured fallback (e.g. a public homepage) instead of leaving
+        # the user staring at a JSON error.
+        logger.warning(
+            "silent_login: missing or invalid return_to=%r, "
+            "redirecting to fallback",
+            return_to,
         )
+        response = redirect(settings.BROKER_FALLBACK_REDIRECT_URL)
+        response["Cache-Control"] = "no-store"
+        return response
 
     if request.user.is_authenticated:
         userinfo = request.session.get("oidc_userinfo", {})
