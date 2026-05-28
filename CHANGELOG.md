@@ -1,3 +1,23 @@
+## 4.38.0 (2026-05-28)
+
+### Feat
+
+- **admin**: show profile name and username in admin choices
+- **ui**: use Knowledge Commons logo image and refine header branding
+- **broker**: allow msu.edu in WordPress and Works broker domains
+
+### Fix
+
+- **admin**: use fully-qualified path for CustomAdminSite default_site
+- **works**: handle academic year ranges in publication dates
+- **cilogon**: soften silent_login failure modes
+- **cilogon**: delete Redis session copies on logout, not just DB rows
+- **sync**: correct COmanage role mapping for multi-society members
+
+### Refactor
+
+- **cilogon**: drop silent_login Referer gate
+
 ## 4.37.0 (2026-05-27)
 
 ### Feat
