@@ -24,6 +24,11 @@ concurrency:
 
 jobs:
   linter:
+    # Skip the whole workflow for bump: commits — the bump only mutates
+    # version files we already linted/tested in the run that produced
+    # the bump. head_commit is unset on pull_request, so PR validation
+    # is unaffected.
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'bump:')
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout Code Repository
@@ -38,6 +43,7 @@ jobs:
         uses: pre-commit/action@v3.0.1
 
   test:
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'bump:')
     runs-on: ubuntu-24.04-arm
 
     env:
