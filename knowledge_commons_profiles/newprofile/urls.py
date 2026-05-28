@@ -112,6 +112,21 @@ urlpatterns = [
     ),
     path("members/<str:user>/", profile, name="profile"),
     path("members/<str:user>/profile/", profile, name="alternative_profile_1"),
+    path(
+        "members/<str:username>/profile/edit/",
+        edit_profile,
+        name="legacy_profile_edit",
+    ),
+    path(
+        "members/<str:username>/profile/change-avatar/",
+        edit_profile,
+        name="legacy_change_avatar",
+    ),
+    path(
+        "members/<str:username>/profile/change-cover-image/",
+        edit_profile,
+        name="legacy_change_cover_image",
+    ),
     path("api-auth/", include("rest_framework.urls")),
     path("tinymce/", include("tinymce.urls")),
     path(
