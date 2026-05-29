@@ -50,6 +50,12 @@ from knowledge_commons_profiles.newprofile.views.profile.profile import (
     edit_profile,
 )
 from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    edit_profile_change_avatar,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    edit_profile_change_cover_image,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
     my_profile,
 )
 from knowledge_commons_profiles.newprofile.views.profile.profile import profile
@@ -119,12 +125,12 @@ urlpatterns = [
     ),
     path(
         "members/<str:username>/profile/change-avatar/",
-        edit_profile,
+        edit_profile_change_avatar,
         name="legacy_change_avatar",
     ),
     path(
         "members/<str:username>/profile/change-cover-image/",
-        edit_profile,
+        edit_profile_change_cover_image,
         name="legacy_change_cover_image",
     ),
     path("api-auth/", include("rest_framework.urls")),

@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.test import Client
 from django.test import RequestFactory
+from django.test import SimpleTestCase
 from django.test import TestCase
 from django.test import override_settings
 
@@ -32,6 +33,9 @@ from knowledge_commons_profiles.newprofile.views.profile.profile import (
 )
 from knowledge_commons_profiles.newprofile.views.profile.profile import (
     profile as profile_view,
+)
+from knowledge_commons_profiles.newprofile.views.profile.works import (
+    works_deposits_edit,
 )
 
 STATUS_CODE_500 = 500
@@ -197,6 +201,73 @@ class WorksDepositsTests(django.test.TransactionTestCase):
         # Assert template was rendered with correct context
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"<div>Test works</div>", response.content)
+
+
+class WorksDepositsEditTests(SimpleTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = mock.MagicMock()
+        self.user.username = "testuser"
+        self.user.is_authenticated = True
+
+    @patch("knowledge_commons_profiles.newprofile.views.profile.works.render")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.works.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.works.Profile")
+    def test_works_deposits_edit_handles_empty_json_strings(
+        self, mock_profile, mock_api, mock_render
+    ):
+        profile_mock = mock.MagicMock()
+        profile_mock.username = "testuser"
+        profile_mock.works_show = ""
+        profile_mock.works_work_show = ""
+        mock_profile.objects.prefetch_related.return_value.get.return_value = (
+            profile_mock
+        )
+
+        mock_api.return_value.works_types.return_value = []
+        mock_render.return_value.status_code = 200
+
+        request = self.factory.post(
+            "/works-deposits-edit/", data={"reference_style": "APA"}
+        )
+        request.user = self.user
+        works_deposits_edit(request)
+
+        render_context = mock_render.call_args.args[2]
+        self.assertEqual(render_context["works_show_map"], {})
+        self.assertEqual(render_context["works_work_show_map"], {})
+        self.assertEqual(profile_mock.reference_style, "APA")
+        profile_mock.save.assert_called_once()
+
+    @patch("knowledge_commons_profiles.newprofile.views.profile.works.render")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.works.API")
+    @patch("knowledge_commons_profiles.newprofile.views.profile.works.Profile")
+    def test_works_deposits_edit_handles_malformed_json_strings(
+        self, mock_profile, mock_api, mock_render
+    ):
+        profile_mock = mock.MagicMock()
+        profile_mock.username = "testuser"
+        profile_mock.works_show = "{invalid-json"
+        profile_mock.works_work_show = '{"show_works_work_abc123": true}'
+        mock_profile.objects.prefetch_related.return_value.get.return_value = (
+            profile_mock
+        )
+
+        mock_api.return_value.works_types.return_value = []
+        mock_render.return_value.status_code = 200
+
+        request = self.factory.post(
+            "/works-deposits-edit/", data={"reference_style": "MHRA"}
+        )
+        request.user = self.user
+        works_deposits_edit(request)
+
+        render_context = mock_render.call_args.args[2]
+        self.assertEqual(render_context["works_show_map"], {})
+        self.assertEqual(
+            render_context["works_work_show_map"],
+            {"show_works_work_abc123": True},
+        )
 
 
 class MastodonFeedTests(TestCase):
