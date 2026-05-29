@@ -1,3 +1,13 @@
+## 4.40.0 (2026-05-29)
+
+### Feat
+
+- **urls**: auto-open avatar/cover modal on legacy BuddyPress URLs
+
+### Fix
+
+- **newprofile**: handle JSONDecodeError in works_deposits_edit
+
 ## 4.39.0 (2026-05-28)
 
 ### Feat
