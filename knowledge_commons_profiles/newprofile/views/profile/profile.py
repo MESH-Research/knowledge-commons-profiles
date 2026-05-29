@@ -172,7 +172,7 @@ def my_profile(request):
 
 
 @login_required
-def edit_profile(request, username=None):
+def edit_profile(request, username=None, auto_open_modal=None):
     """
     A view for logged-in users to edit their own profile page.
     Staff users can edit any user's profile by passing a username.
@@ -185,6 +185,11 @@ def edit_profile(request, username=None):
     :type request: django.http.HttpRequest
     :param username: Optional username of the profile to edit (staff only).
     :type username: str or None
+    :param auto_open_modal: Optional DOM id of a Bootstrap modal that should
+        open automatically once the page has loaded. Used by the legacy
+        BuddyPress URLs (change-avatar, change-cover-image) so they land on
+        the edit page with the correct uploader already open.
+    :type auto_open_modal: str or None
     :return: A rendered HTML template with a form.
     :rtype: django.http.HttpResponse
     """
@@ -279,7 +284,24 @@ def edit_profile(request, username=None):
             "cover_upload_url": cover_upload_url,
             "cv_upload_url": cv_upload_url,
             "cv_delete_url": cv_delete_url,
+            "auto_open_modal": auto_open_modal,
         },
+    )
+
+
+@login_required
+def edit_profile_change_avatar(request, username):
+    """Legacy BuddyPress alias: edit page with the avatar uploader open."""
+    return edit_profile(
+        request, username=username, auto_open_modal="avatarModal"
+    )
+
+
+@login_required
+def edit_profile_change_cover_image(request, username):
+    """Legacy BuddyPress alias: edit page with the cover uploader open."""
+    return edit_profile(
+        request, username=username, auto_open_modal="coverModal"
     )
 
 

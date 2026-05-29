@@ -139,4 +139,17 @@
   <!-- javascript to display image uploads -->
   {% include "newprofile/partials/change_profile_photo.html" %}
   {% include "newprofile/partials/change_cover_photo.html" %}
+
+  {% if auto_open_modal %}
+    <span id="auto-open-modal" data-modal-target="{{ auto_open_modal }}" hidden></span>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var marker = document.getElementById('auto-open-modal');
+        if (!marker) { return; }
+        var target = document.getElementById(marker.dataset.modalTarget);
+        if (!target || typeof bootstrap === 'undefined') { return; }
+        bootstrap.Modal.getOrCreateInstance(target).show();
+      });
+    </script>
+  {% endif %}
 {% endblock content %}

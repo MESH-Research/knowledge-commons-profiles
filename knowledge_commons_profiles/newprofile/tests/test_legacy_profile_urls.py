@@ -31,26 +31,33 @@ class LegacyProfileEditUrlTests(TestCase):
         self.client = Client()
         self.client.login(username="alice", password="pass1234")
 
-    def _assert_lands_on_edit_page(self, url):
+    def _get_edit_page(self, url):
         response = self.client.get(url, follow=True)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         # The edit profile template uniquely contains these field IDs.
         self.assertIn('name="name"', content)
         self.assertIn('id="mastodon_edit"', content)
+        return content
 
     def test_profile_edit_url_serves_edit_page(self):
-        self._assert_lands_on_edit_page("/members/alice/profile/edit/")
+        content = self._get_edit_page("/members/alice/profile/edit/")
+        # The plain edit URL must not auto-open either modal.
+        self.assertNotIn('id="auto-open-modal"', content)
 
-    def test_change_avatar_url_serves_edit_page(self):
-        self._assert_lands_on_edit_page(
+    def test_change_avatar_url_opens_avatar_modal(self):
+        content = self._get_edit_page(
             "/members/alice/profile/change-avatar/"
         )
+        self.assertIn('id="auto-open-modal"', content)
+        self.assertIn('data-modal-target="avatarModal"', content)
 
-    def test_change_cover_image_url_serves_edit_page(self):
-        self._assert_lands_on_edit_page(
+    def test_change_cover_image_url_opens_cover_modal(self):
+        content = self._get_edit_page(
             "/members/alice/profile/change-cover-image/"
         )
+        self.assertIn('id="auto-open-modal"', content)
+        self.assertIn('data-modal-target="coverModal"', content)
 
 
 class LegacyProfileEditUrlPermissionTests(TestCase):
