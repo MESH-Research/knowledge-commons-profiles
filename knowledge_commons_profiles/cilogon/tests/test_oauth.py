@@ -25,6 +25,7 @@ from knowledge_commons_profiles.cilogon.oauth import SecureParamEncoder
 from knowledge_commons_profiles.cilogon.oauth import (
     check_for_sub_or_return_negative,
 )
+from knowledge_commons_profiles.cilogon.oauth import cilogon_issuer
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import extract_code_next_url
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
@@ -1066,3 +1067,89 @@ class ShouldPromptLoginTests(CILogonTestBase):
     def test_unknown_value_treated_as_never(self):
         with override_settings(CILOGON_DISCOVERY_URL=self.TEST_URL):
             self.assertFalse(should_prompt_login())
+
+
+class CILogonIssuerTests(CILogonTestBase):
+    """Tests for cilogon_issuer() issuer-base-URL derivation."""
+
+    @override_settings(
+        CILOGON_DISCOVERY_URL=(
+            "https://test.cilogon.org/.well-known/openid-configuration"
+        )
+    )
+    def test_returns_test_issuer(self):
+        self.assertEqual(cilogon_issuer(), "https://test.cilogon.org")
+
+    @override_settings(
+        CILOGON_DISCOVERY_URL=(
+            "https://cilogon.org/.well-known/openid-configuration"
+        )
+    )
+    def test_returns_production_issuer(self):
+        self.assertEqual(cilogon_issuer(), "https://cilogon.org")
+
+    @override_settings(CILOGON_DISCOVERY_URL="")
+    def test_empty_url_falls_back_to_production(self):
+        self.assertEqual(cilogon_issuer(), "https://cilogon.org")
+
+    @override_settings(CILOGON_DISCOVERY_URL="not a url")
+    def test_malformed_url_falls_back_to_production(self):
+        self.assertEqual(cilogon_issuer(), "https://cilogon.org")
+
+
+class JWKSAndIssuerHostTests(CILogonTestBase):
+    """The JWKS endpoint and iss check must track the configured host."""
+
+    TEST_DISCOVERY = (
+        "https://test.cilogon.org/.well-known/openid-configuration"
+    )
+
+    @override_settings(CILOGON_DISCOVERY_URL=TEST_DISCOVERY)
+    @patch("knowledge_commons_profiles.cilogon.oauth.cache.set")
+    @patch("knowledge_commons_profiles.cilogon.oauth.cache.get")
+    @patch("knowledge_commons_profiles.cilogon.oauth.requests.get")
+    def test_jwks_fetched_from_configured_host(
+        self, mock_get, mock_cache_get, mock_cache_set
+    ):
+        """get_cilogon_jwks fetches certs from the configured CILogon host."""
+        mock_cache_get.return_value = None
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"keys": []}
+        mock_get.return_value = mock_response
+
+        get_cilogon_jwks()
+
+        called_url = mock_get.call_args.args[0]
+        self.assertEqual(
+            called_url, "https://test.cilogon.org/oauth2/certs"
+        )
+
+    @override_settings(CILOGON_DISCOVERY_URL=TEST_DISCOVERY)
+    @patch("knowledge_commons_profiles.cilogon.oauth.get_cilogon_jwks")
+    def test_jwt_verified_against_configured_issuer(self, mock_get_jwks):
+        """A token whose iss matches the configured (test) issuer validates;
+        the hard-coded production issuer would reject it (red before fix)."""
+        mock_get_jwks.return_value = {"keys": []}
+
+        payload = {
+            "sub": "user123",
+            "iss": "https://test.cilogon.org",
+            "exp": int(time.time()) + 3600,
+        }
+
+        def fake_decode(token, jwks, claims_options=None):
+            # Emulate Authlib enforcing the configured iss value.
+            expected_iss = claims_options["iss"]["value"]
+            if payload["iss"] != expected_iss:
+                claim = "iss"
+                raise InvalidClaimError(claim)
+            return payload
+
+        with patch(
+            "knowledge_commons_profiles.cilogon.oauth.jwt.decode",
+            side_effect=fake_decode,
+        ):
+            result = verify_and_decode_cilogon_jwt("a.b.c")
+
+        self.assertEqual(result, payload)

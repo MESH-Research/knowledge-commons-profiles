@@ -501,17 +501,39 @@ def delete_associations(associations):
         sentry_sdk.capture_exception()
 
 
+def cilogon_issuer() -> str:
+    """
+    Return the CILogon issuer base URL (``scheme://host``) for the configured
+    deployment, derived from the CILOGON_DISCOVERY_URL setting.
+
+    This is the value CILogon uses as the OIDC ``iss`` claim and the base for
+    the JWKS endpoint, so it must track whichever deployment we point at
+    (cilogon.org in production, test.cilogon.org on dev). Falls back to the
+    production issuer if the discovery URL cannot be parsed.
+    """
+    try:
+        parts = stdlib_urlparse(settings.CILOGON_DISCOVERY_URL or "")
+        if parts.scheme and parts.netloc:
+            return f"{parts.scheme}://{parts.netloc}"
+    except (ValueError, AttributeError):
+        pass
+    return "https://cilogon.org"
+
+
 def get_cilogon_jwks():
     """
     Fetch and cache CILogon's JWKS
     """
-    cache_key = "cilogon_jwks"
+    issuer = cilogon_issuer()
+    # Namespace the cache by issuer so test and production certs never share
+    # an entry if the configured deployment changes.
+    cache_key = f"cilogon_jwks:{issuer}"
     jwks = cache.get(cache_key)
 
     if not jwks:
         try:
             response = requests.get(
-                "https://cilogon.org/oauth2/certs", timeout=10
+                f"{issuer}/oauth2/certs", timeout=10
             )
             response.raise_for_status()
             jwks = response.json()
@@ -537,7 +559,7 @@ def verify_and_decode_cilogon_jwt(id_token):
             id_token,
             jwks,
             claims_options={
-                "iss": {"essential": True, "value": "https://cilogon.org"},
+                "iss": {"essential": True, "value": cilogon_issuer()},
                 "aud": {
                     "essential": False,
                     "value": settings.CILOGON_CLIENT_ID,
