@@ -7,8 +7,10 @@ dict was iterated inside the role loop.
 """
 
 import json
+from unittest.mock import Mock
 from unittest.mock import patch
 
+import requests
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.test import override_settings
@@ -206,3 +208,53 @@ class RefreshLocalMembershipsTests(TestCase):
         ExternalSync.refresh_local_memberships(self.profile)
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.last_sync, original)
+
+
+class TestSendWebhooks(TestCase):
+    """Tests for ExternalSync._send_webhooks() outbound request."""
+
+    @override_settings(
+        WEBHOOK_URLS=["https://webhook1.example/"],
+        WEBHOOK_TOKEN="secret-token",
+    )
+    @patch("knowledge_commons_profiles.rest_api.sync.requests.get")
+    def test_auth_sent_in_header_not_query_string(self, mock_get):
+        """The webhook token must travel in the Authorization header
+        only, never in the query string, where it would leak into the
+        request URL (and therefore into receiver access logs and any
+        HTTPError messages we log)."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.ok = True
+        mock_get.return_value = mock_response
+
+        profile = Mock()
+        profile.username = "testuser"
+
+        ExternalSync._send_webhooks(profile, send_webhook=True)
+
+        mock_get.assert_called_once_with(
+            "https://webhook1.example/",
+            params={"username": "testuser"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer secret-token",
+            },
+            timeout=8,
+        )
+
+    @override_settings(
+        WEBHOOK_URLS=["https://webhook1.example/"],
+        WEBHOOK_TOKEN="secret-token",
+    )
+    @patch("knowledge_commons_profiles.rest_api.sync.requests.get")
+    def test_connection_error_is_swallowed(self, mock_get):
+        """A failing webhook must not propagate an exception to the
+        caller; sync should continue regardless."""
+        mock_get.side_effect = requests.exceptions.ConnectionError("boom")
+
+        profile = Mock()
+        profile.username = "testuser"
+
+        # Should not raise.
+        ExternalSync._send_webhooks(profile, send_webhook=True)

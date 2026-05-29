@@ -151,7 +151,6 @@ class ExternalSync:
                     r = requests.get(
                         url,
                         params={
-                            "token": settings.WEBHOOK_TOKEN,
                             "username": profile.username,
                         },
                         headers={
@@ -167,15 +166,16 @@ class ExternalSync:
                     )
                     logger.info(msg)
 
-                    try:
-                        r.raise_for_status()
-                    except requests.exceptions.RequestException:
-                        logger.exception(
-                            "Failed to send webhook to %s for user %s. "
-                            "Returned status: %s",
+                    if not r.ok:
+                        # Log the status only, never the response/URL:
+                        # the request URL can carry query params and we
+                        # must not emit secrets to the logs.
+                        logger.error(
+                            "Webhook to %s for user %s returned %s %s",
                             url,
                             profile.username,
                             r.status_code,
+                            r.reason,
                         )
 
                 except (RequestException, TypeError):
