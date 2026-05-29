@@ -54,6 +54,12 @@ _TLD_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
 
 _BROKER_ENCODER = None
 
+# Host of the CILogon test deployment. The prompt=login pass-through to the
+# social IdPs (ORCID, Google, Microsoft, ...) currently only ships on this
+# deployment via service-lib >= 3.4.0, so the "TEST" mode of
+# CILOGON_PROMPT_LOGIN is gated on it (#367).
+CILOGON_TEST_HOST = "test.cilogon.org"
+
 
 def _broker_encoder():
     """
@@ -158,6 +164,41 @@ def is_using_domain_proxy() -> bool:
     actual = settings.CILOGON_ACTUAL_DOMAIN
     registered = settings.CILOGON_REGISTERED_DOMAIN
     return bool(actual and actual != registered)
+
+
+def is_cilogon_test_host() -> bool:
+    """
+    Return True if the configured CILogon deployment is the test host
+    (test.cilogon.org), determined from the CILOGON_DISCOVERY_URL setting.
+    """
+    try:
+        host = stdlib_urlparse(settings.CILOGON_DISCOVERY_URL or "").hostname
+    except (ValueError, AttributeError):
+        return False
+    return host == CILOGON_TEST_HOST
+
+
+def should_prompt_login() -> bool:
+    """
+    Decide whether to add ``prompt=login`` to the CILogon authorization
+    request so the downstream social IdP forces re-authentication (#367).
+
+    Controlled by the ``CILOGON_PROMPT_LOGIN`` setting:
+
+    * ``NEVER``  - never send it (default).
+    * ``TEST``   - only send it when the configured CILogon host is the
+      test deployment (test.cilogon.org), where the feature currently lives.
+    * ``ALWAYS`` - always send it, including against production CILogon.
+
+    Any unrecognised value is treated as ``NEVER``.
+    """
+    mode = (settings.CILOGON_PROMPT_LOGIN or "").strip().upper()
+
+    if mode == "ALWAYS":
+        return True
+    if mode == "TEST":
+        return is_cilogon_test_host()
+    return False
 
 
 def get_oauth_redirect_uri(request) -> str:

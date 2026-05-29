@@ -66,6 +66,7 @@ from knowledge_commons_profiles.cilogon.oauth import (
 from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import revoke_single_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
+from knowledge_commons_profiles.cilogon.oauth import should_prompt_login
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import validate_return_to
@@ -170,7 +171,15 @@ def cilogon_login(request):
     # Get state with forwarding URL if using domain proxy
     state = get_forwarding_state_for_proxy()
 
-    return oauth.cilogon.authorize_redirect(request, redirect_uri, state=state)
+    # Optionally force re-authentication at the social IdP by passing
+    # prompt=login through CILogon (#367). Gated by CILOGON_PROMPT_LOGIN.
+    extra_params = {}
+    if should_prompt_login():
+        extra_params["prompt"] = "login"
+
+    return oauth.cilogon.authorize_redirect(
+        request, redirect_uri, state=state, **extra_params
+    )
 
 
 def callback(request):

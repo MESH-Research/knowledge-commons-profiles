@@ -30,9 +30,11 @@ from knowledge_commons_profiles.cilogon.oauth import extract_code_next_url
 from knowledge_commons_profiles.cilogon.oauth import find_user_and_login
 from knowledge_commons_profiles.cilogon.oauth import generate_next_url
 from knowledge_commons_profiles.cilogon.oauth import get_cilogon_jwks
+from knowledge_commons_profiles.cilogon.oauth import is_cilogon_test_host
 from knowledge_commons_profiles.cilogon.oauth import pack_state
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import send_association_message
+from knowledge_commons_profiles.cilogon.oauth import should_prompt_login
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import token_expired
@@ -984,3 +986,83 @@ class TestSyncEmailToWordpress(TestCase):
         )
 
         self.assertFalse(result)
+
+
+class IsCILogonTestHostTests(CILogonTestBase):
+    """Tests for is_cilogon_test_host()."""
+
+    @override_settings(
+        CILOGON_DISCOVERY_URL=(
+            "https://test.cilogon.org/.well-known/openid-configuration"
+        )
+    )
+    def test_returns_true_for_test_host(self):
+        self.assertTrue(is_cilogon_test_host())
+
+    @override_settings(
+        CILOGON_DISCOVERY_URL=(
+            "https://cilogon.org/.well-known/openid-configuration"
+        )
+    )
+    def test_returns_false_for_production_host(self):
+        self.assertFalse(is_cilogon_test_host())
+
+    @override_settings(CILOGON_DISCOVERY_URL="")
+    def test_returns_false_for_empty_url(self):
+        self.assertFalse(is_cilogon_test_host())
+
+    @override_settings(CILOGON_DISCOVERY_URL="not a url")
+    def test_returns_false_for_malformed_url(self):
+        self.assertFalse(is_cilogon_test_host())
+
+
+class ShouldPromptLoginTests(CILogonTestBase):
+    """Tests for should_prompt_login()."""
+
+    TEST_URL = "https://test.cilogon.org/.well-known/openid-configuration"
+    PROD_URL = "https://cilogon.org/.well-known/openid-configuration"
+
+    @override_settings(CILOGON_PROMPT_LOGIN="NEVER")
+    def test_never_returns_false_on_test_host(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.TEST_URL):
+            self.assertFalse(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="NEVER")
+    def test_never_returns_false_on_production_host(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.PROD_URL):
+            self.assertFalse(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="ALWAYS")
+    def test_always_returns_true_on_production_host(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.PROD_URL):
+            self.assertTrue(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="ALWAYS")
+    def test_always_returns_true_on_test_host(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.TEST_URL):
+            self.assertTrue(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="TEST")
+    def test_test_returns_true_on_test_host(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.TEST_URL):
+            self.assertTrue(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="TEST")
+    def test_test_returns_false_on_production_host(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.PROD_URL):
+            self.assertFalse(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="test")
+    def test_value_is_case_insensitive(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.TEST_URL):
+            self.assertTrue(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="  ALWAYS  ")
+    def test_value_is_stripped_of_whitespace(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.PROD_URL):
+            self.assertTrue(should_prompt_login())
+
+    @override_settings(CILOGON_PROMPT_LOGIN="SOMETHING_ELSE")
+    def test_unknown_value_treated_as_never(self):
+        with override_settings(CILOGON_DISCOVERY_URL=self.TEST_URL):
+            self.assertFalse(should_prompt_login())
