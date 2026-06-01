@@ -26,6 +26,32 @@ services:
       - ./.envs/.dev/.django
     command: /start
 
+  idms:
+    platform: linux/arm64
+    build:
+      platforms:
+        - linux/arm64
+      context: .
+      dockerfile: ./compose/dev/idms/Dockerfile
+      args:
+        ECR_REGISTRY: ${ECR_REGISTRY:-registry}
+      tags:
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_IDMS:-idms-dev}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_IDMS:-idms-dev}:latest
+        - knowledge_commons_profiles_dev_idms:${IMAGE_TAG:-latest}
+        - knowledge_commons_profiles_dev_idms:latest
+    image: knowledge_commons_profiles_dev_idms
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    # Shares the dev django env file: same SECRET_KEY, DATABASE_URL,
+    # REDIS_SERVER and STATIC_API_BEARER. The start script forces
+    # DJANGO_SETTINGS_MODULE=config.settings.idms_dev.
+    env_file:
+      - ./.envs/.dev/.django
+    command: /start
+
   traefik:
     build:
       context: .
@@ -38,6 +64,7 @@ services:
     image: knowledge_commons_profiles_dev_traefik
     depends_on:
       - django
+      - idms
     volumes:
       - dev_traefik:/etc/traefik/acme
     ports:
