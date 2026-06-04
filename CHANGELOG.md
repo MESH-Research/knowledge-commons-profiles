@@ -1,3 +1,23 @@
+## 4.41.0 (2026-06-04)
+
+### Feat
+
+- **idms**: add local IDMS settings for local boot/testing
+- **idms**: add ASGI entrypoint, IDMS settings and broker deps
+- **cilogon**: add async broker views and IDMS URLconf
+- **cilogon**: add CILOGON_PROMPT_LOGIN to force IdP re-auth
+
+### Fix
+
+- **ci**: push the IDMS dev image with its own build tag
+- **webhook**: stop leaking auth token in query string and logs
+- **webhook**: send Bearer auth header and log non-2xx responses
+- **cilogon**: derive JWKS endpoint and iss claim from configured host
+
+### Refactor
+
+- **idms**: share broker overrides and add dev settings
+
 ## 4.40.0 (2026-05-29)
 
 ### Feat
