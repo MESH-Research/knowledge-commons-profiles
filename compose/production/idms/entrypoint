@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+echo 'Syncing uv environment... (--frozen --no-install-project --no-default-groups --group "${BUILD_ENV}")'
+# Throttle parallel wheel downloads so the container's DNS resolver
+# doesn't drop lookups under load (EAI_AGAIN). Bump the per-request
+# timeout while we're at it.
+UV_CONCURRENT_DOWNLOADS=4 UV_HTTP_TIMEOUT=120 \
+  uv sync --frozen --no-install-project --no-default-groups --group "${BUILD_ENV}"
+
+echo 'Launching IDMS container...'
+
+exec "$@"

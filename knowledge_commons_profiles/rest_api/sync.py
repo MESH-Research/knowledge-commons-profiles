@@ -148,11 +148,15 @@ class ExternalSync:
             # send a ping to other services
             for url in settings.WEBHOOK_URLS:
                 try:
-                    requests.get(
+                    r = requests.get(
                         url,
                         params={
-                            "token": settings.WEBHOOK_TOKEN,
                             "username": profile.username,
+                        },
+                        headers={
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer "
+                            + settings.WEBHOOK_TOKEN,
                         },
                         timeout=8,  # 8 seconds to ping
                     )
@@ -161,6 +165,19 @@ class ExternalSync:
                         f"user {profile.username}"
                     )
                     logger.info(msg)
+
+                    if not r.ok:
+                        # Log the status only, never the response/URL:
+                        # the request URL can carry query params and we
+                        # must not emit secrets to the logs.
+                        logger.error(
+                            "Webhook to %s for user %s returned %s %s",
+                            url,
+                            profile.username,
+                            r.status_code,
+                            r.reason,
+                        )
+
                 except (RequestException, TypeError):
                     logger.exception(
                         "Failed to send webhook to %s for user %s",

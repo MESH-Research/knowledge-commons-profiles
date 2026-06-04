@@ -1,0 +1,53 @@
+{
+  "family": "hcommons-idms",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/hcommons-idms-task-role",
+  "containerDefinitions": [
+    {
+      "name": "idms",
+      "image": "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/hcommons-idms:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/hcommons-idms",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "idms"
+        }
+      },
+      "environmentFiles": [
+        {
+          "value": "arn:aws:s3:::YOUR_ENV_BUCKET/production/django.env",
+          "type": "s3"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DJANGO_SETTINGS_MODULE",
+          "value": "config.settings.idms"
+        },
+        {
+          "name": "UVICORN_WORKERS",
+          "value": "2"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8000/broker/health/ || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    }
+  ]
+}

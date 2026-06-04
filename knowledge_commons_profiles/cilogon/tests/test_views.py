@@ -59,6 +59,67 @@ class CILogonViewTests(CILogonTestBase):
             response = cilogon_login(request)
             self.assertEqual(response, mock_redirect_response)
 
+    def test_cilogon_login_passes_prompt_login_when_enabled(self):
+        """When should_prompt_login() is True, prompt=login is forwarded to
+        CILogon's authorize_redirect so the IdP re-authenticates (#367)."""
+        request = self.factory.get("/auth/login/")
+        request.user = AnonymousUser()
+        self._add_session(request)
+
+        with (
+            patch("knowledge_commons_profiles.cilogon.views.app_logout"),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
+                return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.should_prompt_login",
+                return_value=True,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect",
+                return_value=MagicMock(status_code=302),
+            ) as mock_authorize,
+        ):
+            cilogon_login(request)
+
+        self.assertEqual(
+            mock_authorize.call_args.kwargs.get("prompt"), "login"
+        )
+
+    def test_cilogon_login_omits_prompt_login_when_disabled(self):
+        """When should_prompt_login() is False, no prompt parameter is sent."""
+        request = self.factory.get("/auth/login/")
+        request.user = AnonymousUser()
+        self._add_session(request)
+
+        with (
+            patch("knowledge_commons_profiles.cilogon.views.app_logout"),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_forwarding_state_for_proxy",
+                return_value="abc123",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.get_oauth_redirect_uri",
+                return_value="https://example.com/auth/callback",
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.should_prompt_login",
+                return_value=False,
+            ),
+            patch(
+                "knowledge_commons_profiles.cilogon.views.oauth.cilogon.authorize_redirect",
+                return_value=MagicMock(status_code=302),
+            ) as mock_authorize,
+        ):
+            cilogon_login(request)
+
+        self.assertNotIn("prompt", mock_authorize.call_args.kwargs)
+
     def test_callback_forwards_if_forwarding_url_present(self):
         request = self.factory.get("/auth/callback/")
         request.user = self.user

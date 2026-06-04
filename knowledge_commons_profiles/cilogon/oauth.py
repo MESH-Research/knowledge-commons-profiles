@@ -54,6 +54,12 @@ _TLD_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
 
 _BROKER_ENCODER = None
 
+# Host of the CILogon test deployment. The prompt=login pass-through to the
+# social IdPs (ORCID, Google, Microsoft, ...) currently only ships on this
+# deployment via service-lib >= 3.4.0, so the "TEST" mode of
+# CILOGON_PROMPT_LOGIN is gated on it (#367).
+CILOGON_TEST_HOST = "test.cilogon.org"
+
 
 def _broker_encoder():
     """
@@ -158,6 +164,41 @@ def is_using_domain_proxy() -> bool:
     actual = settings.CILOGON_ACTUAL_DOMAIN
     registered = settings.CILOGON_REGISTERED_DOMAIN
     return bool(actual and actual != registered)
+
+
+def is_cilogon_test_host() -> bool:
+    """
+    Return True if the configured CILogon deployment is the test host
+    (test.cilogon.org), determined from the CILOGON_DISCOVERY_URL setting.
+    """
+    try:
+        host = stdlib_urlparse(settings.CILOGON_DISCOVERY_URL or "").hostname
+    except (ValueError, AttributeError):
+        return False
+    return host == CILOGON_TEST_HOST
+
+
+def should_prompt_login() -> bool:
+    """
+    Decide whether to add ``prompt=login`` to the CILogon authorization
+    request so the downstream social IdP forces re-authentication (#367).
+
+    Controlled by the ``CILOGON_PROMPT_LOGIN`` setting:
+
+    * ``NEVER``  - never send it (default).
+    * ``TEST``   - only send it when the configured CILogon host is the
+      test deployment (test.cilogon.org), where the feature currently lives.
+    * ``ALWAYS`` - always send it, including against production CILogon.
+
+    Any unrecognised value is treated as ``NEVER``.
+    """
+    mode = (settings.CILOGON_PROMPT_LOGIN or "").strip().upper()
+
+    if mode == "ALWAYS":
+        return True
+    if mode == "TEST":
+        return is_cilogon_test_host()
+    return False
 
 
 def get_oauth_redirect_uri(request) -> str:
@@ -460,17 +501,39 @@ def delete_associations(associations):
         sentry_sdk.capture_exception()
 
 
+def cilogon_issuer() -> str:
+    """
+    Return the CILogon issuer base URL (``scheme://host``) for the configured
+    deployment, derived from the CILOGON_DISCOVERY_URL setting.
+
+    This is the value CILogon uses as the OIDC ``iss`` claim and the base for
+    the JWKS endpoint, so it must track whichever deployment we point at
+    (cilogon.org in production, test.cilogon.org on dev). Falls back to the
+    production issuer if the discovery URL cannot be parsed.
+    """
+    try:
+        parts = stdlib_urlparse(settings.CILOGON_DISCOVERY_URL or "")
+        if parts.scheme and parts.netloc:
+            return f"{parts.scheme}://{parts.netloc}"
+    except (ValueError, AttributeError):
+        pass
+    return "https://cilogon.org"
+
+
 def get_cilogon_jwks():
     """
     Fetch and cache CILogon's JWKS
     """
-    cache_key = "cilogon_jwks"
+    issuer = cilogon_issuer()
+    # Namespace the cache by issuer so test and production certs never share
+    # an entry if the configured deployment changes.
+    cache_key = f"cilogon_jwks:{issuer}"
     jwks = cache.get(cache_key)
 
     if not jwks:
         try:
             response = requests.get(
-                "https://cilogon.org/oauth2/certs", timeout=10
+                f"{issuer}/oauth2/certs", timeout=10
             )
             response.raise_for_status()
             jwks = response.json()
@@ -496,7 +559,7 @@ def verify_and_decode_cilogon_jwt(id_token):
             id_token,
             jwks,
             claims_options={
-                "iss": {"essential": True, "value": "https://cilogon.org"},
+                "iss": {"essential": True, "value": cilogon_issuer()},
                 "aud": {
                     "essential": False,
                     "value": settings.CILOGON_CLIENT_ID,

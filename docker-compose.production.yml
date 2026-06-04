@@ -23,6 +23,30 @@ services:
       - ./.envs/.production/.django
     command: /start
 
+  idms:
+    platform: linux/arm64
+    build:
+      platforms:
+        - linux/arm64
+      context: .
+      dockerfile: ./compose/production/idms/Dockerfile
+      args:
+        ECR_REGISTRY: ${ECR_REGISTRY:-registry}
+      tags:
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_IDMS:-idms}:${IMAGE_TAG:-latest}
+        - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_IDMS:-idms}:latest
+        - knowledge_commons_profiles_production_idms:${IMAGE_TAG:-latest}
+        - knowledge_commons_profiles_production_idms:latest
+    image: knowledge_commons_profiles_production_idms
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
+    # Shares the django env file: same SECRET_KEY, DATABASE_URL, REDIS_SERVER
+    # and STATIC_API_BEARER, so it reads the same sessions and broker nonces.
+    # The start script forces DJANGO_SETTINGS_MODULE=config.settings.idms.
+    env_file:
+      - ./.envs/.production/.django
+    command: /start
+
   traefik:
     platform: linux/arm64
     build:
@@ -38,6 +62,7 @@ services:
     image: knowledge_commons_profiles_production_traefik
     depends_on:
       - django
+      - idms
     volumes:
       - production_traefik:/etc/traefik/acme
     ports:

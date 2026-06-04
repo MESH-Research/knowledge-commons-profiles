@@ -186,6 +186,12 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = [
     "hcommons-dev.org",
 ]
 
+# Forward prompt=login through CILogon so the social IdP re-authenticates
+# (#367). Default to TEST on dev: it only fires when CILOGON_DISCOVERY_URL
+# points at test.cilogon.org (the only deployment with this feature), so it
+# is a safe no-op against production CILogon. Still overridable via env.
+CILOGON_PROMPT_LOGIN = env("CILOGON_PROMPT_LOGIN", default="TEST")
+
 # this is duplicated from base.py as STATIC_URL is overwritten above
 TINYMCE_JS_URL = STATIC_URL + "tinymcelocal/js/tinymce/tinymce.min.js"
 

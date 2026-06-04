@@ -461,6 +461,16 @@ CILOGON_REVOCATION_TIMEOUT = env.float(
 # local dev to keep boot hermetic.
 CILOGON_PRELOAD_METADATA = env.bool("CILOGON_PRELOAD_METADATA", default=True)
 
+# Whether to forward the OIDC ``prompt=login`` parameter through CILogon to the
+# social IdPs (ORCID, Google, Microsoft, ...) so they force re-authentication
+# instead of silently re-using an existing IdP session (#367). This pass-through
+# requires CILogon service-lib >= 3.4.0, which is currently only deployed on
+# test.cilogon.org. Accepted values:
+#   NEVER  - never send prompt=login (default)
+#   TEST   - only send it when the configured CILogon host is test.cilogon.org
+#   ALWAYS - always send it, including against production CILogon
+CILOGON_PROMPT_LOGIN = env("CILOGON_PROMPT_LOGIN", default="NEVER")
+
 # Identity broker configuration for third-party app authentication
 BROKER_REGISTERED_APPS = {
     "wordpress": {

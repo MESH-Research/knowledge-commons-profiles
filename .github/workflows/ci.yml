@@ -267,6 +267,7 @@ jobs:
       AWS_REGION: us-east-1
       ECR_REPOSITORY: kcprofiles-dev
       ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik-dev
+      ECR_REPOSITORY_IDMS: kcprofiles-idms-dev
       ECS_CLUSTER: kcprofiles-dev-2
       ECS_SERVICE: kcprofiles-dev
       AUTOSCALE_GROUP: Infra-ECS-Cluster-kcprofiles-dev-2-f89c2350-ECSAutoScalingGroup-zUYaGlEf1GWi
@@ -306,6 +307,8 @@ jobs:
             $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG \
             $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_IDMS:$IMAGE_TAG \
+            $ECR_REGISTRY/$ECR_REPOSITORY_IDMS:$BUILD_TAG
 
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BUILD_TAG
@@ -314,6 +317,10 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:$BUILD_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_TRAEFIK:latest
+
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_IDMS:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_IDMS:$BUILD_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_IDMS:latest
 
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
