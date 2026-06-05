@@ -16,6 +16,15 @@ if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
     env.read_env(str(BASE_DIR / ".env"))
 
+# BUILD / DEPLOY METADATA
+# ------------------------------------------------------------------------------
+# Baked into the container image at build time (CI -> Dockerfile ARG/ENV) so a
+# running instance can report exactly what is deployed. Defaults to "unknown"
+# off-CI (local dev, tests). Surfaced by the health endpoints.
+GIT_SHA = env("GIT_SHA", default="unknown")
+BUILD_TAG = env("BUILD_TAG", default="unknown")
+APP_BRANCH = env("APP_BRANCH", default="unknown")
+
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug

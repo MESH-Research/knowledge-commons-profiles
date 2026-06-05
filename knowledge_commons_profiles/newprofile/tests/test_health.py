@@ -166,6 +166,64 @@ class TestHealthView(TestCase):
         self.assertIn("API Endpoints", data)
         self.assertIn("check failed", data["API Endpoints"])
 
+    @override_settings(
+        APP_BRANCH="dev",
+        BUILD_TAG="dev-v4.41.0-abc1234",
+        GIT_SHA="abc1234def5678901234567890123456789012ab",
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_health_reports_branch_image_and_sha(
+        self, mock_cache, mock_connections, mock_api_check
+    ):
+        """/health/ surfaces the deploy branch, image tag and commit SHA."""
+        mock_api_check.return_value = {}
+        mock_db = Mock()
+        mock_db.cursor.return_value = Mock()
+        mock_connections.__getitem__.return_value = mock_db
+
+        request = self.factory.get("/health/")
+        response = health(request)
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertEqual(data["Branch"], "dev")
+        self.assertEqual(data["Image"], "dev-v4.41.0-abc1234")
+        self.assertEqual(
+            data["SHA"], "abc1234def5678901234567890123456789012ab"
+        )
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_health_metadata_keys_present_by_default(
+        self, mock_cache, mock_connections, mock_api_check
+    ):
+        """Branch/Image/SHA are always present; settings supply defaults so
+        the view never raises when the build env vars are unset."""
+        mock_api_check.return_value = {}
+        mock_db = Mock()
+        mock_db.cursor.return_value = Mock()
+        mock_connections.__getitem__.return_value = mock_db
+
+        request = self.factory.get("/health/")
+        response = health(request)
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertIn("Branch", data)
+        self.assertIn("Image", data)
+        self.assertIn("SHA", data)
+
 
 class TestHealthAdminEmails(TestCase):
     """Regression tests for the /health/ admin-email flood (issue #561).

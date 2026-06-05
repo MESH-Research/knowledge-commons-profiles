@@ -168,15 +168,22 @@ async def broker_health(request):
 
     Confirms the two backends the broker depends on — the Redis cache and the
     default database — are reachable, so the load balancer / ECS can gate
-    traffic on real readiness rather than mere process liveness.
+    traffic on real readiness rather than mere process liveness. The build
+    metadata baked into the image is echoed back so the deployed branch, image
+    tag and commit SHA are visible on the probe.
     """
+    meta = {
+        "Branch": settings.APP_BRANCH,
+        "Image": settings.BUILD_TAG,
+        "SHA": settings.GIT_SHA,
+    }
     try:
         await cache.aget("broker_health_probe")
         await SubAssociation.objects.filter(pk=0).aexists()
     except Exception:  # any backend failure here means the broker is unhealthy
         logger.exception("broker health check failed")
-        return JsonResponse({"status": "fail"}, status=500)
-    return JsonResponse({"status": "ok"})
+        return JsonResponse({"status": "fail", **meta}, status=500)
+    return JsonResponse({"status": "ok", **meta})
 
 
 def broker_404(request, exception=None):
