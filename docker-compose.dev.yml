@@ -12,6 +12,9 @@ services:
       dockerfile: ./compose/dev/django/Dockerfile
       args:
         ECR_REGISTRY: ${ECR_REGISTRY:-registry}
+        APP_BRANCH: ${APP_BRANCH:-unknown}
+        BUILD_TAG: ${BUILD_TAG:-unknown}
+        GIT_SHA: ${GIT_SHA:-unknown}
       tags:
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django-dev}:${IMAGE_TAG:-latest}
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY:-django-dev}:latest
@@ -35,6 +38,9 @@ services:
       dockerfile: ./compose/dev/idms/Dockerfile
       args:
         ECR_REGISTRY: ${ECR_REGISTRY:-registry}
+        APP_BRANCH: ${APP_BRANCH:-unknown}
+        BUILD_TAG: ${BUILD_TAG:-unknown}
+        GIT_SHA: ${GIT_SHA:-unknown}
       tags:
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_IDMS:-idms-dev}:${IMAGE_TAG:-latest}
         - ${ECR_REGISTRY:-registry}/${ECR_REPOSITORY_IDMS:-idms-dev}:latest
