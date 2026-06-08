@@ -3,9 +3,11 @@ import base64
 import json
 from math import ceil
 
+from django.conf import settings
 from django.db.models import Prefetch
 from django.db.models import Q
 from django.db.models import QuerySet
+from django.shortcuts import redirect
 from django.shortcuts import render
 
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
@@ -40,6 +42,11 @@ def _page_bounds(page_num: int):
     start = (page_num - 1) * PAGE_SIZE
     end = start + PAGE_SIZE
     return start, end
+
+
+def go_to_works(request, username):
+    # redirect to NAV_WORKS_URL
+    return redirect(settings.NAV_WORKS_URL)
 
 
 def people_by_username(request):

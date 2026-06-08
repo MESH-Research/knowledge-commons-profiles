@@ -19,6 +19,7 @@ from django.urls import include
 from django.urls import path
 
 from knowledge_commons_profiles.newprofile.views.home import home
+from knowledge_commons_profiles.newprofile.views.members import go_to_works
 from knowledge_commons_profiles.newprofile.views.members import (
     people_by_username,
 )
@@ -208,6 +209,7 @@ urlpatterns = [
     path("stats/", stats_board, name="stats"),
     path("stats/download/", stats_download, name="get_stats_csv"),
     path("stats/table/", stats_table, name="stats_table"),
+    path("/works/", go_to_works, name="go_to_works"),
     path("members/", people_by_username, name="members"),
     path("search/", search, name="search"),
     path("", home, name="home"),
