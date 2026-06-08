@@ -119,6 +119,11 @@ urlpatterns = [
     path("members/<str:user>/", profile, name="profile"),
     path("members/<str:user>/profile/", profile, name="alternative_profile_1"),
     path(
+        "members/<str:user>/profile/public/",
+        profile,
+        name="alternative_profile_2",
+    ),
+    path(
         "members/<str:username>/profile/edit/",
         edit_profile,
         name="legacy_profile_edit",
