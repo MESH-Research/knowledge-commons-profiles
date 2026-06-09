@@ -877,15 +877,15 @@ wheels = [
 
 [[package]]
 name = "django-prometheus"
-version = "2.5.0.dev13"
+version = "2.6.0.dev1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "prometheus-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/75/6b/156a5f336dababf9daa95f6f0c0515b031fb0994135ee6cbd93c769d2606/django_prometheus-2.5.0.dev13.tar.gz", hash = "sha256:4901860c7d19eabea9f88925789ad1f5152ace483f3a9f9efecb6d93cda72251", size = 26482, upload-time = "2026-04-30T14:04:26.297Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/67/1deb93ebd2cfa2393d2d0069cb8d71ccfe7ce63307d4e0260a4fea130c0f/django_prometheus-2.6.0.dev1.tar.gz", hash = "sha256:e6d8d92152c7b55c00dd4ad749d10348ec0ea932cfad52f36683a5d70161229b", size = 26490, upload-time = "2026-06-03T17:53:19.126Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/50/345733c6bd367472c49019eb8074cf26a7a1f801d5c8b1f7917b81f99ae8/django_prometheus-2.5.0.dev13-py2.py3-none-any.whl", hash = "sha256:df5652a44f6ddaf146f8d338150de980dc708b6db4b0c67873d2ee24a6f73fef", size = 31869, upload-time = "2026-04-30T14:04:24.415Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/2a/578db9f91e3fa3c7ab6a9fe4d54cfef76049006533a65e7bbaeca1cc02e5/django_prometheus-2.6.0.dev1-py2.py3-none-any.whl", hash = "sha256:5e0498b26b79fbbb644845124edaacab3ce8f0ae7adbbc156a731b4df3558577", size = 31857, upload-time = "2026-06-03T17:53:17.669Z" },
 ]
 
 [[package]]
@@ -2110,7 +2110,7 @@ dev = [
     { name = "sentry-sdk", specifier = "==2.57.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.42.0" },
 ]
-loadtest = [{ name = "django-prometheus", specifier = "==2.5.0.dev13" }]
+loadtest = [{ name = "django-prometheus", specifier = "==2.6.0.dev1" }]
 local = [
     { name = "collectfasta", specifier = "==3.3.3" },
     { name = "coverage", specifier = "==7.13.5" },
