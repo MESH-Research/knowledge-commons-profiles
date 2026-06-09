@@ -182,7 +182,7 @@ dependencies = [
     "lxml==6.1.0",
     "aiohttp==3.13.5",
     "mysqlclient==2.2.8",
-    "black[d]==26.3.1",
+    "black[d]==26.5.1",
     "pylint==4.0.5",
     # Management commands
     "rich==14.3.3",
