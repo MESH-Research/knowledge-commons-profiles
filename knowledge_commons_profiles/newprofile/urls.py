@@ -19,6 +19,8 @@ from django.urls import include
 from django.urls import path
 
 from knowledge_commons_profiles.newprofile.views.home import home
+from knowledge_commons_profiles.newprofile.views.members import go_to_works
+from knowledge_commons_profiles.newprofile.views.members import network_members
 from knowledge_commons_profiles.newprofile.views.members import (
     people_by_username,
 )
@@ -119,6 +121,11 @@ urlpatterns = [
     path("members/<str:user>/", profile, name="profile"),
     path("members/<str:user>/profile/", profile, name="alternative_profile_1"),
     path(
+        "members/<str:user>/profile/public/",
+        profile,
+        name="alternative_profile_2",
+    ),
+    path(
         "members/<str:username>/profile/edit/",
         edit_profile,
         name="legacy_profile_edit",
@@ -203,6 +210,12 @@ urlpatterns = [
     path("stats/", stats_board, name="stats"),
     path("stats/download/", stats_download, name="get_stats_csv"),
     path("stats/table/", stats_table, name="stats_table"),
+    path("works/", go_to_works, name="go_to_works"),
+    path(
+        "network/<str:network_name>/members/",
+        network_members,
+        name="network_members",
+    ),
     path("members/", people_by_username, name="members"),
     path("search/", search, name="search"),
     path("", home, name="home"),

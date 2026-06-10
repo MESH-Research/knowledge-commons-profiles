@@ -190,12 +190,11 @@ def get_external_memberships(obj: Profile, api_only=False):
         return {}
 
     try:
-        # Handle case where is_member_of might be None or empty
+        # is_member_of may be None or empty for profiles that have never
+        # been synced; treat that as an empty base so the manual
+        # role_overrides layer still applies below
         member_data = obj.is_member_of
-        if not member_data:
-            return {}
-
-        member_json = json.loads(member_data)
+        member_json = json.loads(member_data) if member_data else {}
 
         if not api_only:
             for role in obj.role_overrides:

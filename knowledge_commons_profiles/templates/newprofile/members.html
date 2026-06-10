@@ -6,7 +6,13 @@
   <form method="post" action="{% url 'members' %}">
     {% csrf_token %}
     <div class="user-search-container">
-        <h1>Knowledge Commons Members</h1>
+        <h1>
+          {% if network %}
+            {{ network }} Members
+          {% else %}
+            Knowledge Commons Members
+          {% endif %}
+        </h1>
         <label for="username" class="visually-hidden">Search for a member</label>
         <input type="text" name="username" id="username" class="user-search" placeholder="Search for a user..."/> <input type="submit" value="Search"/>
     </div>
