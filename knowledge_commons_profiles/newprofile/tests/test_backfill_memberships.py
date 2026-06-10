@@ -10,7 +10,9 @@ outbound HTTP.
 """
 
 import json
+import tempfile
 from io import StringIO
+from pathlib import Path
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -161,6 +163,75 @@ class BackfillMembershipsTests(TestCase):
             self._call("--no-notify")
 
         self.assertTrue(self._memberships(survivor)["STEMED+"])
+
+    def _state_file(self):
+        tmpdir = tempfile.mkdtemp()
+        self.addCleanup(
+            lambda: __import__("shutil").rmtree(tmpdir, ignore_errors=True)
+        )
+        return Path(tmpdir) / "state.txt"
+
+    def test_state_file_records_processed_profiles(self):
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        state = self._state_file()
+
+        self._call("--state-file", str(state))
+
+        self.assertEqual(
+            state.read_text().split(), ["bonnie", "clyde"]
+        )
+
+    def test_state_file_resumes_by_skipping_processed_profiles(self):
+        skipped = self._profile_with_role("bonnie")
+        fresh = self._profile_with_role("clyde")
+        state = self._state_file()
+        state.write_text("bonnie\n")
+
+        self._call("--state-file", str(state))
+
+        # bonnie was recorded as done, so she is untouched on resume
+        self.assertEqual(self._memberships(skipped), {})
+        self.assertTrue(self._memberships(fresh)["STEMED+"])
+
+    def test_state_file_omits_failed_profiles_so_they_retry(self):
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        state = self._state_file()
+
+        real_refresh = (
+            "knowledge_commons_profiles.rest_api.sync."
+            "ExternalSync.refresh_local_memberships"
+        )
+        original = ExternalSync.refresh_local_memberships
+
+        def flaky(profile):
+            if profile.username == "bonnie":
+                msg = "boom"
+                raise RuntimeError(msg)
+            return original(profile)
+
+        with patch(real_refresh, side_effect=flaky):
+            self._call("--state-file", str(state), "--no-notify")
+
+        # the failure is not recorded; the success is
+        self.assertEqual(state.read_text().split(), ["clyde"])
+
+        # second run (no flake) picks bonnie up and completes the state
+        bonnie = Profile.objects.get(username="bonnie")
+        self._call("--state-file", str(state))
+        self.assertTrue(self._memberships(bonnie)["STEMED+"])
+        self.assertEqual(
+            sorted(state.read_text().split()), ["bonnie", "clyde"]
+        )
+
+    def test_dry_run_does_not_write_state_file(self):
+        self._profile_with_role("bonnie")
+        state = self._state_file()
+
+        self._call("--dry-run", "--state-file", str(state))
+
+        self.assertFalse(state.exists())
 
     def test_full_mode_runs_external_sync_per_profile(self):
         self._profile_with_role("bonnie")

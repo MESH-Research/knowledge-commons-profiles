@@ -21,6 +21,7 @@ with --no-notify.
 import json
 import logging
 import time
+from pathlib import Path
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -98,6 +99,15 @@ class Command(BaseCommand):
             action="store_true",
             help="Report which profiles would be processed, write nothing.",
         )
+        parser.add_argument(
+            "--state-file",
+            help=(
+                "Record each successfully processed username in this "
+                "file and skip recorded usernames on re-run, so an "
+                "interrupted run can resume where it stopped. Failed "
+                "profiles are not recorded and retry on resume."
+            ),
+        )
 
     @staticmethod
     def _parse(value):
@@ -106,7 +116,8 @@ class Command(BaseCommand):
         except (TypeError, json.JSONDecodeError):
             return {}
 
-    def handle(self, *args, **options):
+    @staticmethod
+    def _build_queryset(options):
         qs = Profile.objects.all().order_by("username")
 
         if options["username"]:
@@ -118,52 +129,102 @@ class Command(BaseCommand):
                 | Q(is_member_of__in=MISSING_VALUES)
             )
 
-        processed = changed = notified = errors = 0
+        return qs
 
-        for profile in qs.iterator():
-            if options["dry_run"]:
-                self.stdout.write(
-                    f"[DRY-RUN] would backfill {profile.username}"
-                )
-                processed += 1
-                continue
+    @staticmethod
+    def _open_state(options):
+        """
+        Load the set of already-processed usernames and (unless dry-run)
+        an append handle for recording new ones.
+        """
+        if not options["state_file"]:
+            return set(), None
 
-            before = self._parse(profile.is_member_of)
+        state_path = Path(options["state_file"])
+        done = (
+            set(state_path.read_text().split())
+            if state_path.exists()
+            else set()
+        )
 
-            try:
-                if options["full"]:
-                    ExternalSync.sync(
-                        profile=profile,
-                        cache=not options["force"],
-                        webhooks=False,
+        if options["dry_run"]:
+            return done, None
+
+        return done, state_path.open("a")
+
+    def _backfill_profile(self, profile, options) -> bool:
+        """
+        Backfill one profile; return True if its memberships changed.
+        """
+        before = self._parse(profile.is_member_of)
+
+        if options["full"]:
+            ExternalSync.sync(
+                profile=profile,
+                cache=not options["force"],
+                webhooks=False,
+            )
+        else:
+            ExternalSync.refresh_local_memberships(profile)
+
+        return self._parse(profile.is_member_of) != before
+
+    def handle(self, *args, **options):
+        counts = dict.fromkeys(
+            ("processed", "changed", "notified", "skipped", "errors"), 0
+        )
+        done, state_handle = self._open_state(options)
+
+        try:
+            for profile in self._build_queryset(options).iterator():
+                if profile.username in done:
+                    counts["skipped"] += 1
+                    continue
+
+                if options["dry_run"]:
+                    self.stdout.write(
+                        f"[DRY-RUN] would backfill {profile.username}"
                     )
-                else:
-                    ExternalSync.refresh_local_memberships(profile)
-            except Exception:
-                errors += 1
-                logger.exception(
-                    "Failed to backfill memberships for %s",
-                    profile.username,
-                )
-                self.stderr.write(
-                    self.style.ERROR(f"Failed: {profile.username}")
-                )
-                continue
+                    counts["processed"] += 1
+                    continue
 
-            processed += 1
+                try:
+                    has_changed = self._backfill_profile(profile, options)
+                except Exception:
+                    counts["errors"] += 1
+                    logger.exception(
+                        "Failed to backfill memberships for %s",
+                        profile.username,
+                    )
+                    self.stderr.write(
+                        self.style.ERROR(f"Failed: {profile.username}")
+                    )
+                    continue
 
-            if self._parse(profile.is_member_of) != before:
-                changed += 1
-                if not options["no_notify"]:
-                    ExternalSync.notify_subscribers(profile)
-                    notified += 1
+                counts["processed"] += 1
 
-            if options["sleep"]:
-                time.sleep(options["sleep"])
+                if has_changed:
+                    counts["changed"] += 1
+                    if not options["no_notify"]:
+                        ExternalSync.notify_subscribers(profile)
+                        counts["notified"] += 1
+
+                # record only after the profile is fully handled so an
+                # interrupted run retries anything in flight
+                if state_handle:
+                    state_handle.write(f"{profile.username}\n")
+                    state_handle.flush()
+
+                if options["sleep"]:
+                    time.sleep(options["sleep"])
+        finally:
+            if state_handle:
+                state_handle.close()
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Processed {processed} profile(s): {changed} changed, "
-                f"{notified} notified, {errors} error(s)"
+                "Processed {processed} profile(s): {changed} changed, "
+                "{notified} notified, {skipped} skipped, "
+                "{errors} error(s)".format(**counts)
             )
         )
