@@ -92,6 +92,16 @@ class NetworkMembersViewTests(TestCase):
         self.assertNotIn("erin", usernames)
         self.assertNotIn("ghost", usernames)
 
+    def test_override_only_profile_is_listed(self):
+        # a profile that has never been synced (is_member_of NULL) but
+        # carries a manual override is still a final-role member
+        _make_profile(
+            "heidi", is_member_of=None, role_overrides=["STEMED+"]
+        )
+        response = self.client.get("/network/stemedplus/members/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("heidi", self._usernames(response))
+
     def test_network_slug_is_case_insensitive_in_url(self):
         response = self.client.get("/network/STEMEDPLUS/members/")
         self.assertEqual(response.status_code, 200)
