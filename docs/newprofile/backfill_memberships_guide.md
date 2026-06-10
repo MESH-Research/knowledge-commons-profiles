@@ -123,11 +123,24 @@ or `AWS_*` environment variables). The role needs `s3:GetObject` and
 `s3:PutObject` on the state key.
 
 Object stores cannot append, so remote state rewrites the whole object
-every `--checkpoint-every` N processed profiles (default 25) and once
-more on completion. Consequences:
+at checkpoints: immediately after the **first** processed profile (so
+the object appears within seconds of starting and S3 access problems
+surface at profile 1), every `--checkpoint-every` N processed profiles
+thereafter (default 25), and once more on exit. Each checkpoint prints
+a confirmation:
 
-- A hard kill (OOM, SIGKILL) loses at most N−1 profiles of progress;
-  those profiles are simply re-processed on resume. The operation is
+```
+checkpoint: 25 username(s) -> s3://kc-profiles-ops/backfill/state.txt
+```
+
+Consequences:
+
+- **SIGTERM (container stop, `docker stop`, ECS/Kubernetes shutdown)
+  is handled gracefully**: progress is flushed before the process
+  exits (status 143). Only SIGKILL — e.g. the OOM killer, or the
+  follow-up kill after a stop grace period expires — can lose
+  progress, and then at most N−1 profiles since the last checkpoint;
+  those are simply re-processed on resume. The operation is
   idempotent, so this is safe.
 - Lower N for more durability at the cost of one S3 PUT per N
   profiles. `--checkpoint-every 1` writes after every profile, which
@@ -159,7 +172,10 @@ abort the run.
 - **Run resumed but reprocessed some profiles.** Expected with remote
   state: up to `--checkpoint-every − 1` profiles since the last
   checkpoint are retried.
-- **State object never appears in S3.** Check for an exception in the
-  command output: state is first written after the
-  `--checkpoint-every`-th profile, so very short runs with large N
-  only write on completion. Verify the role has `s3:PutObject`.
+- **State object never appears in S3.** The first write happens
+  immediately after the first successfully processed profile, and each
+  checkpoint prints a `checkpoint: … -> s3://…` line. If no checkpoint
+  line appears, no profile has completed yet (look for `Failed:` lines
+  — errored profiles are never recorded); if the line appears but the
+  object is missing, you are looking at the wrong key — the line
+  prints the exact URI being written.

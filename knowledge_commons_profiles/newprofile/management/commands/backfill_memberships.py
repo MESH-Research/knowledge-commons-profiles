@@ -20,6 +20,7 @@ with --no-notify.
 
 import json
 import logging
+import signal
 import time
 from pathlib import Path
 
@@ -66,16 +67,20 @@ class _RemoteStateStore:
     Resume state in an object store (e.g. s3://) via smart_open.
 
     Object stores cannot append, so the whole state object is rewritten
-    every ``checkpoint_every`` records and once more on close. A hard
-    kill therefore loses at most ``checkpoint_every - 1`` records of
-    progress; those profiles are simply re-processed on resume.
+    on the first record (so the object appears immediately and access
+    problems surface at profile 1), every ``checkpoint_every`` records
+    thereafter, and once more on close. A hard kill therefore loses at
+    most ``checkpoint_every - 1`` records of progress; those profiles
+    are simply re-processed on resume.
     """
 
-    def __init__(self, uri: str, checkpoint_every: int):
+    def __init__(self, uri: str, checkpoint_every: int, announce=None):
         self._uri = uri
         self._every = max(1, checkpoint_every)
+        self._announce = announce
         self._done: set[str] = set()
         self._unflushed = 0
+        self._primed = False
 
     def load(self) -> set[str]:
         try:
@@ -91,14 +96,19 @@ class _RemoteStateStore:
     def record(self, username: str) -> None:
         self._done.add(username)
         self._unflushed += 1
-        if self._unflushed >= self._every:
+        if not self._primed or self._unflushed >= self._every:
             self._flush()
 
     def _flush(self) -> None:
         content = "".join(f"{name}\n" for name in sorted(self._done))
         with smart_open.open(self._uri, "w") as handle:
             handle.write(content)
+        self._primed = True
         self._unflushed = 0
+        if self._announce:
+            self._announce(
+                f"checkpoint: {len(self._done)} username(s) -> {self._uri}"
+            )
 
     def close(self) -> None:
         if self._unflushed:
@@ -213,8 +223,7 @@ class Command(BaseCommand):
 
         return qs
 
-    @staticmethod
-    def _make_store(options):
+    def _make_store(self, options):
         """
         Build the resume-state store for --state-file, if requested.
         """
@@ -222,8 +231,18 @@ class Command(BaseCommand):
         if not target:
             return None
         if "://" in target:
-            return _RemoteStateStore(target, options["checkpoint_every"])
+            return _RemoteStateStore(
+                target,
+                options["checkpoint_every"],
+                announce=self.stdout.write,
+            )
         return _LocalStateStore(target)
+
+    @staticmethod
+    def _exit_on_sigterm(signum, frame):
+        # container stops deliver SIGTERM; raise so the finally block
+        # persists resume state before the process dies
+        raise SystemExit(143)
 
     def _backfill_profile(self, profile, options) -> bool:
         """
@@ -248,6 +267,10 @@ class Command(BaseCommand):
         )
         state_store = self._make_store(options)
         done = state_store.load() if state_store else set()
+
+        previous_sigterm = signal.signal(
+            signal.SIGTERM, self._exit_on_sigterm
+        )
 
         try:
             for profile in self._build_queryset(options).iterator():
@@ -291,6 +314,7 @@ class Command(BaseCommand):
                 if options["sleep"]:
                     time.sleep(options["sleep"])
         finally:
+            signal.signal(signal.SIGTERM, previous_sigterm)
             if state_store:
                 state_store.close()
 

@@ -10,7 +10,10 @@ outbound HTTP.
 """
 
 import json
+import os
+import signal
 import tempfile
+import time
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -361,6 +364,70 @@ class BackfillMembershipsTests(TestCase):
         self.assertEqual(
             remote.objects[self.URI].split(), ["clyde"]
         )
+
+    def test_remote_state_first_record_flushes_immediately(self):
+        # even with a large checkpoint interval the object must appear
+        # as soon as the first profile is done, so operators can see
+        # the run is working and IAM problems surface at profile 1
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        remote = self._fake_remote()
+
+        self._call("--state-file", self.URI, "--checkpoint-every", "100")
+
+        self.assertEqual(remote.history[0].split(), ["bonnie"])
+
+    def test_remote_state_checkpoints_are_announced(self):
+        self._profile_with_role("bonnie")
+        remote = self._fake_remote()
+
+        out, _ = self._call("--state-file", self.URI)
+
+        self.assertIn(self.URI, out)
+        self.assertTrue(remote.history)
+
+    def test_sigterm_flushes_remote_state_and_exits(self):
+        # container stops deliver SIGTERM; the run must persist its
+        # progress before exiting instead of dying silently
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        remote = self._fake_remote()
+
+        def sentinel(signum, frame):
+            msg = "SIGTERM was not handled gracefully"
+            raise AssertionError(msg)
+
+        previous = signal.signal(signal.SIGTERM, sentinel)
+        self.addCleanup(signal.signal, signal.SIGTERM, previous)
+
+        real_refresh = (
+            "knowledge_commons_profiles.rest_api.sync."
+            "ExternalSync.refresh_local_memberships"
+        )
+        original = ExternalSync.refresh_local_memberships
+
+        def stopped_mid_run(profile):
+            if profile.username == "clyde":
+                os.kill(os.getpid(), signal.SIGTERM)
+                time.sleep(1)  # the handler interrupts this sleep
+            return original(profile)
+
+        with (
+            patch(real_refresh, side_effect=stopped_mid_run),
+            self.assertRaises(SystemExit),
+        ):
+            call_command(
+                "backfill_memberships",
+                "--state-file",
+                self.URI,
+                "--checkpoint-every",
+                "100",
+                "--no-notify",
+                stdout=StringIO(),
+            )
+
+        # bonnie's progress survived the stop; clyde retries on resume
+        self.assertEqual(remote.objects[self.URI].split(), ["bonnie"])
 
     def test_remote_state_dry_run_writes_nothing(self):
         self._profile_with_role("bonnie")
