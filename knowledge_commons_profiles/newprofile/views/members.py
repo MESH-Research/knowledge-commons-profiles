@@ -44,7 +44,7 @@ def _page_bounds(page_num: int):
     return start, end
 
 
-def go_to_works(request, username):
+def go_to_works(request):
     # redirect to NAV_WORKS_URL
     return redirect(settings.NAV_WORKS_URL)
 
