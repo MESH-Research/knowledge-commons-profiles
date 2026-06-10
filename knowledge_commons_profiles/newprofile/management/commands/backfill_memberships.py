@@ -23,6 +23,7 @@ import logging
 import time
 from pathlib import Path
 
+import smart_open
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
@@ -33,6 +34,75 @@ logger = logging.getLogger(__name__)
 
 # is_member_of values that count as "never synced" for --missing-only
 MISSING_VALUES = ("", "{}")
+
+
+class _LocalStateStore:
+    """
+    Resume state in a local file, appended and flushed per record.
+    """
+
+    def __init__(self, path):
+        self._path = Path(path)
+        self._handle = None
+
+    def load(self) -> set[str]:
+        if self._path.exists():
+            return set(self._path.read_text().split())
+        return set()
+
+    def record(self, username: str) -> None:
+        if self._handle is None:
+            self._handle = self._path.open("a")
+        self._handle.write(f"{username}\n")
+        self._handle.flush()
+
+    def close(self) -> None:
+        if self._handle:
+            self._handle.close()
+
+
+class _RemoteStateStore:
+    """
+    Resume state in an object store (e.g. s3://) via smart_open.
+
+    Object stores cannot append, so the whole state object is rewritten
+    every ``checkpoint_every`` records and once more on close. A hard
+    kill therefore loses at most ``checkpoint_every - 1`` records of
+    progress; those profiles are simply re-processed on resume.
+    """
+
+    def __init__(self, uri: str, checkpoint_every: int):
+        self._uri = uri
+        self._every = max(1, checkpoint_every)
+        self._done: set[str] = set()
+        self._unflushed = 0
+
+    def load(self) -> set[str]:
+        try:
+            with smart_open.open(self._uri) as handle:
+                self._done = set(handle.read().split())
+        except OSError:
+            logger.warning(
+                "No readable state at %s; starting fresh", self._uri
+            )
+            self._done = set()
+        return set(self._done)
+
+    def record(self, username: str) -> None:
+        self._done.add(username)
+        self._unflushed += 1
+        if self._unflushed >= self._every:
+            self._flush()
+
+    def _flush(self) -> None:
+        content = "".join(f"{name}\n" for name in sorted(self._done))
+        with smart_open.open(self._uri, "w") as handle:
+            handle.write(content)
+        self._unflushed = 0
+
+    def close(self) -> None:
+        if self._unflushed:
+            self._flush()
 
 
 class Command(BaseCommand):
@@ -102,10 +172,22 @@ class Command(BaseCommand):
         parser.add_argument(
             "--state-file",
             help=(
-                "Record each successfully processed username in this "
-                "file and skip recorded usernames on re-run, so an "
-                "interrupted run can resume where it stopped. Failed "
-                "profiles are not recorded and retry on resume."
+                "Record each successfully processed username here and "
+                "skip recorded usernames on re-run, so an interrupted "
+                "run can resume where it stopped. Accepts a local path "
+                "or a smart-open URI (e.g. s3://bucket/key) so state "
+                "survives ephemeral containers. Failed profiles are "
+                "not recorded and retry on resume."
+            ),
+        )
+        parser.add_argument(
+            "--checkpoint-every",
+            type=int,
+            default=25,
+            help=(
+                "For remote state (s3:// etc., which cannot append): "
+                "rewrite the state object every N processed profiles. "
+                "A crash loses at most N-1 profiles of progress."
             ),
         )
 
@@ -132,25 +214,16 @@ class Command(BaseCommand):
         return qs
 
     @staticmethod
-    def _open_state(options):
+    def _make_store(options):
         """
-        Load the set of already-processed usernames and (unless dry-run)
-        an append handle for recording new ones.
+        Build the resume-state store for --state-file, if requested.
         """
-        if not options["state_file"]:
-            return set(), None
-
-        state_path = Path(options["state_file"])
-        done = (
-            set(state_path.read_text().split())
-            if state_path.exists()
-            else set()
-        )
-
-        if options["dry_run"]:
-            return done, None
-
-        return done, state_path.open("a")
+        target = options["state_file"]
+        if not target:
+            return None
+        if "://" in target:
+            return _RemoteStateStore(target, options["checkpoint_every"])
+        return _LocalStateStore(target)
 
     def _backfill_profile(self, profile, options) -> bool:
         """
@@ -173,7 +246,8 @@ class Command(BaseCommand):
         counts = dict.fromkeys(
             ("processed", "changed", "notified", "skipped", "errors"), 0
         )
-        done, state_handle = self._open_state(options)
+        state_store = self._make_store(options)
+        done = state_store.load() if state_store else set()
 
         try:
             for profile in self._build_queryset(options).iterator():
@@ -211,15 +285,14 @@ class Command(BaseCommand):
 
                 # record only after the profile is fully handled so an
                 # interrupted run retries anything in flight
-                if state_handle:
-                    state_handle.write(f"{profile.username}\n")
-                    state_handle.flush()
+                if state_store:
+                    state_store.record(profile.username)
 
                 if options["sleep"]:
                     time.sleep(options["sleep"])
         finally:
-            if state_handle:
-                state_handle.close()
+            if state_store:
+                state_store.close()
 
         self.stdout.write(
             self.style.SUCCESS(
