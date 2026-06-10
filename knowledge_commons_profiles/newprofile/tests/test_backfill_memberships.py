@@ -32,6 +32,60 @@ User = get_user_model()
 SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
 
 
+class FakeRemoteStore:
+    """
+    An in-memory stand-in for smart_open over s3:// URIs.
+
+    ``objects`` maps uri -> content; every completed write is also
+    appended to ``history`` so tests can assert state was durable
+    part-way through a run.
+    """
+
+    def __init__(self, objects=None):
+        self.objects = dict(objects or {})
+        self.history = []
+
+    def open(self, uri, mode="r", **kwargs):
+        if "w" in mode:
+            return _FakeRemoteWriter(self, uri)
+        if uri not in self.objects:
+            msg = f"unable to access {uri}"
+            raise OSError(msg)
+        return _FakeRemoteReader(self.objects[uri])
+
+
+class _FakeRemoteWriter:
+    def __init__(self, store, uri):
+        self.store = store
+        self.uri = uri
+        self.chunks = []
+
+    def write(self, data):
+        self.chunks.append(data)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        content = "".join(self.chunks)
+        self.store.objects[self.uri] = content
+        self.store.history.append(content)
+
+
+class _FakeRemoteReader:
+    def __init__(self, content):
+        self.content = content
+
+    def read(self):
+        return self.content
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        pass
+
+
 @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
 class BackfillMembershipsTests(TestCase):
     def setUp(self):
@@ -232,6 +286,90 @@ class BackfillMembershipsTests(TestCase):
         self._call("--dry-run", "--state-file", str(state))
 
         self.assertFalse(state.exists())
+
+    def _fake_remote(self, objects=None):
+        store = FakeRemoteStore(objects)
+        patcher = patch(
+            "knowledge_commons_profiles.newprofile.management."
+            "commands.backfill_memberships.smart_open"
+        )
+        mock_module = patcher.start()
+        self.addCleanup(patcher.stop)
+        mock_module.open.side_effect = store.open
+        return store
+
+    URI = "s3://test-bucket/backfill/state.txt"
+
+    def test_remote_state_records_all_processed_profiles(self):
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        remote = self._fake_remote()
+
+        self._call("--state-file", self.URI)
+
+        self.assertEqual(
+            set(remote.objects[self.URI].split()),
+            {"bonnie", "clyde"},
+        )
+
+    def test_remote_state_resumes_by_skipping_recorded_profiles(self):
+        skipped = self._profile_with_role("bonnie")
+        fresh = self._profile_with_role("clyde")
+        remote = self._fake_remote({self.URI: "bonnie\n"})
+
+        self._call("--state-file", self.URI)
+
+        self.assertEqual(self._memberships(skipped), {})
+        self.assertTrue(self._memberships(fresh)["STEMED+"])
+        # resumed state is cumulative
+        self.assertEqual(
+            set(remote.objects[self.URI].split()),
+            {"bonnie", "clyde"},
+        )
+
+    def test_remote_state_is_durable_before_the_run_completes(self):
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        remote = self._fake_remote()
+
+        self._call("--state-file", self.URI, "--checkpoint-every", "1")
+
+        # the first checkpoint happened after bonnie alone: a crash
+        # while processing clyde would have resumed past bonnie
+        self.assertEqual(remote.history[0].split(), ["bonnie"])
+
+    def test_remote_state_omits_failed_profiles_so_they_retry(self):
+        self._profile_with_role("bonnie")
+        self._profile_with_role("clyde")
+        remote = self._fake_remote()
+
+        real_refresh = (
+            "knowledge_commons_profiles.rest_api.sync."
+            "ExternalSync.refresh_local_memberships"
+        )
+        original = ExternalSync.refresh_local_memberships
+
+        def flaky(profile):
+            if profile.username == "bonnie":
+                msg = "boom"
+                raise RuntimeError(msg)
+            return original(profile)
+
+        with patch(real_refresh, side_effect=flaky):
+            self._call("--state-file", self.URI, "--no-notify")
+
+        self.assertEqual(
+            remote.objects[self.URI].split(), ["clyde"]
+        )
+
+    def test_remote_state_dry_run_writes_nothing(self):
+        self._profile_with_role("bonnie")
+        remote = self._fake_remote()
+
+        self._call("--dry-run", "--state-file", self.URI)
+
+        self.assertEqual(remote.history, [])
+        self.assertNotIn(self.URI, remote.objects)
 
     def test_full_mode_runs_external_sync_per_profile(self):
         self._profile_with_role("bonnie")
