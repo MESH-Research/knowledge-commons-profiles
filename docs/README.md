@@ -28,6 +28,8 @@ This documentation provides technical guides for developers, system administrato
 
 - **[Logging and Observability Guide](logging_and_observability_guide.md)** - Documentation of the logging and observability infrastructure, including structured JSON logging, Sentry error monitoring, AWS CloudWatch integration, and troubleshooting guides.
 
+- **[Backfill Memberships Guide](newprofile/backfill_memberships_guide.md)** - Operating the `backfill_memberships` management command to materialize membership data for profiles that have never been synced, including resumable runs from ephemeral containers via S3-backed state.
+
 ### Deployment and Infrastructure
 
 - **[Docker Deployment Guide](docker_deployment_guide.md)** - Docker configuration and deployment documentation covering multi-stage builds, environment-specific configurations, container orchestration, security considerations, and troubleshooting for local, development, and production environments.
