@@ -20,6 +20,7 @@ from django.urls import path
 
 from knowledge_commons_profiles.newprofile.views.home import home
 from knowledge_commons_profiles.newprofile.views.members import go_to_works
+from knowledge_commons_profiles.newprofile.views.members import network_members
 from knowledge_commons_profiles.newprofile.views.members import (
     people_by_username,
 )
@@ -210,6 +211,11 @@ urlpatterns = [
     path("stats/download/", stats_download, name="get_stats_csv"),
     path("stats/table/", stats_table, name="stats_table"),
     path("works/", go_to_works, name="go_to_works"),
+    path(
+        "network/<str:network_name>/members/",
+        network_members,
+        name="network_members",
+    ),
     path("members/", people_by_username, name="members"),
     path("search/", search, name="search"),
     path("", home, name="home"),
