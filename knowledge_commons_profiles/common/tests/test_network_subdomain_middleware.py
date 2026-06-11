@@ -9,6 +9,7 @@ unannotated and the directory is unscoped.
 
 import json
 
+from django.http import Http404
 from django.test import RequestFactory
 from django.test import TestCase
 from django.test import override_settings
@@ -19,6 +20,11 @@ from knowledge_commons_profiles.common.middleware import (
 from knowledge_commons_profiles.newprofile.models import Profile
 
 SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
+DISPLAY_NAMES = {
+    "stemed+": "STEM Ed+",
+    "hastac": "HASTAC",
+    "up": "Association of University Presses",
+}
 BASE_DOMAINS = [
     "profile.hcommons-dev.org",
     "profile.hcommons.org",
@@ -29,6 +35,7 @@ BASE_DOMAINS = [
 @override_settings(
     ALLOWED_HOSTS=["*"],
     KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
     NETWORK_SUBDOMAIN_BASE_DOMAINS=BASE_DOMAINS,
     NETWORK_SUBDOMAIN_IGNORED=["www"],
 )
@@ -48,10 +55,22 @@ class NetworkSubdomainMiddlewareTests(TestCase):
         self.assertEqual(request.network, "STEMED+")
         self.assertEqual(request.network_slug, "stemedplus")
 
-    def test_unknown_subdomain_is_treated_as_literal_network(self):
+    def test_literal_subdomain_in_display_list_is_allowed(self):
+        # "up" has no KNOWN_SOCIETY_MAPPINGS entry but is a displayable
+        # network, so the subdomain is valid with its literal name
         request = self._request_for("up.profile.hcommons.org")
         self.assertEqual(request.network, "up")
         self.assertEqual(request.network_slug, "up")
+
+    def test_unknown_subdomain_is_rejected(self):
+        # subdomains outside NETWORK_DISPLAY_NAMES must not fall
+        # through as phantom networks
+        with self.assertRaises(Http404):
+            self._request_for("notanetwork.profile.hcommons.org")
+
+    def test_unknown_subdomain_rejection_is_case_insensitive(self):
+        with self.assertRaises(Http404):
+            self._request_for("NOTANETWORK.profile.hcommons.org")
 
     def test_base_domain_carries_no_network(self):
         request = self._request_for("profile.hcommons-dev.org")
@@ -84,6 +103,7 @@ class NetworkSubdomainMiddlewareTests(TestCase):
 @override_settings(
     ALLOWED_HOSTS=["*"],
     KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
     NETWORK_SUBDOMAIN_BASE_DOMAINS=BASE_DOMAINS,
     NETWORK_SUBDOMAIN_IGNORED=["www"],
 )
@@ -126,3 +146,13 @@ class MembersListingOnSubdomainTests(TestCase):
             headers={"host": "stemedplus.profile.hcommons-dev.org"}
         )
         self.assertNotEqual(response.status_code, 404)
+
+    def test_unknown_subdomain_returns_404_for_every_path(self):
+        for path in ("/members/", "/members/alice/", "/"):
+            response = self.client.get(
+                path,
+                headers={"host": "notanetwork.profile.hcommons-dev.org"},
+            )
+            self.assertEqual(
+                response.status_code, 404, f"expected 404 for {path}"
+            )

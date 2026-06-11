@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 from basicauth.compat import MiddlewareMixin
 from django.conf import settings
+from django.http import Http404
 from django.urls import Resolver404
 from django.urls import resolve
 
@@ -90,6 +91,11 @@ class NetworkSubdomainMiddleware:
     ``request.network_slug`` (the raw subdomain label). Both are None
     when the host is a base domain, an ignored subdomain (e.g. www), a
     nested subdomain, or unrelated to any configured base domain.
+
+    NETWORK_DISPLAY_NAMES doubles as the subdomain allowlist: a
+    subdomain whose resolved network has no display-name entry is not a
+    network we serve, and the request is rejected with a 404 rather
+    than falling through as a phantom network.
     """
 
     def __init__(self, get_response):
@@ -101,10 +107,14 @@ class NetworkSubdomainMiddleware:
 
         slug = self._slug_from_host(request.get_host())
         if slug:
-            request.network_slug = slug
             # resolved with the same mapping the /network/ views use,
             # so subdomain and path-based scoping always agree
-            request.network = resolve_network_name(slug)
+            network = resolve_network_name(slug)
+            if network.lower() not in settings.NETWORK_DISPLAY_NAMES:
+                msg = f"Unknown network subdomain: {slug}"
+                raise Http404(msg)
+            request.network_slug = slug
+            request.network = network
 
         return self.get_response(request)
 
