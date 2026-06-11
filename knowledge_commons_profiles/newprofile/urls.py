@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.urls import include
 from django.urls import path
+from django.urls import re_path
 
 from knowledge_commons_profiles.newprofile.views.home import home
 from knowledge_commons_profiles.newprofile.views.members import go_to_works
@@ -81,14 +82,66 @@ from knowledge_commons_profiles.newprofile.views.stats import stats_board
 from knowledge_commons_profiles.newprofile.views.stats import stats_download
 from knowledge_commons_profiles.newprofile.views.stats import stats_table
 
-urlpatterns = [
-    path("my-profile/", my_profile, name="my_profile"),
-    path("edit-profile/", edit_profile, name="edit_profile"),
+# Every route under /members/, defined once. The list is mounted twice
+# below: at the canonical "members/" prefix (un-namespaced, so existing
+# reverse()/{% url %} lookups are unchanged) and behind a network
+# prefix as /{network}/members/... dispatching to the same views. The
+# prefix uses a non-capturing group so no extra kwarg reaches the
+# views; middleware derives the network from the request path.
+members_patterns = [
     path(
-        "members/<str:username>/edit-profile/",
+        "<str:username>/edit-profile/",
         edit_profile,
         name="edit_profile_user",
     ),
+    path(
+        "<str:username>/edit-profile/upload-avatar/",
+        upload_avatar,
+        name="upload_avatar_user",
+    ),
+    path(
+        "<str:username>/edit-profile/upload-cover/",
+        upload_cover,
+        name="upload_cover_user",
+    ),
+    path(
+        "<str:username>/edit-profile/upload-cv/",
+        upload_cv,
+        name="upload_cv_user",
+    ),
+    path(
+        "<str:username>/edit-profile/delete-cv/",
+        delete_cv,
+        name="delete_cv_user",
+    ),
+    path("<str:user>/", profile, name="profile"),
+    path("<str:user>/profile/", profile, name="alternative_profile_1"),
+    path(
+        "<str:user>/profile/public/",
+        profile,
+        name="alternative_profile_2",
+    ),
+    path(
+        "<str:username>/profile/edit/",
+        edit_profile,
+        name="legacy_profile_edit",
+    ),
+    path(
+        "<str:username>/profile/change-avatar/",
+        edit_profile_change_avatar,
+        name="legacy_change_avatar",
+    ),
+    path(
+        "<str:username>/profile/change-cover-image/",
+        edit_profile_change_cover_image,
+        name="legacy_change_cover_image",
+    ),
+    path("", people_by_username, name="members"),
+]
+
+urlpatterns = [
+    path("my-profile/", my_profile, name="my_profile"),
+    path("edit-profile/", edit_profile, name="edit_profile"),
     path(
         "edit-profile/<str:username>/makesuperuser/",
         toggle_superadmin_rights_with_permission,
@@ -98,47 +151,10 @@ urlpatterns = [
     path("edit-profile/upload-cover/", upload_cover, name="upload_cover"),
     path("edit-profile/upload-cv/", upload_cv, name="upload_cv"),
     path("edit-profile/delete-cv/", delete_cv, name="delete_cv"),
-    path(
-        "members/<str:username>/edit-profile/upload-avatar/",
-        upload_avatar,
-        name="upload_avatar_user",
-    ),
-    path(
-        "members/<str:username>/edit-profile/upload-cover/",
-        upload_cover,
-        name="upload_cover_user",
-    ),
-    path(
-        "members/<str:username>/edit-profile/upload-cv/",
-        upload_cv,
-        name="upload_cv_user",
-    ),
-    path(
-        "members/<str:username>/edit-profile/delete-cv/",
-        delete_cv,
-        name="delete_cv_user",
-    ),
-    path("members/<str:user>/", profile, name="profile"),
-    path("members/<str:user>/profile/", profile, name="alternative_profile_1"),
-    path(
-        "members/<str:user>/profile/public/",
-        profile,
-        name="alternative_profile_2",
-    ),
-    path(
-        "members/<str:username>/profile/edit/",
-        edit_profile,
-        name="legacy_profile_edit",
-    ),
-    path(
-        "members/<str:username>/profile/change-avatar/",
-        edit_profile_change_avatar,
-        name="legacy_change_avatar",
-    ),
-    path(
-        "members/<str:username>/profile/change-cover-image/",
-        edit_profile_change_cover_image,
-        name="legacy_change_cover_image",
+    path("members/", include(members_patterns)),
+    re_path(
+        r"^(?:[^/]+)/members/",
+        include((members_patterns, "network")),
     ),
     path("api-auth/", include("rest_framework.urls")),
     path("tinymce/", include("tinymce.urls")),
@@ -216,7 +232,6 @@ urlpatterns = [
         network_members,
         name="network_members",
     ),
-    path("members/", people_by_username, name="members"),
     path("search/", search, name="search"),
     path("", home, name="home"),
 ]
