@@ -21,9 +21,29 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ["https://profile.hcommons-dev.org"]
-CSRF_ALLOWED_ORIGINS = ["https://profile.hcommons-dev.org"]
-CORS_ORIGINS_WHITELIST = ["https://profile.hcommons-dev.org"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://profile.hcommons-dev.org",
+    "https://*.profile.hcommons-dev.org",
+]
+CSRF_ALLOWED_ORIGINS = [
+    "https://profile.hcommons-dev.org",
+    "https://*.profile.hcommons-dev.org",
+]
+CORS_ORIGINS_WHITELIST = [
+    "https://profile.hcommons-dev.org",
+    "https://*.profile.hcommons-dev.org",
+]
+
+# Share the login session (and CSRF cookie) between the apex and the
+# network subdomains (e.g. stemedplus.profile.hcommons-dev.org). The
+# IDMS broker service inherits this module (config.settings.idms_dev),
+# so both services agree automatically.
+SESSION_COOKIE_DOMAIN = env(
+    "DJANGO_SESSION_COOKIE_DOMAIN", default=".profile.hcommons-dev.org"
+)
+CSRF_COOKIE_DOMAIN = env(
+    "DJANGO_CSRF_COOKIE_DOMAIN", default=".profile.hcommons-dev.org"
+)
 
 # DATABASES
 # ------------------------------------------------------------------------------

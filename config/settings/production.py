@@ -23,16 +23,35 @@ ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://profile.hcommons.org",
+    "https://*.profile.hcommons.org",
     "https://profile.hcommons-test.org",
+    "https://*.profile.hcommons-test.org",
 ]
 CSRF_ALLOWED_ORIGINS = [
     "https://profile.hcommons.org",
+    "https://*.profile.hcommons.org",
     "https://profile.hcommons-test.org",
+    "https://*.profile.hcommons-test.org",
 ]
 CORS_ORIGINS_WHITELIST = [
     "https://profile.hcommons.org",
+    "https://*.profile.hcommons.org",
     "https://profile.hcommons-test.org",
+    "https://*.profile.hcommons-test.org",
 ]
+
+# Share the login session (and CSRF cookie) between the apex and the
+# network subdomains. This settings module serves two FQDNs (prod and
+# test), and a cookie domain can only name one of them, so the value
+# MUST come from the deployment environment:
+#   prod: DJANGO_SESSION_COOKIE_DOMAIN=.profile.hcommons.org
+#   test: DJANGO_SESSION_COOKIE_DOMAIN=.profile.hcommons-test.org
+# (and the matching DJANGO_CSRF_COOKIE_DOMAIN). Unset, cookies stay
+# host-only and subdomains get separate sessions. The IDMS broker
+# service inherits this module (config.settings.idms) and shares the
+# environment, so both services agree automatically.
+SESSION_COOKIE_DOMAIN = env("DJANGO_SESSION_COOKIE_DOMAIN", default=None)
+CSRF_COOKIE_DOMAIN = env("DJANGO_CSRF_COOKIE_DOMAIN", default=None)
 
 # DATABASES
 # ------------------------------------------------------------------------------
