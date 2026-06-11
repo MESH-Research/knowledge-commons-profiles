@@ -578,6 +578,26 @@ OPEN_REGISTRATION_NETWORKS = env(
 
 KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
 
+# Human display names for network listing pages, keyed by the
+# lower-cased canonical network name (the output of
+# resolve_network_name). Networks not listed here display their
+# canonical name unchanged.
+NETWORK_DISPLAY_NAMES = env.json(
+    "NETWORK_DISPLAY_NAMES",
+    default={
+        "up": "Association of University Presses",
+        "mla": "Modern Language Association",
+        "msu": "Michigan State University",
+        "arlisna": "Art Libraries Society of North America",
+        "sah": "Society of Architectural Historians",
+        "hastac": (
+            "Humanities, Arts, Science, and Technology "
+            "Alliance and Collaboratory"
+        ),
+        "stemed+": "STEM Ed+",
+    },
+)
+
 LOGOUT_ENDPOINTS = env.list("LOGOUT_ENDPOINTS", default=[])
 
 WORKS_UPDATE_ENDPOINTS = env.list(

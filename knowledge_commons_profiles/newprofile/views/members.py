@@ -64,6 +64,16 @@ def resolve_network_name(network_name: str) -> str:
     )
 
 
+def resolve_network_display_name(network: str) -> str:
+    """
+    Map a canonical network name to its human display name.
+
+    Looked up case-insensitively in NETWORK_DISPLAY_NAMES; networks
+    without an entry display their canonical name unchanged.
+    """
+    return settings.NETWORK_DISPLAY_NAMES.get(network.lower(), network)
+
+
 def _has_network_membership(profile: Profile, network_lower: str) -> bool:
     """
     Check a profile's final roles for the given network, ignoring case.
@@ -196,6 +206,7 @@ def network_members(request, network_name):
             "interest_filter": None,
             "max_display_interests": MAX_DISPLAY_INTERESTS,
             "network": network,
+            "network_display_name": resolve_network_display_name(network),
         },
     )
 

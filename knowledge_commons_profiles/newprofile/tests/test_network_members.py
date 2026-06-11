@@ -8,10 +8,17 @@ from django.urls import reverse
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.views import members
 from knowledge_commons_profiles.newprofile.views.members import (
+    resolve_network_display_name,
+)
+from knowledge_commons_profiles.newprofile.views.members import (
     resolve_network_name,
 )
 
 SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
+DISPLAY_NAMES = {
+    "up": "Association of University Presses",
+    "mla": "Modern Language Association",
+}
 
 
 def _make_profile(username, name=None, is_member_of=None, role_overrides=None):
@@ -33,6 +40,53 @@ class ResolveNetworkNameTests(TestCase):
 
     def test_unknown_slug_is_used_literally(self):
         self.assertEqual(resolve_network_name("up"), "up")
+
+
+@override_settings(NETWORK_DISPLAY_NAMES=DISPLAY_NAMES)
+class ResolveNetworkDisplayNameTests(TestCase):
+    def test_mapped_network_gets_display_name(self):
+        self.assertEqual(
+            resolve_network_display_name("up"),
+            "Association of University Presses",
+        )
+
+    def test_lookup_is_case_insensitive(self):
+        self.assertEqual(
+            resolve_network_display_name("MLA"),
+            "Modern Language Association",
+        )
+
+    def test_unmapped_network_falls_back_to_canonical_name(self):
+        self.assertEqual(resolve_network_display_name("STEMED+"), "STEMED+")
+
+
+@override_settings(
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+)
+class NetworkDisplayNameInListingTests(TestCase):
+    def setUp(self):
+        Profile.objects.create(
+            username="grace",
+            name="Grace",
+            is_member_of=json.dumps({"UP": True}),
+        )
+
+    def test_listing_context_carries_display_name(self):
+        response = self.client.get("/network/up/members/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["network_display_name"],
+            "Association of University Presses",
+        )
+        self.assertContains(response, "Association of University Presses")
+
+    def test_unmapped_network_displays_canonical_name(self):
+        response = self.client.get("/network/stemedplus/members/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["network_display_name"], "STEMED+"
+        )
 
 
 @override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
