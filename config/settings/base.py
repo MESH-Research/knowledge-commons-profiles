@@ -163,6 +163,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
+    "knowledge_commons_profiles.common.middleware.NetworkSubdomainMiddleware",
     "knowledge_commons_profiles.common.middleware.RefererNavMiddleware",
     "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
@@ -629,6 +630,24 @@ NAV_NETWORK_DOMAIN_MAP = env.json("NAV_NETWORK_DOMAIN_MAP", default={})
 NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
 NAV_NETWORK_SESSION_TIMEOUT = env.int(
     "NAV_NETWORK_SESSION_TIMEOUT", default=3600
+)
+
+# Network subdomains: a request arriving on <network>.<base domain>
+# (e.g. stemedplus.profile.hcommons.org) is annotated with that network
+# by NetworkSubdomainMiddleware. Hosts that equal a base domain carry
+# no network; subdomains in the ignored list (e.g. www) are not
+# networks.
+NETWORK_SUBDOMAIN_BASE_DOMAINS = env.list(
+    "NETWORK_SUBDOMAIN_BASE_DOMAINS",
+    default=[
+        "profile.hcommons.org",
+        "profile.hcommons-dev.org",
+        "profile.hcommons-test.org",
+        "localhost",
+    ],
+)
+NETWORK_SUBDOMAIN_IGNORED = env.list(
+    "NETWORK_SUBDOMAIN_IGNORED", default=["www"]
 )
 
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")

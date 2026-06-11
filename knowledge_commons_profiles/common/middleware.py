@@ -1,8 +1,15 @@
 
+from time import time
+from urllib.parse import urlparse
+
 from basicauth.compat import MiddlewareMixin
 from django.conf import settings
 from django.urls import Resolver404
 from django.urls import resolve
+
+from knowledge_commons_profiles.newprofile.views.members import (
+    resolve_network_name,
+)
 
 # URL names where RefererNavMiddleware must never write to the session.
 # The broker silent-login is hit on every page load by every browser and
@@ -54,9 +61,6 @@ class RefererNavMiddleware:
         return url_name in _NAV_SKIP_URL_NAMES
 
     def _process_referer(self, request, referer):
-        from time import time
-        from urllib.parse import urlparse
-
         parsed = urlparse(referer)
         referer_host = parsed.hostname
         if not referer_host:
@@ -73,4 +77,53 @@ class RefererNavMiddleware:
         for key, value in self.domain_map.items():
             if referer_host.endswith(f".{key}"):
                 return value
+        return None
+
+
+class NetworkSubdomainMiddleware:
+    """
+    Detect a network subdomain (e.g. stemedplus.profile.hcommons.org)
+    and annotate the request with the network it implies.
+
+    Sets ``request.network`` (the canonical society name, resolved
+    through KNOWN_SOCIETY_MAPPINGS with a literal fallback) and
+    ``request.network_slug`` (the raw subdomain label). Both are None
+    when the host is a base domain, an ignored subdomain (e.g. www), a
+    nested subdomain, or unrelated to any configured base domain.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.network = None
+        request.network_slug = None
+
+        slug = self._slug_from_host(request.get_host())
+        if slug:
+            request.network_slug = slug
+            # resolved with the same mapping the /network/ views use,
+            # so subdomain and path-based scoping always agree
+            request.network = resolve_network_name(slug)
+
+        return self.get_response(request)
+
+    @staticmethod
+    def _slug_from_host(host: str) -> str | None:
+        host = host.partition(":")[0].lower()
+
+        for base in settings.NETWORK_SUBDOMAIN_BASE_DOMAINS:
+            base_domain = base.lower()
+            if host == base_domain:
+                return None
+            if host.endswith("." + base_domain):
+                slug = host[: -len(base_domain) - 1]
+                if (
+                    slug
+                    and "." not in slug
+                    and slug not in settings.NETWORK_SUBDOMAIN_IGNORED
+                ):
+                    return slug
+                return None
+
         return None

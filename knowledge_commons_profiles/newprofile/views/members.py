@@ -201,6 +201,12 @@ def network_members(request, network_name):
 
 
 def people_by_username(request):
+    # on a network subdomain (NetworkSubdomainMiddleware) the members
+    # directory is scoped to that network, as /network/<name>/members/
+    network = getattr(request, "network", None)
+    if network:
+        return network_members(request, network)
+
     interest_filter = request.GET.get("interest")
 
     if request.POST:
