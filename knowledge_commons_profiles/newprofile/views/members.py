@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.db.models import QuerySet
 from django.db.models import TextField
 from django.db.models.functions import Cast
+from django.http import Http404
 from django.shortcuts import redirect
 from django.shortcuts import render
 
@@ -151,6 +152,13 @@ def network_members(request, network_name):
     """
     network = resolve_network_name(network_name)
     network_lower = network.lower()
+
+    # NETWORK_DISPLAY_NAMES is the allowlist of networks we serve;
+    # everything else is rejected rather than rendered as a phantom
+    # empty network (the subdomain middleware applies the same gate)
+    if network_lower not in settings.NETWORK_DISPLAY_NAMES:
+        msg = f"Unknown network: {network_name}"
+        raise Http404(msg)
 
     candidates = (
         Profile.objects.filter(name__isnull=False)

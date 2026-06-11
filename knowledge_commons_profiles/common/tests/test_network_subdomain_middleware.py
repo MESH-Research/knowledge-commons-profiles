@@ -156,3 +156,64 @@ class MembersListingOnSubdomainTests(TestCase):
             self.assertEqual(
                 response.status_code, 404, f"expected 404 for {path}"
             )
+
+
+@override_settings(
+    ALLOWED_HOSTS=["*"],
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+    NETWORK_SUBDOMAIN_BASE_DOMAINS=BASE_DOMAINS,
+    NETWORK_SUBDOMAIN_IGNORED=["www"],
+)
+class PathPrefixNetworkEnforcementTests(TestCase):
+    """The display-name allowlist gates path-based network routes too."""
+
+    def setUp(self):
+        Profile.objects.create(
+            username="alice",
+            name="Alice",
+            is_member_of=json.dumps({"STEMED+": True}),
+        )
+        Profile.objects.create(
+            username="bob",
+            name="Bob",
+            is_member_of=json.dumps({"STEMED+": False}),
+        )
+
+    def test_unknown_path_prefix_is_rejected(self):
+        for path in (
+            "/notanetwork/members/",
+            "/notanetwork/members/alice/",
+        ):
+            response = self.client.get(path)
+            self.assertEqual(
+                response.status_code, 404, f"expected 404 for {path}"
+            )
+
+    def test_known_path_prefix_scopes_the_listing(self):
+        # /stemedplus/members/ behaves like the subdomain listing:
+        # network detected from the path, directory scoped
+        response = self.client.get("/stemedplus/members/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["network"], "STEMED+")
+        usernames = [p.username for p in response.context["profiles"]]
+        self.assertEqual(usernames, ["alice"])
+
+    def test_member_pages_on_known_prefix_still_serve(self):
+        response = self.client.get("/stemedplus/members/alice/")
+        self.assertNotEqual(response.status_code, 404)
+
+    def test_canonical_members_routes_are_unaffected(self):
+        response = self.client.get("/members/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context.get("network"))
+        usernames = [p.username for p in response.context["profiles"]]
+        self.assertEqual(usernames, ["alice", "bob"])
+
+    def test_member_profile_named_members_is_not_a_network_path(self):
+        # /members/members/ is the profile page of a user called
+        # "members", not a network prefix; it must not be rejected by
+        # the allowlist
+        Profile.objects.create(username="members", name="Members User")
+        response = self.client.get("/members/members/")
+        self.assertNotEqual(response.status_code, 404)

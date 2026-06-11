@@ -18,6 +18,9 @@ SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
 DISPLAY_NAMES = {
     "up": "Association of University Presses",
     "mla": "Modern Language Association",
+    "stemed+": "STEM Ed+",
+    "hastac": "HASTAC",
+    "paginet": "PAGINET",
 }
 
 
@@ -57,7 +60,9 @@ class ResolveNetworkDisplayNameTests(TestCase):
         )
 
     def test_unmapped_network_falls_back_to_canonical_name(self):
-        self.assertEqual(resolve_network_display_name("STEMED+"), "STEMED+")
+        self.assertEqual(
+            resolve_network_display_name("NOSUCHNET"), "NOSUCHNET"
+        )
 
 
 @override_settings(
@@ -81,15 +86,17 @@ class NetworkDisplayNameInListingTests(TestCase):
         )
         self.assertContains(response, "Association of University Presses")
 
-    def test_unmapped_network_displays_canonical_name(self):
-        response = self.client.get("/network/stemedplus/members/")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.context["network_display_name"], "STEMED+"
-        )
+    def test_network_without_display_entry_is_rejected(self):
+        # NETWORK_DISPLAY_NAMES is the allowlist for path-based network
+        # routes too: an undisplayable network must not serve a listing
+        response = self.client.get("/network/notanetwork/members/")
+        self.assertEqual(response.status_code, 404)
 
 
-@override_settings(KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS)
+@override_settings(
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+)
 class NetworkMembersViewTests(TestCase):
     def setUp(self):
         self.api_member = _make_profile(
