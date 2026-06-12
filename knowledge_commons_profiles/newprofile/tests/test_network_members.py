@@ -206,3 +206,42 @@ class NetworkMembersViewTests(TestCase):
         self.assertEqual(response2.status_code, 200)
         self.assertEqual(len(response2.context["profiles"]), 5)
         self.assertFalse(response2.context["has_next"])
+
+
+@override_settings(
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+)
+class MemberCountDisplayTests(TestCase):
+    """The members page shows a record count for the subset displayed."""
+
+    def setUp(self):
+        for i in range(3):
+            _make_profile(
+                f"stemuser{i}", is_member_of={"STEMED+": True}
+            )
+        for i in range(2):
+            _make_profile(f"otheruser{i}", is_member_of={"HASTAC": True})
+
+    def _count_text(self, response):
+        import re
+
+        match = re.search(
+            r'class="member-count"[^>]*>([^<]*)<',
+            response.content.decode(),
+        )
+        return match.group(1) if match else None
+
+    def test_full_directory_shows_total_count(self):
+        response = self.client.get("/members/")
+        self.assertEqual(response.status_code, 200)
+        count_text = self._count_text(response)
+        self.assertIsNotNone(count_text)
+        self.assertIn("5", count_text)
+
+    def test_network_listing_shows_subset_count(self):
+        response = self.client.get("/network/stemedplus/members/")
+        self.assertEqual(response.status_code, 200)
+        count_text = self._count_text(response)
+        self.assertIsNotNone(count_text)
+        self.assertIn("3", count_text)
