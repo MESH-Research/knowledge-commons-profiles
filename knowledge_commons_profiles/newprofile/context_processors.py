@@ -24,6 +24,16 @@ def _rewrite_domain(url, default_domain, target_domain):
     return urlunparse(parsed._replace(netloc=new_netloc))
 
 
+# Nav links that follow the network context (the community surfaces on
+# the network's own Commons domain). Everything else — Works, Help &
+# Support, KC Organizations, About, Team Blog — stays fixed regardless
+# of network. KC Organizations lives ON the default domain, so this
+# must be an explicit key allowlist rather than a hostname match.
+NETWORK_AWARE_NAV_KEYS = frozenset(
+    {"NAV_NEWS_FEED_URL", "NAV_GROUPS_URL", "NAV_SITES_URL"}
+)
+
+
 def nav_links(request):
     urls = {
         "NAV_NEWS_FEED_URL": settings.NAV_NEWS_FEED_URL,
@@ -35,6 +45,23 @@ def nav_links(request):
         "NAV_ABOUT_URL": settings.NAV_ABOUT_URL,
         "NAV_BLOG_URL": settings.NAV_BLOG_URL,
     }
+
+    default_domain = getattr(settings, "NAV_DEFAULT_DOMAIN", "hcommons.org")
+
+    # a network host or path prefix (NetworkSubdomainMiddleware) pins
+    # the community links to that network's Commons domain and takes
+    # precedence over the referer-derived session domain below
+    network_slug = getattr(request, "network_slug", None)
+    if network_slug:
+        network_domain = f"{network_slug}.{default_domain}"
+        return {
+            key: (
+                _rewrite_domain(url, default_domain, network_domain)
+                if key in NETWORK_AWARE_NAV_KEYS
+                else url
+            )
+            for key, url in urls.items()
+        }
 
     session = getattr(request, "session", {})
     network_domain = session.get("nav_network_domain")
@@ -48,7 +75,6 @@ def nav_links(request):
         session.pop("nav_network_domain_ts", None)
         return urls
 
-    default_domain = getattr(settings, "NAV_DEFAULT_DOMAIN", "hcommons.org")
     return {
         key: _rewrite_domain(url, default_domain, network_domain)
         for key, url in urls.items()
