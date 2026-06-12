@@ -2,7 +2,6 @@
 Context processors
 """
 
-import time
 from urllib.parse import urlparse
 from urllib.parse import urlunparse
 
@@ -64,8 +63,11 @@ def nav_links(request):
     default_domain = getattr(settings, "NAV_DEFAULT_DOMAIN", "hcommons.org")
 
     # a network host or path prefix (NetworkSubdomainMiddleware) pins
-    # the community links to that network's Commons domain and takes
-    # precedence over the referer-derived session domain below
+    # the community links to that network's Commons domain. With no
+    # network context the links stay on the environment's own domains:
+    # the referer-derived session domain (RefererNavMiddleware, now
+    # unregistered) is deliberately NOT consulted, so leaving a
+    # network never leaves the nav stuck on that network's domain.
     network_slug = getattr(request, "network_slug", None)
     if network_slug:
         network_domain = _network_domain(network_slug, default_domain)
@@ -78,19 +80,4 @@ def nav_links(request):
             for key, url in urls.items()
         }
 
-    session = getattr(request, "session", {})
-    network_domain = session.get("nav_network_domain")
-    if not network_domain:
-        return urls
-
-    ts = session.get("nav_network_domain_ts", 0)
-    timeout = getattr(settings, "NAV_NETWORK_SESSION_TIMEOUT", 3600)
-    if time.time() - ts > timeout:
-        session.pop("nav_network_domain", None)
-        session.pop("nav_network_domain_ts", None)
-        return urls
-
-    return {
-        key: _rewrite_domain(url, default_domain, network_domain)
-        for key, url in urls.items()
-    }
+    return urls

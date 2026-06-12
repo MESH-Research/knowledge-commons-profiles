@@ -164,7 +164,9 @@ MIDDLEWARE = [
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
     "knowledge_commons_profiles.common.middleware.NetworkSubdomainMiddleware",
-    "knowledge_commons_profiles.common.middleware.RefererNavMiddleware",
+    # RefererNavMiddleware is deliberately unregistered: network nav
+    # domains now come only from the subdomain/path context, and with
+    # no consumer its referer-driven session writes are pure cost.
     "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
 

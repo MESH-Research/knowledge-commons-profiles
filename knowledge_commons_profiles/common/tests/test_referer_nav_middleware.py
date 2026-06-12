@@ -238,6 +238,15 @@ class RewriteDomainTest(TestCase):
 
 
 class NavLinksContextProcessorTest(TestCase):
+    """nav_links no longer consults the referer-derived session domain.
+
+    Network nav domains come only from the subdomain/path context
+    (NetworkSubdomainMiddleware); on the bare profile domain the links
+    stay on the environment's own domains, whatever the session says.
+    RefererNavMiddleware is unregistered but its storage behaviour is
+    still covered above in case it is revived.
+    """
+
     def setUp(self):
         self.factory = RequestFactory()
 
@@ -255,70 +264,28 @@ class NavLinksContextProcessorTest(TestCase):
         self.assertEqual(result["NAV_WORKS_URL"], "https://works.hcommons.org/")
 
     @override_settings(**TEST_NAV_SETTINGS)
-    def test_valid_session_rewrites_base_domain_urls(self):
+    def test_session_domain_is_ignored(self):
         session = {
             "nav_network_domain": "msucommons-dev.org",
             "nav_network_domain_ts": time.time(),
-        }
-        request = self._make_request(session=session)
-        result = nav_links(request)
-        self.assertEqual(
-            result["NAV_GROUPS_URL"], "https://msucommons-dev.org/groups/"
-        )
-        self.assertEqual(
-            result["NAV_SITES_URL"], "https://msucommons-dev.org/sites/"
-        )
-        self.assertEqual(
-            result["NAV_NEWS_FEED_URL"],
-            "https://msucommons-dev.org/activity/",
-        )
-        self.assertEqual(
-            result["NAV_ORGANIZATIONS_URL"],
-            "https://msucommons-dev.org/societies/",
-        )
-
-    @override_settings(**TEST_NAV_SETTINGS)
-    def test_valid_session_does_not_rewrite_subdomain_urls(self):
-        session = {
-            "nav_network_domain": "msucommons-dev.org",
-            "nav_network_domain_ts": time.time(),
-        }
-        request = self._make_request(session=session)
-        result = nav_links(request)
-        self.assertEqual(
-            result["NAV_WORKS_URL"], "https://works.hcommons.org/"
-        )
-        self.assertEqual(
-            result["NAV_SUPPORT_URL"], "https://support.hcommons.org/"
-        )
-        self.assertEqual(
-            result["NAV_ABOUT_URL"], "https://sustaining.hcommons.org/"
-        )
-        self.assertEqual(
-            result["NAV_BLOG_URL"], "https://team.hcommons.org/"
-        )
-
-    @override_settings(**TEST_NAV_SETTINGS)
-    def test_expired_session_returns_defaults(self):
-        expired_ts = time.time() - 7200  # 2 hours ago
-        session = {
-            "nav_network_domain": "msucommons-dev.org",
-            "nav_network_domain_ts": expired_ts,
         }
         request = self._make_request(session=session)
         result = nav_links(request)
         self.assertEqual(
             result["NAV_GROUPS_URL"], "https://hcommons.org/groups/"
         )
-
-    @override_settings(**TEST_NAV_SETTINGS)
-    def test_expired_session_cleans_up_keys(self):
-        expired_ts = time.time() - 7200
-        session = {
-            "nav_network_domain": "msucommons-dev.org",
-            "nav_network_domain_ts": expired_ts,
-        }
-        request = self._make_request(session=session)
-        nav_links(request)
-        self.assertNotIn("nav_network_domain", request.session)
-        self.assertNotIn("nav_network_domain_ts", request.session)
+        self.assertEqual(
+            result["NAV_SITES_URL"], "https://hcommons.org/sites/"
+        )
+        self.assertEqual(
+            result["NAV_NEWS_FEED_URL"], "https://hcommons.org/activity/"
+        )
+        self.assertEqual(
+            result["NAV_ORGANIZATIONS_URL"],
+            "https://hcommons.org/societies/",
+        )
+        self.assertEqual(
+            result["NAV_WORKS_URL"], "https://works.hcommons.org/"
+        )
+        # the session keys are left untouched (no consumption, no cleanup)
+        self.assertIn("nav_network_domain", request.session)

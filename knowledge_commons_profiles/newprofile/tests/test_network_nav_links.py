@@ -180,3 +180,34 @@ class NetworkNavRenderingTests(TestCase):
         self.assertContains(response, "https://up.hcommons.org/groups/")
         self.assertContains(response, "https://works.hcommons.org/")
         self.assertContains(response, "https://hcommons.org/societies/")
+
+
+@override_settings(**NAV_SETTINGS)
+class RefererSessionIgnoredTests(TestCase):
+    """The referer-derived session domain no longer drives nav links.
+
+    Network nav domains come only from the subdomain or network path
+    prefix; on the bare profile domain the links must stay on the
+    environment's own domains even when an old session value is
+    present (previously this rewrote every community link, so e.g.
+    a visit from an MSU page pinned the whole nav to MSU for an hour).
+    """
+
+    def test_session_domain_does_not_rewrite_links_without_network(self):
+        request = RequestFactory().get("/members/airminded/")
+        request.network_slug = None
+        request.network = None
+        request.session = {
+            "nav_network_domain": "msucommons-dev.org",
+            "nav_network_domain_ts": time.time(),
+        }
+        urls = nav_links(request)
+        self.assertEqual(
+            urls["NAV_NEWS_FEED_URL"], "https://hcommons.org/activity/"
+        )
+        self.assertEqual(
+            urls["NAV_GROUPS_URL"], "https://hcommons.org/groups/"
+        )
+        self.assertEqual(
+            urls["NAV_SITES_URL"], "https://hcommons.org/sites/"
+        )
