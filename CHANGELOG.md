@@ -1,3 +1,9 @@
+## 4.41.1 (2026-06-12)
+
+### Fix
+
+- **profile**: strip the @ from Bluesky profile links
+
 ## 4.41.0 (2026-06-04)
 
 ### Feat
