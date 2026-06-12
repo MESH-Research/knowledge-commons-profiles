@@ -219,3 +219,34 @@ class SocialMediaEditFormInitialValueTests(TestCase):
         )
         form = ProfileForm(instance=profile)
         self.assertEqual(form.initial["bluesky"], "user.bsky.social")
+
+
+class BlueskyLinkRenderingTests(TestCase):
+    """The Bluesky profile link must never contain the stored @.
+
+    bsky.app/profile/@handle does not resolve; the href needs the bare
+    handle whether the stored value is @-prefixed (the canonical saved
+    form) or bare (legacy rows saved before the @ was prepended).
+    """
+
+    def _render(self, bluesky_value):
+        from django.template.loader import render_to_string
+
+        return render_to_string(
+            "newprofile/partials/profile_info.html",
+            {"profile_info": {"bluesky": bluesky_value}},
+        )
+
+    def test_bluesky_href_strips_stored_at(self):
+        html = self._render("@eve.gd")
+        self.assertIn('href="https://bsky.app/profile/eve.gd"', html)
+        self.assertNotIn("profile/@eve.gd", html)
+
+    def test_bluesky_href_with_bare_handle(self):
+        html = self._render("eve.gd")
+        self.assertIn('href="https://bsky.app/profile/eve.gd"', html)
+
+    def test_bluesky_label_always_displays_at_prefix(self):
+        for stored in ("@eve.gd", "eve.gd"):
+            html = self._render(stored)
+            self.assertIn("<span>@eve.gd</span>", html)
