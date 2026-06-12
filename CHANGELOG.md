@@ -1,3 +1,15 @@
+## 4.42.0 (2026-06-12)
+
+### Feat
+
+- **members**: support remote resume state for backfill_memberships
+- **members**: add resumable --state-file to backfill_memberships
+- **members**: add backfill_memberships management command
+
+### Fix
+
+- **members**: make backfill remote state visible and stop-safe
+
 ## 4.41.1 (2026-06-12)
 
 ### Fix
