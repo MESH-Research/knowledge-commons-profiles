@@ -34,6 +34,9 @@ CORS_ORIGINS_WHITELIST = [
     "https://*.profile.hcommons-dev.org",
 ]
 
+# Consult NETWORK_DOMAIN_OVERRIDES with this environment's key
+NETWORK_DOMAIN_ENVIRONMENT = env("NETWORK_DOMAIN_ENVIRONMENT", default="dev")
+
 # Share the login session (and CSRF cookie) between the apex and the
 # network subdomains (e.g. stemedplus.profile.hcommons-dev.org). The
 # IDMS broker service inherits this module (config.settings.idms_dev),

@@ -91,6 +91,67 @@ class NetworkAwareNavLinksTests(TestCase):
         )
 
 
+DOMAIN_OVERRIDES = {
+    "msu": {
+        "dev": "msucommons-dev.org",
+        "main": "commons.msu.edu",
+    },
+}
+
+
+@override_settings(**NAV_SETTINGS, NETWORK_DOMAIN_OVERRIDES=DOMAIN_OVERRIDES)
+class NetworkDomainOverrideTests(TestCase):
+    def _nav_for_network(self, slug):
+        request = RequestFactory().get("/members/")
+        request.network_slug = slug
+        request.network = slug
+        request.session = {}
+        return nav_links(request)
+
+    @override_settings(NETWORK_DOMAIN_ENVIRONMENT="dev")
+    def test_overridden_network_uses_environment_domain_on_dev(self):
+        urls = self._nav_for_network("msu")
+        self.assertEqual(
+            urls["NAV_GROUPS_URL"], "https://msucommons-dev.org/groups/"
+        )
+        self.assertEqual(
+            urls["NAV_NEWS_FEED_URL"],
+            "https://msucommons-dev.org/activity/",
+        )
+        self.assertEqual(
+            urls["NAV_SITES_URL"], "https://msucommons-dev.org/sites/"
+        )
+
+    @override_settings(NETWORK_DOMAIN_ENVIRONMENT="main")
+    def test_overridden_network_uses_environment_domain_on_main(self):
+        urls = self._nav_for_network("msu")
+        self.assertEqual(
+            urls["NAV_GROUPS_URL"], "https://commons.msu.edu/groups/"
+        )
+
+    @override_settings(NETWORK_DOMAIN_ENVIRONMENT="dev")
+    def test_works_link_ignores_domain_overrides(self):
+        urls = self._nav_for_network("msu")
+        self.assertEqual(
+            urls["NAV_WORKS_URL"], "https://works.hcommons.org/"
+        )
+
+    @override_settings(NETWORK_DOMAIN_ENVIRONMENT="dev")
+    def test_network_without_override_uses_subdomain_of_default(self):
+        urls = self._nav_for_network("up")
+        self.assertEqual(
+            urls["NAV_GROUPS_URL"], "https://up.hcommons.org/groups/"
+        )
+
+    @override_settings(NETWORK_DOMAIN_ENVIRONMENT="test")
+    def test_override_without_environment_entry_falls_back(self):
+        # msu has dev/main entries but nothing for this environment
+        urls = self._nav_for_network("msu")
+        self.assertEqual(
+            urls["NAV_GROUPS_URL"], "https://msu.hcommons.org/groups/"
+        )
+
+
 @override_settings(
     **NAV_SETTINGS,
     ALLOWED_HOSTS=["*"],

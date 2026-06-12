@@ -34,6 +34,21 @@ NETWORK_AWARE_NAV_KEYS = frozenset(
 )
 
 
+def _network_domain(network_slug, default_domain):
+    """
+    The Commons domain for a network's community links.
+
+    Most networks live at {slug}.{default_domain}; networks with an
+    entry in NETWORK_DOMAIN_OVERRIDES for this deployment's
+    NETWORK_DOMAIN_ENVIRONMENT use their own external domain instead
+    (e.g. msu -> commons.msu.edu on main, msucommons-dev.org on dev).
+    """
+    overrides = getattr(settings, "NETWORK_DOMAIN_OVERRIDES", {})
+    environment = getattr(settings, "NETWORK_DOMAIN_ENVIRONMENT", "main")
+    override = overrides.get(network_slug.lower(), {}).get(environment)
+    return override or f"{network_slug}.{default_domain}"
+
+
 def nav_links(request):
     urls = {
         "NAV_NEWS_FEED_URL": settings.NAV_NEWS_FEED_URL,
@@ -53,7 +68,7 @@ def nav_links(request):
     # precedence over the referer-derived session domain below
     network_slug = getattr(request, "network_slug", None)
     if network_slug:
-        network_domain = f"{network_slug}.{default_domain}"
+        network_domain = _network_domain(network_slug, default_domain)
         return {
             key: (
                 _rewrite_domain(url, default_domain, network_domain)

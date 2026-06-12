@@ -634,6 +634,29 @@ CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)
 # the nav URLs so environment-tracking defaults can derive from it.
 NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
 
+# Which environment key NETWORK_DOMAIN_OVERRIDES is consulted with:
+# "main" on production, "dev" on dev (overridden in dev.py), and any
+# other key a deployment chooses (e.g. "test") via the env var.
+NETWORK_DOMAIN_ENVIRONMENT = env(
+    "NETWORK_DOMAIN_ENVIRONMENT", default="main"
+)
+
+# Per-network domain overrides for the network-aware nav links, keyed
+# by network slug then environment. Most networks live at
+# {slug}.{NAV_DEFAULT_DOMAIN}; networks listed here use their own
+# external domain instead (per environment, falling back to the
+# subdomain form when the environment has no entry). The Works link
+# never follows these — it stays on the hcommons domains.
+NETWORK_DOMAIN_OVERRIDES = env.json(
+    "NETWORK_DOMAIN_OVERRIDES",
+    default={
+        "msu": {
+            "dev": "msucommons-dev.org",
+            "main": "commons.msu.edu",
+        },
+    },
+)
+
 NAV_NEWS_FEED_URL = env(
     "NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/"
 )
