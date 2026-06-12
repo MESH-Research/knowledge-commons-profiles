@@ -64,10 +64,10 @@ def nav_links(request):
 
     # a network host or path prefix (NetworkSubdomainMiddleware) pins
     # the community links to that network's Commons domain. With no
-    # network context the links stay on the environment's own domains:
-    # the referer-derived session domain (RefererNavMiddleware, now
-    # unregistered) is deliberately NOT consulted, so leaving a
-    # network never leaves the nav stuck on that network's domain.
+    # network context the links always stay on the environment's own
+    # domains — there is deliberately no referer- or session-based
+    # stickiness, so leaving a network never leaves the nav stuck on
+    # that network's domain.
     network_slug = getattr(request, "network_slug", None)
     if network_slug:
         network_domain = _network_domain(network_slug, default_domain)

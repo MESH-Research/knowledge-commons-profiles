@@ -164,9 +164,6 @@ MIDDLEWARE = [
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
     "knowledge_commons_profiles.common.middleware.NetworkSubdomainMiddleware",
-    # RefererNavMiddleware is deliberately unregistered: network nav
-    # domains now come only from the subdomain/path context, and with
-    # no consumer its referer-driven session writes are pure cost.
     "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
 
@@ -679,11 +676,6 @@ NAV_ABOUT_URL = env(
     "NAV_ABOUT_URL", default="https://sustaining.hcommons.org/"
 )
 NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
-
-NAV_NETWORK_DOMAIN_MAP = env.json("NAV_NETWORK_DOMAIN_MAP", default={})
-NAV_NETWORK_SESSION_TIMEOUT = env.int(
-    "NAV_NETWORK_SESSION_TIMEOUT", default=3600
-)
 
 # Network subdomains: a request arriving on <network>.<base domain>
 # (e.g. stemedplus.profile.hcommons.org) is annotated with that network

@@ -16,6 +16,9 @@ from django.test import RequestFactory
 from django.test import TestCase
 from django.test import override_settings
 
+from knowledge_commons_profiles.newprofile.context_processors import (
+    _rewrite_domain,
+)
 from knowledge_commons_profiles.newprofile.context_processors import nav_links
 from knowledge_commons_profiles.newprofile.models import Profile
 
@@ -210,4 +213,52 @@ class RefererSessionIgnoredTests(TestCase):
         )
         self.assertEqual(
             urls["NAV_SITES_URL"], "https://hcommons.org/sites/"
+        )
+
+
+class RewriteDomainTests(TestCase):
+    """Unit tests for the _rewrite_domain helper used by nav_links."""
+
+    def test_exact_domain_match_rewrites(self):
+        result = _rewrite_domain(
+            "https://hcommons.org/groups/",
+            "hcommons.org",
+            "msucommons-dev.org",
+        )
+        self.assertEqual(result, "https://msucommons-dev.org/groups/")
+
+    def test_subdomain_url_not_rewritten(self):
+        result = _rewrite_domain(
+            "https://works.hcommons.org/",
+            "hcommons.org",
+            "msucommons-dev.org",
+        )
+        self.assertEqual(result, "https://works.hcommons.org/")
+
+    def test_non_matching_domain_unchanged(self):
+        result = _rewrite_domain(
+            "https://other-service.com/page",
+            "hcommons.org",
+            "msucommons-dev.org",
+        )
+        self.assertEqual(result, "https://other-service.com/page")
+
+    def test_path_preserved(self):
+        result = _rewrite_domain(
+            "https://hcommons.org/societies/some-society/",
+            "hcommons.org",
+            "msucommons-dev.org",
+        )
+        self.assertEqual(
+            result, "https://msucommons-dev.org/societies/some-society/"
+        )
+
+    def test_port_preserved(self):
+        result = _rewrite_domain(
+            "https://hcommons.org:8443/groups/",
+            "hcommons.org",
+            "msucommons-dev.org",
+        )
+        self.assertEqual(
+            result, "https://msucommons-dev.org:8443/groups/"
         )
