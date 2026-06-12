@@ -1,3 +1,9 @@
+## 4.42.1 (2026-06-12)
+
+### Fix
+
+- **roles**: apply role_overrides when profile has no synced membership data
+
 ## 4.42.0 (2026-06-12)
 
 ### Feat
