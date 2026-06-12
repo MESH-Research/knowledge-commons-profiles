@@ -629,12 +629,21 @@ CC_SEARCH_ADMIN_KEY = CC_SEARCH_API_KEY
 # CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
 CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)
 
+# The environment's main Commons domain (hcommons.org on prod,
+# hcommons-dev.org on dev, hcommons-test.org on test). Defined before
+# the nav URLs so environment-tracking defaults can derive from it.
+NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
+
 NAV_NEWS_FEED_URL = env(
     "NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/"
 )
 NAV_GROUPS_URL = env("NAV_GROUPS_URL", default="https://hcommons.org/groups/")
 NAV_SITES_URL = env("NAV_SITES_URL", default="https://hcommons.org/sites/")
-NAV_WORKS_URL = env("NAV_WORKS_URL", default="https://works.hcommons.org/")
+# Works tracks the environment's main domain (works.hcommons-dev.org on
+# dev etc.) unless explicitly overridden
+NAV_WORKS_URL = env(
+    "NAV_WORKS_URL", default=f"https://works.{NAV_DEFAULT_DOMAIN}/"
+)
 NAV_SUPPORT_URL = env(
     "NAV_SUPPORT_URL", default="https://support.hcommons.org/"
 )
@@ -647,7 +656,6 @@ NAV_ABOUT_URL = env(
 NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
 
 NAV_NETWORK_DOMAIN_MAP = env.json("NAV_NETWORK_DOMAIN_MAP", default={})
-NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
 NAV_NETWORK_SESSION_TIMEOUT = env.int(
     "NAV_NETWORK_SESSION_TIMEOUT", default=3600
 )
