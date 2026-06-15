@@ -1,3 +1,10 @@
+## 4.43.1 (2026-06-15)
+
+### Fix
+
+- **broker**: add msu test domain to defaults
+- **cilogon**: forward network-subdomain login through the registered domain
+
 ## 4.43.0 (2026-06-15)
 
 ### Feat
