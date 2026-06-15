@@ -1,3 +1,37 @@
+## 4.43.0 (2026-06-15)
+
+### Feat
+
+- **members**: show the record count for the displayed member subset
+- **networks**: per-network domain overrides for nav links
+- **networks**: make navbar community links network-aware
+- **networks**: enforce the network allowlist on path-based routes
+- **networks**: reject unknown network subdomains
+- **networks**: display human network names on member listings
+- **networks**: trust, route and share sessions across network subdomains
+- **networks**: detect network subdomains and scope the members directory
+- **urls**: serve all /members/ routes under a network prefix
+- **members**: support remote resume state for backfill_memberships
+- **members**: add resumable --state-file to backfill_memberships
+- **members**: add backfill_memberships management command
+- **members**: add /network/<network>/members/ listing
+- **works**: add go_to_works redirect route to NAV_WORKS_URL
+- **urls**: add public profile route members/<user>/profile/public/
+- **health**: report deploy branch, image tag and commit SHA
+
+### Fix
+
+- **networks**: bare profile domain never shows network nav domains
+- **profile**: strip the @ from Bluesky profile links
+- **networks**: derive the Works nav default from the environment domain
+- **members**: make backfill remote state visible and stop-safe
+- **roles**: apply role_overrides when profile has no synced membership data
+- **works**: make /works/ route reachable and fix view signature
+
+### Refactor
+
+- **networks**: remove the referer-based sticky nav mechanism
+
 ## 4.42.1 (2026-06-12)
 
 ### Fix
