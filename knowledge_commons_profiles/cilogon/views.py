@@ -168,8 +168,8 @@ def cilogon_login(request):
     # Build redirect URI, substituting registered domain if using domain proxy
     redirect_uri = get_oauth_redirect_uri(request)
 
-    # Get state with forwarding URL if using domain proxy
-    state = get_forwarding_state_for_proxy()
+    # Get state with the forwarding URL (network subdomain or domain proxy)
+    state = get_forwarding_state_for_proxy(request)
 
     # Optionally force re-authentication at the social IdP by passing
     # prompt=login through CILogon (#367). Gated by CILOGON_PROMPT_LOGIN.

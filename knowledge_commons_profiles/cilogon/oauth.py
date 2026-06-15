@@ -201,6 +201,29 @@ def should_prompt_login() -> bool:
     return False
 
 
+def network_base_domain(host: str) -> str | None:
+    """
+    Return the base domain a network subdomain belongs to, else None.
+
+    e.g. up.profile.hcommons.org -> profile.hcommons.org. Mirrors
+    NetworkSubdomainMiddleware's host parsing so login forwarding and
+    request routing agree on what counts as a network subdomain.
+    """
+    host = host.split(":")[0].lower()
+    for base in settings.NETWORK_SUBDOMAIN_BASE_DOMAINS:
+        base_domain = base.lower()
+        if host != base_domain and host.endswith("." + base_domain):
+            label = host[: -len(base_domain) - 1]
+            if (
+                label
+                and "." not in label
+                and label not in settings.NETWORK_SUBDOMAIN_IGNORED
+            ):
+                return base_domain
+            return None
+    return None
+
+
 def get_oauth_redirect_uri(request) -> str:
     """
     Build the OAuth redirect URI, substituting the registered domain if needed.
@@ -219,6 +242,13 @@ def get_oauth_redirect_uri(request) -> str:
         "/" + settings.OIDC_CALLBACK
     ).replace("http://", "https://")
 
+    # a network subdomain (e.g. up.profile.hcommons.org) is not a
+    # registered redirect_uri; target its base domain's callback and
+    # forward the code back to the subdomain via the state (below)
+    base = network_base_domain(request.get_host())
+    if base:
+        redirect_uri = f"https://{base}/{settings.OIDC_CALLBACK}"
+
     if is_using_domain_proxy():
         redirect_uri = redirect_uri.replace(
             settings.CILOGON_ACTUAL_DOMAIN,
@@ -228,16 +258,27 @@ def get_oauth_redirect_uri(request) -> str:
     return redirect_uri
 
 
-def get_forwarding_state_for_proxy() -> str:
+def get_forwarding_state_for_proxy(request) -> str:
     """
-    Get the state parameter for OAuth when using domain proxy.
+    Get the state parameter encoding where CILogon should forward back to.
 
-    When using a domain proxy, we need to encode the actual domain's callback
-    URL in the state so the callback can forward back to us.
+    On a network subdomain the code must come back to the subdomain's own
+    callback; when using a domain proxy it must come back to the actual
+    domain's callback. The packed next_url is consumed by ``forward_url``
+    on the registered domain.
 
     Returns:
-        Encoded state with forwarding URL, or empty state if not using proxy.
+        Encoded state with forwarding URL, or empty state if neither
+        applies (a plain registered-domain login).
     """
+    base = network_base_domain(request.get_host())
+    if base:
+        subdomain_callback = (
+            f"https://{request.get_host().split(':')[0]}/"
+            f"{settings.OIDC_CALLBACK}"
+        )
+        return pack_state(subdomain_callback)
+
     if is_using_domain_proxy():
         forward_url = f"https://{settings.CILOGON_ACTUAL_DOMAIN}/{settings.OIDC_CALLBACK}"
         return pack_state(forward_url)
@@ -246,19 +287,51 @@ def get_forwarding_state_for_proxy() -> str:
 
 def is_request_from_actual_domain(request) -> bool:
     """
-    Check if the request is coming from the actual domain (not the proxy).
+    Decide whether the callback should process the code here, rather than
+    forward it onward.
 
-    This is used to determine whether to forward the callback or process it.
+    True when this request is the forward destination: either the static
+    domain-proxy actual domain, or the host encoded as the state's
+    next_url (which covers network subdomains, and generalises the
+    static case). False on the registered domain when a different
+    forward target is pending, so the callback forwards.
 
     Args:
         request: The Django request object.
-
-    Returns:
-        True if the request host matches CILOGON_ACTUAL_DOMAIN.
     """
-    if not is_using_domain_proxy():
+    if (
+        is_using_domain_proxy()
+        and request.headers.get("host") == settings.CILOGON_ACTUAL_DOMAIN
+    ):
+        return True
+
+    try:
+        _, next_url = extract_code_next_url(request)
+    except (
+        json.JSONDecodeError,
+        TypeError,
+        binascii.Error,
+        ValueError,
+        UnicodeDecodeError,
+    ):
         return False
-    return request.headers.get("host") == settings.CILOGON_ACTUAL_DOMAIN
+
+    if not next_url:
+        return False
+
+    host = request.get_host().split(":")[0]
+    if stdlib_urlparse(next_url).hostname != host:
+        return False
+
+    # the state's next_url is attacker-forgeable, so only process here
+    # when this host is a recognised forward target: a real network
+    # subdomain, or the configured domain-proxy actual domain. The
+    # onward redirect itself remains gated by forward_url's
+    # ALLOWED_CILOGON_FORWARDING_DOMAINS check.
+    return (
+        network_base_domain(host) is not None
+        or host == settings.CILOGON_ACTUAL_DOMAIN
+    )
 
 
 def forward_url(request):

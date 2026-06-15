@@ -495,6 +495,7 @@ BROKER_REGISTERED_APPS = {
                 "localhost",
                 "lndo.site",
                 "msu.edu",
+                "msucommons-dev.org",
             ],
         ),
     },
@@ -636,9 +637,7 @@ NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
 # Which environment key NETWORK_DOMAIN_OVERRIDES is consulted with:
 # "main" on production, "dev" on dev (overridden in dev.py), and any
 # other key a deployment chooses (e.g. "test") via the env var.
-NETWORK_DOMAIN_ENVIRONMENT = env(
-    "NETWORK_DOMAIN_ENVIRONMENT", default="main"
-)
+NETWORK_DOMAIN_ENVIRONMENT = env("NETWORK_DOMAIN_ENVIRONMENT", default="main")
 
 # Per-network domain overrides for the network-aware nav links, keyed
 # by network slug then environment. Most networks live at
