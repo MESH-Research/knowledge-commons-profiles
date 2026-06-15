@@ -320,7 +320,18 @@ def is_request_from_actual_domain(request) -> bool:
         return False
 
     host = request.get_host().split(":")[0]
-    return stdlib_urlparse(next_url).hostname == host
+    if stdlib_urlparse(next_url).hostname != host:
+        return False
+
+    # the state's next_url is attacker-forgeable, so only process here
+    # when this host is a recognised forward target: a real network
+    # subdomain, or the configured domain-proxy actual domain. The
+    # onward redirect itself remains gated by forward_url's
+    # ALLOWED_CILOGON_FORWARDING_DOMAINS check.
+    return (
+        network_base_domain(host) is not None
+        or host == settings.CILOGON_ACTUAL_DOMAIN
+    )
 
 
 def forward_url(request):

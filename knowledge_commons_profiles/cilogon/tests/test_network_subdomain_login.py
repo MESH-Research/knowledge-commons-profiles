@@ -202,6 +202,18 @@ class ForwardTargetTests(TestCase):
         self.assertTrue(oauth.is_request_from_actual_domain(req))
 
     @override_settings(**PROD)
+    def test_forged_non_network_host_is_not_a_forward_target(self):
+        # the state's next_url is attacker-forgeable: a host that is not a
+        # recognised network subdomain (nor the proxy actual domain) must
+        # not be treated as a local forward target, even if it matches the
+        # request host
+        req = self._callback_request(
+            "evil.example.com",
+            "https://evil.example.com/cilogon/callback/",
+        )
+        self.assertFalse(oauth.is_request_from_actual_domain(req))
+
+    @override_settings(**PROD)
     def test_no_state_is_not_a_forward_target(self):
         req = self._callback_request("profile.hcommons.org", None)
         self.assertFalse(oauth.is_request_from_actual_domain(req))
