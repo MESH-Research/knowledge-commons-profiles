@@ -20,13 +20,15 @@ http:
       # it. The host rule replicates web-router's; the explicit high priority
       # beats web-router's length-derived default so /broker/* wins here while
       # every other path falls through to django.
-      rule: '(Host(`profile.hcommons.org`) || Host(`www.profile.hcommons.org`) || Host(`profile.hcommons-test.org`) || Host(`www.profile.hcommons-test.org`)) && PathPrefix(`/broker/`)'
+      # Each regex covers its apex and any one-label subdomain (www plus
+      # the network subdomains, e.g. stemedplus.profile.hcommons.org).
+      rule: '(HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons\.org$`) || HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons-test\.org$`)) && PathPrefix(`/broker/`)'
       priority: 1000
       entryPoints:
         - web
       service: idms
     web-router:
-      rule: 'Host(`profile.hcommons.org`) || Host(`www.profile.hcommons.org`) || Host(`profile.hcommons-test.org`) || Host(`www.profile.hcommons-test.org`)'
+      rule: 'HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons\.org$`) || HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons-test\.org$`)'
       entryPoints:
         - web
       middlewares:

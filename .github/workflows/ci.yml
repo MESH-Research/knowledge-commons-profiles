@@ -186,6 +186,8 @@ jobs:
           IMAGE_TAG: ${{ steps.bump_commit.outputs.sha }}
           VERSION_TAG: ${{ steps.project_version.outputs.version }}
           BUILD_TAG: ${{ steps.project_version.outputs.build }}
+          APP_BRANCH: ${{ github.ref_name }}
+          GIT_SHA: ${{ steps.bump_commit.outputs.sha }}
         run: |
           docker compose -f $COMPOSE_FILE build
 
@@ -303,7 +305,10 @@ jobs:
         run: |
           VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           SHORT_SHA="${GITHUB_SHA::7}"
-          echo "build=v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          # Branch-prefix the build tag on non-main branches (here: dev) so
+          # each branch gets a uniquely named image instead of racing for the
+          # shared v<version>-<sha> tag.
+          echo "build=${GITHUB_REF_NAME}-v${VERSION}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Build, tag, and push images to Amazon ECR
         id: build-image
@@ -311,6 +316,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
           BUILD_TAG: ${{ steps.project_version.outputs.build }}
+          APP_BRANCH: ${{ github.ref_name }}
+          GIT_SHA: ${{ github.sha }}
         run: |
           docker compose -f $COMPOSE_FILE build
 

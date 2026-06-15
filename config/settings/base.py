@@ -16,6 +16,15 @@ if READ_DOT_ENV_FILE:
     # OS environment variables take precedence over variables from .env
     env.read_env(str(BASE_DIR / ".env"))
 
+# BUILD / DEPLOY METADATA
+# ------------------------------------------------------------------------------
+# Baked into the container image at build time (CI -> Dockerfile ARG/ENV) so a
+# running instance can report exactly what is deployed. Defaults to "unknown"
+# off-CI (local dev, tests). Surfaced by the health endpoints.
+GIT_SHA = env("GIT_SHA", default="unknown")
+BUILD_TAG = env("BUILD_TAG", default="unknown")
+APP_BRANCH = env("APP_BRANCH", default="unknown")
+
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
@@ -154,7 +163,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
-    "knowledge_commons_profiles.common.middleware.RefererNavMiddleware",
+    "knowledge_commons_profiles.common.middleware.NetworkSubdomainMiddleware",
     "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
 
@@ -568,6 +577,26 @@ OPEN_REGISTRATION_NETWORKS = env(
 
 KNOWN_SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
 
+# Human display names for network listing pages, keyed by the
+# lower-cased canonical network name (the output of
+# resolve_network_name). Networks not listed here display their
+# canonical name unchanged.
+NETWORK_DISPLAY_NAMES = env.json(
+    "NETWORK_DISPLAY_NAMES",
+    default={
+        "up": "Association of University Presses",
+        "mla": "Modern Language Association",
+        "msu": "Michigan State University",
+        "arlisna": "Art Libraries Society of North America",
+        "sah": "Society of Architectural Historians",
+        "hastac": (
+            "Humanities, Arts, Science, and Technology "
+            "Alliance and Collaboratory"
+        ),
+        "stemed+": "STEM Ed+",
+    },
+)
+
 LOGOUT_ENDPOINTS = env.list("LOGOUT_ENDPOINTS", default=[])
 
 WORKS_UPDATE_ENDPOINTS = env.list(
@@ -599,12 +628,44 @@ CC_SEARCH_ADMIN_KEY = CC_SEARCH_API_KEY
 # CC_SEARCH_ADMIN_KEY = env("CC_SEARCH_ADMIN_KEY", default="")
 CC_SEARCH_TIMEOUT = env.int("CC_SEARCH_TIMEOUT", default=10)
 
+# The environment's main Commons domain (hcommons.org on prod,
+# hcommons-dev.org on dev, hcommons-test.org on test). Defined before
+# the nav URLs so environment-tracking defaults can derive from it.
+NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
+
+# Which environment key NETWORK_DOMAIN_OVERRIDES is consulted with:
+# "main" on production, "dev" on dev (overridden in dev.py), and any
+# other key a deployment chooses (e.g. "test") via the env var.
+NETWORK_DOMAIN_ENVIRONMENT = env(
+    "NETWORK_DOMAIN_ENVIRONMENT", default="main"
+)
+
+# Per-network domain overrides for the network-aware nav links, keyed
+# by network slug then environment. Most networks live at
+# {slug}.{NAV_DEFAULT_DOMAIN}; networks listed here use their own
+# external domain instead (per environment, falling back to the
+# subdomain form when the environment has no entry). The Works link
+# never follows these — it stays on the hcommons domains.
+NETWORK_DOMAIN_OVERRIDES = env.json(
+    "NETWORK_DOMAIN_OVERRIDES",
+    default={
+        "msu": {
+            "dev": "msucommons-dev.org",
+            "main": "commons.msu.edu",
+        },
+    },
+)
+
 NAV_NEWS_FEED_URL = env(
     "NAV_NEWS_FEED_URL", default="https://hcommons.org/activity/"
 )
 NAV_GROUPS_URL = env("NAV_GROUPS_URL", default="https://hcommons.org/groups/")
 NAV_SITES_URL = env("NAV_SITES_URL", default="https://hcommons.org/sites/")
-NAV_WORKS_URL = env("NAV_WORKS_URL", default="https://works.hcommons.org/")
+# Works tracks the environment's main domain (works.hcommons-dev.org on
+# dev etc.) unless explicitly overridden
+NAV_WORKS_URL = env(
+    "NAV_WORKS_URL", default=f"https://works.{NAV_DEFAULT_DOMAIN}/"
+)
 NAV_SUPPORT_URL = env(
     "NAV_SUPPORT_URL", default="https://support.hcommons.org/"
 )
@@ -616,10 +677,22 @@ NAV_ABOUT_URL = env(
 )
 NAV_BLOG_URL = env("NAV_BLOG_URL", default="https://team.hcommons.org/")
 
-NAV_NETWORK_DOMAIN_MAP = env.json("NAV_NETWORK_DOMAIN_MAP", default={})
-NAV_DEFAULT_DOMAIN = env("NAV_DEFAULT_DOMAIN", default="hcommons.org")
-NAV_NETWORK_SESSION_TIMEOUT = env.int(
-    "NAV_NETWORK_SESSION_TIMEOUT", default=3600
+# Network subdomains: a request arriving on <network>.<base domain>
+# (e.g. stemedplus.profile.hcommons.org) is annotated with that network
+# by NetworkSubdomainMiddleware. Hosts that equal a base domain carry
+# no network; subdomains in the ignored list (e.g. www) are not
+# networks.
+NETWORK_SUBDOMAIN_BASE_DOMAINS = env.list(
+    "NETWORK_SUBDOMAIN_BASE_DOMAINS",
+    default=[
+        "profile.hcommons.org",
+        "profile.hcommons-dev.org",
+        "profile.hcommons-test.org",
+        "localhost",
+    ],
+)
+NETWORK_SUBDOMAIN_IGNORED = env.list(
+    "NETWORK_SUBDOMAIN_IGNORED", default=["www"]
 )
 
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")

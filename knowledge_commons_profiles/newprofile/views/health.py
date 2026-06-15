@@ -64,5 +64,8 @@ def health(request):
     health_result["Debug Mode"] = settings.DEBUG
 
     health_result["VERSION"] = VERSION
+    health_result["Branch"] = settings.APP_BRANCH
+    health_result["Image"] = settings.BUILD_TAG
+    health_result["SHA"] = settings.GIT_SHA
 
     return JsonResponse(health_result, status=200 if not fail else 500)

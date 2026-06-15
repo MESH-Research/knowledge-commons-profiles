@@ -338,6 +338,21 @@ class TestBrokerHealth(TestCase):
             response = self.client.get("/broker/health/")
         self.assertEqual(response.status_code, 500)
 
+    @override_settings(
+        APP_BRANCH="dev",
+        BUILD_TAG="dev-v4.41.0-abc1234",
+        GIT_SHA="abc1234def5678901234567890123456789012ab",
+    )
+    def test_health_reports_branch_image_and_sha(self):
+        """The probe payload includes deploy branch, image tag and SHA."""
+        response = self.client.get("/broker/health/")
+        data = response.json()
+        self.assertEqual(data["Branch"], "dev")
+        self.assertEqual(data["Image"], "dev-v4.41.0-abc1234")
+        self.assertEqual(
+            data["SHA"], "abc1234def5678901234567890123456789012ab"
+        )
+
 
 @override_settings(**BROKER_OVERRIDES)
 class TestBrokerSilentLoginRealEventLoop(TestCase):

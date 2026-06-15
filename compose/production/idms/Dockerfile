@@ -28,6 +28,15 @@ RUN chmod +x /start
 # Copy application code to WORKDIR
 COPY --chown=django:django . ${APP_HOME}
 
+# Build/deploy metadata (passed from CI via compose build args) so the running
+# container can self-report the deployed branch, image tag and commit SHA.
+ARG APP_BRANCH=unknown
+ARG BUILD_TAG=unknown
+ARG GIT_SHA=unknown
+ENV APP_BRANCH=${APP_BRANCH} \
+    BUILD_TAG=${BUILD_TAG} \
+    GIT_SHA=${GIT_SHA}
+
 USER django
 
 ENTRYPOINT ["/entrypoint"]

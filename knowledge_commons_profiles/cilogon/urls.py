@@ -16,10 +16,46 @@ Including another URLconf
 """
 
 from django.conf import settings
+from django.urls import include
 from django.urls import path
+from django.urls import re_path
 
 from knowledge_commons_profiles.cilogon import views
 from knowledge_commons_profiles.cilogon import views_debug
+
+# Account routes under /members/, defined once and mounted twice below:
+# at the canonical "members/" prefix (un-namespaced, so existing
+# reverses are unchanged) and behind a network prefix as
+# /{network}/members/... dispatching to the same views. The
+# non-capturing prefix group passes no extra kwarg to the views;
+# middleware derives the network from the request path.
+account_members_patterns = [
+    path(
+        "<str:username>/settings/",
+        views.manage_login,
+        name="manage_login",
+    ),
+    path(
+        "<str:username>/settings/<str:anything>/",
+        views.manage_login,
+        name="manage_login",
+    ),  # hijack the BuddyPress URLs for config
+    path(
+        "<str:username>/join/<str:network>/",
+        views.self_join_network,
+        name="self_join_network",
+    ),
+    path(
+        "<str:username>/leave/<str:network>/",
+        views.self_leave_network,
+        name="self_leave_network",
+    ),
+    path(
+        "<str:user_name>/roles/",
+        views.manage_roles,
+        name="manage_roles",
+    ),
+]
 
 urlpatterns = [
     path("login/", views.cilogon_login, name="login"),
@@ -31,30 +67,10 @@ urlpatterns = [
     path(
         "user-updated/", views.user_updated, name="user_update_webhook"
     ),  # dummy user updated rule to simulate remote API for testing
-    path(
-        "members/<str:username>/settings/",
-        views.manage_login,
-        name="manage_login",
-    ),
-    path(
-        "members/<str:username>/settings/<str:anything>/",
-        views.manage_login,
-        name="manage_login",
-    ),  # hijack the BuddyPress URLs for config
-    path(
-        "members/<str:username>/join/<str:network>/",
-        views.self_join_network,
-        name="self_join_network",
-    ),
-    path(
-        "members/<str:username>/leave/<str:network>/",
-        views.self_leave_network,
-        name="self_leave_network",
-    ),
-    path(
-        "members/<str:user_name>/roles/",
-        views.manage_roles,
-        name="manage_roles",
+    path("members/", include(account_members_patterns)),
+    re_path(
+        r"^(?:[^/]+)/members/",
+        include((account_members_patterns, "network_account")),
     ),
     path(
         "activate/<str:secret_key>/",
