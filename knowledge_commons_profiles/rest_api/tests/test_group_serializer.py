@@ -50,16 +50,33 @@ def _set_no_blog(mock_meta_qs):
     qs.values_list.return_value.first.return_value = None
 
 
-_GROUPS_URL = "https://hcommons-dev.org/groups/"
+_SOCIETIES = (
+    "knowledge_commons_profiles.rest_api.serializers.serializers"
+    ".society_ids_for_groups"
+)
 
 
-class TestGroupDetailSerializerFields(TestCase):
+class _GroupSerializerTestBase(TestCase):
+    """Stubs the WordPress group-type lookup so serializing a group never
+    touches the database. With no group type the URL resolves to the base
+    Commons domain; tests that need a network override self.mock_societies.
+    """
+
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch(_SOCIETIES, return_value={})
+        self.mock_societies = patcher.start()
+        self.addCleanup(patcher.stop)
+
+
+class TestGroupDetailSerializerFields(_GroupSerializerTestBase):
     """Test that GroupDetailSerializer returns the expected fields."""
 
     def setUp(self):
+        super().setUp()
         self.group = _make_mock_group()
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_serializer_returns_expected_keys(
@@ -83,7 +100,7 @@ class TestGroupDetailSerializerFields(TestCase):
         }
         self.assertEqual(set(data.keys()), expected_keys)
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_slug_in_output_status_not(
@@ -98,13 +115,14 @@ class TestGroupDetailSerializerFields(TestCase):
         self.assertNotIn("status", data)
 
 
-class TestGroupDetailSerializerUrl(TestCase):
+class TestGroupDetailSerializerUrl(_GroupSerializerTestBase):
     """Test the url field."""
 
     def setUp(self):
+        super().setUp()
         self.group = _make_mock_group()
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_url_constructed_from_slug(
@@ -120,10 +138,47 @@ class TestGroupDetailSerializerUrl(TestCase):
         )
 
 
-class TestGroupDetailSerializerVisibility(TestCase):
+class TestGroupDetailSerializerNetworkUrl(TestCase):
+    """The url field is network-aware: a group whose bp_group_type
+    resolves to a network gets that network's subdomain."""
+
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
+    @mock.patch(_MOCK_META)
+    @mock.patch(_MOCK_BLOG)
+    @mock.patch(_SOCIETIES, return_value={1004185: "mla"})
+    def test_network_group_url(
+        self, mock_societies, mock_blog_qs, mock_meta_qs
+    ):
+        _set_no_blog(mock_meta_qs)
+        group = _make_mock_group()
+        data = GroupDetailSerializer(group).data
+
+        self.assertEqual(
+            data["url"],
+            "https://mla.hcommons-dev.org/groups/open-art-histories/",
+        )
+
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
+    @mock.patch(_MOCK_META)
+    @mock.patch(_MOCK_BLOG)
+    @mock.patch(_SOCIETIES, return_value={})
+    def test_untyped_group_url_is_base(
+        self, mock_societies, mock_blog_qs, mock_meta_qs
+    ):
+        _set_no_blog(mock_meta_qs)
+        group = _make_mock_group()
+        data = GroupDetailSerializer(group).data
+
+        self.assertEqual(
+            data["url"],
+            "https://hcommons-dev.org/groups/open-art-histories/",
+        )
+
+
+class TestGroupDetailSerializerVisibility(_GroupSerializerTestBase):
     """Test the visibility field maps from status."""
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_visibility_maps_from_status(
@@ -135,7 +190,7 @@ class TestGroupDetailSerializerVisibility(TestCase):
 
         self.assertEqual(data["visibility"], "private")
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_visibility_public(
@@ -148,10 +203,10 @@ class TestGroupDetailSerializerVisibility(TestCase):
         self.assertEqual(data["visibility"], "public")
 
 
-class TestGroupDetailSerializerGroupblog(TestCase):
+class TestGroupDetailSerializerGroupblog(_GroupSerializerTestBase):
     """Test the groupblog field."""
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_groupblog_from_meta(
@@ -172,7 +227,7 @@ class TestGroupDetailSerializerGroupblog(TestCase):
             "https://openarthistories.hcommons-dev.org/",
         )
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_groupblog_empty_when_no_meta(
@@ -185,7 +240,7 @@ class TestGroupDetailSerializerGroupblog(TestCase):
 
         self.assertEqual(data["groupblog"], "")
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_groupblog_empty_when_blog_not_found(
@@ -201,10 +256,10 @@ class TestGroupDetailSerializerGroupblog(TestCase):
         self.assertEqual(data["groupblog"], "")
 
 
-class TestGroupDetailSerializerRoles(TestCase):
+class TestGroupDetailSerializerRoles(_GroupSerializerTestBase):
     """Test the upload_roles and moderate_roles fields."""
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_upload_roles(
@@ -219,7 +274,7 @@ class TestGroupDetailSerializerRoles(TestCase):
             ["member", "moderator", "administrator"],
         )
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_moderate_roles(
@@ -235,10 +290,10 @@ class TestGroupDetailSerializerRoles(TestCase):
         )
 
 
-class TestGroupDetailSerializerWpUnslash(TestCase):
+class TestGroupDetailSerializerWpUnslash(_GroupSerializerTestBase):
     """Test that WordPress backslash escaping is stripped from output."""
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_name_with_escaped_apostrophe(
@@ -250,7 +305,7 @@ class TestGroupDetailSerializerWpUnslash(TestCase):
 
         self.assertEqual(data["name"], "Ian's test group D")
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_description_with_escaped_apostrophe(
@@ -266,7 +321,7 @@ class TestGroupDetailSerializerWpUnslash(TestCase):
             data["description"], "A group about Ian's research"
         )
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_name_with_escaped_double_quote(
@@ -278,7 +333,7 @@ class TestGroupDetailSerializerWpUnslash(TestCase):
 
         self.assertEqual(data["name"], 'Say "hello"')
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_name_without_escaping_unchanged(
@@ -291,10 +346,10 @@ class TestGroupDetailSerializerWpUnslash(TestCase):
         self.assertEqual(data["name"], "Normal Group Name")
 
 
-class TestGroupDetailSerializerFullOutput(TestCase):
+class TestGroupDetailSerializerFullOutput(_GroupSerializerTestBase):
     """Integration test for the full expected output shape."""
 
-    @override_settings(NAV_GROUPS_URL=_GROUPS_URL)
+    @override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
     @mock.patch(_MOCK_META)
     @mock.patch(_MOCK_BLOG)
     def test_full_output_matches_spec(

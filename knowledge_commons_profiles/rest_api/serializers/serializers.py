@@ -6,7 +6,6 @@ Serializers for the REST API
 import logging
 from typing import Any
 
-from django.conf import settings
 from django.db import OperationalError
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -19,6 +18,10 @@ from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBlog
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpGroupsGroupmeta
+from knowledge_commons_profiles.newprofile.network_urls import group_url
+from knowledge_commons_profiles.newprofile.network_urls import (
+    society_ids_for_groups,
+)
 from knowledge_commons_profiles.rest_api.utils import get_external_memberships
 from knowledge_commons_profiles.rest_api.utils import wp_unslash
 
@@ -98,7 +101,11 @@ class GroupDetailSerializer(serializers.Serializer):
         return obj.get_avatar()
 
     def get_url(self, obj: WpBpGroup) -> str:
-        return f"{settings.NAV_GROUPS_URL}{obj.slug}/"
+        # network-aware: resolve the group's home network (bp_group_type)
+        # and build the URL on that network's domain, falling back to the
+        # base Commons domain when the group has no network. See #622.
+        society_id = society_ids_for_groups([obj.id]).get(obj.id)
+        return group_url(society_id, obj.slug)
 
     def get_groupblog(self, obj: WpBpGroup) -> str:
         blog_id = (
