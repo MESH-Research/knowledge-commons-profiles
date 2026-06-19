@@ -1,3 +1,27 @@
+## 4.42.1 (2026-06-12)
+
+### Fix
+
+- **roles**: apply role_overrides when profile has no synced membership data
+
+## 4.42.0 (2026-06-12)
+
+### Feat
+
+- **members**: support remote resume state for backfill_memberships
+- **members**: add resumable --state-file to backfill_memberships
+- **members**: add backfill_memberships management command
+
+### Fix
+
+- **members**: make backfill remote state visible and stop-safe
+
+## 4.41.1 (2026-06-12)
+
+### Fix
+
+- **profile**: strip the @ from Bluesky profile links
+
 ## 4.41.0 (2026-06-04)
 
 ### Feat
