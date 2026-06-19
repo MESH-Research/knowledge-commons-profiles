@@ -10,7 +10,7 @@
       <h3 class="card-title">Commons Groups</h3>
       {% for group in groups %}
       <ul class="interests-list">
-          <li class="interest-item"><a class="interest-link" href="https://{{ wordpress_domain }}/groups/{{ group.slug }}/">{{ group.group_name }}</a></li>
+          <li class="interest-item"><a class="interest-link" href="{{ group.url }}">{{ group.group_name }}</a></li>
       </ul>
       {% endfor %}
   </div>

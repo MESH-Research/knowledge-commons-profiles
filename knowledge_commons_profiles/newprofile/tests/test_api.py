@@ -1356,6 +1356,19 @@ class GetGroupsTests(django.test.TestCase):
         self.service.wp_user = self.wp_user
         self.service.request = self.request
 
+        # Group network resolution hits the WordPress taxonomy tables;
+        # default it to "no group has a network type" so existing cases
+        # resolve to the base domain. Individual tests override the
+        # return value to exercise network-aware URLs.
+        self.societies_patcher = patch(
+            "knowledge_commons_profiles.newprofile.api"
+            ".society_ids_for_groups",
+            return_value={},
+        )
+        self.mock_societies = self.societies_patcher.start()
+        self.addCleanup(self.societies_patcher.stop)
+
+    @django.test.override_settings(NAV_DEFAULT_DOMAIN="hcommons.org")
     @patch("knowledge_commons_profiles.newprofile.api.WpUser.objects")
     @patch(
         "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
@@ -1394,8 +1407,72 @@ class GetGroupsTests(django.test.TestCase):
                     "avatar": "",
                     "inviter_id": 0,
                     "inviter_username": None,
+                    "url": "https://hcommons.org/groups/slug/",
                 }
             ],
+        )
+
+    @django.test.override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_group_on_a_network_gets_subdomain_url(self, mock_manager):
+        """A group whose bp_group_type resolves to a network resolves to
+        that network's subdomain on the environment's base domain."""
+        gm = MagicMock()
+        gm.gid = 42
+        gm.group_name = "20th C American"
+        gm.role = "member"
+        gm.slug = "20th-and-21st-century-american"
+        gm.group.status = "public"
+        gm.group.get_avatar.return_value = ""
+        gm.inviter_id = 0
+
+        mock_qs = MagicMock()
+        mock_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = [gm]
+
+        self.mock_societies.return_value = {42: "mla"}
+
+        result = self.service.get_groups()
+
+        self.assertEqual(
+            result[0]["url"],
+            "https://mla.hcommons-dev.org/groups/"
+            "20th-and-21st-century-american/",
+        )
+
+    @django.test.override_settings(NAV_DEFAULT_DOMAIN="hcommons-dev.org")
+    @patch(
+        "knowledge_commons_profiles.newprofile.models.WpBpGroupMember.objects"
+    )
+    def test_group_without_network_gets_base_url(self, mock_manager):
+        """A group with no network group type resolves to the base
+        Commons domain for the environment."""
+        gm = MagicMock()
+        gm.gid = 7
+        gm.group_name = "Open Research"
+        gm.role = "member"
+        gm.slug = "open-research"
+        gm.group.status = "public"
+        gm.group.get_avatar.return_value = ""
+        gm.inviter_id = 0
+
+        mock_qs = MagicMock()
+        mock_manager.filter.return_value = mock_qs
+        mock_qs.select_related.return_value = mock_qs
+        mock_qs.annotate.return_value = mock_qs
+        mock_qs.order_by.return_value = [gm]
+
+        self.mock_societies.return_value = {}  # no group type
+
+        result = self.service.get_groups()
+
+        self.assertEqual(
+            result[0]["url"],
+            "https://hcommons-dev.org/groups/open-research/",
         )
 
     @patch(

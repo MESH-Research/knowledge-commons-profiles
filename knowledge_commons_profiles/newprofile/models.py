@@ -895,6 +895,31 @@ class WpTermRelationships(models.Model):
         return str(self.term_taxonomy)
 
 
+class WpTerm(models.Model):
+    """
+    Mirrors the WordPress `wp_terms` table. Holds the human/slug name for a
+    term; the term's taxonomy lives in `wp_term_taxonomy` (WpTermTaxonomy).
+    """
+
+    term_id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=200)
+    slug = models.CharField(max_length=200)
+
+    class Meta:
+        """
+        Metadata for the WpTerm model
+        """
+
+        db_table = "wp_terms"
+        managed = False
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the WpTerm model
+        """
+        return str(self.slug)
+
+
 class WpBpFollow(models.Model):
     """
     A model for a WordPress follow
