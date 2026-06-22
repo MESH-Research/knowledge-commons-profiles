@@ -171,7 +171,7 @@ dependencies = [
     "django-model-utils==5.0.0",
     "django-crispy-forms==2.6",
     "crispy-bootstrap5==2026.3",
-    "django-redis==6.0.0",
+    "django-redis==7.0.0",
     # App
     "djangorestframework==3.17.1",
     "django-tinymce==5.0.0",
