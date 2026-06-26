@@ -8,6 +8,7 @@ import importlib
 from unittest import mock
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.forms import modelform_factory
 from django.test import TestCase
 
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
@@ -215,6 +216,19 @@ class ProfileModelTests(TestCase):
         # Check that the file is saved and path is as expected
         self.assertTrue(self.profile.cv_file.name.startswith("cvs/"))
         self.assertTrue(self.profile.cv_file.name.endswith(".pdf"))
+
+    def test_central_user_id_optional_on_form(self):
+        """A model form should accept a Profile without a central_user_id"""
+        form_class = modelform_factory(
+            Profile,
+            fields=["username", "name", "central_user_id"],
+        )
+        form = form_class(
+            data={"username": "noid_user", "name": "No ID User"},
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertNotIn("central_user_id", form.errors)
 
 
 class AcademicInterestTests(TestCase):
