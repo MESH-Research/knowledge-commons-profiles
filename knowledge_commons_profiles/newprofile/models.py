@@ -434,7 +434,7 @@ class Profile(models.Model):
 
     name = models.CharField(max_length=255)
     username = CICharField(max_length=255, unique=True)
-    central_user_id = models.IntegerField(db_index=True, null=True)
+    central_user_id = models.IntegerField(db_index=True, null=True, blank=True)
     title = models.CharField(max_length=255, null=True)
     affiliation = models.CharField(max_length=255, null=True)
     twitter = models.CharField(max_length=255, blank=True)
