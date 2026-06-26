@@ -1,3 +1,9 @@
+## 4.43.2 (2026-06-26)
+
+### Fix
+
+- **profile**: make central_user_id optional in forms
+
 ## 4.43.1 (2026-06-15)
 
 ### Fix
