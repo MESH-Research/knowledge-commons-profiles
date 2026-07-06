@@ -27,6 +27,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from django.db import transaction
+
 from knowledge_commons_profiles.cilogon.models import ReservedUsername
 
 if TYPE_CHECKING:
@@ -87,3 +89,74 @@ def get_reserved_patterns() -> list[str]:
             "pattern", flat=True
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Import / export
+#
+# Reserved terms are moved between environments as plain text so it can be a
+# copy-and-paste exercise. The format is one term per line, optionally followed
+# by " | note". Blank lines and lines beginning with "#" are ignored, so a
+# pasted list can be annotated.
+#
+# Import is a full sync: whatever is pasted becomes the complete list, and any
+# term not in the pasted text is removed.
+# ---------------------------------------------------------------------------
+
+
+def parse_reserved_terms(text: str) -> list[tuple[str, str]]:
+    """
+    Parse pasted text into ``(pattern, note)`` pairs.
+
+    Blank lines and ``#`` comments are skipped; a later duplicate of a pattern
+    overrides an earlier one.
+    """
+    # Preserve insertion order while letting a later line override an earlier
+    # duplicate (dict keeps first-seen order but updates the value in place).
+    terms: dict[str, str] = {}
+    for line in (text or "").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        pattern, sep, note = stripped.partition("|")
+        pattern = pattern.strip()
+        if not pattern:
+            continue
+
+        terms[pattern] = note.strip() if sep else ""
+
+    return list(terms.items())
+
+
+def serialize_reserved_terms(terms: Iterable[tuple[str, str]]) -> str:
+    """
+    Render ``(pattern, note)`` pairs as pasteable text.
+
+    A term with a note becomes ``pattern | note``; without one it is just the
+    pattern.
+    """
+    lines = [
+        f"{pattern} | {note}" if note else pattern for pattern, note in terms
+    ]
+    return "\n".join(lines)
+
+
+def import_terms(text: str) -> int:
+    """
+    Replace the entire reserved list with the pasted ``text``.
+
+    Every existing term is removed and the pasted terms become the complete
+    list. Returns the number of terms imported. The whole operation runs in a
+    transaction, so a failure leaves the current list untouched.
+    """
+    parsed = parse_reserved_terms(text)
+
+    with transaction.atomic():
+        ReservedUsername.objects.all().delete()
+        ReservedUsername.objects.bulk_create(
+            ReservedUsername(pattern=pattern, note=note, active=True)
+            for pattern, note in parsed
+        )
+
+    return len(parsed)

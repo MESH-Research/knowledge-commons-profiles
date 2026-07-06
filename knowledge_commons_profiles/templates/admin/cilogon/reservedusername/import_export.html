@@ -1,0 +1,42 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    › <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    › <a href="{% url 'admin:cilogon_reservedusername_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    › Import / export
+  </div>
+{% endblock breadcrumbs %}
+
+{% block content %}
+  <p>
+    Reserved terms are plain text so they can be copied between environments.
+    Write <strong>one term per line</strong>, optionally followed by
+    <code>| a note</code>. Blank lines and lines starting with <code>#</code>
+    are ignored. Matching ignores case, hyphens and underscores, and blocks any
+    username that begins with the term. Use <code>*</code> as a wildcard.
+  </p>
+
+  <h2>Export</h2>
+  <p>The currently active terms. Select all and copy to move them elsewhere.</p>
+  <textarea readonly rows="12" cols="80" style="width: 100%; max-width: 40rem;">{{ export_text }}</textarea>
+
+  <h2>Import</h2>
+  <p>
+    <strong>Importing replaces the whole list.</strong> Whatever you paste
+    below becomes the complete set of reserved terms; anything not included is
+    removed.
+  </p>
+  <form method="post">
+    {% csrf_token %}
+    <p>
+      <textarea name="terms" rows="12" cols="80" style="width: 100%; max-width: 40rem;"
+                placeholder="admin | Administrative role&#10;knowledgecommons&#10;*support*"></textarea>
+    </p>
+    <p>
+      <button type="submit" class="default">Replace list with these terms</button>
+      <a href="{% url 'admin:cilogon_reservedusername_changelist' %}" class="button">Cancel</a>
+    </p>
+  </form>
+{% endblock content %}

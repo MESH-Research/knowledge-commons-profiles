@@ -4,14 +4,24 @@ Tests for reserved-username matching and its enforcement during signup.
 
 from __future__ import annotations
 
+from django.contrib.auth.models import User
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.backends.db import SessionStore
+from django.test import Client
 from django.test import RequestFactory
 from django.test import TestCase
+from django.urls import reverse
 
 from knowledge_commons_profiles.cilogon.models import ReservedUsername
 from knowledge_commons_profiles.cilogon.reserved_usernames import (
     get_reserved_patterns,
+)
+from knowledge_commons_profiles.cilogon.reserved_usernames import import_terms
+from knowledge_commons_profiles.cilogon.reserved_usernames import (
+    parse_reserved_terms,
+)
+from knowledge_commons_profiles.cilogon.reserved_usernames import (
+    serialize_reserved_terms,
 )
 from knowledge_commons_profiles.cilogon.reserved_usernames import (
     username_is_reserved,
@@ -145,4 +155,137 @@ class ValidateFormReservedUsernameTests(TestCase):
 
         self.assertFalse(
             Profile.objects.filter(username="zzreserved99").exists()
+        )
+
+
+class ParseReservedTermsTests(TestCase):
+    """Turning pasted text into (pattern, note) pairs."""
+
+    def test_plain_lines_become_patterns_without_notes(self):
+        result = parse_reserved_terms("admin\nsuperuser\n")
+        self.assertEqual(result, [("admin", ""), ("superuser", "")])
+
+    def test_note_after_pipe_is_captured(self):
+        result = parse_reserved_terms("admin | Administrative role")
+        self.assertEqual(result, [("admin", "Administrative role")])
+
+    def test_blank_lines_and_comments_are_ignored(self):
+        text = "# platform names\nadmin\n\n   \n# more\nsuperuser\n"
+        result = parse_reserved_terms(text)
+        self.assertEqual(result, [("admin", ""), ("superuser", "")])
+
+    def test_surrounding_whitespace_is_trimmed(self):
+        result = parse_reserved_terms("  admin   |   note here  ")
+        self.assertEqual(result, [("admin", "note here")])
+
+    def test_later_duplicate_overrides_earlier(self):
+        result = parse_reserved_terms("admin | first\nadmin | second")
+        self.assertEqual(result, [("admin", "second")])
+
+    def test_empty_text_yields_no_terms(self):
+        self.assertEqual(parse_reserved_terms(""), [])
+
+
+class SerializeReservedTermsTests(TestCase):
+    """Rendering (pattern, note) pairs back into pasteable text."""
+
+    def test_terms_without_notes_are_bare_patterns(self):
+        text = serialize_reserved_terms([("admin", ""), ("root", "")])
+        self.assertEqual(text, "admin\nroot")
+
+    def test_terms_with_notes_use_pipe_separator(self):
+        text = serialize_reserved_terms([("admin", "Administrative role")])
+        self.assertEqual(text, "admin | Administrative role")
+
+    def test_round_trip_is_stable(self):
+        terms = [("admin", "role"), ("knowledgecommons", "")]
+        self.assertEqual(
+            parse_reserved_terms(serialize_reserved_terms(terms)), terms
+        )
+
+
+class ImportTermsTests(TestCase):
+    """Import replaces the whole list with the pasted terms."""
+
+    def _count(self, pattern):
+        return ReservedUsername.objects.filter(pattern=pattern)
+
+    def test_pasted_terms_are_created_active_with_notes(self):
+        count = import_terms("zzalpha\nzzbeta | a note")
+
+        self.assertEqual(count, 2)
+        self.assertTrue(
+            ReservedUsername.objects.filter(
+                pattern="zzalpha", active=True
+            ).exists()
+        )
+        self.assertEqual(self._count("zzbeta").first().note, "a note")
+
+    def test_import_replaces_the_entire_existing_list(self):
+        # Anything already present -- including the seed data -- is removed.
+        ReservedUsername.objects.create(pattern="zzdropme")
+
+        import_terms("zzalpha")
+
+        self.assertFalse(self._count("zzdropme").exists())
+        self.assertFalse(
+            ReservedUsername.objects.filter(pattern="admin").exists()
+        )
+        self.assertTrue(self._count("zzalpha").exists())
+
+    def test_import_is_the_complete_list(self):
+        import_terms("zzalpha\nzzbeta")
+
+        self.assertEqual(ReservedUsername.objects.count(), 2)
+
+    def test_importing_empty_text_clears_the_list(self):
+        ReservedUsername.objects.create(pattern="zzdropme")
+
+        count = import_terms("")
+
+        self.assertEqual(count, 0)
+        self.assertEqual(ReservedUsername.objects.count(), 0)
+
+
+class ImportExportAdminViewTests(TestCase):
+    """The admin copy-and-paste page is wired up end to end."""
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            username="zzadmin", email="zzadmin@example.com", password="pw"
+        )
+        self.client.force_login(self.admin)
+        self.url = reverse(
+            "admin:cilogon_reservedusername_import_export"
+        )
+
+    def test_get_shows_active_terms_for_export(self):
+        ReservedUsername.objects.create(pattern="zzexportme", active=True)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "zzexportme")
+
+    def test_post_imports_pasted_terms(self):
+        response = self.client.post(
+            self.url, {"terms": "zzpasted | via admin"}
+        )
+
+        self.assertEqual(response.status_code, 302)
+        term = ReservedUsername.objects.get(pattern="zzpasted")
+        self.assertEqual(term.note, "via admin")
+        self.assertTrue(term.active)
+
+    def test_post_replaces_the_whole_list(self):
+        ReservedUsername.objects.create(pattern="zzoldterm")
+
+        self.client.post(self.url, {"terms": "zznewterm"})
+
+        self.assertFalse(
+            ReservedUsername.objects.filter(pattern="zzoldterm").exists()
+        )
+        self.assertTrue(
+            ReservedUsername.objects.filter(pattern="zznewterm").exists()
         )
