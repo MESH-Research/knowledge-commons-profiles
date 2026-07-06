@@ -6,6 +6,7 @@ from django import forms
 from django.contrib import admin
 
 from knowledge_commons_profiles.cilogon.models import EmailVerification
+from knowledge_commons_profiles.cilogon.models import ReservedUsername
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.newprofile.models import Profile
 
@@ -32,3 +33,11 @@ class SubAssocationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EmailVerification)
+
+
+@admin.register(ReservedUsername)
+class ReservedUsernameAdmin(admin.ModelAdmin):
+    list_display = ["pattern", "active", "note"]
+    list_filter = ["active"]
+    list_editable = ["active"]
+    search_fields = ["pattern", "note"]

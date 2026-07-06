@@ -70,6 +70,12 @@ from knowledge_commons_profiles.cilogon.oauth import should_prompt_login
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import sync_email_to_wordpress
 from knowledge_commons_profiles.cilogon.oauth import validate_return_to
+from knowledge_commons_profiles.cilogon.reserved_usernames import (
+    get_reserved_patterns,
+)
+from knowledge_commons_profiles.cilogon.reserved_usernames import (
+    username_is_reserved,
+)
 from knowledge_commons_profiles.cilogon.timing import TimingCollector
 from knowledge_commons_profiles.cilogon.timing import apply_header
 from knowledge_commons_profiles.common.profiles_email import normalize_email
@@ -1095,6 +1101,17 @@ def validate_form(email, full_name, request, username):
             request,
             "Username must be 3-30 characters and contain only letters, "
             "numbers, underscores, and hyphens",
+        )
+
+    # Reject usernames reserved for the platform or its staff. The list is
+    # static configuration (not per-user data), so there is no enumeration
+    # concern in checking it inline.
+    if username and username_is_reserved(username, get_reserved_patterns()):
+        errored = True
+        messages.error(
+            request,
+            "That username isn't available - it's reserved for the platform "
+            "or its staff. Please choose a different one.",
         )
 
     # Validate full name: reasonable length and no HTML/script tags
