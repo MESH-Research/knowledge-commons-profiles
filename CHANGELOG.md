@@ -1,3 +1,19 @@
+## 4.44.0 (2026-07-07)
+
+### Feat
+
+- **cilogon**: show reserved-username rejection inline on signup form
+- **cilogon**: add copy-paste import/export for reserved usernames
+- **cilogon**: add configurable reserved-username validation to signup
+
+### Fix
+
+- **migrations**: merge central_user_id leaf nodes after dev merge
+- **profile**: make central_user_id optional in forms
+- **migrations**: add state-only migration for WpTerm model
+- **api**: make GroupDetailSerializer URL network-aware
+- **profile**: make profile sidebar group links network-aware
+
 ## 4.43.2 (2026-06-26)
 
 ### Fix
