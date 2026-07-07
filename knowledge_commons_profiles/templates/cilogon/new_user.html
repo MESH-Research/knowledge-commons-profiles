@@ -35,6 +35,11 @@
               <li>
                 Enter your desired username below. This will be used to identify your account.
                 Username must be 3–30 characters and can contain letters, numbers, underscores, and hyphens.
+                {% if username_reserved %}
+                  <p id="username-reserved-warning" class="username-reserved-warning">
+                    Sorry, that username is reserved and can’t be used. Please choose a different one.
+                  </p>
+                {% endif %}
                 <div>
                   <input type="text" name="username" id="username" value="{{ username }}" placeholder="your_username" required />
                 </div>
@@ -117,6 +122,12 @@
     }
     .network-check {
       margin-bottom: 0.5em;
+    }
+    /* Inline reserved-username rejection, shown above the username field. */
+    .username-reserved-warning {
+      font-weight: bold;
+      color: #b00020;
+      margin: 0.5em 0;
     }
   </style>
 

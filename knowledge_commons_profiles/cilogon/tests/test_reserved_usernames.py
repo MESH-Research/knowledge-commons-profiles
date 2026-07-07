@@ -4,9 +4,13 @@ Tests for reserved-username matching and its enforcement during signup.
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
 from django.contrib.auth.models import User
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.backends.db import SessionStore
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import Client
 from django.test import RequestFactory
 from django.test import TestCase
@@ -26,8 +30,14 @@ from knowledge_commons_profiles.cilogon.reserved_usernames import (
 from knowledge_commons_profiles.cilogon.reserved_usernames import (
     username_is_reserved,
 )
+from knowledge_commons_profiles.cilogon.views import register
 from knowledge_commons_profiles.cilogon.views import validate_form
 from knowledge_commons_profiles.newprofile.models import Profile
+
+# Stable hook the signup template exposes when a reserved username is rejected,
+# so tests assert on presence rather than exact wording. The id (not the bare
+# class name, which also appears in the page's CSS) uniquely marks the element.
+INLINE_WARNING_MARKER = b'id="username-reserved-warning"'
 
 
 class UsernameIsReservedTests(TestCase):
@@ -289,3 +299,60 @@ class ImportExportAdminViewTests(TestCase):
         self.assertTrue(
             ReservedUsername.objects.filter(pattern="zznewterm").exists()
         )
+
+
+class RegisterViewInlineWarningTests(TestCase):
+    """
+    A reserved username is called out inline, above the field, as well as in
+    the existing pop-up notification.
+    """
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def _post(self, data):
+        request = self.factory.post("/register/", data=data)
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        request._messages = FallbackStorage(request)
+        request.user = MagicMock()
+        request.user.is_authenticated = False
+        return request
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_secure_userinfo",
+        return_value=(True, {"sub": "test-sub-123", "email": "t@example.com"}),
+    )
+    def test_reserved_username_shows_inline_warning(self, mock_userinfo):
+        ReservedUsername.objects.create(pattern="zzreserved", active=True)
+
+        request = self._post(
+            {
+                "username": "zzreserved99",
+                "full_name": "New User",
+                "email": "new@example.com",
+                "accept_terms": "on",
+            }
+        )
+        response = register(request)
+
+        self.assertIn(INLINE_WARNING_MARKER, response.content)
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_secure_userinfo",
+        return_value=(True, {"sub": "test-sub-123", "email": "t@example.com"}),
+    )
+    def test_non_reserved_error_has_no_inline_warning(self, mock_userinfo):
+        # An allowed username that fails for another reason (missing terms)
+        # re-renders the form without the reserved-username warning.
+        request = self._post(
+            {
+                "username": "martineve",
+                "full_name": "New User",
+                "email": "new@example.com",
+            }
+        )
+        response = register(request)
+
+        self.assertNotIn(INLINE_WARNING_MARKER, response.content)

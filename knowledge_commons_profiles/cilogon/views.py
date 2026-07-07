@@ -949,6 +949,11 @@ def register(request):
             messages.error(request, "You must accept the terms and conditions")
 
         if errored:
+            # As well as the pop-up notification, flag a reserved username
+            # inline above the field so the rejection is unmissable.
+            context["username_reserved"] = bool(
+                username
+            ) and username_is_reserved(username, get_reserved_patterns())
             return render(request, "cilogon/new_user.html", context)
 
         # Sanitize the full name before storage (defense in depth)
