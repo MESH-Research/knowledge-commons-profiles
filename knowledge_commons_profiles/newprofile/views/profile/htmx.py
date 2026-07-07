@@ -2,7 +2,6 @@
 import logging
 
 import django.db
-from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -414,7 +413,6 @@ def mysql_data(request, username):
             "activities": activities,
             "commons_sites": commons_sites,
             "profile": profile_info_obj,
-            "wordpress_domain": settings.WORDPRESS_DOMAIN,
         }
 
         return render(
@@ -434,7 +432,6 @@ def mysql_data(request, username):
             "activities": [],
             "commons_sites": [],
             "profile": None,
-            "wordpress_domain": settings.WORDPRESS_DOMAIN,
         }
         return render(request, "newprofile/partials/mysql_data.html", context)
 

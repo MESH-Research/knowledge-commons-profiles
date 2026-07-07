@@ -122,3 +122,43 @@ class EmailVerification(models.Model):
 
             # delete the verifications
             verifications.delete()
+
+
+class ReservedUsername(models.Model):
+    """
+    A username term that people may not register during signup.
+
+    Terms are written by staff in plain language. The only special character
+    is ``*`` (a wildcard); see ``cilogon.reserved_usernames`` for how a term is
+    matched against a candidate username.
+    """
+
+    pattern = models.CharField(
+        max_length=255,
+        unique=True,
+        verbose_name="Reserved term",
+        help_text=(
+            "A username term to block. Matching ignores case, hyphens and "
+            "underscores, and blocks any username that begins with the term "
+            '(so "admin" blocks "admin123"). Use * as a wildcard for any '
+            'characters, e.g. "*support*" to block the word anywhere.'
+        ),
+    )
+    note = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Optional note explaining why this term is reserved.",
+    )
+    active = models.BooleanField(
+        default=True,
+        help_text="Untick to disable this term without deleting it.",
+    )
+
+    class Meta:
+        verbose_name = "Reserved username"
+        verbose_name_plural = "Reserved usernames"
+        ordering = ["pattern"]
+
+    def __str__(self):
+        return self.pattern

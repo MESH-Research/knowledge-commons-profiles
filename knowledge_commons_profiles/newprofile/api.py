@@ -37,6 +37,10 @@ from knowledge_commons_profiles.newprofile.models import WpBpUserBlogMeta
 from knowledge_commons_profiles.newprofile.models import WpPostSubTable
 from knowledge_commons_profiles.newprofile.models import WpUser
 from knowledge_commons_profiles.newprofile.models import WpUserMeta
+from knowledge_commons_profiles.newprofile.network_urls import group_url
+from knowledge_commons_profiles.newprofile.network_urls import (
+    society_ids_for_groups,
+)
 from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 from knowledge_commons_profiles.newprofile.utils import sanitize_html
 from knowledge_commons_profiles.newprofile.works import HiddenWorks
@@ -733,7 +737,7 @@ class API:
                 else {}
             )
 
-            return [
+            groups = [
                 {
                     "id": gm.gid,  # group id
                     "group_name": wp_unslash(gm.group_name),
@@ -747,6 +751,18 @@ class API:
                 for gm in group_members
             ]
 
+            # Resolve each group's home network (its bp_group_type) in one
+            # bulk lookup, then build a network-aware, environment-aware
+            # resolving URL: an MLA group -> mla.<base>, a base-Commons
+            # group -> <base>. See issue #622.
+            societies = society_ids_for_groups(
+                [group["id"] for group in groups]
+            )
+            for group in groups:
+                group["url"] = group_url(
+                    societies.get(group["id"]), group["slug"]
+                )
+
         except django.db.utils.OperationalError as oe:
             logger.warning(
                 "Unable to connect to MySQL, fast-failing group data."
@@ -756,6 +772,9 @@ class API:
                 raise
 
             return [], oe
+
+        else:
+            return groups
 
     def get_cover_image(self):
         """
