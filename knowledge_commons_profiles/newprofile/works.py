@@ -205,7 +205,10 @@ class Record(BaseModel):
     """
 
     id: str
-    links: dict[str, HttpUrl]
+    # Invenio 13 changed ``links.thumbnails`` from a single URL string to a
+    # ``{size: url}`` mapping. Accept a URL, that nested mapping, or null so
+    # links like ``latest_html`` (still plain URLs) keep validating.
+    links: dict[str, HttpUrl | dict[str, HttpUrl] | None]
     metadata: Metadata
     pids: dict[str, Pid]
     custom_fields: CustomFields | None

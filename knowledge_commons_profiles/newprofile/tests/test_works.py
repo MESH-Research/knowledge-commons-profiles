@@ -315,6 +315,88 @@ class TestWorksDeposits(django.test.TestCase):
             with self.assertRaises(ValueError):
                 self.works_deposits.format_style("INVALID", grouped)
 
+    def _minimal_metadata(self):
+        return Metadata(
+            title="Thumbnail Paper",
+            publication_date="2024-01-01",
+            publisher="Science Press",
+            resource_type=ResourceType(
+                id="article",
+                title=ResourceTypeInLanguage(en="Journal article"),
+            ),
+            creators=[],
+        )
+
+    def test_record_accepts_dict_thumbnails(self):
+        """Invenio 13 returns thumbnails as a {size: url} dict."""
+        record = Record(
+            id="thumbs-dict",
+            links={
+                "latest_html": "https://example.com/record/thumbs-dict",
+                "thumbnails": {
+                    "10": "https://works.example.org/iiif/full/%5E10,/0.jpg",
+                    "1200": (
+                        "https://works.example.org/iiif/full/%5E1200,/0.jpg"
+                    ),
+                },
+            },
+            metadata=self._minimal_metadata(),
+            pids={},
+            custom_fields=None,
+        )
+        # latest_html must still resolve to a usable URL string
+        self.assertEqual(
+            str(record.links.get("latest_html")),
+            "https://example.com/record/thumbs-dict",
+        )
+
+    def test_record_accepts_string_thumbnails(self):
+        """The old single-URL string form must still validate."""
+        record = Record(
+            id="thumbs-str",
+            links={
+                "latest_html": "https://example.com/record/thumbs-str",
+                "thumbnails": "https://works.example.org/thumb.jpg",
+            },
+            metadata=self._minimal_metadata(),
+            pids={},
+            custom_fields=None,
+        )
+        self.assertEqual(
+            str(record.links.get("latest_html")),
+            "https://example.com/record/thumbs-str",
+        )
+
+    def test_record_accepts_null_thumbnails(self):
+        """A null thumbnails value must validate."""
+        record = Record(
+            id="thumbs-null",
+            links={
+                "latest_html": "https://example.com/record/thumbs-null",
+                "thumbnails": None,
+            },
+            metadata=self._minimal_metadata(),
+            pids={},
+            custom_fields=None,
+        )
+        self.assertIsNone(record.links.get("thumbnails"))
+
+    def test_record_accepts_missing_thumbnails(self):
+        """An absent thumbnails key must validate."""
+        record = Record(
+            id="thumbs-absent",
+            links={
+                "latest_html": "https://example.com/record/thumbs-absent",
+            },
+            metadata=self._minimal_metadata(),
+            pids={},
+            custom_fields=None,
+        )
+        self.assertEqual(
+            str(record.links.get("latest_html")),
+            "https://example.com/record/thumbs-absent",
+        )
+
     def test_missing_fields_in_record(self):
         incomplete_record = Record(
             id="noid",
