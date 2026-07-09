@@ -30,6 +30,7 @@ from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from knowledge_commons_profiles.cilogon.models import MaintenanceMode
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.oauth import build_broker_redirect
 from knowledge_commons_profiles.cilogon.oauth import validate_return_to
@@ -79,6 +80,14 @@ async def silent_login(request):
             return_to,
         )
         response = redirect(settings.BROKER_FALLBACK_REDIRECT_URL)
+        response["Cache-Control"] = "no-store"
+        return response
+
+    if await MaintenanceMode.ais_active():
+        # Read-only maintenance: report "not logged in" so dependent apps
+        # bounce back to themselves cleanly rather than crashing. No token is
+        # minted and no session state is touched.
+        response = redirect(_no_session_url(return_to, final_redirect))
         response["Cache-Control"] = "no-store"
         return response
 

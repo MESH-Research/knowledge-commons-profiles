@@ -1,7 +1,9 @@
 import datetime
 import logging
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.core.cache import cache
 from django.db import models
 
 from knowledge_commons_profiles.cilogon.fields import EncryptedTextField
@@ -122,6 +124,127 @@ class EmailVerification(models.Model):
 
             # delete the verifications
             verifications.delete()
+
+
+DEFAULT_MAINTENANCE_TITLE = "Login temporarily unavailable"
+DEFAULT_MAINTENANCE_MESSAGE = (
+    "<p>We are carrying out essential maintenance on the login system. "
+    "You will not be able to sign in or edit your profile for a short "
+    "while. Please try again later.</p>"
+)
+
+
+class MaintenanceMode(models.Model):
+    """
+    A single, admin-editable switch that puts the identity system into a
+    read-only "maintenance mode".
+
+    When ``enabled`` is set, the silent-SSO broker reports "not logged in" to
+    dependent apps (so they degrade gracefully rather than crashing), new
+    logins are blocked with the customisable page below, and the site becomes
+    read-only.
+
+    There is only ever one row (pinned to ``SINGLETON_PK``). Its state is
+    mirrored into the shared cache so both the main app and the standalone
+    IDMS broker can read it with a single cache hit, and so a Redis outage
+    never takes SSO down (the accessors fail open to "not in maintenance").
+    """
+
+    SINGLETON_PK = 1
+    CACHE_KEY = "maintenance_mode:state"
+
+    enabled = models.BooleanField(
+        default=False,
+        help_text=(
+            "Turn on to put the identity system into read-only maintenance "
+            "mode: logins are blocked and profiles cannot be edited."
+        ),
+    )
+    title = models.CharField(
+        max_length=300,
+        default=DEFAULT_MAINTENANCE_TITLE,
+        help_text="Heading shown on the maintenance page.",
+    )
+    message = models.TextField(
+        default=DEFAULT_MAINTENANCE_MESSAGE,
+        help_text="HTML body shown on the maintenance page.",
+    )
+
+    class Meta:
+        verbose_name = "Maintenance mode"
+        verbose_name_plural = "Maintenance mode"
+
+    def __str__(self):
+        return f"Maintenance mode ({'ON' if self.enabled else 'off'})"
+
+    def save(self, *args, **kwargs):
+        """Pin to the singleton row and write the state through to the cache
+        so an admin toggle takes effect on the very next request."""
+        self.pk = self.SINGLETON_PK
+        super().save(*args, **kwargs)
+        cache.set(self.CACHE_KEY, self._as_state(), timeout=None)
+
+    def _as_state(self) -> dict:
+        return {
+            "enabled": self.enabled,
+            "title": self.title,
+            "message": self.message,
+        }
+
+    @classmethod
+    def _default_state(cls) -> dict:
+        return {
+            "enabled": False,
+            "title": DEFAULT_MAINTENANCE_TITLE,
+            "message": DEFAULT_MAINTENANCE_MESSAGE,
+        }
+
+    @classmethod
+    def load(cls) -> "MaintenanceMode":
+        """Return the singleton row, creating it with defaults if absent."""
+        obj, _ = cls.objects.get_or_create(pk=cls.SINGLETON_PK)
+        return obj
+
+    @classmethod
+    def get_state(cls) -> dict:
+        """Return ``{"enabled", "title", "message"}`` from cache, falling back
+        to the database. Fails open to a disabled state on any error so a cache
+        or database outage can never take SSO down with it."""
+        try:
+            state = cache.get(cls.CACHE_KEY)
+            if state is None:
+                state = cls.load()._as_state()
+                cache.set(cls.CACHE_KEY, state, timeout=None)
+        except Exception:
+            logger.exception("MaintenanceMode.get_state failed; failing open")
+            return cls._default_state()
+        else:
+            return state
+
+    @classmethod
+    async def aget_state(cls) -> dict:
+        """Async variant of :meth:`get_state` for the ASGI broker."""
+        try:
+            state = await cache.aget(cls.CACHE_KEY)
+            if state is None:
+                obj = await sync_to_async(cls.load)()
+                state = obj._as_state()
+                await cache.aset(cls.CACHE_KEY, state, timeout=None)
+        except Exception:
+            logger.exception("MaintenanceMode.aget_state failed; failing open")
+            return cls._default_state()
+        else:
+            return state
+
+    @classmethod
+    def is_active(cls) -> bool:
+        """Whether maintenance mode is currently on (fails open to False)."""
+        return bool(cls.get_state().get("enabled"))
+
+    @classmethod
+    async def ais_active(cls) -> bool:
+        """Async variant of :meth:`is_active` for the ASGI broker."""
+        return bool((await cls.aget_state()).get("enabled"))
 
 
 class ReservedUsername(models.Model):

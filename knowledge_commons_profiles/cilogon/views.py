@@ -48,6 +48,7 @@ from django.views.decorators.http import require_http_methods
 
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
+from knowledge_commons_profiles.cilogon.models import MaintenanceMode
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import ORCIDHandledToken
@@ -78,6 +79,7 @@ from knowledge_commons_profiles.cilogon.reserved_usernames import (
 )
 from knowledge_commons_profiles.cilogon.timing import TimingCollector
 from knowledge_commons_profiles.cilogon.timing import apply_header
+from knowledge_commons_profiles.common.middleware import maintenance_block
 from knowledge_commons_profiles.common.profiles_email import normalize_email
 from knowledge_commons_profiles.common.profiles_email import (
     sanitize_email_for_dev,
@@ -134,6 +136,12 @@ def cilogon_login(request):
 
     :param request: the request
     """
+    # In maintenance mode, block new logins with the customisable page
+    # (staff bypass so they can still sign in and fix things).
+    maintenance = maintenance_block(request)
+    if maintenance is not None:
+        return maintenance
+
     return_to = request.GET.get("return_to", "")
 
     # If user is already authenticated and has a valid return_to,
@@ -193,6 +201,10 @@ def callback(request):
     The callback view for OAuth
     :param request: request
     """
+    # In maintenance mode, don't let an in-flight login complete.
+    maintenance = maintenance_block(request)
+    if maintenance is not None:
+        return maintenance
 
     # Forward the code to the next URL if:
     # 1. There's a valid forwarding URL in the state
@@ -331,6 +343,17 @@ def verify_broker_nonce(request):
     return response
 
 
+def _no_session_url(return_to: str, final_redirect: str) -> str:
+    """Build the return_to URL carrying ``no_session=1`` (the "not logged in"
+    broker contract). Kept as a helper so the normal not-logged-in path and the
+    maintenance-mode short-circuit emit exactly the same URL."""
+    separator = "&" if "?" in return_to else "?"
+    no_session_url = f"{return_to}{separator}no_session=1"
+    if final_redirect:
+        no_session_url += f"&final_redirect={urlquote(final_redirect, safe='')}"
+    return no_session_url
+
+
 @require_http_methods(["GET"])
 def silent_login(request):
     """
@@ -361,6 +384,14 @@ def silent_login(request):
         response["Cache-Control"] = "no-store"
         return response
 
+    if MaintenanceMode.is_active():
+        # Read-only maintenance: report "not logged in" so dependent apps
+        # bounce back to themselves cleanly rather than crashing. No token is
+        # minted and no session state is touched.
+        response = redirect(_no_session_url(return_to, final_redirect))
+        response["Cache-Control"] = "no-store"
+        return response
+
     if request.user.is_authenticated:
         userinfo = request.session.get("oidc_userinfo", {})
         if userinfo and userinfo.get("sub"):
@@ -384,13 +415,7 @@ def silent_login(request):
                     apply_header(response, timings)
                     return response
 
-    separator = "&" if "?" in return_to else "?"
-    no_session_url = f"{return_to}{separator}no_session=1"
-    if final_redirect:
-        no_session_url += (
-            f"&final_redirect={urlquote(final_redirect, safe='')}"
-        )
-    response = redirect(no_session_url)
+    response = redirect(_no_session_url(return_to, final_redirect))
     response["Cache-Control"] = "no-store"
     apply_header(response, timings)
     return response
