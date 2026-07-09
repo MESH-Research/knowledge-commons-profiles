@@ -2211,3 +2211,11 @@ div {
     margin-left: 0 !important;
     padding: 0 !important;
   }
+
+/* Maintenance-mode banner (shown site-wide when maintenance mode is on) */
+.maintenance-banner {
+  background: #8a1c1c;
+  color: #fff;
+  padding: 0.6em 1em;
+  text-align: center;
+}

@@ -7,11 +7,23 @@ from urllib.parse import urlunparse
 
 from django.conf import settings
 
+from knowledge_commons_profiles.cilogon.models import MaintenanceMode
 from knowledge_commons_profiles.newprofile.network_urls import network_domain
 
 
 def cc_search(request):
     return {"CC_SEARCH_URL": settings.CC_SEARCH_URL}
+
+
+def maintenance(request):
+    """Expose the current maintenance state to every template so a banner can
+    tell logged-in users why editing is disabled while they browse read-only."""
+    state = MaintenanceMode.get_state()
+    return {
+        "MAINTENANCE_ACTIVE": bool(state.get("enabled")),
+        "MAINTENANCE_TITLE": state.get("title", ""),
+        "MAINTENANCE_MESSAGE": state.get("message", ""),
+    }
 
 
 def _rewrite_domain(url, default_domain, target_domain):

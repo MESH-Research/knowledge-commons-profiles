@@ -11,6 +11,7 @@ from django.urls import path
 from django.urls import reverse
 
 from knowledge_commons_profiles.cilogon.models import EmailVerification
+from knowledge_commons_profiles.cilogon.models import MaintenanceMode
 from knowledge_commons_profiles.cilogon.models import ReservedUsername
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.reserved_usernames import import_terms
@@ -42,6 +43,20 @@ class SubAssocationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EmailVerification)
+
+
+@admin.register(MaintenanceMode)
+class MaintenanceModeAdmin(admin.ModelAdmin):
+    """Singleton: the one row is edited in place; it cannot be added to or
+    deleted so the toggle and its message always have a stable home."""
+
+    list_display = ["__str__", "enabled"]
+
+    def has_add_permission(self, request):
+        return not MaintenanceMode.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(ReservedUsername)

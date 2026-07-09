@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ maintenance.title }}
+{% endblock title %}
+{% block maintenance_banner %}{% endblock maintenance_banner %}
+{% block content %}
+  <div class="container" id="main_container">
+    <div class="row">
+      <div class="col-12 col-md-8 col-lg-6 mx-auto py-4">
+        <h1>{{ maintenance.title }}</h1>
+        <div class="page-body my-3">
+          {{ maintenance.message|safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
