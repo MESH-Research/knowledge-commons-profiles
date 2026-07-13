@@ -1,3 +1,13 @@
+## 4.46.0 (2026-07-13)
+
+### Feat
+
+- **idms**: add read-only maintenance mode for the identity broker
+
+### Fix
+
+- **works**: handle Invenio 13 dict-shaped thumbnails links
+
 ## 4.45.0 (2026-07-09)
 
 ### Feat
