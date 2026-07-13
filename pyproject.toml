@@ -218,7 +218,7 @@ production = [
     "django-anymail[amazon-ses]==15.0",
     # IDMS async broker service (config.settings.idms): ASGI server + a bounded
     # psycopg connection pool so the broker cannot exhaust Postgres under load.
-    "uvicorn[standard]==0.42.0",
+    "uvicorn[standard]==0.51.0",
     "psycopg-pool==3.2.6",
 ]
 dev = [
