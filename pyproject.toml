@@ -164,7 +164,7 @@ dependencies = [
     "Pillow==12.1.1",
     "argon2-cffi==25.1.0",
     "redis==7.4.0",
-    "hiredis==3.3.1",
+    "hiredis==3.4.0",
     # Django
     "django==6.0.7",
     "django-environ==0.14.0",
@@ -187,8 +187,8 @@ dependencies = [
     # Management commands
     "rich==14.3.3",
     "sqloxide==0.61.1",
-    "smart-open==7.6.0",
-    "pydantic==2.13.3",
+    "smart-open==8.0.0",
+    "pydantic==2.13.4",
     "httpx==0.28.1",
     "tenacity==9.1.4",
     "pandas==3.0.3",
@@ -213,7 +213,7 @@ production = [
     "gunicorn==26.0.0",
     "psycopg[c]==3.3.3",
     "Collectfasta==3.3.3",
-    "sentry-sdk==2.63.0",
+    "sentry-sdk==2.65.0",
     "django-storages[s3]==1.14.6",
     "django-anymail[amazon-ses]==15.0",
     # IDMS async broker service (config.settings.idms): ASGI server + a bounded
@@ -231,7 +231,7 @@ local = [
     "psycopg[c]==3.3.3",
     # Testing
     "mypy==1.20.2",
-    "django-stubs[compatible-mypy]==6.0.3",
+    "django-stubs[compatible-mypy]==6.0.6",
     "pytest==9.1.0",
     "pytest-sugar==1.1.1",
     # Documentation
