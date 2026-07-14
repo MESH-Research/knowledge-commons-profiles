@@ -213,7 +213,7 @@ production = [
     "gunicorn==26.0.0",
     "psycopg[c]==3.3.3",
     "Collectfasta==3.3.3",
-    "sentry-sdk==2.63.0",
+    "sentry-sdk==2.65.0",
     "django-storages[s3]==1.14.6",
     "django-anymail[amazon-ses]==15.0",
     # IDMS async broker service (config.settings.idms): ASGI server + a bounded
