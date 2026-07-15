@@ -240,7 +240,7 @@ local = [
     # Code quality
     "ruff==0.15.21",
     "coverage==7.14.2",
-    "djlint==1.40.5",
+    "djlint==1.40.6",
     "pre-commit==4.6.0",
     # Django dev tools
     "factory-boy==3.3.3",
