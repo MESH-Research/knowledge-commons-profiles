@@ -244,7 +244,7 @@ local = [
     "pre-commit==4.6.0",
     # Django dev tools
     "factory-boy==3.3.3",
-    "django-debug-toolbar==6.3.0",
+    "django-debug-toolbar==7.0.0",
     "django-extensions==4.1",
     "django-coverage-plugin==3.2.2",
     "pytest-django==4.12.0",
