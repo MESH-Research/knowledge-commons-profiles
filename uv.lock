@@ -2137,7 +2137,7 @@ dev = [
     { name = "django-storages", extras = ["s3"], specifier = "==1.14.6" },
     { name = "gunicorn", specifier = "==26.0.0" },
     { name = "psycopg", extras = ["c"], specifier = "==3.3.3" },
-    { name = "psycopg-pool", specifier = "==3.2.6" },
+    { name = "psycopg-pool", specifier = "==3.3.1" },
     { name = "sentry-sdk", specifier = "==2.65.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.51.0" },
 ]
@@ -2159,7 +2159,7 @@ local = [
     { name = "mypy", specifier = "==1.20.2" },
     { name = "pre-commit", specifier = "==4.6.0" },
     { name = "psycopg", extras = ["c"], specifier = "==3.3.3" },
-    { name = "psycopg-pool", specifier = "==3.2.6" },
+    { name = "psycopg-pool", specifier = "==3.3.1" },
     { name = "pytest", specifier = "==9.1.0" },
     { name = "pytest-django", specifier = "==4.12.0" },
     { name = "pytest-sugar", specifier = "==1.1.1" },
@@ -2178,7 +2178,7 @@ production = [
     { name = "django-storages", extras = ["s3"], specifier = "==1.14.6" },
     { name = "gunicorn", specifier = "==26.0.0" },
     { name = "psycopg", extras = ["c"], specifier = "==3.3.3" },
-    { name = "psycopg-pool", specifier = "==3.2.6" },
+    { name = "psycopg-pool", specifier = "==3.3.1" },
     { name = "sentry-sdk", specifier = "==2.65.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.51.0" },
 ]
@@ -2584,14 +2584,14 @@ sdist = { url = "https://files.pythonhosted.org/packages/cb/a0/8feb0ca8c7c20a8b9
 
 [[package]]
 name = "psycopg-pool"
-version = "3.2.6"
+version = "3.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cf/13/1e7850bb2c69a63267c3dbf37387d3f71a00fd0e2fa55c5db14d64ba1af4/psycopg_pool-3.2.6.tar.gz", hash = "sha256:0f92a7817719517212fbfe2fd58b8c35c1850cdd2a80d36b581ba2085d9148e5", size = 29770, upload-time = "2025-02-26T12:03:47.129Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/82/7a23d26039827ecd4ebe93905651029ddd307c5182ad59296dfb6f67b528/psycopg_pool-3.3.1.tar.gz", hash = "sha256:b10b10b7a175d5cc1592147dc5b7eec8a9e0834eb3ed2c4a92c858e2f51eb63c", size = 31661, upload-time = "2026-05-01T23:31:59.809Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/fd/4feb52a55c1a4bd748f2acaed1903ab54a723c47f6d0242780f4d97104d4/psycopg_pool-3.2.6-py3-none-any.whl", hash = "sha256:5887318a9f6af906d041a0b1dc1c60f8f0dda8340c2572b74e10907b51ed5da7", size = 38252, upload-time = "2025-02-26T12:03:45.073Z" },
+    { url = "https://files.pythonhosted.org/packages/37/ed/89c2c620af0e1660354cd8aabf9f5b21f911597ce22acb37c805d6c86bc8/psycopg_pool-3.3.1-py3-none-any.whl", hash = "sha256:2af5b432941c4c9ad5c87b3fa410aec910ec8f7c122855897983a06c45f2e4b5", size = 40023, upload-time = "2026-05-01T23:31:53.136Z" },
 ]
 
 [[package]]

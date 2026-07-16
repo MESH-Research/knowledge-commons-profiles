@@ -219,7 +219,7 @@ production = [
     # IDMS async broker service (config.settings.idms): ASGI server + a bounded
     # psycopg connection pool so the broker cannot exhaust Postgres under load.
     "uvicorn[standard]==0.51.0",
-    "psycopg-pool==3.2.6",
+    "psycopg-pool==3.3.1",
 ]
 dev = [
     {include-group = "production"},
