@@ -1,3 +1,9 @@
+## 4.47.0 (2026-07-21)
+
+### Feat
+
+- **cilogon**: add per-network taglines to open registration
+
 ## 4.46.0 (2026-07-13)
 
 ### Feat
