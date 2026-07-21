@@ -40,7 +40,7 @@
         <div>
           <ul>
             {% for membership in memberships %}
-              <li>{{ membership }} {% if membership in open_networks %} <form class="inline-form" action="{% url 'self_leave_network' username=profile.username network=membership %}" method="post" enctype="multipart/form-data">{% csrf_token %}(<input onclick="return confirm('Are you sure you want to leave the network \'{{ membership }}\'?');" type="submit" value="leave" class="link-button" /><input type="hidden" value="{{ membership }}" id="membership_to_leave" name="membership_to_leave" />)</form>{% endif %}</li>
+              <li>{{ membership.1 }} {% if membership.0 in open_networks %} <form class="inline-form" action="{% url 'self_leave_network' username=profile.username network=membership.0 %}" method="post" enctype="multipart/form-data">{% csrf_token %}(<input onclick="return confirm('Are you sure you want to leave the network \'{{ membership.1 }}\'?');" type="submit" value="leave" class="link-button" /><input type="hidden" value="{{ membership.0 }}" id="membership_to_leave" name="membership_to_leave" />)</form>{% endif %}</li>
             {% endfor %}
           </ul>
         <p>If this list is not correct, please either add an email below that corresponds to a membership record at the societies, or send an email requesting help to <a href="mailto:hello@hcommons.org">the KC support desk</a>.</p>

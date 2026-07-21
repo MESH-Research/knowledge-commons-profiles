@@ -95,6 +95,9 @@ from knowledge_commons_profiles.newprofile.mailchimp import (
 )
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
+from knowledge_commons_profiles.newprofile.views.members import (
+    resolve_network_display_name,
+)
 from knowledge_commons_profiles.pages.models import SitePage
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
@@ -717,10 +720,16 @@ def manage_login(request, username):
     if error_msg:
         msg = "This email address is already in use"
 
+    # pair each membership code with its human display name; the code is
+    # still needed for the leave action and the open-network check
+    memberships = [
+        (org, resolve_network_display_name(org)) for org in final_orgs
+    ]
+
     # build a context
     context = {
         "login_methods": subs,
-        "memberships": final_orgs,
+        "memberships": memberships,
         "profile": profile,
         "msg": msg,
         "networks": open_networks_user_not_enrolled,

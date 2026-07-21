@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory
 from django.test import TestCase
+from django.test import override_settings
 
 from knowledge_commons_profiles.cilogon.models import SubAssociation
 from knowledge_commons_profiles.cilogon.views import _make_email_primary
@@ -523,3 +524,61 @@ class TestRegisterCollectsNetworksWithTagline(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'name="network_EXNET"', response.content)
+
+
+class TestSettingsMembershipsDisplayName(TestCase):
+    """
+    The Network Memberships list on the settings page shows each
+    membership's human display name (no tagline), while the leave action
+    still targets the internal code.
+    """
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = User.objects.create_user("testuser", password="pw")
+        self.profile = Profile.objects.create(
+            username="testuser",
+            email="test@example.com",
+            role_overrides=[],
+        )
+
+    def _get(self):
+        request = self.factory.get("/members/testuser/settings/")
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        request.user = self.user
+        return request
+
+    @override_settings(
+        NETWORK_DISPLAY_NAMES={"exnet": "Example Network Display"},
+        OPEN_REGISTRATION_NETWORKS=[("EXNET", "Open Reg Name", "")],
+    )
+    @patch(
+        "knowledge_commons_profiles.cilogon.views._build_organizations_list",
+        return_value=["EXNET"],
+    )
+    def test_membership_shows_display_name(self, mock_orgs):
+        """A membership code is rendered as its display name in the list."""
+        from knowledge_commons_profiles.cilogon.views import manage_login
+
+        response = manage_login(self._get(), "testuser")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Example Network Display", response.content)
+
+    @override_settings(
+        NETWORK_DISPLAY_NAMES={"exnet": "Example Network Display"},
+        OPEN_REGISTRATION_NETWORKS=[("EXNET", "Open Reg Name", "")],
+    )
+    @patch(
+        "knowledge_commons_profiles.cilogon.views._build_organizations_list",
+        return_value=["EXNET"],
+    )
+    def test_leave_action_targets_code_not_display_name(self, mock_orgs):
+        """The leave action URL must use the code, not the display name."""
+        from knowledge_commons_profiles.cilogon.views import manage_login
+
+        response = manage_login(self._get(), "testuser")
+
+        self.assertIn(b"leave/EXNET/", response.content)
