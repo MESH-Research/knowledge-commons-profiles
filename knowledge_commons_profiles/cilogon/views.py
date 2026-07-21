@@ -1005,7 +1005,7 @@ def register(request):
         # Collect selected networks from the form
         selected_networks = [
             network_code
-            for network_code, _ in settings.OPEN_REGISTRATION_NETWORKS
+            for network_code, *_ in settings.OPEN_REGISTRATION_NETWORKS
             if request.POST.get(f"network_{network_code}")
         ]
 

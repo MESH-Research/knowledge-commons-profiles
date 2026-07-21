@@ -437,3 +437,89 @@ class TestMakeEmailPrimaryWordpressSync(TestCase):
         # Profile should still have been saved with the new primary
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.email, "secondary@example.com")
+
+
+class TestRegisterCollectsNetworksWithTagline(TestCase):
+    """
+    Open-registration networks carry a display name and a tagline
+    alongside their code. Registration must still enrol the user by the
+    network code regardless of the extra descriptive fields.
+    """
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def _post(self, data):
+        from django.contrib.messages.storage.fallback import FallbackStorage
+
+        request = self.factory.post("/register/", data=data)
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        request._messages = FallbackStorage(request)
+        request.user = MagicMock()
+        request.user.is_authenticated = False
+        return request
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_secure_userinfo",
+        return_value=(True, {"sub": "sub-123", "email": "t@example.com"}),
+    )
+    def test_selected_network_written_to_role_overrides(self, mock_userinfo):
+        """A checked network enrols the user by its code, not its name."""
+        from knowledge_commons_profiles.cilogon.views import register
+
+        networks = [
+            ("EXNET", "Example Commons", "A descriptive tagline goes here"),
+        ]
+
+        request = self._post(
+            {
+                "username": "newmember",
+                "full_name": "New Member",
+                "email": "newmember@example.com",
+                "accept_terms": "on",
+                "network_EXNET": "on",
+            }
+        )
+
+        with patch(
+            "knowledge_commons_profiles.cilogon.views.settings"
+            ".OPEN_REGISTRATION_NETWORKS",
+            networks,
+        ):
+            register(request)
+
+        profile = Profile.objects.get(username="newmember")
+        self.assertEqual(profile.role_overrides, ["EXNET"])
+
+    @patch(
+        "knowledge_commons_profiles.cilogon.views.get_secure_userinfo",
+        return_value=(True, {"sub": "sub-123", "email": "t@example.com"}),
+    )
+    def test_registration_page_renders_network_with_tagline(
+        self, mock_userinfo
+    ):
+        """The registration form renders a checkbox for a 3-tuple network."""
+        from knowledge_commons_profiles.cilogon.views import register
+
+        networks = [
+            ("EXNET", "Example Commons", "A descriptive tagline goes here"),
+        ]
+
+        request = self.factory.get("/register/")
+        middleware = SessionMiddleware(get_response=MagicMock())
+        middleware.process_request(request)
+        request.session.save()
+        request.user = MagicMock()
+        request.user.is_authenticated = False
+
+        with patch(
+            "knowledge_commons_profiles.cilogon.views.settings"
+            ".OPEN_REGISTRATION_NETWORKS",
+            networks,
+        ):
+            response = register(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'name="network_EXNET"', response.content)

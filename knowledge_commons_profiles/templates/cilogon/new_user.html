@@ -59,14 +59,14 @@
               {% if open_networks %}
               <li>
                 <p class="mb-2">Optionally join one or more of these open networks:</p>
-                {% for network_code, network_name in open_networks %}
+                {% for network_code, network_name, network_tagline in open_networks %}
                   <div class="form-check network-check">
                     <input type="checkbox"
                            class="form-check-input network-check-input"
                            name="network_{{ network_code }}"
                            id="network_{{ network_code }}" />
                     <label class="form-check-label" for="network_{{ network_code }}">
-                      {{ network_name }}
+                      {{ network_name }}{% if network_tagline %}: {{ network_tagline }}{% endif %}
                     </label>
                   </div>
                 {% endfor %}

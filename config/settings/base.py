@@ -567,14 +567,25 @@ EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("UP", ["Association of American University Presses"]),
 ]
 
+# Each entry is (code, display_name, tagline). The code is the
+# load-bearing identifier written to Profile.role_overrides and synced
+# to WordPress/COmanage; it must never change. display_name and tagline
+# are shown only on the registration page and the /members/<user>/
+# settings/ open-registration section. The tagline may be empty.
 OPEN_REGISTRATION_NETWORKS = env(
     "OPEN_REGISTRATION_NETWORKS",
     default=[
         (
             "HASTAC",
             "Humanities, Arts, Science, and Technology Alliance and Collaboratory",
+            "",
         ),
-        ("STEMEd+", "STEM Ed+"),
+        (
+            "STEMEd+",
+            "STEMEd+ Commons",
+            "An open platform for individual researchers and communities "
+            "to organize projects, share knowledge, and expand access",
+        ),
     ],
 )
 
@@ -596,7 +607,7 @@ NETWORK_DISPLAY_NAMES = env.json(
             "Humanities, Arts, Science, and Technology "
             "Alliance and Collaboratory"
         ),
-        "stemed+": "STEM Ed+",
+        "stemed+": "STEMEd+ Commons",
     },
 )
 

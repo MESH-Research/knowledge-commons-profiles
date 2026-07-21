@@ -47,7 +47,7 @@
         {% if networks|length > 0 %}<p>Some networks have open registration on the Commons. Please click on any of the below to join a network:</p>{% endif %}
         <ul>
           {% for network in networks %}
-            <li><form class="inline-form" action="{% url 'self_join_network' username=profile.username network=network.0 %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="submit" value="{{ network.0 }} ({{ network.1 }})" class="link-button" /></form></li>
+            <li><form class="inline-form" action="{% url 'self_join_network' username=profile.username network=network.0 %}" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="submit" value="{{ network.1 }}{% if network.2 %}: {{ network.2 }}{% endif %}" class="link-button" /></form></li>
           {% endfor %}
         </ul>
         </div>
