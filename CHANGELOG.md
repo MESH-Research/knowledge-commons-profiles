@@ -1,3 +1,45 @@
+## 4.46.0 (2026-07-13)
+
+### Feat
+
+- **idms**: add read-only maintenance mode for the identity broker
+
+### Fix
+
+- **works**: handle Invenio 13 dict-shaped thumbnails links
+
+## 4.45.0 (2026-07-09)
+
+### Feat
+
+- **idms**: add read-only maintenance mode for the identity broker
+
+### Fix
+
+- **works**: handle Invenio 13 dict-shaped thumbnails links
+
+## 4.44.0 (2026-07-07)
+
+### Feat
+
+- **cilogon**: show reserved-username rejection inline on signup form
+- **cilogon**: add copy-paste import/export for reserved usernames
+- **cilogon**: add configurable reserved-username validation to signup
+
+### Fix
+
+- **migrations**: merge central_user_id leaf nodes after dev merge
+- **profile**: make central_user_id optional in forms
+- **migrations**: add state-only migration for WpTerm model
+- **api**: make GroupDetailSerializer URL network-aware
+- **profile**: make profile sidebar group links network-aware
+
+## 4.43.2 (2026-06-26)
+
+### Fix
+
+- **profile**: make central_user_id optional in forms
+
 ## 4.43.1 (2026-06-15)
 
 ### Fix
