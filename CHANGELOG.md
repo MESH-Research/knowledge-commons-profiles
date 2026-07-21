@@ -1,3 +1,9 @@
+## 4.48.0 (2026-07-21)
+
+### Feat
+
+- **cilogon**: show display names in settings network memberships list
+
 ## 4.47.0 (2026-07-21)
 
 ### Feat
