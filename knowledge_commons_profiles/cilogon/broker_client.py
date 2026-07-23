@@ -35,8 +35,12 @@ def is_broker_client_host(host: str) -> bool:
 
 
 def _hub_base() -> str:
-    """Return the https base URL of the hub (registered CILogon domain)."""
-    return f"https://{settings.CILOGON_REGISTERED_DOMAIN}"
+    """Return the https base URL of the profiles hub to delegate to."""
+    hub = (
+        getattr(settings, "BROKER_CLIENT_HUB", "")
+        or settings.CILOGON_REGISTERED_DOMAIN
+    )
+    return f"https://{hub}"
 
 
 def consumer_return_to(request) -> str:

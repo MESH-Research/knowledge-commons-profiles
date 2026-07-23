@@ -558,6 +558,14 @@ CILOGON_ACTUAL_DOMAIN = env("CILOGON_ACTUAL_DOMAIN", default="")
 # on any Commons domain propagates. Empty by default: the hub and its
 # network subdomains are not clients and behave exactly as before.
 BROKER_CLIENT_HOSTS = env.list("BROKER_CLIENT_HOSTS", default=[])
+# The profiles hub a broker-client host delegates authentication to: the
+# environment's own apex profiles host that holds the authoritative session
+# and the broker endpoints (prod: profile.hcommons.org; dev:
+# profile.hcommons-dev.org). Defaults to CILOGON_REGISTERED_DOMAIN, which is
+# correct wherever the registered domain IS the local hub, but must be set
+# explicitly when the two differ (e.g. an environment that proxies CILogon
+# through the production registered domain).
+BROKER_CLIENT_HUB = env("BROKER_CLIENT_HUB", default=CILOGON_REGISTERED_DOMAIN)
 # Marker cookie (host-only) recording that a silent-login check already ran,
 # so anonymous page views on a broker-client host don't redirect-loop to the
 # hub. Its TTL bounds how quickly a login made elsewhere is reflected here.

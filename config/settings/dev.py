@@ -24,14 +24,17 @@ ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
     "https://profile.hcommons-dev.org",
     "https://*.profile.hcommons-dev.org",
+    "https://profile.stemedplus.org",
 ]
 CSRF_ALLOWED_ORIGINS = [
     "https://profile.hcommons-dev.org",
     "https://*.profile.hcommons-dev.org",
+    "https://profile.stemedplus.org",
 ]
 CORS_ORIGINS_WHITELIST = [
     "https://profile.hcommons-dev.org",
     "https://*.profile.hcommons-dev.org",
+    "https://profile.stemedplus.org",
 ]
 
 # Consult NETWORK_DOMAIN_OVERRIDES with this environment's key
@@ -207,6 +210,8 @@ ALLOWED_CILOGON_FORWARDING_DOMAINS = [
     "lndo.site",
     "hcommons-staging.org",
     "hcommons-dev.org",
+    # broker-client satellite testing against dev
+    "stemedplus.org",
 ]
 
 # Forward prompt=login through CILogon so the social IdP re-authenticates
@@ -240,7 +245,9 @@ BROKER_REGISTERED_APPS = {
             "hcommons-dev.org",
             "localhost",
             "lndo.site",
-            "msucommons-dev.org"
+            "msucommons-dev.org",
+            # broker-client satellite testing against dev
+            "stemedplus.org",
         ],
     },
     "works": {
@@ -252,6 +259,8 @@ BROKER_REGISTERED_APPS = {
             "hcommons-dev.org",
             "localhost",
             "lndo.site",
+            # broker-client satellite testing against dev
+            "stemedplus.org",
         ],
     },
 }

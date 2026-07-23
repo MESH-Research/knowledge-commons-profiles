@@ -28,7 +28,10 @@ http:
         - web
       service: idms
     web-router:
-      rule: 'HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons-dev\.org$`)'
+      # profile.stemedplus.org is also matched so the broker-client
+      # satellite can be exercised against dev (point it at this ALB via
+      # a hosts-file entry); harmless when no traffic is routed there.
+      rule: 'HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons-dev\.org$`) || Host(`profile.stemedplus.org`)'
       entryPoints:
         - web
       middlewares:

@@ -29,6 +29,7 @@ CLIENT_HOST = "profile.stemedplus.org"
 @override_settings(
     ALLOWED_HOSTS=["*"],
     BROKER_CLIENT_HOSTS=[CLIENT_HOST],
+    BROKER_CLIENT_HUB="profile.hcommons.org",
     CILOGON_REGISTERED_DOMAIN="profile.hcommons.org",
     STATIC_API_BEARER="test-bearer-key-for-broker-tokens",
     BROKER_NONCE_TTL=60,
@@ -36,6 +37,18 @@ CLIENT_HOST = "profile.stemedplus.org"
 class BrokerClientHelperTests(TestCase):
     def _request(self, host=CLIENT_HOST, path="/", **params):
         return RequestFactory().get(path, data=params, HTTP_HOST=host)
+
+    @override_settings(
+        BROKER_CLIENT_HUB="profile.hcommons-dev.org",
+        CILOGON_REGISTERED_DOMAIN="profile.hcommons.org",
+    )
+    def test_hub_is_broker_client_hub_not_registered_domain(self):
+        # the satellite delegates to the environment's own hub, which may
+        # differ from the CILogon-registered domain (proxy environments)
+        url = broker_client.hub_login_url(self._request())
+        self.assertTrue(
+            url.startswith("https://profile.hcommons-dev.org/login/")
+        )
 
     def test_is_broker_client_host_true_for_configured_host(self):
         self.assertTrue(broker_client.is_broker_client_host(CLIENT_HOST))
@@ -261,6 +274,7 @@ class BrokerClientLoginViewTests(TestCase):
 @override_settings(
     ALLOWED_HOSTS=["*"],
     BROKER_CLIENT_HOSTS=[CLIENT_HOST],
+    BROKER_CLIENT_HUB="profile.hcommons.org",
     CILOGON_REGISTERED_DOMAIN="profile.hcommons.org",
 )
 class SatelliteLoginDelegationTests(TestCase):
