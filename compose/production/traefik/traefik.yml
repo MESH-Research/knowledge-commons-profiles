@@ -28,7 +28,7 @@ http:
         - web
       service: idms
     web-router:
-      rule: 'HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons\.org$`) || HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons-test\.org$`)'
+      rule: 'HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons\.org$`) || HostRegexp(`^([a-z0-9-]+\.)?profile\.hcommons-test\.org$`) || Host(`profile.stemedplus.org`)'
       entryPoints:
         - web
       middlewares:

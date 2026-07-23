@@ -26,18 +26,21 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.profile.hcommons.org",
     "https://profile.hcommons-test.org",
     "https://*.profile.hcommons-test.org",
+    "https://profile.stemedplus.org",
 ]
 CSRF_ALLOWED_ORIGINS = [
     "https://profile.hcommons.org",
     "https://*.profile.hcommons.org",
     "https://profile.hcommons-test.org",
     "https://*.profile.hcommons-test.org",
+    "https://profile.stemedplus.org",
 ]
 CORS_ORIGINS_WHITELIST = [
     "https://profile.hcommons.org",
     "https://*.profile.hcommons.org",
     "https://profile.hcommons-test.org",
     "https://*.profile.hcommons-test.org",
+    "https://profile.stemedplus.org",
 ]
 
 # Share the login session (and CSRF cookie) between the apex and the
