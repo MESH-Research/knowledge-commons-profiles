@@ -46,8 +46,14 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR ${APP_HOME}
 
-# Install all runtime system dependencies (superset of all environments)
+# Install all runtime system dependencies (superset of all environments).
+# build-essential is included so the entrypoint `uv sync --frozen` can
+# compile a source-only dependency (e.g. psycopg-c, which ships no wheels)
+# when the lockfile has drifted from the venv baked into this image, rather
+# than failing with "gcc: No such file or directory". libpq-dev/pkg-config
+# below provide the Postgres headers that compile needs.
 RUN apt-get update && apt-get install --no-install-recommends -y \
+  build-essential \
   libpq-dev \
   libmariadb-dev \
   libmariadb-dev-compat \
