@@ -213,7 +213,7 @@ def index_profile_in_cc_search(profile: Profile) -> CCSearchResponse | None:
                 f"https://socsci.hcommons.org/members/{profile.username}",
                 f"https://stem.hcommons.org/members/{profile.username}",
                 f"https://hastac.hcommons.org/members/{profile.username}",
-                f"https://stemedplus.hcommons.org/members/{profile.username}",
+                f"https://stemedplus.org/members/{profile.username}",
             ],
             thumbnail_url=get_profile_photo(profile),
             modified_dt=datetime.now(tz=UTC),

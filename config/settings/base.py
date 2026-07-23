@@ -665,6 +665,9 @@ NETWORK_DOMAIN_OVERRIDES = env.json(
             "dev": "msucommons-dev.org",
             "main": "commons.msu.edu",
         },
+        "stemedplus": {
+            "main": "stemedplus.org",
+        },
     },
 )
 
