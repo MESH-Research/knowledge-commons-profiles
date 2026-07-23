@@ -19,10 +19,13 @@ from django.db import OperationalError
 from django.db.models import Q
 from django.db.models.enums import IntEnum
 from django.http import HttpRequest
+from django.shortcuts import redirect
+from django.urls import Resolver404
 from django.urls import resolve
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
+from knowledge_commons_profiles.cilogon import broker_client
 from knowledge_commons_profiles.cilogon.models import TokenUserAgentAssociations
 from knowledge_commons_profiles.cilogon.oauth import delete_associations
 from knowledge_commons_profiles.cilogon.oauth import oauth
@@ -405,3 +408,76 @@ class GarbageCollectionMiddleware(MiddlewareMixin):
             sentry_sdk.capture_exception()
 
         return TokenUserAgentAssociations.objects.none()
+
+
+class BrokerClientSilentLoginMiddleware:
+    """
+    Reflect a login made on any other Commons domain onto a broker-client
+    host.
+
+    For an anonymous top-level GET navigation on a broker-client host that
+    has not yet been SSO-checked (no marker cookie), redirect once to the
+    hub's silent-login. The hub returns to the local consumer, which either
+    starts a local session (the user was logged in at the hub) or records a
+    no-session marker. The marker suppresses a redirect on every subsequent
+    page view until it expires. No-op on the hub, for authenticated users,
+    for non-GET or non-navigation (API/htmx/asset) requests, and on the
+    auth endpoints themselves (so it cannot loop).
+    """
+
+    # url_names that must never trigger a silent-login redirect
+    _SKIP_URL_NAMES = frozenset(
+        {
+            "broker_client_login",
+            "login",
+            "logout",
+            "oidc_callback",
+            "healthcheck",
+        }
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if self._should_check(request):
+            return redirect(
+                broker_client.hub_silent_login_url(
+                    request,
+                    final_redirect=self._current_url(request),
+                )
+            )
+        return self.get_response(request)
+
+    def _should_check(self, request) -> bool:
+        if request.method != "GET":
+            return False
+        if not broker_client.is_broker_client_host(request.get_host()):
+            return False
+        user = getattr(request, "user", None)
+        if user is not None and user.is_authenticated:
+            return False
+        if request.COOKIES.get(settings.BROKER_CLIENT_SSO_COOKIE):
+            return False
+        if not self._is_navigation(request):
+            return False
+        try:
+            url_name = resolve(request.path_info).url_name
+        except Resolver404:
+            url_name = None
+        return url_name not in self._SKIP_URL_NAMES
+
+    @staticmethod
+    def _is_navigation(request) -> bool:
+        # Only redirect real top-level HTML navigations; never API, htmx,
+        # or asset requests.
+        if request.headers.get("HX-Request"):
+            return False
+        mode = request.headers.get("Sec-Fetch-Mode")
+        if mode:
+            return mode == "navigate"
+        return "text/html" in request.headers.get("Accept", "")
+
+    @staticmethod
+    def _current_url(request) -> str:
+        return request.build_absolute_uri().replace("http://", "https://", 1)

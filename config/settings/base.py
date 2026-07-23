@@ -169,6 +169,9 @@ MIDDLEWARE = [
     "knowledge_commons_profiles.cilogon.middleware.GarbageCollectionMiddleware",
     "knowledge_commons_profiles.cilogon.middleware.AutoRefreshTokenMiddleware",
     "knowledge_commons_profiles.common.middleware.NetworkSubdomainMiddleware",
+    # After AuthenticationMiddleware so request.user is available; reflects a
+    # login from another domain onto broker-client hosts. Inert elsewhere.
+    "knowledge_commons_profiles.cilogon.middleware.BrokerClientSilentLoginMiddleware",
     "knowledge_commons_profiles.common.middleware.RequestMiddleware",
 ]
 
