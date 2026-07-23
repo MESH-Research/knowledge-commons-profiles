@@ -153,6 +153,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
 MIDDLEWARE = [
+    # First so its response phase runs last, after SessionMiddleware and
+    # CsrfViewMiddleware have set their cookies, letting it rewrite the
+    # cookie Domain per host (multi-registrable-domain instance).
+    "knowledge_commons_profiles.common.middleware.HostAwareCookieDomainMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -717,6 +721,16 @@ NETWORK_SUBDOMAIN_IGNORED = env.list(
 # "stemedplus". Consulted before the base-domain parsing so such hosts
 # scope /members/ to their network exactly like a subdomain.
 NETWORK_HOST_ALIASES = env.json("NETWORK_HOST_ALIASES", default={})
+
+# Per-host session/CSRF cookie domain overrides, keyed by registrable
+# domain (matched against the host and its subdomains). SESSION_COOKIE_DOMAIN
+# is a single value, but this instance answers hosts on more than one
+# registrable domain (e.g. profile.hcommons.org and profile.stemedplus.org);
+# a cookie scoped to one is rejected by the browser on the other. An entry
+# maps a domain to the cookie domain to use there; an empty string means a
+# host-only cookie (no Domain attribute). Hosts matching no entry keep the
+# global SESSION_COOKIE_DOMAIN. Default empty: a global no-op.
+COOKIE_DOMAIN_OVERRIDES = env.json("COOKIE_DOMAIN_OVERRIDES", default={})
 
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")
 MAILCHIMP_API_KEY = env("MAILCHIMP_API_KEY")

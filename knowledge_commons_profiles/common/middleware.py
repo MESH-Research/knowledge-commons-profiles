@@ -139,6 +139,65 @@ class RequestMiddleware(MiddlewareMixin):
         return response
 
 
+class HostAwareCookieDomainMiddleware:
+    """
+    Rewrite the session and CSRF cookie ``Domain`` per request host.
+
+    This instance answers hosts on more than one registrable domain, but
+    SESSION_COOKIE_DOMAIN is a single value: a cookie scoped to
+    ``.profile.hcommons.org`` is rejected by the browser on
+    ``profile.stemedplus.org``. For each host matching an entry in
+    ``COOKIE_DOMAIN_OVERRIDES`` (by registrable domain, subdomains
+    included) the session/CSRF cookie domain is replaced with the mapped
+    value; an empty string yields a host-only cookie. Hosts matching no
+    entry are left untouched, so the default (empty map) is a global
+    no-op. Placed first in MIDDLEWARE so its response phase runs after
+    SessionMiddleware/CsrfViewMiddleware have set their cookies.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        host = request.get_host().partition(":")[0].lower()
+        domain = self._domain_for_host(host)
+        if domain is None:
+            return response
+
+        for name in (
+            settings.SESSION_COOKIE_NAME,
+            settings.CSRF_COOKIE_NAME,
+        ):
+            morsel = response.cookies.get(name)
+            if morsel is not None:
+                # empty string yields a host-only cookie (Django omits the
+                # Domain attribute when it is falsy)
+                morsel["domain"] = domain
+
+        return response
+
+    @staticmethod
+    def _domain_for_host(host: str) -> str | None:
+        """Return the override cookie domain for ``host``, or None.
+
+        Matches the longest configured registrable domain that equals the
+        host or is a suffix of it, so the most specific entry wins.
+        """
+        overrides = getattr(settings, "COOKIE_DOMAIN_OVERRIDES", {})
+        best_domain = None
+        best_len = -1
+        for key, value in overrides.items():
+            key_lower = key.lower()
+            if (
+                host == key_lower or host.endswith("." + key_lower)
+            ) and len(key_lower) > best_len:
+                best_len = len(key_lower)
+                best_domain = value
+        return best_domain
+
+
 class NetworkSubdomainMiddleware:
     """
     Detect a network subdomain (e.g. stemedplus.profile.hcommons.org)
