@@ -43,9 +43,11 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from knowledge_commons_profiles.cilogon import broker_client
 from knowledge_commons_profiles.cilogon.forms import UploadCSVForm
 from knowledge_commons_profiles.cilogon.models import EmailVerification
 from knowledge_commons_profiles.cilogon.models import MaintenanceMode
@@ -144,6 +146,28 @@ def cilogon_login(request):
     maintenance = maintenance_block(request)
     if maintenance is not None:
         return maintenance
+
+    # A satellite host has no CILogon registration of its own: delegate to
+    # the hub, which authenticates (creating the authoritative hub session
+    # that propagates SSO to every domain) and returns a broker token to
+    # this host's consumer. The ``next`` page is carried through so the
+    # user lands back where they started.
+    if broker_client.is_broker_client_host(request.get_host()):
+        next_url = request.GET.get("next", "")
+        final_redirect = ""
+        if next_url:
+            candidate = request.build_absolute_uri(next_url).replace(
+                "http://", "https://", 1
+            )
+            if url_has_allowed_host_and_scheme(
+                candidate,
+                allowed_hosts={request.get_host()},
+                require_https=True,
+            ):
+                final_redirect = candidate
+        return redirect(
+            broker_client.hub_login_url(request, final_redirect=final_redirect)
+        )
 
     return_to = request.GET.get("return_to", "")
 
@@ -292,6 +316,63 @@ def callback(request):
 
     # no, no user. Redirect to the profile association page
     return redirect(reverse("associate"))
+
+
+def _safe_local_target(request, final_redirect: str) -> str:
+    """Return ``final_redirect`` when it is a safe URL on this host, else the
+    user's own profile page (guards against open redirects)."""
+    if final_redirect and url_has_allowed_host_and_scheme(
+        final_redirect,
+        allowed_hosts={request.get_host()},
+        require_https=True,
+    ):
+        return final_redirect
+    return reverse("my_profile")
+
+
+def broker_client_login(request):
+    """
+    Broker-token consumer for satellite Profiles hosts.
+
+    Completes a login delegated to the hub: verifies and one-time-consumes
+    the returned broker token, starts a host-only local session, and
+    redirects to the originally requested page. When the hub reports no
+    session (no token) the user simply proceeds anonymously. In every case
+    a short-lived marker cookie is set so anonymous page views do not
+    silently re-check the hub on every request.
+
+    Inert (404) on non broker-client hosts.
+    """
+    if not broker_client.is_broker_client_host(request.get_host()):
+        raise Http404
+
+    final_redirect = request.GET.get("final_redirect", "")
+    token = request.GET.get("broker_token", "")
+
+    payload = broker_client.consume_broker_token(token) if token else None
+    if payload:
+        userinfo = payload.get("userinfo", {})
+        sub_association = (
+            SubAssociation.objects.select_related("profile")
+            .filter(sub=userinfo.get("sub", ""))
+            .first()
+        )
+        if sub_association:
+            store_session_variables(
+                request, token=None, userinfo_input=userinfo
+            )
+            find_user_and_login(request, sub_association)
+
+    response = redirect(_safe_local_target(request, final_redirect))
+    response.set_cookie(
+        settings.BROKER_CLIENT_SSO_COOKIE,
+        "1",
+        max_age=settings.BROKER_CLIENT_SILENT_LOGIN_TTL,
+        secure=True,
+        httponly=True,
+        samesite="Lax",
+    )
+    return response
 
 
 @csrf_exempt

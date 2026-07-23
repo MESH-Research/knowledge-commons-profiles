@@ -62,6 +62,11 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path(settings.OIDC_CALLBACK, views.callback, name="oidc_callback"),
     path("associate/", views.association, name="associate"),
+    path(
+        "client-login/",
+        views.broker_client_login,
+        name="broker_client_login",
+    ),
     path("register/", views.register, name="user_registration"),
     path("confirm/", views.confirm, name="confirm"),
     path(

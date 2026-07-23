@@ -546,6 +546,23 @@ CILOGON_REGISTERED_DOMAIN = env(
 )
 CILOGON_ACTUAL_DOMAIN = env("CILOGON_ACTUAL_DOMAIN", default="")
 
+# Satellite Profiles hosts on their own registrable domain (e.g.
+# profile.stemedplus.org) that delegate authentication to the hub
+# (CILOGON_REGISTERED_DOMAIN) as a broker client, instead of running the
+# CILogon flow themselves: /login/ bounces to the hub, and the hub returns
+# a broker token that a local consumer turns into a host-only session. This
+# keeps the hub session (the SSO source of truth) authoritative so a login
+# on any Commons domain propagates. Empty by default: the hub and its
+# network subdomains are not clients and behave exactly as before.
+BROKER_CLIENT_HOSTS = env.list("BROKER_CLIENT_HOSTS", default=[])
+# Marker cookie (host-only) recording that a silent-login check already ran,
+# so anonymous page views on a broker-client host don't redirect-loop to the
+# hub. Its TTL bounds how quickly a login made elsewhere is reflected here.
+BROKER_CLIENT_SSO_COOKIE = "kc_sso_checked"
+BROKER_CLIENT_SILENT_LOGIN_TTL = env.int(
+    "BROKER_CLIENT_SILENT_LOGIN_TTL", default=300
+)
+
 MLA_API_KEY = env("MLA_API_KEY", default="")
 MLA_API_SECRET = env("MLA_API_SECRET", default="")
 MLA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
