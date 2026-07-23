@@ -217,3 +217,46 @@ class PathPrefixNetworkEnforcementTests(TestCase):
         Profile.objects.create(username="members", name="Members User")
         response = self.client.get("/members/members/")
         self.assertNotEqual(response.status_code, 404)
+
+
+@override_settings(
+    ALLOWED_HOSTS=["*"],
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+    NETWORK_SUBDOMAIN_BASE_DOMAINS=BASE_DOMAINS,
+    NETWORK_SUBDOMAIN_IGNORED=["www"],
+    NETWORK_HOST_ALIASES={"profile.stemedplus.org": "stemedplus"},
+)
+class NetworkHostAliasTests(TestCase):
+    """A dedicated per-network host (its own registrable domain) is
+    annotated with its network exactly like a <slug>.<base> subdomain."""
+
+    def _request_for(self, host):
+        request = RequestFactory().get("/", HTTP_HOST=host)
+        NetworkSubdomainMiddleware(lambda r: r)(request)
+        return request
+
+    def test_alias_host_sets_canonical_network(self):
+        request = self._request_for("profile.stemedplus.org")
+        self.assertEqual(request.network, "STEMED+")
+        self.assertEqual(request.network_slug, "stemedplus")
+
+    def test_alias_host_is_case_insensitive(self):
+        request = self._request_for("PROFILE.STEMEDPLUS.ORG")
+        self.assertEqual(request.network, "STEMED+")
+        self.assertEqual(request.network_slug, "stemedplus")
+
+    def test_alias_host_ignores_port(self):
+        request = self._request_for("profile.stemedplus.org:443")
+        self.assertEqual(request.network, "STEMED+")
+
+    def test_non_alias_host_on_same_domain_carries_no_network(self):
+        # only the exact configured host is an alias; the apex and other
+        # subdomains of the same registrable domain are not networks here
+        self.assertIsNone(self._request_for("stemedplus.org").network)
+        self.assertIsNone(self._request_for("www.stemedplus.org").network)
+
+    def test_existing_base_domain_parsing_still_works(self):
+        request = self._request_for("stemedplus.profile.hcommons.org")
+        self.assertEqual(request.network, "STEMED+")
+        self.assertEqual(request.network_slug, "stemedplus")

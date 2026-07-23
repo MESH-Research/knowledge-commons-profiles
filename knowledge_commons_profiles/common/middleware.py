@@ -207,6 +207,13 @@ class NetworkSubdomainMiddleware:
     def _slug_from_host(host: str) -> str | None:
         host = host.partition(":")[0].lower()
 
+        # A dedicated per-network host (its own registrable domain, e.g.
+        # profile.stemedplus.org) maps straight to its network slug,
+        # before the <slug>.<base> parsing below.
+        alias = getattr(settings, "NETWORK_HOST_ALIASES", {}).get(host)
+        if alias:
+            return alias
+
         for base in settings.NETWORK_SUBDOMAIN_BASE_DOMAINS:
             base_domain = base.lower()
             if host == base_domain:

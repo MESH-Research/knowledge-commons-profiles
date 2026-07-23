@@ -707,6 +707,14 @@ NETWORK_SUBDOMAIN_IGNORED = env.list(
     "NETWORK_SUBDOMAIN_IGNORED", default=["www"]
 )
 
+# Dedicated per-network profile hosts, mapping a full host to the
+# network slug it serves. Unlike NETWORK_SUBDOMAIN_BASE_DOMAINS (which
+# derives the network from a <slug>.<base> label), these are standalone
+# hosts on their own registrable domain, e.g. profile.stemedplus.org ->
+# "stemedplus". Consulted before the base-domain parsing so such hosts
+# scope /members/ to their network exactly like a subdomain.
+NETWORK_HOST_ALIASES = env.json("NETWORK_HOST_ALIASES", default={})
+
 MAILCHIMP_LIST_ID = env("MAILCHIMP_LIST_ID")
 MAILCHIMP_API_KEY = env("MAILCHIMP_API_KEY")
 MAILCHIMP_DC = env("MAILCHIMP_DC")
