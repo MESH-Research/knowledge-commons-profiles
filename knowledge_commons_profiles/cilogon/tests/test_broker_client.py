@@ -7,7 +7,10 @@ verifies and one-time-consumes the broker tokens the hub returns.
 """
 
 import time
+from importlib import import_module
+from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import RequestFactory
@@ -276,4 +279,59 @@ class SatelliteLoginDelegationTests(TestCase):
         self.assertIn(
             "final_redirect=https%3A%2F%2Fprofile.stemedplus.org%2Fmembers%2F",
             response["Location"],
+        )
+
+
+@override_settings(
+    ALLOWED_HOSTS=["*"],
+    BROKER_CLIENT_HOSTS=[CLIENT_HOST],
+    BROKER_CLIENT_SSO_COOKIE="kc_sso_checked",
+    LOGOUT_ENDPOINTS=[],
+)
+class LogoutPropagationTests(TestCase):
+    """Logout on any host tears the user's session down everywhere (shared
+    store) and clears the satellite silent-login marker."""
+
+    def test_logout_clears_the_silent_login_marker_cookie(self):
+        user = User.objects.create_user("carol", password="pw")
+        self.client.force_login(user)
+        self.client.cookies["kc_sso_checked"] = "1"
+        with patch(
+            "knowledge_commons_profiles.cilogon.views.app_logout"
+        ) as mock_logout:
+            from django.shortcuts import redirect
+
+            mock_logout.return_value = redirect("/")
+            response = self.client.post(
+                reverse("logout"), headers={"host": CLIENT_HOST}
+            )
+        self.assertIn("kc_sso_checked", response.cookies)
+        self.assertEqual(response.cookies["kc_sso_checked"].value, "")
+
+    def test_logout_removes_another_session_for_the_same_user(self):
+        # a user signed in on two hosts (hub + satellite) has two sessions
+        # in the shared store; logging out from one removes the other, so
+        # logout propagates across hosts.
+        user = User.objects.create_user("dave", password="pw")
+        engine = import_module(settings.SESSION_ENGINE)
+        other = engine.SessionStore()
+        other["_auth_user_id"] = str(user.pk)
+        other.save()
+        other_key = other.session_key
+        self.assertEqual(
+            engine.SessionStore(other_key).get("_auth_user_id"),
+            str(user.pk),
+        )
+
+        self.client.force_login(user)
+        with patch(
+            "knowledge_commons_profiles.cilogon.views.oauth.create_client"
+        ) as create_client:
+            create_client.return_value.server_metadata = {
+                "revocation_endpoint": "https://revoke.test"
+            }
+            self.client.post(reverse("logout"), headers={"host": CLIENT_HOST})
+
+        self.assertIsNone(
+            engine.SessionStore(other_key).get("_auth_user_id")
         )

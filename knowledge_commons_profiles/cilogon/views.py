@@ -676,9 +676,20 @@ def logout_view(request):
 
     Restricts logout to authenticated POST requests so that browser
     prefetch, link-preview crawlers and drive-by GETs cannot trigger the
-    full logout pipeline. Delegates the actual work to app_logout().
+    full logout pipeline. Delegates the actual work to app_logout(), which
+    revokes tokens, notifies the logout endpoints and deletes every session
+    the user holds in the shared store (so a logout on any host, including a
+    broker-client satellite, propagates to all the others).
+
+    Also clears the broker-client silent-login marker so a satellite host
+    re-checks the hub on the next page view instead of waiting for the
+    marker to expire — reflecting this logout, and any later login made
+    elsewhere, promptly.
     """
-    return app_logout(request)
+    response = app_logout(request)
+    if response is not None:
+        response.delete_cookie(settings.BROKER_CLIENT_SSO_COOKIE)
+    return response
 
 
 @staff_member_required
