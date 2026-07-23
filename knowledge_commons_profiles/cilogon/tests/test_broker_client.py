@@ -195,7 +195,9 @@ class BrokerClientLoginViewTests(TestCase):
         self.assertIsNone(self.client.session.get("_auth_user_id"))
         self.assertIn("kc_sso_checked", response.cookies)
 
-    def test_safe_final_redirect_is_honoured(self):
+    def test_safe_final_redirect_from_token_is_honoured(self):
+        # on a successful login the onward page rides inside the token,
+        # not as a query param
         token, payload = _make_token(
             sub=self.sub,
             final_redirect=f"https://{CLIENT_HOST}/members/alice/",
@@ -203,14 +205,26 @@ class BrokerClientLoginViewTests(TestCase):
         self._store_nonce(payload["nonce"])
         response = self.client.get(
             reverse("broker_client_login"),
-            data={
-                "broker_token": token,
-                "final_redirect": f"https://{CLIENT_HOST}/members/alice/",
-            },
-            headers={"host": CLIENT_HOST}
+            data={"broker_token": token},
+            headers={"host": CLIENT_HOST},
         )
         self.assertEqual(
             response["Location"], f"https://{CLIENT_HOST}/members/alice/"
+        )
+
+    def test_no_session_final_redirect_from_query_is_honoured(self):
+        # the no-session case (no token) carries the onward page as a query
+        # param
+        response = self.client.get(
+            reverse("broker_client_login"),
+            data={
+                "no_session": "1",
+                "final_redirect": f"https://{CLIENT_HOST}/members/",
+            },
+            headers={"host": CLIENT_HOST},
+        )
+        self.assertEqual(
+            response["Location"], f"https://{CLIENT_HOST}/members/"
         )
 
     def test_offsite_final_redirect_is_rejected(self):
@@ -218,6 +232,18 @@ class BrokerClientLoginViewTests(TestCase):
             reverse("broker_client_login"),
             data={"final_redirect": "https://evil.example/steal"},
             headers={"host": CLIENT_HOST}
+        )
+        self.assertNotIn("evil.example", response["Location"])
+
+    def test_offsite_final_redirect_in_token_is_rejected(self):
+        token, payload = _make_token(
+            sub=self.sub, final_redirect="https://evil.example/steal"
+        )
+        self._store_nonce(payload["nonce"])
+        response = self.client.get(
+            reverse("broker_client_login"),
+            data={"broker_token": token},
+            headers={"host": CLIENT_HOST},
         )
         self.assertNotIn("evil.example", response["Location"])
 

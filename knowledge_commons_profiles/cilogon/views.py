@@ -346,11 +346,13 @@ def broker_client_login(request):
     if not broker_client.is_broker_client_host(request.get_host()):
         raise Http404
 
-    final_redirect = request.GET.get("final_redirect", "")
     token = request.GET.get("broker_token", "")
-
     payload = broker_client.consume_broker_token(token) if token else None
+
     if payload:
+        # On a successful token the hub carries the onward page inside the
+        # encrypted payload; the no-session case carries it as a query param.
+        final_redirect = payload.get("final_redirect", "")
         userinfo = payload.get("userinfo", {})
         sub_association = (
             SubAssociation.objects.select_related("profile")
@@ -362,6 +364,8 @@ def broker_client_login(request):
                 request, token=None, userinfo_input=userinfo
             )
             find_user_and_login(request, sub_association)
+    else:
+        final_redirect = request.GET.get("final_redirect", "")
 
     response = redirect(_safe_local_target(request, final_redirect))
     response.set_cookie(
