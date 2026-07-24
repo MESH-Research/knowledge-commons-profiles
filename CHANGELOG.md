@@ -1,3 +1,9 @@
+## 4.49.1 (2026-07-24)
+
+### Fix
+
+- **urls**: add handling of /members/me/
+
 ## 4.49.0 (2026-07-24)
 
 ### Feat
