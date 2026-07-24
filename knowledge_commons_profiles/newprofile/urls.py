@@ -141,6 +141,7 @@ members_patterns = [
 
 urlpatterns = [
     path("my-profile/", my_profile, name="my_profile"),
+    path("members/me/", my_profile, name="my_profile_buddypress"),
     path("edit-profile/", edit_profile, name="edit_profile"),
     path(
         "edit-profile/<str:username>/makesuperuser/",
