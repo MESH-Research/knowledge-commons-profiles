@@ -1,3 +1,20 @@
+## 4.49.0 (2026-07-24)
+
+### Feat
+
+- **cilogon**: make broker-client hub configurable; enable dev testing
+- **cilogon**: propagate logout to broker-client satellite hosts
+- **cilogon**: reflect cross-domain logins on satellite hosts
+- **cilogon**: broker-client login for satellite profile hosts
+- **cookies**: host-aware session/CSRF cookie domain
+- **stemedplus**: point StemEd+ links at stemedplus.org
+- **members**: scope directory on dedicated per-network profile hosts
+
+### Fix
+
+- **docker**: install build-essential in the base run stage
+- **cilogon**: read broker-client final_redirect from the token payload
+
 ## 4.48.0 (2026-07-21)
 
 ### Feat
