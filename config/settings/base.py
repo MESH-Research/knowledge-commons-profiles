@@ -666,7 +666,8 @@ SYNC_HOURS = env.int(
     "SYNC_HOURS", 24
 )  # hours before syncs are considered stale
 
-CC_SEARCH_URL = env("CC_SEARCH_URL", default="https://search.hcommons.org/v1/")
+# we use an http default because traffic is routed over the internal network
+CC_SEARCH_URL = env("CC_SEARCH_URL", default="http://search.hcommons.org/v1/")
 
 # for now, the ADMIN KEY is used in place of the API KEY
 CC_SEARCH_API_KEY = env("CC_SEARCH_API_KEY", default="")
