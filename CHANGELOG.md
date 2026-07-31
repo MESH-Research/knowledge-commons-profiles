@@ -1,3 +1,9 @@
+## 4.49.3 (2026-07-31)
+
+### Fix
+
+- **members**: apply search filter on network-scoped member listings
+
 ## 4.49.2 (2026-07-29)
 
 ### Fix
