@@ -160,6 +160,10 @@ def network_members(request, network_name):
         msg = f"Unknown network: {network_name}"
         raise Http404(msg)
 
+    # the members search box posts here too (directly on the
+    # /network/ mount, and via people_by_username on network hosts)
+    search = request.POST.get("username", "").strip()
+
     candidates = (
         Profile.objects.filter(name__isnull=False)
         .exclude(name__exact="")
@@ -178,6 +182,11 @@ def network_members(request, network_name):
         )
         .order_by("username", "id")
     )
+
+    if search:
+        candidates = candidates.filter(
+            Q(username__icontains=search) | Q(name__icontains=search)
+        )
 
     rows_all = [
         profile
