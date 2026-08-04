@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  <p>
+    Enter a comma-separated list of usernames, then choose whether to award
+    this badge to them or remove it from them.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <div>
+      <textarea name="usernames"
+                rows="6"
+                cols="80"
+                placeholder="username1, username2, username3"></textarea>
+    </div>
+    <div class="mass-award-actions">
+      <label>
+        <input type="radio" name="action" value="award" checked />
+        Award badge
+      </label>
+      <label>
+        <input type="radio" name="action" value="remove" />
+        Remove badge
+      </label>
+    </div>
+    <input type="submit" class="default" value="Apply" />
+  </form>
+{% endblock content %}

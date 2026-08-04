@@ -499,6 +499,7 @@ class Profile(models.Model):
     show_mastodon_feed = models.BooleanField(default=True)
     show_memberships = models.BooleanField(default=True)
     show_recent_activity = models.BooleanField(default=True)
+    show_badges = models.BooleanField(default=True)
 
     left_order = models.CharField(max_length=255, blank=True, null=True)
     right_order = models.CharField(max_length=255, blank=True, null=True)
@@ -606,6 +607,73 @@ class AcademicInterest(models.Model):
             str: The text of the academic interest.
         """
         return str(self.text)
+
+
+def badge_image_path(instance, filename):
+    """
+    Generate the upload path for badge images, stored under badges/.
+    """
+    return f"badges/{filename}"
+
+
+class Badge(models.Model):
+    """
+    A staff-managed badge that can be awarded to profiles.
+    """
+
+    title = models.CharField(max_length=255)
+    alt_text = models.TextField(
+        help_text="Accessible description used as the image alt text",
+    )
+    image = models.ImageField(upload_to=badge_image_path)
+    order = models.IntegerField(default=0, db_index=True)
+    profiles = models.ManyToManyField(
+        "Profile",
+        through="ProfileBadge",
+        related_name="badges",
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["order", "title"]
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the Badge model instance
+        as a string.
+
+        Returns:
+            str: The title of the badge.
+        """
+        return str(self.title)
+
+
+class ProfileBadge(models.Model):
+    """
+    The award of a Badge to a Profile.
+    """
+
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["badge", "profile"],
+                name="unique_badge_per_profile",
+            ),
+        ]
+
+    def __str__(self):
+        """
+        Return a human-readable representation of the ProfileBadge model
+        instance as a string.
+
+        Returns:
+            str: The badge title and profile username.
+        """
+        return f"{self.badge.title} awarded to {self.profile.username}"
 
 
 class WpBpGroupMember(models.Model):

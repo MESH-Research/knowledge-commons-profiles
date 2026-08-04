@@ -182,6 +182,7 @@ class ProfileForm(forms.ModelForm):
             "show_recent_activity",
             "show_memberships",
             "show_commons_sites",
+            "show_badges",
             "academic_interests",
             "reference_style",
         ]
@@ -278,6 +279,12 @@ class ProfileForm(forms.ModelForm):
                 },
             ),
             "show_academic_interests": forms.CheckboxInput(
+                attrs={
+                    "style": "display: inline-block; float:right; "
+                    "margin-top:-4em;"
+                },
+            ),
+            "show_badges": forms.CheckboxInput(
                 attrs={
                     "style": "display: inline-block; float:right; "
                     "margin-top:-4em;"

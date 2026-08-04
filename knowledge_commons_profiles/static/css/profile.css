@@ -635,6 +635,19 @@
             color: var(--text-color);
         }
 
+        .profile-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .profile-badge-image {
+            width: 90px;
+            height: 90px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
         .interests-list {
             list-style: none;
         }
