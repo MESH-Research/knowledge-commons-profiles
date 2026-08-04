@@ -48,13 +48,12 @@ seeded rows.
   changes.
 - `"badges"` is added at the head of `settings.PROFILE_FIELDS_RIGHT`.
 - `process_orders` currently appends allowed-but-unsaved section ids to the
-  end of a user's saved order. Badges must arrive *first* for existing users
-  too, so `process_orders` prepends missing right-column ids that are declared
-  before any saved item (concretely: missing ids keep their settings-list
-  position relative to the saved items — implemented as: missing ids that
-  precede all saved ids in the settings list are prepended, the rest appended
-  as today). Once a user drags the box, their saved order includes `badges`
-  and is honoured verbatim.
+  end of a user's saved order, and existing tests pin that behaviour for
+  ordinary sections. Badges must arrive *first* for existing users too, so
+  `process_orders` special-cases `badges`: when it is absent from a user's
+  saved right-hand order it is moved to the front instead of appended. Once
+  a user drags the box, their saved order includes `badges` and is honoured
+  verbatim.
 
 ## Admin
 
