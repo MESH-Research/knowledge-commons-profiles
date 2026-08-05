@@ -258,7 +258,7 @@ loadtest = [
     #   uv sync --group loadtest
     # The 2.4.1 stable release pins django<6.0; this project is on django 6,
     # so we use the latest published dev release that allows it.
-    "django-prometheus==2.6.0.dev1",
+    "django-prometheus==2.6.0.dev2",
 ]
 
 [tool.commitizen]

@@ -918,15 +918,15 @@ wheels = [
 
 [[package]]
 name = "django-prometheus"
-version = "2.6.0.dev1"
+version = "2.6.0.dev2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "prometheus-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/67/1deb93ebd2cfa2393d2d0069cb8d71ccfe7ce63307d4e0260a4fea130c0f/django_prometheus-2.6.0.dev1.tar.gz", hash = "sha256:e6d8d92152c7b55c00dd4ad749d10348ec0ea932cfad52f36683a5d70161229b", size = 26490, upload-time = "2026-06-03T17:53:19.126Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/f7/0c62265f6369bf9fe865105207a19716210f0c69db5d84167b777ea6d9f0/django_prometheus-2.6.0.dev2.tar.gz", hash = "sha256:8b46ebd034f3dcaa9427fb3f1267c045b48872f39a792d9491e9d9ad6ac2cc25", size = 26612, upload-time = "2026-06-09T15:10:23.577Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/2a/578db9f91e3fa3c7ab6a9fe4d54cfef76049006533a65e7bbaeca1cc02e5/django_prometheus-2.6.0.dev1-py2.py3-none-any.whl", hash = "sha256:5e0498b26b79fbbb644845124edaacab3ce8f0ae7adbbc156a731b4df3558577", size = 31857, upload-time = "2026-06-03T17:53:17.669Z" },
+    { url = "https://files.pythonhosted.org/packages/da/eb/3f1af45541066a4fbf5ba1c74330142d201c7161418a6faf13d38527b9c6/django_prometheus-2.6.0.dev2-py2.py3-none-any.whl", hash = "sha256:a8373c2b8b5ea2a586630b6582f55427c445c22eb623a14ff804894c949d3f0f", size = 31925, upload-time = "2026-06-09T15:10:22.027Z" },
 ]
 
 [[package]]
@@ -2025,7 +2025,7 @@ wheels = [
 
 [[package]]
 name = "newprofile"
-version = "4.47.0"
+version = "4.48.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -2186,7 +2186,7 @@ dev = [
     { name = "sentry-sdk", specifier = "==2.65.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.51.0" },
 ]
-loadtest = [{ name = "django-prometheus", specifier = "==2.6.0.dev1" }]
+loadtest = [{ name = "django-prometheus", specifier = "==2.6.0.dev2" }]
 local = [
     { name = "collectfasta", specifier = "==3.3.3" },
     { name = "coverage", specifier = "==7.14.2" },
