@@ -232,7 +232,7 @@ local = [
     # Testing
     "mypy==2.3.0",
     "django-stubs[compatible-mypy]==6.0.7",
-    "pytest==9.1.0",
+    "pytest==9.1.1",
     "pytest-sugar==1.1.1",
     # Documentation
     "sphinx==9.1.0",
