@@ -1,3 +1,13 @@
+## 4.50.0 (2026-08-11)
+
+### Feat
+
+- **profiles**: staff-managed badges on profile pages
+
+### Fix
+
+- **badges**: drop duplicate heading on mass award admin page
+
 ## 4.49.3 (2026-07-31)
 
 ### Fix
