@@ -169,6 +169,17 @@ def process_orders(left_order, right_order):
             not in right_order_final
         ]
     )
+
+    # badges launch at the top of the right column: until a user has saved
+    # an order that places them, they go first rather than being appended
+    saved_right = {
+        item.replace("-", "_").replace("form", "edit").replace("_edit", "")
+        for item in right_order
+    }
+    if "badges" in right_order_final and "badges" not in saved_right:
+        right_order_final.remove("badges")
+        right_order_final.insert(0, "badges")
+
     return left_order_final, right_order_final
 
 

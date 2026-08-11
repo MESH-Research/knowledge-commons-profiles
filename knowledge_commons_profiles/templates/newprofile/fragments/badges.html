@@ -1,0 +1,17 @@
+{% if profile.show_badges and profile.badges.all %}
+<div class="content-card" id="badges">
+  <h3 class="card-title">Badges</h3>
+
+  <div class="card-body">
+    <div class="profile-badges">
+      {% for badge in profile.badges.all %}
+        <img src="{{ badge.image.url }}"
+             alt="{{ badge.alt_text }}"
+             title="{{ badge.title }}"
+             class="profile-badge-image"
+             loading="lazy" />
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
