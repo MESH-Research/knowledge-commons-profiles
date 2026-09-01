@@ -1,3 +1,9 @@
+## 4.51.0 (2026-09-01)
+
+### Feat
+
+- **ui**: link header logo and wordmark to hcommons.org
+
 ## 4.50.0 (2026-08-11)
 
 ### Feat
