@@ -1,3 +1,9 @@
+## 4.52.0 (2026-09-02)
+
+### Feat
+
+- **badges**: let users drag and drop to reorder their profile badges
+
 ## 4.51.0 (2026-09-01)
 
 ### Feat
