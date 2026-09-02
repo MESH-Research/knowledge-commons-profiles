@@ -3,4 +3,20 @@
 <div class="content-card sortable-item" id="badges_edit">
   <h3 class="card-title">Badges</h3>
   {% crispy_field form.show_badges %}
+  {% with badges=profile.ordered_badges %}
+    {% if badges %}
+      <p class="badge-sort-hint">Drag badges to change the order in which they appear on your profile.</p>
+      <ul class="profile-badges badge-sort-list" id="badge-sort-list">
+        {% for badge in badges %}
+          <li class="badge-sort-item" id="badge-{{ badge.pk }}">
+            <img src="{{ badge.image.url }}"
+                 alt="{{ badge.alt_text }}"
+                 title="{{ badge.title }}"
+                 class="profile-badge-image"
+                 loading="lazy" />
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
 </div>

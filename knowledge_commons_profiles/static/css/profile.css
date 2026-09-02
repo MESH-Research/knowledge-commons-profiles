@@ -655,6 +655,26 @@
             object-fit: contain;
         }
 
+        .badge-sort-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .badge-sort-item {
+            cursor: grab;
+        }
+
+        .badge-sort-item.ui-sortable-helper {
+            cursor: grabbing;
+        }
+
+        .badge-sort-hint {
+            font-size: 13px;
+            color: var(--light-text);
+            margin: 15px 0 10px;
+        }
+
         .interests-list {
             list-style: none;
         }

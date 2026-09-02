@@ -11,6 +11,8 @@ function saveOrder(itemOrder, side, show_work_values= {}, works_visibilities= {}
         url = document.querySelector('[id=save-works-order]').value;
     } else if (side == "works_work") {
         url = document.querySelector('[id=save-works-visibility]').value;
+    } else if (side == "badges") {
+        url = document.querySelector('[id=save-badges-order]').value;
     }
 
     // Send AJAX request to save the order
@@ -172,6 +174,24 @@ $(document).ready(function() {
 
       // Send the new order to the server
       saveOrder(itemOrder, "right");
+    }
+  });
+
+  $("#badge-sort-list").sortable({
+    items: "> li",
+    tolerance: "pointer",
+    update: function (event, ui) {
+      // Get the current order after sorting
+      let itemOrder = [];
+
+      $("#badge-sort-list li.badge-sort-item").each(function () {
+        // Extract the item ID from the li id attribute
+        let itemId = $(this).attr('id');
+        itemOrder.push(itemId);
+      });
+
+      // Send the new order to the server
+      saveOrder(itemOrder, "badges");
     }
   });
 

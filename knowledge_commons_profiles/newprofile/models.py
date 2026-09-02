@@ -560,6 +560,20 @@ class Profile(models.Model):
         return gem(obj=self, api_only=api_only)
 
     @property
+    def ordered_badges(self):
+        """
+        Return this profile's badges in the user's customised order, falling
+        back to the staff-defined default order for badges the user has not
+        positioned.
+        """
+        awards = self.profilebadge_set.select_related("badge").order_by(
+            models.F("order").asc(nulls_last=True),
+            "badge__order",
+            "badge__title",
+        )
+        return [award.badge for award in awards]
+
+    @property
     def cc_id(self) -> str | None:
         """
         Return the Commons Connect search client ID
@@ -656,6 +670,7 @@ class ProfileBadge(models.Model):
     badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE)
     awarded_at = models.DateTimeField(auto_now_add=True)
+    order = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         constraints = [

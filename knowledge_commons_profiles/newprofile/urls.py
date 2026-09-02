@@ -63,6 +63,9 @@ from knowledge_commons_profiles.newprofile.views.profile.profile import (
 )
 from knowledge_commons_profiles.newprofile.views.profile.profile import profile
 from knowledge_commons_profiles.newprofile.views.profile.profile import (
+    save_badges_order,
+)
+from knowledge_commons_profiles.newprofile.views.profile.profile import (
     save_profile_order,
 )
 from knowledge_commons_profiles.newprofile.views.profile.profile import (
@@ -208,6 +211,11 @@ urlpatterns = [
         "save-profile-order/<str:side>/",
         save_profile_order,
         name="save_profile_order",
+    ),
+    path(
+        "save-badges-order/",
+        save_badges_order,
+        name="save_badges_order",
     ),
     path(
         "save-works-order/",
