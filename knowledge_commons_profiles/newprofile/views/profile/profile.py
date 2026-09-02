@@ -25,6 +25,7 @@ from knowledge_commons_profiles.newprofile.cc_search import (
 )
 from knowledge_commons_profiles.newprofile.forms import ProfileForm
 from knowledge_commons_profiles.newprofile.models import Profile
+from knowledge_commons_profiles.newprofile.models import ProfileBadge
 from knowledge_commons_profiles.newprofile.utils import process_orders
 from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
@@ -348,4 +349,50 @@ def save_profile_order(request, side):
     except Exception as e:  # noqa: BLE001
         # Log the error for debugging
         logging.warning("Error saving profile order: %s", e)
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+
+@login_required
+@require_POST
+def save_badges_order(request):
+    """
+    Save the user's customised ordering of their badges via AJAX
+    """
+
+    logger.debug("Saving badge order for %s", request.user)
+
+    try:
+        # Parse the JSON data from the request. Items arrive as DOM ids of
+        # the form "badge-<pk>".
+        data = json.loads(request.body)
+        badge_ids = [
+            int(str(item).rpartition("-")[2])
+            for item in data.get("item_order", [])
+        ]
+
+        profile_object = Profile.objects.get(username=request.user.username)
+
+        position = {
+            badge_id: index for index, badge_id in enumerate(badge_ids)
+        }
+        awards = list(
+            ProfileBadge.objects.filter(
+                profile=profile_object, badge_id__in=badge_ids
+            )
+        )
+        for award in awards:
+            award.order = position[award.badge_id]
+
+        ProfileBadge.objects.bulk_update(awards, ["order"])
+
+        return JsonResponse({"success": True})
+
+    except django.db.utils.OperationalError as ex:
+        logger.warning(
+            "Unable to connect to database for saving badge order: %s", ex
+        )
+        return JsonResponse({"success": False, "error": str(ex)}, status=400)
+    except Exception as e:  # noqa: BLE001
+        # Log the error for debugging
+        logging.warning("Error saving badge order: %s", e)
         return JsonResponse({"success": False, "error": str(e)}, status=400)

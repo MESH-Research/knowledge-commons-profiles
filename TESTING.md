@@ -128,6 +128,8 @@ The edit profile page is at `/edit-profile/`. Test that users can:
   interests, projects, publications, education)
 - Reorder profile sections by dragging them between and within the left and
   right columns
+- Reorder earned badges by dragging them within the Badges box; the new order
+  saves automatically and displays on the public profile
 - Changes persist after saving and display correctly on the public profile
 
 ### Works deposits

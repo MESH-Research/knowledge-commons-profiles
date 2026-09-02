@@ -2,6 +2,7 @@
 Tests for the staff-managed profile badges feature.
 """
 
+import json
 import tempfile
 from http import HTTPStatus
 
@@ -165,6 +166,201 @@ class BadgeFragmentTests(TestCase):
         )
         assert "show_badges" in html
         assert "sortable-item" in html
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT)
+class OrderedBadgesTests(TestCase):
+    """Profile.ordered_badges: user customisation with default fallback."""
+
+    def setUp(self):
+        self.profile = ProfileFactory()
+
+    def award(self, badge, order=None):
+        return ProfileBadge.objects.create(
+            profile=self.profile, badge=badge, order=order
+        )
+
+    def test_default_order_used_when_user_has_not_customised(self):
+        zeta = make_badge("zeta-default-test", order=30)
+        alpha = make_badge("alpha-default-test", order=10)
+        mid = make_badge("mid-default-test", order=20)
+        self.award(zeta)
+        self.award(alpha)
+        self.award(mid)
+
+        assert list(self.profile.ordered_badges) == [alpha, mid, zeta]
+
+    def test_customised_order_overrides_default(self):
+        zeta = make_badge("zeta-custom-test", order=30)
+        alpha = make_badge("alpha-custom-test", order=10)
+        self.award(zeta, order=0)
+        self.award(alpha, order=1)
+
+        assert list(self.profile.ordered_badges) == [zeta, alpha]
+
+    def test_unpositioned_badges_follow_customised_in_default_order(self):
+        # the user ordered two badges, then staff awarded two more
+        first = make_badge("first-mixed-test", order=40)
+        second = make_badge("second-mixed-test", order=30)
+        newer_b = make_badge("newer-b-mixed-test", order=20)
+        newer_a = make_badge("newer-a-mixed-test", order=10)
+        self.award(first, order=0)
+        self.award(second, order=1)
+        self.award(newer_b)
+        self.award(newer_a)
+
+        assert list(self.profile.ordered_badges) == [
+            first,
+            second,
+            newer_a,
+            newer_b,
+        ]
+
+    def test_other_profiles_customisation_does_not_leak(self):
+        alpha = make_badge("alpha-leak-test", order=10)
+        beta = make_badge("beta-leak-test", order=20)
+        self.award(alpha)
+        self.award(beta)
+
+        other = ProfileFactory()
+        ProfileBadge.objects.create(profile=other, badge=beta, order=0)
+        ProfileBadge.objects.create(profile=other, badge=alpha, order=1)
+
+        assert list(self.profile.ordered_badges) == [alpha, beta]
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT)
+class SaveBadgesOrderViewTests(TestCase):
+    """The AJAX endpoint that persists a user's badge ordering."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="badge-sorter", password="password"
+        )
+        self.profile = ProfileFactory(username="badge-sorter")
+        self.alpha = make_badge("alpha-save-test", order=10)
+        self.beta = make_badge("beta-save-test", order=20)
+        ProfileBadge.objects.create(profile=self.profile, badge=self.alpha)
+        ProfileBadge.objects.create(profile=self.profile, badge=self.beta)
+        self.url = reverse("save_badges_order")
+
+    def post_order(self, items):
+        return self.client.post(
+            self.url,
+            data=json.dumps({"item_order": items}),
+            content_type="application/json",
+        )
+
+    def test_posting_an_order_saves_it(self):
+        self.client.force_login(self.user)
+        response = self.post_order(
+            [f"badge-{self.beta.pk}", f"badge-{self.alpha.pk}"]
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["success"] is True
+        assert list(self.profile.ordered_badges) == [self.beta, self.alpha]
+
+    def test_reordering_twice_keeps_the_latest_order(self):
+        self.client.force_login(self.user)
+        self.post_order([f"badge-{self.beta.pk}", f"badge-{self.alpha.pk}"])
+        self.post_order([f"badge-{self.alpha.pk}", f"badge-{self.beta.pk}"])
+
+        assert list(self.profile.ordered_badges) == [self.alpha, self.beta]
+
+    def test_requires_login(self):
+        response = self.post_order([f"badge-{self.alpha.pk}"])
+        assert response.status_code == HTTPStatus.FOUND
+
+    def test_get_is_not_allowed(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+    def test_cannot_reorder_another_users_awards(self):
+        other_profile = ProfileFactory(username="badge-holder")
+        gamma = make_badge("gamma-save-test", order=30)
+        other_award = ProfileBadge.objects.create(
+            profile=other_profile, badge=gamma
+        )
+        self.client.force_login(self.user)
+        self.post_order([f"badge-{gamma.pk}"])
+
+        other_award.refresh_from_db()
+        assert other_award.order is None
+
+    def test_invalid_json_returns_error(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            self.url, data="not-json", content_type="application/json"
+        )
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert response.json()["success"] is False
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT)
+class BadgeOrderingRenderTests(TestCase):
+    """Customised ordering is reflected wherever badges render."""
+
+    def test_public_fragment_renders_in_customised_order(self):
+        profile = ProfileFactory()
+        alpha = make_badge("alpha-render-test", order=10)
+        beta = make_badge("beta-render-test", order=20)
+        ProfileBadge.objects.create(profile=profile, badge=alpha, order=1)
+        ProfileBadge.objects.create(profile=profile, badge=beta, order=0)
+
+        html = render_to_string(
+            "newprofile/fragments/badges.html", {"profile": profile}
+        )
+        assert html.index("beta-render-test") < html.index("alpha-render-test")
+
+    def test_edit_fragment_lists_badges_as_sortable_items(self):
+        profile = ProfileFactory()
+        badge = make_badge("edit-render-test", order=1)
+        ProfileBadge.objects.create(profile=profile, badge=badge)
+
+        html = render_to_string(
+            "newprofile/fragments/badges_edit.html",
+            {"profile": profile, "form": ProfileForm(instance=profile)},
+        )
+        assert f'id="badge-{badge.pk}"' in html
+        assert 'id="badge-sort-list"' in html
+
+    def test_edit_fragment_lists_badges_in_customised_order(self):
+        profile = ProfileFactory()
+        alpha = make_badge("alpha-edit-order-test", order=10)
+        beta = make_badge("beta-edit-order-test", order=20)
+        ProfileBadge.objects.create(profile=profile, badge=alpha, order=1)
+        ProfileBadge.objects.create(profile=profile, badge=beta, order=0)
+
+        html = render_to_string(
+            "newprofile/fragments/badges_edit.html",
+            {"profile": profile, "form": ProfileForm(instance=profile)},
+        )
+        assert html.index("beta-edit-order-test") < html.index(
+            "alpha-edit-order-test"
+        )
+
+    def test_edit_fragment_omits_list_when_profile_has_no_badges(self):
+        profile = ProfileFactory()
+        html = render_to_string(
+            "newprofile/fragments/badges_edit.html",
+            {"profile": profile, "form": ProfileForm(instance=profile)},
+        )
+        assert 'id="badge-sort-list"' not in html
+
+    def test_edit_page_wires_the_badge_sort_save_url(self):
+        user = User.objects.create_user(
+            username="badge-page-user", password="password"
+        )
+        profile = ProfileFactory(username="badge-page-user")
+        badge = make_badge("edit-page-test", order=1)
+        ProfileBadge.objects.create(profile=profile, badge=badge)
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("edit_profile"))
+        content = response.content.decode()
+        assert reverse("save_badges_order") in content
+        assert 'id="save-badges-order"' in content
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
