@@ -1,3 +1,9 @@
+## 4.53.0 (2026-10-05)
+
+### Feat
+
+- **ui**: add site-wide incident recovery banner
+
 ## 4.52.0 (2026-09-02)
 
 ### Feat
