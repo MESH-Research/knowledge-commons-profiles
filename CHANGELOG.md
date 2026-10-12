@@ -1,3 +1,17 @@
+## 4.54.0 (2026-10-12)
+
+### Feat
+
+- **dependencies**: bump loadtest subproject pins
+- **dependencies**: upgrade django to 6.1.2 and align pins
+- **dependencies**: upgrades
+
+### Fix
+
+- **newprofile**: never allow migrations on the wordpress database
+- **cilogon**: declare ALLOWED_HOSTS in network subdomain login tests
+- **lint**: restore djlint django profile
+
 ## 4.53.0 (2026-10-05)
 
 ### Feat
