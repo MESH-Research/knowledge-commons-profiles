@@ -90,10 +90,28 @@ class ReadWriteRouterTests(TestCase):
         result = self.router.allow_migrate("default", "auth")
         self.assertTrue(result)
 
-    def test_allow_migrate_with_app_name(self):
+    def test_allow_migrate_wordpress_db_app_level(self):
         """Test that migrations are not allowed on the wordpress database."""
         result = self.router.allow_migrate(self.router.db_name, "wordpress")
-        self.assertTrue(result)
+        self.assertFalse(result)
+
+    def test_allow_migrate_wordpress_db_non_wp_model(self):
+        """Test that non-WP models cannot migrate onto the wordpress DB."""
+        result = self.router.allow_migrate(
+            self.router.db_name,
+            "auth",
+            model_name="user",
+        )
+        self.assertFalse(result)
+
+    def test_allow_migrate_wordpress_db_wp_model(self):
+        """Test that WP models cannot migrate onto the wordpress DB."""
+        result = self.router.allow_migrate(
+            self.router.db_name,
+            "wordpress",
+            model_name="wppost",
+        )
+        self.assertFalse(result)
 
     def test_allow_migrate_with_model_name(self):
         """Test migration control with explicit model_name parameter."""
