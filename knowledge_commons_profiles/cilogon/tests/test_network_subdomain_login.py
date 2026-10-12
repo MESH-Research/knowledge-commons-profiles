@@ -24,6 +24,11 @@ from knowledge_commons_profiles.cilogon.views import cilogon_login
 
 BASE_DOMAINS = ["profile.hcommons.org", "profile.hcommons-dev.org"]
 
+# Host-header validation is out of scope here (the forged-host test
+# exercises the state check, not ALLOWED_HOSTS), so accept any host
+# rather than depending on the active settings module's ALLOWED_HOSTS.
+ANY_HOST = ["*"]
+
 # prod-like: no domain proxy
 PROD = {
     "OIDC_CALLBACK": "cilogon/callback/",
@@ -31,6 +36,7 @@ PROD = {
     "CILOGON_ACTUAL_DOMAIN": "",
     "NETWORK_SUBDOMAIN_BASE_DOMAINS": BASE_DOMAINS,
     "NETWORK_SUBDOMAIN_IGNORED": ["www"],
+    "ALLOWED_HOSTS": ANY_HOST,
 }
 
 # dev-like: shares the prod client via the domain proxy
@@ -40,6 +46,7 @@ DEV = {
     "CILOGON_ACTUAL_DOMAIN": "profile.hcommons-dev.org",
     "NETWORK_SUBDOMAIN_BASE_DOMAINS": BASE_DOMAINS,
     "NETWORK_SUBDOMAIN_IGNORED": ["www"],
+    "ALLOWED_HOSTS": ANY_HOST,
 }
 
 
