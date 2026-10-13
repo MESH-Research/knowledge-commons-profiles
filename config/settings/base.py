@@ -609,11 +609,6 @@ OPEN_REGISTRATION_NETWORKS = env(
     "OPEN_REGISTRATION_NETWORKS",
     default=[
         (
-            "HASTAC",
-            "Humanities, Arts, Science, and Technology Alliance and Collaboratory",
-            "",
-        ),
-        (
             "STEMEd+",
             "STEMEd+ Commons",
             "An open platform for individual researchers and communities "
