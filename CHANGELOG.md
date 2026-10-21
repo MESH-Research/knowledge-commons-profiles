@@ -1,3 +1,9 @@
+## 4.54.1 (2026-10-13)
+
+### Fix
+
+- **HASTAC**: remove hastac from open networks
+
 ## 4.54.0 (2026-10-12)
 
 ### Feat
