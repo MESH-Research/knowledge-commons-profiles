@@ -23,7 +23,6 @@ from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django_bleach.models import BleachField
 from requests import Response
 
 from knowledge_commons_profiles.newprofile.fields import CICharField
@@ -64,25 +63,23 @@ def cv_file_path(instance, filename):
 
 
 # ruff: noqa: PLC0415
-class ProfileBleachField(BleachField):
-    """An override of BleachField to avoid casting SafeString from db
-    Bleachfield automatically casts the default return type (string) into
-    a SafeString, which is okay when using the value for HTML rendering but
-    not when using the value elsewhere (XML encoding)
-    https://github.com/marksweb/django-bleach/blob/504b3784c525886ba1974eb9ecbff89314688491/django_bleach/models.py#L76
+class ProfileBleachField(models.TextField):
+    """A plain TextField retained for historical migrations.
+
+    This used to subclass django_bleach's BleachField. No live model field
+    uses it any more (migration 0019 moved the rich-text fields back to
+    TextField and sanitisation now happens in the form layer via
+    ``sanitize_html``), but migration 0014 still references the class by
+    dotted path, so it must remain importable. django-bleach itself is
+    unmaintained and pins bleach<6, which blocked security upgrades of
+    bleach (issue #679).
     """
 
     def from_db_value(self, value, expression, connection):
         """
-        Create from DB
+        Return the stored value unchanged (never a SafeString)
         """
         return value
-
-    def pre_save(self, model_instance, *args, **kwargs):
-        """
-        Filter the model
-        """
-        return super().pre_save(model_instance, *args, **kwargs)
 
 
 class WpPostSubTable(models.Model):
