@@ -1,3 +1,9 @@
+## 4.54.2 (2026-10-21)
+
+### Fix
+
+- **deps**: remove unmaintained django-bleach and upgrade bleach to 6.4.0
+
 ## 4.54.1 (2026-10-13)
 
 ### Fix
