@@ -160,7 +160,12 @@ description = "The profiles and IDMS system for Knowledge Commons"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "multidict>=7.1.0",
     "bleach>=6.4.0",
+    "virtualenv>=21.14.12",
+    "sqlparse>=0.6.0",
+    "certifi>=2026.10.19",
+    "anyio>=4.15.1",
     "python-slugify==8.0.4",
     "Pillow==13.0.0",
     "argon2-cffi==25.1.0",
