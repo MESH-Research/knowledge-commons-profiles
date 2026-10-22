@@ -1,3 +1,10 @@
+## 4.55.0 (2026-10-22)
+
+### Feat
+
+- **members**: show the directory as a grid of compact cards
+- **members**: order the directory by login recency
+
 ## 4.54.2 (2026-10-21)
 
 ### Fix
