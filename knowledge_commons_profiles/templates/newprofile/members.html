@@ -40,7 +40,7 @@
               {% if p.display_interests %}
                 <div class="member-interests">
                   {% for interest in p.display_interests|slice:":3" %}
-                    <!-- djlint:off --><a href="{% url 'members' %}?interest={{ interest|urlencode }}" class="member-interest-tag">{{ interest }}</a><!-- djlint:on -->
+                    <!-- djlint:off --><a href="{% url 'members' %}?interest={{ interest|urlencode }}" class="member-interest-tag" title="{{ interest }}">{{ interest }}</a><!-- djlint:on -->
                   {% endfor %}
                   {% if p.display_interests|length > 3 %}
                     <span class="member-interest-more">+{{ p.display_interests|length|add:"-3" }} more</span>
