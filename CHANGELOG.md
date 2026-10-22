@@ -1,3 +1,9 @@
+## 4.56.0 (2026-10-22)
+
+### Feat
+
+- **members**: add a per-page selector that keeps the grid complete
+
 ## 4.55.0 (2026-10-22)
 
 ### Feat
