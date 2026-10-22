@@ -1,3 +1,9 @@
+## 4.57.0 (2026-10-22)
+
+### Feat
+
+- **members**: make each member card a single clickable link
+
 ## 4.56.0 (2026-10-22)
 
 ### Feat
