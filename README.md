@@ -163,6 +163,42 @@ The project uses a multi-stage base image pattern:
 
 ## Deployment
 
+### Releasing without GitHub Actions
+
+`kcb.py` is a local stand-in for the release pipeline in
+`.github/workflows/ci.yml`. It needs only Docker, the AWS CLI and `uv`;
+nothing is fetched from GitHub. Every stage is a separate subcommand, so an
+image can be built without linting or testing first, and `release` chains
+them in the same order CI uses.
+
+```bash
+uv run kcb.py --help                 # all commands and options
+uv run kcb.py info                   # tags this checkout would be built with
+uv run kcb.py lint                   # pre-commit --all-files
+uv run kcb.py test                   # CI test job in docker-compose.github.yml
+uv run kcb.py test --host            # manage.py test against a local Postgres
+uv run kcb.py base                   # build the kcprofiles-base image locally
+uv run kcb.py build                  # production images, tagged as CI would
+uv run kcb.py push                   # ECR login + push every tag
+uv run kcb.py deploy                 # force a new ECS deployment
+uv run kcb.py release                # lint, test, build, push, deploy
+uv run kcb.py release --skip-tests --skip-lint   # just build, push, deploy
+uv run kcb.py --target dev build     # same again for the dev environment
+uv run kcb.py --dry-run release      # print every command instead
+```
+
+Images are tagged exactly as CI tags them: the full commit SHA,
+`vX.Y.Z-<sha7>`, `vX.Y.Z` (production only) and `latest`. `build` reuses a
+local `kcprofiles-base:latest` if one exists and otherwise builds it from
+`compose/base/Dockerfile`; pass `--pull-base` to fetch the one in ECR
+instead, or `--rebuild-base` to force a rebuild. CI bumps the version with
+commitizen before building; `release --bump --push-git` does the same and
+pushes the bump commit and tag once the images are safely in ECR.
+
+Pushing and deploying need a live AWS session (`aws login`); pass
+`--profile` to use a named profile. The tool refuses to push or deploy if
+`aws sts get-caller-identity` fails.
+
 ### Production
 
 The application is deployed using Docker Compose:
