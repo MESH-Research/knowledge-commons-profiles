@@ -1,3 +1,9 @@
+## 4.57.1 (2026-10-22)
+
+### Fix
+
+- **members**: clip over-long interest tags to the card
+
 ## 4.57.0 (2026-10-22)
 
 ### Feat
