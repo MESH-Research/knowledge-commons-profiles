@@ -1,12 +1,17 @@
 # views that pertain to /members/
 import base64
 import json
+from datetime import datetime
 from math import ceil
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db.models import F
+from django.db.models import OuterRef
 from django.db.models import Prefetch
 from django.db.models import Q
 from django.db.models import QuerySet
+from django.db.models import Subquery
 from django.db.models import TextField
 from django.db.models.functions import Cast
 from django.http import Http404
@@ -17,8 +22,15 @@ from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 
+User = get_user_model()
+
 PAGE_SIZE = 25
 MAX_DISPLAY_INTERESTS = 5
+
+# Listing order: most recent login first, members who have never logged
+# in through this app last (they keep the old alphabetical order), with
+# (username, id) breaking ties so the order is total and cursor-safe.
+LISTING_ORDER = (F("last_login").desc(nulls_last=True), "username", "id")
 
 
 def _encode_cursor(payload: dict) -> str:
@@ -31,14 +43,99 @@ def _decode_cursor(token: str) -> dict:
     return json.loads(base64.urlsafe_b64decode(token.encode()).decode())
 
 
-def _prefix_count_qs(qs, username, id_):
+def with_last_login(
+    qs: QuerySet[Profile, Profile],
+) -> QuerySet[Profile, Profile]:
     """
-    Count how many rows are <= the (username, id) tuple in the sort order.
-    This is index-friendly with a composite index on (username, id).
+    Annotate each profile with the last_login of its Django auth user.
+
+    Profiles that have never logged in through this app have no auth
+    user and are annotated with None.
     """
-    return qs.filter(
-        Q(username__lt=username) | (Q(username=username) & Q(id__lte=id_))
-    ).count()
+    return qs.annotate(
+        last_login=Subquery(
+            User.objects.filter(username=OuterRef("username")).values(
+                "last_login"
+            )[:1]
+        )
+    )
+
+
+def _parse_key(key: dict) -> tuple:
+    """
+    Normalise a decoded cursor into (last_login, username, id).
+
+    last_login is a timezone-aware datetime or None; cursors minted
+    before recency ordering existed carry no last_login at all.
+    """
+    raw = key.get("last_login")
+    last_login = datetime.fromisoformat(raw) if raw else None
+    return last_login, key["username"], key["id"]
+
+
+def _cursor_payload(profile: Profile) -> dict:
+    """
+    Build the JSON-serialisable cursor dict for a profile row.
+    """
+    last_login = getattr(profile, "last_login", None)
+    return {
+        "last_login": last_login.isoformat() if last_login else None,
+        "username": profile.username,
+        "id": profile.id,
+    }
+
+
+def _sort_key(profile: Profile) -> tuple:
+    """
+    In-memory sort key matching the listing order: most recent login
+    first, never-logged-in last, ties broken by (username, id).
+    """
+    last_login = getattr(profile, "last_login", None)
+    return (
+        last_login is None,
+        -last_login.timestamp() if last_login else 0,
+        profile.username,
+        profile.id,
+    )
+
+
+def _after_q(key: dict) -> Q:
+    """
+    Q selecting rows strictly after the cursor key in listing order.
+    """
+    last_login, username, id_ = _parse_key(key)
+    tie = Q(username__gt=username) | (Q(username=username) & Q(id__gt=id_))
+
+    if last_login is None:
+        return Q(last_login__isnull=True) & tie
+
+    return (
+        Q(last_login__lt=last_login)
+        | Q(last_login__isnull=True)
+        | (Q(last_login=last_login) & tie)
+    )
+
+
+def _before_q(key: dict) -> Q:
+    """
+    Q selecting rows strictly before the cursor key in listing order.
+    """
+    last_login, username, id_ = _parse_key(key)
+    tie = Q(username__lt=username) | (Q(username=username) & Q(id__lt=id_))
+
+    if last_login is None:
+        return Q(last_login__isnull=False) | (
+            Q(last_login__isnull=True) & tie
+        )
+
+    return Q(last_login__gt=last_login) | (Q(last_login=last_login) & tie)
+
+
+def _prefix_count_qs(qs, key: dict) -> int:
+    """
+    Count how many rows are <= the cursor key in the listing order.
+    """
+    return qs.filter(_before_q(key)).count() + 1
 
 
 def _page_bounds(page_num: int):
@@ -94,22 +191,26 @@ def _paginate_profile_list(
     rows_all: list[Profile], cursor: str | None, direction: str
 ) -> tuple[list[Profile], bool, bool, str | None, str | None, int]:
     """
-    Cursor-paginate an in-memory, (username, id)-ordered profile list.
+    Cursor-paginate an in-memory profile list sorted by _sort_key.
 
     Mirrors the cursor semantics of _handle_cursor so the members
     template's pager links work unchanged.
     """
     if cursor:
-        c = _decode_cursor(cursor)
-        key = (c["username"], c["id"])
+        last_login, username, id_ = _parse_key(_decode_cursor(cursor))
+        key = _sort_key(
+            Profile(username=username, id=id_)
+            if last_login is None
+            else _with_login(username, id_, last_login)
+        )
 
         if direction == "prev":
-            before = [p for p in rows_all if (p.username, p.id) < key]
+            before = [p for p in rows_all if _sort_key(p) < key]
             rows = before[-PAGE_SIZE:]
             has_prev = len(before) > PAGE_SIZE
             has_next = bool(rows)
         else:
-            after = [p for p in rows_all if (p.username, p.id) > key]
+            after = [p for p in rows_all if _sort_key(p) > key]
             rows = after[:PAGE_SIZE]
             has_next = len(after) > PAGE_SIZE
             has_prev = bool(rows)
@@ -121,14 +222,10 @@ def _paginate_profile_list(
     if rows:
         first, last = rows[0], rows[-1]
         next_cursor = (
-            _encode_cursor({"username": last.username, "id": last.id})
-            if has_next
-            else None
+            _encode_cursor(_cursor_payload(last)) if has_next else None
         )
         prev_cursor = (
-            _encode_cursor({"username": first.username, "id": first.id})
-            if has_prev
-            else None
+            _encode_cursor(_cursor_payload(first)) if has_prev else None
         )
         leading = rows_all.index(rows[0]) + 1
         current_page = max(1, ceil(leading / PAGE_SIZE))
@@ -137,6 +234,15 @@ def _paginate_profile_list(
         current_page = 1
 
     return rows, has_next, has_prev, next_cursor, prev_cursor, current_page
+
+
+def _with_login(username: str, id_: int, last_login: datetime) -> Profile:
+    """
+    Build an unsaved Profile carrying a last_login, for key comparison.
+    """
+    profile = Profile(username=username, id=id_)
+    profile.last_login = last_login
+    return profile
 
 
 def network_members(request, network_name):
@@ -164,7 +270,7 @@ def network_members(request, network_name):
     # /network/ mount, and via people_by_username on network hosts)
     search = request.POST.get("username", "").strip()
 
-    candidates = (
+    candidates = with_last_login(
         Profile.objects.filter(name__isnull=False)
         .exclude(name__exact="")
         .annotate(role_overrides_text=Cast("role_overrides", TextField()))
@@ -180,8 +286,7 @@ def network_members(request, network_name):
             ),
             "profileimage_set",
         )
-        .order_by("username", "id")
-    )
+    ).order_by(*LISTING_ORDER)
 
     if search:
         candidates = candidates.filter(
@@ -241,11 +346,10 @@ def people_by_username(request):
         username = request.POST.get("username")
 
         # make a Q query that searches username and name fields
-        rows = (
+        rows = with_last_login(
             Profile.objects.filter(
                 Q(username__icontains=username) | Q(name__icontains=username)
-            )
-            .prefetch_related(
+            ).prefetch_related(
                 Prefetch(
                     "academic_interests",
                     queryset=AcademicInterest.objects.all(),
@@ -253,8 +357,7 @@ def people_by_username(request):
                 ),
                 "profileimage_set",
             )
-            .order_by("username", "id")
-        )
+        ).order_by(*LISTING_ORDER)
 
         return render(
             request,
@@ -315,14 +418,12 @@ def _handle_cursor(
     rows: list[Profile],
 ) -> tuple[list[Profile], bool, bool, str | None, str | None]:
     if cursor:
-        c = _decode_cursor(cursor)
-        c_username, c_id = c["username"], c["id"]
+        key = _decode_cursor(cursor)
 
         if direction == "prev":
-            page_qs = qs.filter(
-                Q(username__lt=c_username)
-                | (Q(username=c_username) & Q(id__lt=c_id))
-            ).order_by("-username", "-id")
+            page_qs = qs.filter(_before_q(key)).order_by(
+                F("last_login").asc(nulls_first=True), "-username", "-id"
+            )
 
             fetched = list(page_qs[: PAGE_SIZE + 1])
             if len(fetched) > PAGE_SIZE:
@@ -332,16 +433,13 @@ def _handle_cursor(
                 rows = fetched
                 has_prev = False
 
-            rows.reverse()  # show A→Z
+            rows.reverse()  # restore listing order
             # has_next is true because we came from a later cursor
             has_next = bool(rows)
 
         else:
             # next page (normal direction)
-            page_qs = qs.filter(
-                Q(username__gt=c_username)
-                | (Q(username=c_username) & Q(id__gt=c_id))
-            ).order_by("username", "id")
+            page_qs = qs.filter(_after_q(key)).order_by(*LISTING_ORDER)
 
             fetched = list(page_qs[: PAGE_SIZE + 1])
             if len(fetched) > PAGE_SIZE:
@@ -368,14 +466,10 @@ def _handle_cursor(
     if rows:
         first, last = rows[0], rows[-1]
         next_cursor = (
-            _encode_cursor({"username": last.username, "id": last.id})
-            if has_next
-            else None
+            _encode_cursor(_cursor_payload(last)) if has_next else None
         )
         prev_cursor = (
-            _encode_cursor({"username": first.username, "id": first.id})
-            if has_prev
-            else None
+            _encode_cursor(_cursor_payload(first)) if has_prev else None
         )
     else:
         next_cursor = prev_cursor = None
@@ -385,7 +479,7 @@ def _handle_cursor(
 def fetch_member_data(
     interest: str | None = None,
 ) -> tuple[int, QuerySet[Profile, Profile], int]:
-    qs = (
+    qs = with_last_login(
         Profile.objects.filter(name__isnull=False)
         .exclude(name__exact="")
         .prefetch_related(
@@ -396,8 +490,7 @@ def fetch_member_data(
             ),
             "profileimage_set",
         )
-        .order_by("username", "id")
-    )
+    ).order_by(*LISTING_ORDER)
 
     if interest:
         qs = qs.filter(academic_interests__text=interest)
@@ -412,9 +505,9 @@ def _compute_current_page(
     current_page: int, qs: QuerySet[Profile, Profile], rows: list[Profile]
 ) -> int:
     # Compute current_page from the first visible row via a prefix COUNT
-    # (This is O(log N) on a good composite index and avoids big OFFSETs)
+    # (avoids big OFFSETs on deep pages)
     if rows:
-        leading = _prefix_count_qs(qs, rows[0].username, rows[0].id)
+        leading = _prefix_count_qs(qs, _cursor_payload(rows[0]))
         current_page = max(1, ceil(leading / PAGE_SIZE))
     else:
         current_page = 1

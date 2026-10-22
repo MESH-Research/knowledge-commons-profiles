@@ -1,5 +1,6 @@
 # tests for the /network/<network_name>/members/ listing
 import json
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.test import override_settings
@@ -245,3 +246,65 @@ class MemberCountDisplayTests(TestCase):
         count_text = self._count_text(response)
         self.assertIsNotNone(count_text)
         self.assertIn("3", count_text)
+
+
+@override_settings(
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+)
+class NetworkMembersRecencyOrderTests(TestCase):
+    """Network rosters list recently active members first."""
+
+    def setUp(self):
+        from datetime import timedelta
+
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+
+        now = timezone.now()
+        for username in ("alice", "bob", "carol", "dave", "erin"):
+            _make_profile(username, is_member_of={"STEMED+": True})
+        _make_profile("zed", is_member_of={"HASTAC": True})
+        user_model = get_user_model()
+        user_model.objects.create(username="carol", last_login=now)
+        user_model.objects.create(
+            username="erin", last_login=now - timedelta(days=5)
+        )
+        # a recent login on another network's member must not leak in
+        user_model.objects.create(username="zed", last_login=now)
+        self.expected = ["carol", "erin", "alice", "bob", "dave"]
+
+    def _usernames(self, response):
+        return [p.username for p in response.context["profiles"]]
+
+    def test_roster_is_ordered_by_recency_then_username(self):
+        response = self.client.get("/network/stemedplus/members/")
+        self.assertEqual(self._usernames(response), self.expected)
+
+    def test_roster_pages_follow_recency_order(self):
+        with patch.object(members, "PAGE_SIZE", 2):
+            r1 = self.client.get("/network/stemedplus/members/")
+            self.assertEqual(self._usernames(r1), self.expected[:2])
+
+            r2 = self.client.get(
+                "/network/stemedplus/members/"
+                f"?cursor={r1.context['next_cursor']}"
+            )
+            self.assertEqual(self._usernames(r2), self.expected[2:4])
+            self.assertEqual(r2.context["current_page"], 2)
+
+            back = self.client.get(
+                "/network/stemedplus/members/"
+                f"?cursor={r2.context['prev_cursor']}&dir=prev"
+            )
+            self.assertEqual(self._usernames(back), self.expected[:2])
+            self.assertEqual(back.context["current_page"], 1)
+
+    def test_search_results_follow_recency_order(self):
+        response = self.client.post(
+            "/network/stemedplus/members/", {"username": "e"}
+        )
+        # "e" matches alice, dave and erin; only erin has logged in
+        self.assertEqual(
+            self._usernames(response), ["erin", "alice", "dave"]
+        )

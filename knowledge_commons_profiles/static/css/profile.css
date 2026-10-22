@@ -1469,6 +1469,71 @@ div {
           white-space: nowrap;
         }
 
+        /* Members directory: compact cards in a responsive grid */
+        .wrap.member-directory {
+          max-width: 1200px;
+        }
+
+        .member-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 12px;
+        }
+
+        .member-card {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          min-width: 0;
+          background: var(--card);
+          border-radius: 12px;
+          padding: 12px;
+          box-shadow: var(--shadow);
+          transition: transform .08s ease, box-shadow .08s ease;
+        }
+        .member-card:hover { transform: translateY(-1px) }
+        .member-card:focus-within {
+          outline: 2px solid var(--ring);
+          outline-offset: 2px;
+        }
+
+        .member-card-avatar { flex: 0 0 auto; line-height: 0 }
+        .member-card .avatar {
+          width: 56px; height: 56px; flex-basis: 56px;
+        }
+
+        .member-card-body {
+          min-width: 0;
+          flex: 1 1 auto;
+        }
+        .member-card .name {
+          font-size: .95rem;
+          text-align: left;
+        }
+        .member-card-username {
+          margin: 1px 0 0;
+          font-size: .8rem;
+          color: var(--muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .member-card-username a { color: inherit }
+        .member-card .aff {
+          margin-top: 2px;
+          font-size: .85rem;
+          text-align: left;
+        }
+        .member-card .member-interests { margin-top: 5px }
+
+        @media (max-width: 640px) {
+          .member-grid { grid-template-columns: 1fr; gap: 10px }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .member-card { transition: none }
+        }
+
         /* Member interest tags on cards */
         .member-interests {
           display: flex;
