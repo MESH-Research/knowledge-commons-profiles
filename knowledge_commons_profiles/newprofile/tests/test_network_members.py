@@ -308,3 +308,37 @@ class NetworkMembersRecencyOrderTests(TestCase):
         self.assertEqual(
             self._usernames(response), ["erin", "alice", "dave"]
         )
+
+
+@override_settings(
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+)
+class NetworkMembersPerPageTests(TestCase):
+    """Network rosters honour ?per_page= too."""
+
+    def setUp(self):
+        for i in range(14):
+            _make_profile(f"paginet{i:02d}", is_member_of={"PAGINET": True})
+
+    def test_roster_pages_by_the_chosen_size(self):
+        r1 = self.client.get("/network/paginet/members/?per_page=12")
+        self.assertEqual(len(r1.context["profiles"]), 12)
+        self.assertEqual(r1.context["page_size"], 12)
+        self.assertEqual(r1.context["page_count"], 2)
+        self.assertTrue(r1.context["has_next"])
+
+        r2 = self.client.get(
+            "/network/paginet/members/"
+            f"?per_page=12&cursor={r1.context['next_cursor']}"
+        )
+        self.assertEqual(len(r2.context["profiles"]), 2)
+        self.assertEqual(r2.context["current_page"], 2)
+        self.assertFalse(r2.context["has_next"])
+
+    def test_roster_falls_back_to_default_for_bad_size(self):
+        r = self.client.get("/network/paginet/members/?per_page=5")
+        self.assertEqual(r.context["page_size"], members.PAGE_SIZE)
+        self.assertEqual(
+            tuple(r.context["page_size_choices"]), members.PAGE_SIZE_CHOICES
+        )

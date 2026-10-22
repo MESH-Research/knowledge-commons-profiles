@@ -1,5 +1,6 @@
 # tests/test_people_by_username.py
 import base64
+import re
 from datetime import timedelta
 from math import ceil
 from types import SimpleNamespace
@@ -820,3 +821,162 @@ class RecencyOrderingViewTests(TestCase):
             html.index(reverse("profile", args=[u])) for u in self.expected
         ]
         self.assertEqual(positions, sorted(positions))
+
+
+class PerPageChoiceTests(TestCase):
+    """Readers can pick a page size; every size completes the grid."""
+
+    def test_choices_divide_evenly_across_every_grid_width(self):
+        for choice in members.PAGE_SIZE_CHOICES:
+            for columns in (1, 2, 3, 4):
+                self.assertEqual(choice % columns, 0)
+
+    def test_default_page_size_is_one_of_the_choices(self):
+        self.assertIn(members.PAGE_SIZE, members.PAGE_SIZE_CHOICES)
+
+    def test_resolve_accepts_a_listed_choice(self):
+        for choice in members.PAGE_SIZE_CHOICES:
+            self.assertEqual(members._resolve_page_size(str(choice)), choice)
+
+    def test_resolve_falls_back_for_missing_or_bad_values(self):
+        for raw in (None, "", "abc", "7", "-12", "12.5", "1000000"):
+            self.assertEqual(
+                members._resolve_page_size(raw), members.PAGE_SIZE, raw
+            )
+
+
+class PerPageViewTests(TestCase):
+    """The directory honours ?per_page= and carries it through paging."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        for i in range(30):
+            Profile.objects.create(username=f"user{i:02d}", name=f"U{i:02d}")
+
+    def _stub_render(self, request, template_name, context):
+        return SimpleNamespace(
+            status_code=200, template_name=template_name, context=context
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_listing_pages_by_the_chosen_size(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        r1 = people_by_username(
+            self.factory.get("/members", {"per_page": "12"})
+        )
+        c1 = r1.context
+        self.assertEqual(len(c1["profiles"]), 12)
+        self.assertEqual(c1["page_size"], 12)
+        self.assertEqual(c1["page_count"], 3)
+        self.assertEqual(c1["current_page"], 1)
+        self.assertTrue(c1["has_next"])
+
+        r2 = people_by_username(
+            self.factory.get(
+                "/members",
+                {"per_page": "12", "cursor": c1["next_cursor"]},
+            )
+        )
+        c2 = r2.context
+        self.assertEqual(len(c2["profiles"]), 12)
+        self.assertEqual(c2["current_page"], 2)
+        self.assertEqual(
+            c2["profiles"][0].username, "user12"
+        )
+
+        r3 = people_by_username(
+            self.factory.get(
+                "/members",
+                {"per_page": "12", "cursor": c2["next_cursor"]},
+            )
+        )
+        c3 = r3.context
+        self.assertEqual(len(c3["profiles"]), 6)
+        self.assertEqual(c3["current_page"], 3)
+        self.assertFalse(c3["has_next"])
+
+        back = people_by_username(
+            self.factory.get(
+                "/members",
+                {
+                    "per_page": "12",
+                    "cursor": c3["prev_cursor"],
+                    "dir": "prev",
+                },
+            )
+        )
+        self.assertEqual(
+            [p.username for p in back.context["profiles"]],
+            [p.username for p in c2["profiles"]],
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_unlisted_size_falls_back_to_default(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        ctx = people_by_username(
+            self.factory.get("/members", {"per_page": "7"})
+        ).context
+        self.assertEqual(ctx["page_size"], members.PAGE_SIZE)
+        self.assertEqual(len(ctx["profiles"]), min(30, members.PAGE_SIZE))
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_context_offers_the_size_choices(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        ctx = people_by_username(self.factory.get("/members")).context
+        self.assertEqual(
+            tuple(ctx["page_size_choices"]), members.PAGE_SIZE_CHOICES
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_pages_by_the_chosen_size(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        interest = AcademicInterest.objects.create(text="Maps")
+        for p in Profile.objects.all()[:20]:
+            p.academic_interests.add(interest)
+        ctx = people_by_username(
+            self.factory.get(
+                "/members", {"per_page": "12", "interest": "Maps"}
+            )
+        ).context
+        self.assertEqual(len(ctx["profiles"]), 12)
+        self.assertEqual(ctx["total_count"], 20)
+        self.assertEqual(ctx["page_count"], 2)
+
+    def test_rendered_pager_links_keep_the_chosen_size_and_filter(self):
+        interest = AcademicInterest.objects.create(text="Maps")
+        for p in Profile.objects.all()[:20]:
+            p.academic_interests.add(interest)
+        response = self.client.get("/members/?interest=Maps&per_page=12")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        match = re.search(r'href="([^"]*)">\s*Next', html)
+        self.assertIsNotNone(match)
+        next_href = match.group(1)
+        self.assertIn("per_page=12", next_href)
+        self.assertIn("interest=Maps", next_href)
+        self.assertIn("cursor=", next_href)

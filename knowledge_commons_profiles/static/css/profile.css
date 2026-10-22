@@ -1393,6 +1393,29 @@ div {
           opacity:.55;
           cursor: not-allowed;
         }
+        .pager .per-page-form{
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin: 0;
+          font-weight: 600;
+        }
+        .pager .per-page-form select{
+          appearance: auto;
+          background: var(--card);
+          color: var(--text);
+          border: 1px solid #d1d9e0;
+          border-radius: 10px;
+          padding: 6px 10px;
+          font: inherit;
+          font-weight: 600;
+          box-shadow: var(--shadow);
+          cursor: pointer;
+        }
+        .pager .per-page-form select:focus-visible{
+          outline: 2px solid var(--ring);
+          outline-offset: 2px;
+        }
 
         /* Responsive tweaks */
         @media (max-width: 640px){

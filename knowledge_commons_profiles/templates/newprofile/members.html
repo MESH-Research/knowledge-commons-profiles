@@ -55,17 +55,29 @@
 
       <div class="pager">
         {% if has_prev %}
-          <a href="?{% if interest_filter %}interest={{ interest_filter|urlencode }}&{% endif %}cursor={{ prev_cursor }}&dir=prev"><< Previous</a>
+          <a href="?{% if interest_filter %}interest={{ interest_filter|urlencode }}&{% endif %}per_page={{ page_size }}&cursor={{ prev_cursor }}&dir=prev"><< Previous</a>
         {% else %}
           <span class="disabled"><< Previous</span>
         {% endif %}
         <span class="page-info">Page {{ current_page }} of {{ page_count }}</span>
         {% if has_next %}
-          <a href="?{% if interest_filter %}interest={{ interest_filter|urlencode }}&{% endif %}cursor={{ next_cursor }}">Next >></a>
+          <a href="?{% if interest_filter %}interest={{ interest_filter|urlencode }}&{% endif %}per_page={{ page_size }}&cursor={{ next_cursor }}">Next >></a>
         {% else %}
           <span class="disabled">Next >></span>
         {% endif %}
         <span class="member-count">{{ total_count }} member{{ total_count|pluralize }}</span>
+        <form method="get" class="per-page-form">
+          {% if interest_filter %}
+            <input type="hidden" name="interest" value="{{ interest_filter }}"/>
+          {% endif %}
+          <label for="per_page">Per page</label>
+          <select name="per_page" id="per_page" onchange="this.form.submit()">
+            {% for choice in page_size_choices %}
+              <option value="{{ choice }}" {% if choice == page_size %}selected{% endif %}>{{ choice }}</option>
+            {% endfor %}
+          </select>
+          <noscript><input type="submit" value="Go"/></noscript>
+        </form>
       </div>
     </div>
   </div>

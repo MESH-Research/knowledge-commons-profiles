@@ -24,7 +24,10 @@ from knowledge_commons_profiles.newprofile.utils import get_profile_photo
 
 User = get_user_model()
 
-PAGE_SIZE = 25
+PAGE_SIZE = 24
+# Sizes a reader may pick; every one divides evenly across the 1, 2, 3
+# or 4 columns the responsive grid can show, so the last row is full.
+PAGE_SIZE_CHOICES = (12, 24, 48, 96)
 MAX_DISPLAY_INTERESTS = 5
 
 # Listing order: most recent login first, members who have never logged
@@ -138,6 +141,20 @@ def _prefix_count_qs(qs, key: dict) -> int:
     return qs.filter(_before_q(key)).count() + 1
 
 
+def _resolve_page_size(raw: str | None) -> int:
+    """
+    Turn a ?per_page= value into one of PAGE_SIZE_CHOICES.
+
+    Anything missing, malformed or not on the list falls back to
+    PAGE_SIZE.
+    """
+    try:
+        size = int(raw)
+    except (TypeError, ValueError):
+        return PAGE_SIZE
+    return size if size in PAGE_SIZE_CHOICES else PAGE_SIZE
+
+
 def _page_bounds(page_num: int):
     start = (page_num - 1) * PAGE_SIZE
     end = start + PAGE_SIZE
@@ -188,7 +205,10 @@ def _has_network_membership(profile: Profile, network_lower: str) -> bool:
 
 
 def _paginate_profile_list(
-    rows_all: list[Profile], cursor: str | None, direction: str
+    rows_all: list[Profile],
+    cursor: str | None,
+    direction: str,
+    page_size: int | None = None,
 ) -> tuple[list[Profile], bool, bool, str | None, str | None, int]:
     """
     Cursor-paginate an in-memory profile list sorted by _sort_key.
@@ -196,6 +216,8 @@ def _paginate_profile_list(
     Mirrors the cursor semantics of _handle_cursor so the members
     template's pager links work unchanged.
     """
+    page_size = page_size or PAGE_SIZE
+
     if cursor:
         last_login, username, id_ = _parse_key(_decode_cursor(cursor))
         key = _sort_key(
@@ -206,17 +228,17 @@ def _paginate_profile_list(
 
         if direction == "prev":
             before = [p for p in rows_all if _sort_key(p) < key]
-            rows = before[-PAGE_SIZE:]
-            has_prev = len(before) > PAGE_SIZE
+            rows = before[-page_size:]
+            has_prev = len(before) > page_size
             has_next = bool(rows)
         else:
             after = [p for p in rows_all if _sort_key(p) > key]
-            rows = after[:PAGE_SIZE]
-            has_next = len(after) > PAGE_SIZE
+            rows = after[:page_size]
+            has_next = len(after) > page_size
             has_prev = bool(rows)
     else:
-        rows = rows_all[:PAGE_SIZE]
-        has_next = len(rows_all) > PAGE_SIZE
+        rows = rows_all[:page_size]
+        has_next = len(rows_all) > page_size
         has_prev = False
 
     if rows:
@@ -228,7 +250,7 @@ def _paginate_profile_list(
             _encode_cursor(_cursor_payload(first)) if has_prev else None
         )
         leading = rows_all.index(rows[0]) + 1
-        current_page = max(1, ceil(leading / PAGE_SIZE))
+        current_page = max(1, ceil(leading / page_size))
     else:
         next_cursor = prev_cursor = None
         current_page = 1
@@ -299,14 +321,15 @@ def network_members(request, network_name):
         if _has_network_membership(profile, network_lower)
     ]
 
+    page_size = _resolve_page_size(request.GET.get("per_page"))
     total_count = len(rows_all)
-    page_count = max(1, ceil(total_count / PAGE_SIZE))
+    page_count = max(1, ceil(total_count / page_size))
 
     cursor = request.GET.get("cursor")
     direction = request.GET.get("dir", "next")
 
     rows, has_next, has_prev, next_cursor, prev_cursor, current_page = (
-        _paginate_profile_list(rows_all, cursor, direction)
+        _paginate_profile_list(rows_all, cursor, direction, page_size)
     )
 
     for profile in rows:
@@ -324,7 +347,8 @@ def network_members(request, network_name):
             "current_page": current_page,
             "page_count": page_count,
             "total_count": total_count,
-            "page_size": PAGE_SIZE,
+            "page_size": page_size,
+            "page_size_choices": PAGE_SIZE_CHOICES,
             "interest_filter": None,
             "max_display_interests": MAX_DISPLAY_INTERESTS,
             "network": network,
@@ -341,6 +365,7 @@ def people_by_username(request):
         return network_members(request, network)
 
     interest_filter = request.GET.get("interest")
+    page_size = _resolve_page_size(request.GET.get("per_page"))
 
     if request.POST:
         username = request.POST.get("username")
@@ -371,7 +396,8 @@ def people_by_username(request):
                 "current_page": 1,
                 "page_count": 1,
                 "total_count": rows.count(),
-                "page_size": PAGE_SIZE,
+                "page_size": page_size,
+                "page_size_choices": PAGE_SIZE_CHOICES,
                 "interest_filter": interest_filter,
                 "max_display_interests": MAX_DISPLAY_INTERESTS,
             },
@@ -382,15 +408,17 @@ def people_by_username(request):
 
     current_page = 1
 
-    page_count, qs, total_count = fetch_member_data(interest=interest_filter)
+    page_count, qs, total_count = fetch_member_data(
+        interest=interest_filter, page_size=page_size
+    )
 
     rows = []
 
     has_next, has_prev, next_cursor, prev_cursor, rows = _handle_cursor(
-        cursor, direction, qs, rows
+        cursor, direction, qs, rows, page_size
     )
 
-    current_page = _compute_current_page(current_page, qs, rows)
+    current_page = _compute_current_page(current_page, qs, rows, page_size)
 
     return render(
         request,
@@ -404,7 +432,8 @@ def people_by_username(request):
             "current_page": current_page,
             "page_count": page_count,
             "total_count": total_count,
-            "page_size": PAGE_SIZE,
+            "page_size": page_size,
+            "page_size_choices": PAGE_SIZE_CHOICES,
             "interest_filter": interest_filter,
             "max_display_interests": MAX_DISPLAY_INTERESTS,
         },
@@ -416,7 +445,10 @@ def _handle_cursor(
     direction: str,
     qs: QuerySet[Profile, Profile],
     rows: list[Profile],
+    page_size: int | None = None,
 ) -> tuple[list[Profile], bool, bool, str | None, str | None]:
+    page_size = page_size or PAGE_SIZE
+
     if cursor:
         key = _decode_cursor(cursor)
 
@@ -425,9 +457,9 @@ def _handle_cursor(
                 F("last_login").asc(nulls_first=True), "-username", "-id"
             )
 
-            fetched = list(page_qs[: PAGE_SIZE + 1])
-            if len(fetched) > PAGE_SIZE:
-                rows = fetched[:PAGE_SIZE]
+            fetched = list(page_qs[: page_size + 1])
+            if len(fetched) > page_size:
+                rows = fetched[:page_size]
                 has_prev = True
             else:
                 rows = fetched
@@ -441,9 +473,9 @@ def _handle_cursor(
             # next page (normal direction)
             page_qs = qs.filter(_after_q(key)).order_by(*LISTING_ORDER)
 
-            fetched = list(page_qs[: PAGE_SIZE + 1])
-            if len(fetched) > PAGE_SIZE:
-                rows = fetched[:PAGE_SIZE]
+            fetched = list(page_qs[: page_size + 1])
+            if len(fetched) > page_size:
+                rows = fetched[:page_size]
                 has_next = True
             else:
                 rows = fetched
@@ -453,9 +485,9 @@ def _handle_cursor(
 
     else:
         # first page
-        start_set = list(qs[: PAGE_SIZE + 1])
-        if len(start_set) > PAGE_SIZE:
-            rows = start_set[:PAGE_SIZE]
+        start_set = list(qs[: page_size + 1])
+        if len(start_set) > page_size:
+            rows = start_set[:page_size]
             has_next = True
         else:
             rows = start_set
@@ -478,7 +510,9 @@ def _handle_cursor(
 
 def fetch_member_data(
     interest: str | None = None,
+    page_size: int | None = None,
 ) -> tuple[int, QuerySet[Profile, Profile], int]:
+    page_size = page_size or PAGE_SIZE
     qs = with_last_login(
         Profile.objects.filter(name__isnull=False)
         .exclude(name__exact="")
@@ -497,18 +531,22 @@ def fetch_member_data(
 
     # Cheap total count (uses index-only scans on Postgres if possible)
     total_count = qs.count()
-    page_count = max(1, ceil(total_count / PAGE_SIZE)) if total_count else 1
+    page_count = max(1, ceil(total_count / page_size)) if total_count else 1
     return page_count, qs, total_count
 
 
 def _compute_current_page(
-    current_page: int, qs: QuerySet[Profile, Profile], rows: list[Profile]
+    current_page: int,
+    qs: QuerySet[Profile, Profile],
+    rows: list[Profile],
+    page_size: int | None = None,
 ) -> int:
+    page_size = page_size or PAGE_SIZE
     # Compute current_page from the first visible row via a prefix COUNT
     # (avoids big OFFSETs on deep pages)
     if rows:
         leading = _prefix_count_qs(qs, _cursor_payload(rows[0]))
-        current_page = max(1, ceil(leading / PAGE_SIZE))
+        current_page = max(1, ceil(leading / page_size))
     else:
         current_page = 1
 
