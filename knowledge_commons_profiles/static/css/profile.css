@@ -1586,6 +1586,7 @@ div {
           flex-wrap: wrap;
           gap: 5px;
           margin-top: 6px;
+          min-width: 0;
         }
 
         .member-interest-tag {
@@ -1598,6 +1599,13 @@ div {
           border: 1px solid #d1e3da;
           text-decoration: none;
           white-space: nowrap;
+          /* an unsplit, sentence-long interest is clipped to the card
+             rather than running across its neighbours; the full text
+             is in the title attribute */
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
+          text-overflow: ellipsis;
           transition: background 0.15s ease;
         }
 
