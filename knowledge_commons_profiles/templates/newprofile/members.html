@@ -25,23 +25,25 @@
   {% endif %}
   <div class="row">
     <!-- Profile Info -->
-    <div class="wrap">
+    <div class="wrap member-directory">
+      <div class="member-grid">
       {% for p in profiles %}
         {% if p.name %}
-        <div class="card">
-            <a href="{% url "profile" p.username %}"><img alt="{{ p.name }}" class="avatar" src="{{ p.final_image }}"/></a>
-            <div>
-              <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }} ({{ p.username }})</a></p>
+        <div class="member-card">
+            <a href="{% url "profile" p.username %}" class="member-card-avatar"><img alt="{{ p.name }}" class="avatar" src="{{ p.final_image }}"/></a>
+            <div class="member-card-body">
+              <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }}</a></p>
+              <p class="member-card-username"><a href="{% url "profile" p.username %}">{{ p.username }}</a></p>
               {% if p.institutional_or_other_affiliation %}
                 <div class="aff"><a href="{% url "profile" p.username %}">{{ p.institutional_or_other_affiliation }}</a></div>
               {% endif %}
               {% if p.display_interests %}
                 <div class="member-interests">
-                  {% for interest in p.display_interests|slice:":5" %}
+                  {% for interest in p.display_interests|slice:":3" %}
                     <!-- djlint:off --><a href="{% url 'members' %}?interest={{ interest|urlencode }}" class="member-interest-tag">{{ interest }}</a><!-- djlint:on -->
                   {% endfor %}
-                  {% if p.display_interests|length > 5 %}
-                    <span class="member-interest-more">+{{ p.display_interests|length|add:"-5" }} more</span>
+                  {% if p.display_interests|length > 3 %}
+                    <span class="member-interest-more">+{{ p.display_interests|length|add:"-3" }} more</span>
                   {% endif %}
                 </div>
               {% endif %}
@@ -49,6 +51,7 @@
         </div>
         {% endif %}
       {% endfor %}
+      </div>
 
       <div class="pager">
         {% if has_prev %}
