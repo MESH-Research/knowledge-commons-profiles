@@ -30,12 +30,12 @@
       {% for p in profiles %}
         {% if p.name %}
         <div class="member-card">
-            <a href="{% url "profile" p.username %}" class="member-card-avatar"><img alt="{{ p.name }}" class="avatar" src="{{ p.final_image }}"/></a>
+            <img alt="" class="avatar" src="{{ p.final_image }}"/>
             <div class="member-card-body">
-              <p class="name"><a href="{% url "profile" p.username %}">{{ p.name }}</a></p>
-              <p class="member-card-username"><a href="{% url "profile" p.username %}">{{ p.username }}</a></p>
+              <p class="name"><a href="{% url "profile" p.username %}" class="member-card-link">{{ p.name }}</a></p>
+              <p class="member-card-username">{{ p.username }}</p>
               {% if p.institutional_or_other_affiliation %}
-                <div class="aff"><a href="{% url "profile" p.username %}">{{ p.institutional_or_other_affiliation }}</a></div>
+                <div class="aff">{{ p.institutional_or_other_affiliation }}</div>
               {% endif %}
               {% if p.display_interests %}
                 <div class="member-interests">

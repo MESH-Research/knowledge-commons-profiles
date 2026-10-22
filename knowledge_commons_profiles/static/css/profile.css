@@ -1504,6 +1504,7 @@ div {
         }
 
         .member-card {
+          position: relative; /* anchor for the card-wide link overlay */
           display: flex;
           align-items: flex-start;
           gap: 12px;
@@ -1512,17 +1513,40 @@ div {
           border-radius: 12px;
           padding: 12px;
           box-shadow: var(--shadow);
-          transition: transform .08s ease, box-shadow .08s ease;
+          cursor: pointer;
+          transition: transform .08s ease, box-shadow .08s ease,
+                      background-color .12s ease;
         }
-        .member-card:hover { transform: translateY(-1px) }
+        .member-card:hover {
+          transform: translateY(-1px);
+          background: #f3f7f5;
+        }
         .member-card:focus-within {
           outline: 2px solid var(--ring);
           outline-offset: 2px;
         }
 
-        .member-card-avatar { flex: 0 0 auto; line-height: 0 }
+        /* The name link is stretched over the whole card, so a click
+           anywhere opens the profile; it stays a single, real link for
+           keyboard and screen-reader users. */
+        .member-card-link::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          border-radius: inherit;
+        }
+        .member-card-link:focus-visible { outline: none }
+
+        /* Interest tags sit above the overlay so they remain their
+           own links to the filtered listing. */
+        .member-card .member-interests {
+          position: relative;
+          z-index: 2;
+        }
+
         .member-card .avatar {
-          width: 56px; height: 56px; flex-basis: 56px;
+          width: 56px; height: 56px; flex: 0 0 56px;
         }
 
         .member-card-body {
@@ -1541,7 +1565,6 @@ div {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .member-card-username a { color: inherit }
         .member-card .aff {
           margin-top: 2px;
           font-size: .85rem;
