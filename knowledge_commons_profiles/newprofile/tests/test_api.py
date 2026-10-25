@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 from operator import itemgetter
 from types import SimpleNamespace
@@ -70,12 +69,11 @@ class TestWorksHtmlPropertyTests(django.test.TransactionTestCase):
             self.mock_works_deposits_instance
         )
 
-        # Set up the display_filter mock to return a coroutine
+        # works_html is synchronous now, so a plain return value is enough.
+        # (An asyncio.Future() here needs a running event loop on 3.14+.)
         self.mock_html_content = "<div>Sample Works HTML</div>"
-        self.mock_works_deposits_instance.display_filter.return_value = (
-            asyncio.Future()
-        )
-        self.mock_works_deposits_instance.display_filter.return_value.set_result(
+        instance = self.mock_works_deposits_instance
+        instance.get_works_for_frontend_display.return_value = (
             self.mock_html_content
         )
 
