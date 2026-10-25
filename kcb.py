@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.14"
 # dependencies = ["click>=8.1"]
 # ///
 """Entry point: ``uv run kcb.py --help``."""
