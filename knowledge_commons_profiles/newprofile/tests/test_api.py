@@ -20,8 +20,6 @@ from knowledge_commons_profiles.newprofile.tests.model_factories import (
     UserFactory,
 )
 
-# ruff: noqa: PLC0415
-
 
 def set_up_api_instance():
     """
@@ -770,9 +768,7 @@ class ProfilePropertyTests(django.test.TestCase):
         self.mock_create = self.create_patcher.start()
 
         # Make create return a ProfileFactory instance
-        self.mock_create.return_value = lambda **kwargs: ProfileFactory(
-            **kwargs
-        )
+        self.mock_create.return_value = ProfileFactory
 
         # Patch User.objects.get to avoid it being called
         self.user_get_patcher = mock.patch(

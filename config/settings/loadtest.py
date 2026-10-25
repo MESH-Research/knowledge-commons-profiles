@@ -1,4 +1,4 @@
-# ruff: noqa: F401, F403, F405, E501
+# ruff: noqa: F403, E501
 """Settings module for stress / load testing.
 
 Inherits from `base.py` directly (not `production.py`) so a load-test run

@@ -2,10 +2,13 @@
 
 from collections.abc import Callable
 from collections.abc import Mapping
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from kcbuild.runner import CommandError
 from kcbuild.runner import CommandResult
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 Responder = Callable[[list[str]], tuple[int, str] | None]
 

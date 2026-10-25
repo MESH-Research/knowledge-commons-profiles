@@ -6,13 +6,15 @@ import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
+from typing import TYPE_CHECKING
 
 import requests
 from django.conf import settings
 from nameparser import HumanName
 from rest_framework.status import HTTP_400_BAD_REQUEST
 
-from knowledge_commons_profiles.newprofile.models import Profile
+if TYPE_CHECKING:
+    from knowledge_commons_profiles.newprofile.models import Profile
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +202,7 @@ def get_external_memberships(obj: Profile, api_only=False):
             for role in obj.role_overrides:
                 member_json[role] = True
 
-    except (json.JSONDecodeError, AttributeError, Exception) as e:
+    except (json.JSONDecodeError, AttributeError, Exception) as e:  # noqa: BLE001
         message = (
             f"Failed to get external sync memberships "
             f"for {obj.username}: {e}"

@@ -4,8 +4,11 @@ Everything here shells out to the locally installed AWS CLI, replacing the
 ``configure-aws-credentials`` and ``amazon-ecr-login`` GitHub actions.
 """
 
-from kcbuild.config import Target
-from kcbuild.runner import Runner
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from kcbuild.config import Target
+    from kcbuild.runner import Runner
 
 
 class AwsAuthError(RuntimeError):

@@ -62,7 +62,6 @@ def cv_file_path(instance, filename):
     return f"cvs/{instance.pk}{ext}"
 
 
-# ruff: noqa: PLC0415
 class ProfileBleachField(models.TextField):
     """A plain TextField retained for historical migrations.
 

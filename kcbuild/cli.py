@@ -8,9 +8,9 @@ in the same order CI uses.
 import functools
 import platform
 import sys
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 
@@ -29,6 +29,9 @@ from kcbuild.config import ecr_registry
 from kcbuild.config import get_target
 from kcbuild.runner import CommandError
 from kcbuild.runner import Runner
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TEST_DATABASE_URL = "postgres://kcp:kcp@localhost:5459/kcp"

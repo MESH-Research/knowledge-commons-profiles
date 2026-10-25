@@ -2,10 +2,13 @@
 
 import tomllib
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from kcbuild.config import Target
-from kcbuild.runner import Runner
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kcbuild.config import Target
+    from kcbuild.runner import Runner
 
 SHORT_SHA_LENGTH = 7
 

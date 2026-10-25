@@ -1,13 +1,18 @@
 """Docker build, tag and push operations."""
 
-from pathlib import Path
+
+from typing import TYPE_CHECKING
 
 from kcbuild.config import BASE_DOCKERFILE
 from kcbuild.config import Target
 from kcbuild.metadata import BuildInfo
 from kcbuild.metadata import ImageTags
 from kcbuild.metadata import compose_environment
-from kcbuild.runner import Runner
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kcbuild.runner import Runner
 
 
 def base_image_ref(registry: str, repository: str) -> str:

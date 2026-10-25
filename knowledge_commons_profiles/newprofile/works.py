@@ -8,6 +8,7 @@ import logging
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 
 import altair as alt
@@ -33,9 +34,11 @@ from knowledge_commons_profiles.citeproc import CitationStylesBibliography
 from knowledge_commons_profiles.citeproc import CitationStylesStyle
 from knowledge_commons_profiles.citeproc import formatter
 from knowledge_commons_profiles.citeproc.source.json import CiteProcJSON
-from knowledge_commons_profiles.newprofile import models
 from knowledge_commons_profiles.newprofile.utils import get_visibilities
 from knowledge_commons_profiles.newprofile.utils import hide_work
+
+if TYPE_CHECKING:
+    from knowledge_commons_profiles.newprofile import models
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +353,7 @@ class WorksDeposits:
     )
     def _fetch_records(
         self, endpoint: str, headers: dict
-    ) -> "Hitdict | None":
+    ) -> Hitdict | None:
         """Issue the HTTP request and parse the response.
 
         Decorated with tenacity so that transient httpx.RequestError

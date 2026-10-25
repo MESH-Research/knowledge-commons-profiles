@@ -31,7 +31,7 @@ def _preload_oidc_metadata():
         if client is None:
             return
         client.load_server_metadata()
-    except Exception:  # noqa: BLE001 — preload is best-effort
+    except Exception:
         logger.warning(
             "Could not preload CILogon discovery metadata at startup; "
             "first request after spawn will fetch it instead",

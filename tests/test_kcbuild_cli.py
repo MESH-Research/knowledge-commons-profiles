@@ -1,4 +1,5 @@
-from pathlib import Path
+
+from typing import TYPE_CHECKING
 
 import pytest
 from click.testing import CliRunner
@@ -6,6 +7,9 @@ from click.testing import CliRunner
 from kcbuild.cli import main
 from tests.kcbuild_support import FakeRunner
 from tests.kcbuild_support import answer
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SHA = "0123456789abcdef0123456789abcdef01234567"
 REG = "755997884632.dkr.ecr.us-east-1.amazonaws.com"

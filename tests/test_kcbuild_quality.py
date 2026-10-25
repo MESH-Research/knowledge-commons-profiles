@@ -1,4 +1,5 @@
-from pathlib import Path
+
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -6,6 +7,9 @@ from kcbuild import quality
 from kcbuild.runner import CommandError
 from tests.kcbuild_support import FakeRunner
 from tests.kcbuild_support import answer
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 REG = "755997884632.dkr.ecr.us-east-1.amazonaws.com"
 

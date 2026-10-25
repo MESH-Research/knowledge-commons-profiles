@@ -1,12 +1,16 @@
 """Lint, test and version-bump stages."""
 
-from pathlib import Path
+
+from typing import TYPE_CHECKING
 
 from kcbuild.config import COMMITIZEN_VERSION
 from kcbuild.config import TEST_COMPOSE_FILE
 from kcbuild.metadata import git_sha
 from kcbuild.runner import CommandError
 from kcbuild.runner import Runner
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 CZ_NO_COMMITS_EXIT_CODE = 21
 UV_LOCAL = ["uv", "run", "--group", "local"]

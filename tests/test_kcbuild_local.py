@@ -1,7 +1,11 @@
-from pathlib import Path
+
+from typing import TYPE_CHECKING
 
 from kcbuild import local
 from tests.kcbuild_support import FakeRunner
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 REG = "755997884632.dkr.ecr.us-east-1.amazonaws.com"
 DB = "postgres://kcp:kcp@host.docker.internal:5459/kcp"

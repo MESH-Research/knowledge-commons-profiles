@@ -6,9 +6,13 @@ https://localhost using the locally built base image.
 name, so as long as ``kcb.py base --dev`` has run, nothing touches AWS.
 """
 
-from pathlib import Path
 
-from kcbuild.runner import Runner
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from kcbuild.runner import Runner
 
 LOCAL_COMPOSE_FILE = "docker-compose.local.yml"
 

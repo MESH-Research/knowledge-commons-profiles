@@ -1,4 +1,5 @@
-from pathlib import Path
+
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -6,6 +7,9 @@ from kcbuild import metadata
 from kcbuild.config import get_target
 from tests.kcbuild_support import FakeRunner
 from tests.kcbuild_support import answer
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SHA = "0123456789abcdef0123456789abcdef01234567"
 

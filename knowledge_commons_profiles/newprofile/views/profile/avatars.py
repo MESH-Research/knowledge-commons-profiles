@@ -43,7 +43,6 @@ def upload_avatar(request, username=None):
     img_file = form.cleaned_data["image"]
 
     # Pillow verification & basic content-type allowlist
-    # ruff: noqa: BLE001
     try:
         im = Image.open(img_file)
         im.verify()  # ensures it's really an image
@@ -125,7 +124,6 @@ def upload_cover(request, username=None):
     img_file = form.cleaned_data["image"]
 
     # Pillow verification & basic content-type allowlist
-    # ruff: noqa: BLE001
     try:
         im = Image.open(img_file)
         im.verify()  # ensures it's really an image

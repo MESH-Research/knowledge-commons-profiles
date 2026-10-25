@@ -3,17 +3,20 @@
 import os
 import shlex
 import subprocess
-from collections.abc import Callable
-from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from collections.abc import Mapping
+    from pathlib import Path
 
 
 class CommandError(RuntimeError):
     """Raised when a command exits non-zero and ``check`` is on."""
 
-    def __init__(self, result: "CommandResult") -> None:
+    def __init__(self, result: CommandResult) -> None:
         self.result = result
         super().__init__(
             f"Command {shlex.join(result.args)!r} exited with "
