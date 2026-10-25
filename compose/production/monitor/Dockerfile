@@ -1,5 +1,5 @@
 # Lightweight Python image for website monitoring
-FROM docker.io/python:3.12.12-slim-bookworm
+FROM docker.io/python:3.14.9-slim-bookworm
 
 ARG APP_HOME=/app
 
