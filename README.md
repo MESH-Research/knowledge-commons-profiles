@@ -199,6 +199,22 @@ Pushing and deploying need a live AWS session (`aws login`); pass
 `--profile` to use a named profile. The tool refuses to push or deploy if
 `aws sts get-caller-identity` fails.
 
+To run the local development stack on <https://localhost> (TLS via
+`~/cert.pem` and `~/key.pem`, Redis from the compose file, Postgres from a
+local container) without any AWS access:
+
+```bash
+uv run kcb.py up                     # builds the dev base if missing, starts kcp-test-pg, compose up
+uv run kcb.py up --database-url postgres://user:pass@host.docker.internal:5432/db --no-db-container
+uv run kcb.py logs                   # follow the containers
+uv run kcb.py down                   # stop them
+```
+
+The local Dockerfile builds `FROM $ECR_REGISTRY/kcprofiles-base-dev:latest`.
+That registry prefix is only a name: Docker never pulls an image that
+already exists locally under it, so `kcb.py base --dev` (run automatically
+by `up`) is all that is needed.
+
 ### Production
 
 The application is deployed using Docker Compose:

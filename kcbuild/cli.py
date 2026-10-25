@@ -16,6 +16,7 @@ import click
 
 from kcbuild import aws
 from kcbuild import images
+from kcbuild import local
 from kcbuild import metadata
 from kcbuild import quality
 from kcbuild.config import AWS_REGION
@@ -33,6 +34,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TEST_DATABASE_URL = "postgres://kcp:kcp@localhost:5459/kcp"
 DEFAULT_TEST_WP_DATABASE_URL = "postgres://kcp:kcp@localhost:5459/kcp_wp"
 DEFAULT_TEST_ENV_FILE = ".envs/.github/.django"
+DEFAULT_LOCAL_DATABASE_URL = "postgres://kcp:kcp@host.docker.internal:5459/kcp"
+DEFAULT_DB_CONTAINER = "kcp-test-pg"
 
 
 @dataclass
@@ -483,6 +486,86 @@ def bump(app: AppContext) -> None:
         click.secho("Version bumped; remember to push with --tags.", fg="green")
     else:
         click.echo("Nothing to bump.")
+
+
+# -- Local development stack --------------------------------------------------
+
+
+@main.command()
+@click.option(
+    "--database-url", default=DEFAULT_LOCAL_DATABASE_URL, show_default=True,
+    help="Postgres URL as seen from inside the django container.",
+)
+@click.option(
+    "--db-container", default=DEFAULT_DB_CONTAINER, show_default=True,
+    help="Docker container to `docker start` before the stack comes up.",
+)
+@click.option(
+    "--no-db-container", is_flag=True, help="Do not start any DB container.",
+)
+@click.option("--no-build", is_flag=True, help="Skip the image build.")
+@click.option(
+    "--foreground", is_flag=True,
+    help="Stay attached to the containers instead of detaching.",
+)
+@click.option(
+    "--rebuild-base", is_flag=True,
+    help="Rebuild the dev base image even if present.",
+)
+@pass_app
+@handle_errors
+def up(  # noqa: PLR0913
+    app: AppContext,
+    *,
+    database_url: str,
+    db_container: str,
+    no_db_container: bool,
+    no_build: bool,
+    foreground: bool,
+    rebuild_base: bool,
+) -> None:
+    """Run the local dev stack on https://localhost with the local base."""
+    dev_base = images.base_image_ref(app.registry, TEST_BASE_REPOSITORY)
+    ensure_base(
+        app, dev_base, TEST_BASE_BUILD_ENVIRONMENT, rebuild=rebuild_base,
+    )
+    for cert in ("cert.pem", "key.pem"):
+        if not (Path.home() / cert).exists():
+            click.secho(
+                f"Warning: ~/{cert} not found; the compose file mounts it "
+                "for TLS on port 443.",
+                fg="yellow",
+                err=True,
+            )
+    if not no_db_container:
+        banner(f"Start database container {db_container}")
+        local.start_container(app.runner, db_container)
+    banner(f"Local stack ({local.LOCAL_COMPOSE_FILE}) on https://localhost")
+    local.local_stack_up(
+        app.runner, app.repo, app.registry,
+        database_url=database_url, build=not no_build, detach=not foreground,
+    )
+    click.secho(
+        "Stack is up: https://localhost  (kcb.py logs / kcb.py down)",
+        fg="green",
+    )
+
+
+@main.command()
+@pass_app
+@handle_errors
+def down(app: AppContext) -> None:
+    """Stop the local dev stack."""
+    local.local_stack_down(app.runner, app.repo, app.registry)
+    click.secho("Stack stopped.", fg="green")
+
+
+@main.command()
+@pass_app
+@handle_errors
+def logs(app: AppContext) -> None:
+    """Follow the local dev stack's logs."""
+    local.local_stack_logs(app.runner, app.repo, app.registry)
 
 
 # -- Chained run -------------------------------------------------------------

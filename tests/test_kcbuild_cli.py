@@ -363,3 +363,65 @@ def test_dry_run_info_still_reads_real_git_metadata(repo: Path):
 
     assert result.exit_code == 0
     assert SHA in result.output
+
+
+def test_up_builds_base_dev_if_missing_starts_db_and_brings_stack_up(
+    repo: Path,
+):
+    fake = FakeRunner(BASE_MISSING)
+
+    result = invoke(fake, repo, "up")
+
+    assert result.exit_code == 0
+    lines = flat(fake)
+    (base_build,) = fake.commands_starting("docker", "build")
+    assert BASE_DEV in base_build
+    assert "docker start kcp-test-pg" in lines
+    assert first_index(lines, "docker start") < first_index(
+        lines, "docker compose -f docker-compose.local.yml up",
+    )
+    assert "docker compose -f docker-compose.local.yml build" in lines
+    assert lines[-1] == (
+        "docker compose -f docker-compose.local.yml up -d --remove-orphans"
+    )
+    assert not fake.commands_starting("aws")
+
+
+def test_up_reuses_an_existing_base_dev_image(repo: Path):
+    fake = FakeRunner(BASE_PRESENT)
+
+    result = invoke(fake, repo, "up", "--no-db-container")
+
+    assert result.exit_code == 0
+    assert not fake.commands_starting("docker", "build")
+    assert not fake.commands_starting("docker", "start")
+
+
+def test_up_passes_database_url_to_compose(repo: Path):
+    fake = FakeRunner(BASE_PRESENT)
+
+    invoke(fake, repo, "up", "--database-url", "postgres://x@y/z")
+
+    (up,) = [
+        call for call in fake.calls
+        if call.args[-3:] == ["up", "-d", "--remove-orphans"]
+    ]
+    assert up.env["LOCAL_DATABASE_URL"] == "postgres://x@y/z"
+
+
+def test_down_stops_the_local_stack(repo: Path):
+    fake = FakeRunner()
+
+    result = invoke(fake, repo, "down")
+
+    assert result.exit_code == 0
+    assert flat(fake) == ["docker compose -f docker-compose.local.yml down"]
+
+
+def test_logs_follow_the_local_stack(repo: Path):
+    fake = FakeRunner()
+
+    result = invoke(fake, repo, "logs")
+
+    assert result.exit_code == 0
+    assert flat(fake) == ["docker compose -f docker-compose.local.yml logs -f"]
