@@ -420,6 +420,22 @@ ROR_THRESHOLD = 0.6
 
 EXCLUDE_STATS_EMAILS = ["gmail.com", "yahoo.com", "hotmail.com"]
 
+# Map tiles for the stats dashboard. The OpenStreetMap tile usage policy
+# (https://operations.osmfoundation.org/policies/tiles/) asks that the tile
+# URL is not hardcoded so that the source can be switched without a deploy.
+STATS_MAP_TILE_URL = env(
+    "STATS_MAP_TILE_URL",
+    default="https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+)
+STATS_MAP_TILE_ATTRIBUTION = env(
+    "STATS_MAP_TILE_ATTRIBUTION",
+    default=(
+        '&copy; <a href="https://www.openstreetmap.org/copyright">'
+        "OpenStreetMap</a> contributors"
+    ),
+)
+STATS_MAP_TILE_MAX_ZOOM = env.int("STATS_MAP_TILE_MAX_ZOOM", default=19)
+
 CILOGON_CLIENT_ID = env("CILOGON_CLIENT_ID", default="")
 CILOGON_CLIENT_SECRET = env("CILOGON_CLIENT_SECRET", default="")
 

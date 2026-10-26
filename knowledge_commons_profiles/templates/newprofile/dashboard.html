@@ -19,6 +19,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no/" />
+  <!-- The OpenStreetMap tile policy requires a Referer header on tile requests;
+       the site-wide Referrer-Policy header (same-origin) would strip it. -->
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link rel="apple-touch-icon" sizes="76x76" href="{% static "img/apple-icon.png" %}" />
   <link rel="icon" type="image/png" href="{% static "img/favicon.png" %}"/>
   <title>
@@ -234,7 +237,15 @@
               <div class="row">
                 <div class="col-lg-12 col-12">
                   <h6>Participation Map (Top 200)</h6>
-                   <div id="map_stats"></div>
+                  <div id="map_stats"
+                       data-tile-url="{{ map_tile_url }}"
+                       data-tile-attribution="{{ map_tile_attribution }}"
+                       data-tile-max-zoom="{{ map_tile_max_zoom }}"></div>
+                  <p id="map_stats_unavailable" class="text-sm mb-0" hidden>
+                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                    We are unable to show a map at this time.
+                  </p>
+                  {{ latlong|json_script:"map_stats_data" }}
                 </div>
               </div>
             </div>
@@ -614,27 +625,10 @@
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="{% static "js/material-dashboard.min.js" %}?v=3.2.0"></script>
 
+  <script src="{% static "js/stats_map.js" %}"></script>
   <script type="text/javascript">
-
-  document.addEventListener("DOMContentLoaded", function() {
-
-    let table = new DataTable('#users');
-
-    var map = L.map('map_stats').setView([0, 0], 2);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
-
-    {% for inst, values in latlong.items %}
-      var circle = L.circle([{{ values.0 }}, {{ values.1 }}], {
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.5,
-        radius: {{ values.2 }}
-      }).addTo(map);
-      circle.bindPopup('{{ inst }}');
-    {% endfor %}
+    document.addEventListener("DOMContentLoaded", function() {
+      let table = new DataTable('#users');
     });
   </script>
 </body>

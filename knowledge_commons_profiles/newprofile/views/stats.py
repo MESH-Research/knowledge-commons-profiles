@@ -2,6 +2,7 @@ import json
 import logging
 
 from basicauth.decorators import basic_auth_required
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 
@@ -36,6 +37,9 @@ def stats_board(request):
         "emails": stats.emails,
         "emailcount": stats.emailcount,
         "users": users,
+        "map_tile_url": settings.STATS_MAP_TILE_URL,
+        "map_tile_attribution": settings.STATS_MAP_TILE_ATTRIBUTION,
+        "map_tile_max_zoom": settings.STATS_MAP_TILE_MAX_ZOOM,
     }
 
     return render(request, "newprofile/dashboard.html", context)

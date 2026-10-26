@@ -6,10 +6,12 @@ import base64
 import csv
 import datetime
 import io
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import SimpleTestCase
 from django.test import override_settings
 from django.urls import reverse
@@ -18,6 +20,10 @@ from knowledge_commons_profiles.newprofile import stats_utils
 
 STATS_UTILS = "knowledge_commons_profiles.newprofile.stats_utils"
 STATS_VIEWS = "knowledge_commons_profiles.newprofile.views.stats"
+
+TILE_URL = "https://tiles.example.org/{z}/{x}/{y}.png"
+TILE_ATTRIBUTION = "Map data from Example Tiles"
+
 
 STATS_CREDENTIALS = ("stats", "pw")
 
@@ -145,6 +151,135 @@ class GetUserDataCountryTests(SimpleTestCase):
         self.assertEqual(
             rows[0]["profile"], "https://hcommons.org/members/user1"
         )
+
+
+class MapTileSettingsTests(SimpleTestCase):
+    """
+    The tile server configuration must not be hardcoded in the template
+    """
+
+    def test_default_tile_url_is_https_template(self):
+        url = settings.STATS_MAP_TILE_URL
+
+        self.assertTrue(url.startswith("https://"))
+        for placeholder in ("{z}", "{x}", "{y}"):
+            self.assertIn(placeholder, url)
+
+    def test_default_attribution_is_set(self):
+        self.assertTrue(settings.STATS_MAP_TILE_ATTRIBUTION)
+
+    def test_default_max_zoom_is_positive_integer(self):
+        self.assertIsInstance(settings.STATS_MAP_TILE_MAX_ZOOM, int)
+        self.assertGreater(settings.STATS_MAP_TILE_MAX_ZOOM, 0)
+
+
+def _user_stats(latlong: dict | None = None) -> SimpleNamespace:
+    return SimpleNamespace(
+        user_count=10,
+        user_count_active=5,
+        user_count_active_two="4",
+        user_count_active_three="3",
+        years="['2020', '2021']",
+        data="[1, 2]",
+        latlong=json.dumps(
+            latlong
+            if latlong is not None
+            else {"University of Testlandia": [51.5, -0.1, 3]}
+        ),
+        topinsts="['University of Testlandia']",
+        topinstscount="[3]",
+        emails="['example.org']",
+        emailcount="[3]",
+    )
+
+
+@override_settings(
+    BASICAUTH_USERS=dict([STATS_CREDENTIALS]),
+    STATS_MAP_TILE_URL=TILE_URL,
+    STATS_MAP_TILE_ATTRIBUTION=TILE_ATTRIBUTION,
+    STATS_MAP_TILE_MAX_ZOOM=7,
+)
+class StatsBoardMapTests(SimpleTestCase):
+    """
+    The stats dashboard should render the map from configuration
+    """
+
+    def _get(self, latlong=None):
+        user_stats = MagicMock()
+        user_stats.objects.all.return_value.first.return_value = _user_stats(
+            latlong
+        )
+        wp_user = MagicMock()
+        wp_user.get_user_data.return_value = []
+
+        with (
+            patch(f"{STATS_VIEWS}.UserStats", user_stats),
+            patch(f"{STATS_VIEWS}.WpUser", wp_user),
+        ):
+            return self.client.get(
+                reverse("stats"), headers=_basic_auth_header()
+            )
+
+    def test_requires_basic_auth(self):
+        response = self.client.get(reverse("stats"))
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_configured_tile_url_is_in_context(self):
+        response = self._get()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["map_tile_url"], TILE_URL)
+
+    def test_configured_attribution_is_in_context(self):
+        response = self._get()
+
+        self.assertEqual(
+            response.context["map_tile_attribution"], TILE_ATTRIBUTION
+        )
+
+    def test_configured_max_zoom_is_in_context(self):
+        response = self._get()
+
+        self.assertEqual(response.context["map_tile_max_zoom"], 7)
+
+    def test_page_uses_configured_tile_url_not_hardcoded_one(self):
+        response = self._get()
+        content = response.content.decode()
+
+        self.assertIn(TILE_URL, content)
+        self.assertNotIn("tile.openstreetmap.org", content)
+
+    def test_page_embeds_map_points_as_json(self):
+        response = self._get(
+            latlong={"University of Testlandia": [51.5, -0.1, 3]}
+        )
+        content = response.content.decode()
+
+        self.assertIn("University of Testlandia", content)
+        self.assertIn("51.5", content)
+        self.assertIn("-0.1", content)
+
+    def test_page_has_hidden_map_unavailable_fallback(self):
+        response = self._get()
+
+        self.assertContains(
+            response, 'id="map_stats_unavailable"', count=1
+        )
+        self.assertRegex(
+            response.content.decode(),
+            r'<p id="map_stats_unavailable"[^>]*\bhidden\b',
+        )
+
+    def test_page_sends_referrer_with_tile_requests(self):
+        """
+        The OSM tile policy forbids a Referrer-Policy that hides the
+        referer. The page must opt tile requests back in.
+        """
+        response = self._get()
+        content = response.content.decode()
+
+        self.assertIn("strict-origin-when-cross-origin", content)
 
 
 @override_settings(BASICAUTH_USERS=dict([STATS_CREDENTIALS]))
