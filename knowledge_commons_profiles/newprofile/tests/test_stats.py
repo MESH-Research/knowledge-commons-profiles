@@ -483,3 +483,26 @@ class IterUserDataTests(SimpleTestCase):
         result, _ = self._run([], [], {}, chunk_size=5)
 
         self.assertEqual(result, [])
+
+
+@override_settings(BASICAUTH_USERS=dict([STATS_CREDENTIALS]))
+class StatsBoardWithoutStatsTests(SimpleTestCase):
+    """
+    The dashboard should not crash when the stats row has not been built
+    """
+
+    def test_returns_service_unavailable_when_no_stats_row(self):
+        user_stats = MagicMock()
+        user_stats.objects.all.return_value.first.return_value = None
+        wp_user = MagicMock()
+        wp_user.get_user_data.return_value = []
+
+        with (
+            patch(f"{STATS_VIEWS}.UserStats", user_stats),
+            patch(f"{STATS_VIEWS}.WpUser", wp_user),
+        ):
+            response = self.client.get(
+                reverse("stats"), headers=_basic_auth_header()
+            )
+
+        self.assertEqual(response.status_code, 503)

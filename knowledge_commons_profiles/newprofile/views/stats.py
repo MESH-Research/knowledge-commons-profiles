@@ -1,5 +1,6 @@
 import json
 import logging
+from http import HTTPStatus
 
 from basicauth.decorators import basic_auth_required
 from django.conf import settings
@@ -21,6 +22,14 @@ def stats_board(request):
     logger.debug("Getting stats dashboard for %s", request.user)
 
     stats = UserStats.objects.all().first()
+
+    if stats is None:
+        logger.warning("Stats requested before build_stats has been run")
+        return HttpResponse(
+            "Statistics have not been generated yet. Please try again later.",
+            status=HTTPStatus.SERVICE_UNAVAILABLE,
+            content_type="text/plain; charset=utf-8",
+        )
 
     users = WpUser.get_user_data(limit=10)
 

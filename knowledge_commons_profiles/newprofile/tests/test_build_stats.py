@@ -125,3 +125,23 @@ class BuildStatsCommandTests(TestCase):
 
         self.assertEqual(UserStats.objects.count(), 1)
         self.assertEqual(UserStats.objects.get().user_count, 1)
+
+    def test_old_row_survives_if_rebuild_fails(self):
+        self._run([_user(1), _user(2)])
+        self.assertEqual(UserStats.objects.get().user_count, 2)
+
+        with (
+            patch(f"{BUILD_STATS}.WpUser") as wp_user,
+            patch(
+                f"{BUILD_STATS}.UserStats.objects.create",
+                side_effect=RuntimeError("boom"),
+            ),
+        ):
+            wp_user.iter_user_data.return_value = _users_generator(
+                [_user(1)]
+            )
+            with self.assertRaises(RuntimeError):
+                call_command("build_stats")
+
+        self.assertEqual(UserStats.objects.count(), 1)
+        self.assertEqual(UserStats.objects.get().user_count, 2)

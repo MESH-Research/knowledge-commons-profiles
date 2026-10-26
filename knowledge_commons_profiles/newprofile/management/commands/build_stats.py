@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from knowledge_commons_profiles.newprofile.models import UserStats
 from knowledge_commons_profiles.newprofile.models import WpUser
@@ -151,5 +152,8 @@ class Command(BaseCommand):
 
         fields = accumulator.as_model_fields()
 
-        UserStats.objects.all().delete()
-        UserStats.objects.create(**fields)
+        # Replace the row atomically so that a concurrent dashboard request
+        # sees either the previous stats or the new ones, never nothing.
+        with transaction.atomic():
+            UserStats.objects.all().delete()
+            UserStats.objects.create(**fields)
