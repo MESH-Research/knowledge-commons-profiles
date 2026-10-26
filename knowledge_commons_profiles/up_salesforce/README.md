@@ -57,4 +57,15 @@ uv run ./manage.py up_eca_limits [--all]         # org API limits: a cheap end-t
 uv run ./manage.py up_eca_query ["SOQL"] [--all] # ad-hoc SOQL; --all follows pagination
 uv run ./manage.py up_eca_lookup EMAIL... | --username USERNAME
                                                  # contact lookup + eligibility via the sync class
+uv run ./manage.py up_eca_dry_run_sync --username USERNAME [--username ...] | --all [--limit N]
+                                                 # full sync in read-only mode: authenticates, queries
+                                                 # Salesforce and prints what would be written
 ```
+
+## Behavioural parity with the legacy class
+
+`tests/test_sync_contract.py` holds one set of behavioural tests (inputs in,
+outputs out, HTTP faked) that runs against both `cilogon.sync_apis.up.UP`
+and `UPExternalClientApp`, including an end-to-end pass through
+`ExternalSync.sync`. Both implementations pass every test, which is the
+evidence that the new class is a drop-in replacement.
