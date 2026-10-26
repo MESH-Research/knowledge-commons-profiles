@@ -1,3 +1,9 @@
+## 4.60.2 (2026-10-26)
+
+### Fix
+
+- **ror**: import the schema v2 ROR data dump
+
 ## 4.60.1 (2026-10-26)
 
 ### Fix
