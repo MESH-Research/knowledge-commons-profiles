@@ -1,3 +1,10 @@
+## 4.62.0 (2026-10-26)
+
+### Feat
+
+- **up_salesforce**: add up_eca_* management commands to exercise the new credentials
+- **up_salesforce**: add UP Salesforce sync via External Client App credentials
+
 ## 4.61.0 (2026-10-26)
 
 ### Feat
