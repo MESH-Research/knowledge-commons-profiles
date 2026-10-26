@@ -8,6 +8,7 @@
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Email</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Institution</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ROR Institution</th>
+        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Country</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Date Registered</th>
         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Latest Activity</th>
       </tr>
@@ -21,6 +22,7 @@
           <td>{{ user.user_email }}</td>
           <td>{{ user.institution }}</td>
           <td>{{ user.ror_record.institution_name }}</td>
+          <td>{{ user.country|default_if_none:"" }}</td>
           <td>{{ user.user_registered }}</td>
           <td>{{ user.latest_activity }}</td>
         </tr>

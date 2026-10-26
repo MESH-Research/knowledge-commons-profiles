@@ -1,0 +1,198 @@
+"""
+Tests for the user stats dashboard, CSV export and map configuration
+"""
+
+import base64
+import csv
+import datetime
+import io
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
+from django.test import SimpleTestCase
+from django.test import override_settings
+from django.urls import reverse
+
+from knowledge_commons_profiles.newprofile import stats_utils
+
+STATS_UTILS = "knowledge_commons_profiles.newprofile.stats_utils"
+STATS_VIEWS = "knowledge_commons_profiles.newprofile.views.stats"
+
+STATS_CREDENTIALS = ("stats", "pw")
+
+
+def _basic_auth_header() -> dict[str, str]:
+    """
+    Build request headers that authenticate as the stats user
+    """
+    token = base64.b64encode(":".join(STATS_CREDENTIALS).encode()).decode()
+    return {"authorization": f"Basic {token}"}
+
+
+def _ror_record(
+    ror_id: str = "https://ror.org/abc123",
+    name: str = "University of Testlandia",
+    country: str = "Testlandia",
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=1,
+        ror_id=ror_id,
+        institution_name=name,
+        country=country,
+        lat=51.5,
+        lon=-0.1,
+    )
+
+
+def _user_row(
+    user_id: int = 1,
+    institution: str | None = "Univ of Testlandia",
+) -> dict:
+    return {
+        "id": user_id,
+        "display_name": f"User {user_id}",
+        "user_login": f"user{user_id}",
+        "user_email": f"user{user_id}@example.org",
+        "institution": institution,
+        "latest_activity": datetime.datetime(
+            2026, 1, 1, tzinfo=datetime.UTC
+        ),
+        "user_registered": datetime.datetime(
+            2020, 1, 1, tzinfo=datetime.UTC
+        ),
+    }
+
+
+def _patch_user_data_sources(users, lookups, records):
+    """
+    Patch the ORM boundaries that get_user_data reads from.
+
+    :param users: list of user dicts returned by the WpUser queryset
+    :param lookups: list of RORLookup-like objects (text, ror)
+    :param records: dict of RORRecord-like objects keyed by id
+    """
+    wp_user = MagicMock()
+    wp_user.objects.annotate.return_value.values.return_value = users
+
+    ror_lookup = MagicMock()
+    ror_lookup.objects.filter.return_value = lookups
+
+    ror_record = MagicMock()
+    ror_record.objects.in_bulk.return_value = records
+
+    return (
+        patch(f"{STATS_UTILS}.WpUser", wp_user),
+        patch(f"{STATS_UTILS}.RORLookup", ror_lookup),
+        patch(f"{STATS_UTILS}.RORRecord", ror_record),
+    )
+
+
+class GetUserDataCountryTests(SimpleTestCase):
+    """
+    get_user_data should expose the country of the matched ROR institution
+    """
+
+    def _run(self, users, lookups, records):
+        patches = _patch_user_data_sources(users, lookups, records)
+        buffer = io.StringIO()
+
+        with patches[0], patches[1], patches[2]:
+            result = stats_utils.get_user_data(output_stream=buffer)
+
+        buffer.seek(0)
+        return result, list(csv.DictReader(buffer))
+
+    def test_csv_has_country_for_ror_matched_user(self):
+        record = _ror_record(country="Testlandia")
+        lookup = SimpleNamespace(text="Univ of Testlandia", ror=record)
+
+        _, rows = self._run([_user_row()], [lookup], {record.id: record})
+
+        self.assertEqual(rows[0]["country"], "Testlandia")
+
+    def test_csv_country_is_empty_when_no_ror_match(self):
+        _, rows = self._run([_user_row(institution="Unknown Place")], [], {})
+
+        self.assertEqual(rows[0]["country"], "")
+
+    def test_csv_country_is_empty_when_user_has_no_institution(self):
+        _, rows = self._run([_user_row(institution=None)], [], {})
+
+        self.assertEqual(rows[0]["country"], "")
+
+    def test_user_dicts_carry_country(self):
+        record = _ror_record(country="Testlandia")
+        lookup = SimpleNamespace(text="Univ of Testlandia", ror=record)
+
+        users, _ = self._run([_user_row()], [lookup], {record.id: record})
+
+        self.assertEqual(users[0]["country"], "Testlandia")
+
+    def test_user_dicts_country_is_none_without_match(self):
+        users, _ = self._run([_user_row(institution="Nowhere")], [], {})
+
+        self.assertIsNone(users[0]["country"])
+
+    def test_csv_still_has_existing_columns(self):
+        record = _ror_record()
+        lookup = SimpleNamespace(text="Univ of Testlandia", ror=record)
+
+        _, rows = self._run([_user_row()], [lookup], {record.id: record})
+
+        self.assertEqual(rows[0]["ror_institution"], record.institution_name)
+        self.assertEqual(rows[0]["ror_id"], record.ror_id)
+        self.assertEqual(
+            rows[0]["profile"], "https://hcommons.org/members/user1"
+        )
+
+
+@override_settings(BASICAUTH_USERS=dict([STATS_CREDENTIALS]))
+class StatsTableCountryTests(SimpleTestCase):
+    """
+    The on-page user table should show the matched institution's country
+    """
+
+    def test_table_shows_country(self):
+        record = _ror_record(country="Narnia")
+        user = _user_row()
+        user["profile"] = "https://hcommons.org/members/user1"
+        user["ror_record"] = record
+        user["country"] = record.country
+
+        wp_user = MagicMock()
+        wp_user.get_user_data.return_value = [user]
+
+        with patch(f"{STATS_VIEWS}.WpUser", wp_user):
+            response = self.client.get(
+                reverse("stats_table"),
+                headers=_basic_auth_header(),
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Narnia", response.content.decode())
+
+
+@override_settings(BASICAUTH_USERS=dict([STATS_CREDENTIALS]))
+class StatsDownloadCountryTests(SimpleTestCase):
+    """
+    The downloadable CSV should include the country column end to end
+    """
+
+    def test_download_includes_country_column(self):
+        record = _ror_record(country="Testlandia")
+        lookup = SimpleNamespace(text="Univ of Testlandia", ror=record)
+        patches = _patch_user_data_sources(
+            [_user_row()], [lookup], {record.id: record}
+        )
+
+        with patches[0], patches[1], patches[2]:
+            response = self.client.get(
+                reverse("get_stats_csv"),
+                headers=_basic_auth_header(),
+            )
+
+        self.assertEqual(response.status_code, 200)
+        rows = list(csv.DictReader(io.StringIO(response.content.decode())))
+        self.assertEqual(rows[0]["country"], "Testlandia")
+        self.assertEqual(rows[0]["ror_institution"], record.institution_name)

@@ -91,6 +91,7 @@ def get_user_data(
         u["canonical_institution_name"] = (
             rec.institution_name if rec and rec.institution_name else inst
         )
+        u["country"] = rec.country if rec and rec.country else None
 
         if "user_registered" not in u:
             u["user_registered"] = None
@@ -107,6 +108,7 @@ def get_user_data(
         "latest_activity",
         "ror_institution",
         "ror_id",
+        "country",
         "profile",
     ]
 
@@ -146,6 +148,7 @@ def get_user_data(
                     if wp_user["ror_record"]
                     else None
                 ),
+                "country": wp_user["country"],
             }
 
             writer.writerow(output_object)
