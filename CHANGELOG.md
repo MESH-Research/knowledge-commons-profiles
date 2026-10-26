@@ -1,3 +1,16 @@
+## 4.58.0 (2026-10-26)
+
+### Feat
+
+- **tooling**: add up, down and logs commands for the local HTTPS stack
+- **tooling**: add local build, push and deploy tool for use when CI is down
+
+### Fix
+
+- **tests**: drop event-loop-bound Future from works_html test setup
+- **build**: trigger build
+- **members**: clip over-long interest tags to the card
+
 ## 4.57.0 (2026-10-22)
 
 ### Feat
