@@ -17,12 +17,14 @@ BUILD_STATS = (
 )
 
 
-def _record(name="University of Testlandia", lat=51.5, lon=-0.1):
+def _record(
+    name="University of Testlandia", lat=51.5, lon=-0.1, country="TL"
+):
     return SimpleNamespace(
         id=1,
         ror_id="https://ror.org/abc123",
         institution_name=name,
-        country="Testlandia",
+        country=country,
         lat=lat,
         lon=lon,
     )
@@ -145,3 +147,52 @@ class BuildStatsCommandTests(TestCase):
 
         self.assertEqual(UserStats.objects.count(), 1)
         self.assertEqual(UserStats.objects.get().user_count, 2)
+
+    def test_counts_distinct_countries_of_matched_members(self):
+        greece = _record(name="Athens Uni", country="GR")
+        usa = _record(name="NYC Uni", country="US")
+        users = [
+            _user(1, greece),
+            _user(2, greece),
+            _user(3, usa),
+            _user(4),
+        ]
+
+        self._run(users)
+
+        self.assertEqual(UserStats.objects.get().country_count, 2)
+
+    def test_records_members_per_country(self):
+        greece = _record(name="Athens Uni", country="GR")
+        usa = _record(name="NYC Uni", country="US")
+        users = [_user(1, greece), _user(2, greece), _user(3, usa)]
+
+        self._run(users)
+
+        countries = json.loads(UserStats.objects.get().countries)
+        self.assertEqual(countries, {"GR": 2, "US": 1})
+
+    def test_country_count_is_zero_without_ror_matches(self):
+        self._run([_user(1), _user(2)])
+
+        stats = UserStats.objects.get()
+        self.assertEqual(stats.country_count, 0)
+        self.assertEqual(json.loads(stats.countries), {})
+
+    def test_members_per_country_is_ordered_most_common_first(self):
+        gr = _record(name="Athens Uni", country="GR")
+        us = _record(name="NYC Uni", country="US")
+        fr = _record(name="Paris Uni", country="FR")
+        users = [
+            _user(1, fr),
+            _user(2, us),
+            _user(3, us),
+            _user(4, gr),
+            _user(5, gr),
+            _user(6, gr),
+        ]
+
+        self._run(users)
+
+        countries = json.loads(UserStats.objects.get().countries)
+        self.assertEqual(list(countries), ["GR", "US", "FR"])

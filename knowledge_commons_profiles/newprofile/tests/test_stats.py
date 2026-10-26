@@ -190,6 +190,8 @@ def _user_stats(latlong: dict | None = None) -> SimpleNamespace:
         topinstscount="[3]",
         emails="['example.org']",
         emailcount="[3]",
+        country_count=173,
+        countries=json.dumps({"GR": 2, "US": 1}),
     )
 
 
@@ -270,6 +272,21 @@ class StatsBoardMapTests(SimpleTestCase):
             response.content.decode(),
             r'<p id="map_stats_unavailable"[^>]*\bhidden\b',
         )
+
+    def test_country_count_is_in_context_and_shown(self):
+        response = self._get()
+
+        self.assertEqual(response.context["country_count"], 173)
+        self.assertContains(response, "173")
+
+    def test_members_per_country_is_in_context_and_embedded(self):
+        response = self._get()
+
+        self.assertEqual(
+            response.context["countries"], {"GR": 2, "US": 1}
+        )
+        self.assertContains(response, 'id="country_stats_data"', count=1)
+        self.assertContains(response, '"GR": 2')
 
     def test_page_sends_referrer_with_tile_requests(self):
         """

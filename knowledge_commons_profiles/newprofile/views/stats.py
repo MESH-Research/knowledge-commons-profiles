@@ -45,6 +45,8 @@ def stats_board(request):
         "topinstscount": stats.topinstscount,
         "emails": stats.emails,
         "emailcount": stats.emailcount,
+        "country_count": stats.country_count,
+        "countries": json.loads(stats.countries or "{}"),
         "users": users,
         "map_tile_url": settings.STATS_MAP_TILE_URL,
         "map_tile_attribution": settings.STATS_MAP_TILE_ATTRIBUTION,
