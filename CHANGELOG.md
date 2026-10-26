@@ -1,3 +1,9 @@
+## 4.59.0 (2026-10-26)
+
+### Feat
+
+- **health**: report Python version and ECS service name
+
 ## 4.58.0 (2026-10-26)
 
 ### Feat
