@@ -149,7 +149,6 @@ dependencies = [
     { name = "jsonschema" },
     { name = "narwhals" },
     { name = "packaging" },
-    { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_version < '0'" },
     { name = "typing-extensions", version = "4.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/06/a1/5e6cc638a66da48cfc89a79c2f4810dfec00b63385f9b009ab1f069779bb/altair-6.2.2.tar.gz", hash = "sha256:a1ff9d9cfe81c75414641826312b9471780e19d39293ba0b012933f6b6cba0fe", size = 766606, upload-time = "2026-06-23T12:47:13.384Z" }
@@ -837,19 +836,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/81/60/5e232c32a2c977cc1af8c70a38ef436598bc649ad89c2c4568454edde2c9/django_model_utils-5.0.0.tar.gz", hash = "sha256:041cdd6230d2fbf6cd943e1969318bce762272077f4ecd333ab2263924b4e5eb", size = 80559, upload-time = "2024-09-04T11:35:22.858Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fd/13/87a42048700c54bfce35900a34e2031245132775fb24363fc0e33664aa9c/django_model_utils-5.0.0-py3-none-any.whl", hash = "sha256:fec78e6c323d565a221f7c4edc703f4567d7bb1caeafe1acd16a80c5ff82056b", size = 42630, upload-time = "2024-09-04T11:36:23.166Z" },
-]
-
-[[package]]
-name = "django-prometheus"
-version = "2.6.0.dev9"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "prometheus-client" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/72/21cfb5e6428d87394febe250ad8cd245b496645414409b0d890000a2837b/django_prometheus-2.6.0.dev9.tar.gz", hash = "sha256:2691ea413586b9385ca2b1136fb43b27791e42c81d56cebc07d5d8a39175135c", size = 27088, upload-time = "2026-09-19T14:25:26.509Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/73/700a722dd41988c14bbde55896b89e3d33ec7d89ea22ce8021f191fe655b/django_prometheus-2.6.0.dev9-py2.py3-none-any.whl", hash = "sha256:e0fb608568478d05f4b3355b0eb7ec75e08b0d531ade1d904966f8e1c937aa0c", size = 32723, upload-time = "2026-09-19T14:25:25.131Z" },
 ]
 
 [[package]]
@@ -1787,7 +1773,7 @@ wheels = [
 
 [[package]]
 name = "newprofile"
-version = "4.57.0"
+version = "4.59.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -1850,9 +1836,6 @@ dev = [
     { name = "psycopg-pool" },
     { name = "sentry-sdk" },
     { name = "uvicorn", extra = ["standard"] },
-]
-loadtest = [
-    { name = "django-prometheus" },
 ]
 local = [
     { name = "collectfasta" },
@@ -1958,7 +1941,6 @@ dev = [
     { name = "sentry-sdk", specifier = "==2.72.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.51.0" },
 ]
-loadtest = [{ name = "django-prometheus", specifier = "==2.6.0.dev9" }]
 local = [
     { name = "collectfasta", specifier = "==3.3.3" },
     { name = "coverage", specifier = "==7.16.2" },
@@ -2194,15 +2176,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3a/c3/6965c2690ddce885ec75121572d065a5b94c5a5d8d3e657927ecda9fd715/pre_commit-4.7.0.tar.gz", hash = "sha256:1f3deee12b914c8fa184bd2b5953391c2e4f36763e403d4a23dc9983fa7c6e86", size = 198120, upload-time = "2026-10-12T20:45:40.32Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/eb/83/ce0a196e4f7b20b11ce3aa1fc72fb973f64b7628d51c1b8aebad37fb7f81/pre_commit-4.7.0-py2.py3-none-any.whl", hash = "sha256:2e229038ad3656081b70c27913157e4b636ef306f643f024a8a8e3f0f7b2f877", size = 226261, upload-time = "2026-10-12T20:45:38.858Z" },
-]
-
-[[package]]
-name = "prometheus-client"
-version = "0.25.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1b/fb/d9aa83ffe43ce1f19e557c0971d04b90561b0cfd50762aafb01968285553/prometheus_client-0.25.0.tar.gz", hash = "sha256:5e373b75c31afb3c86f1a52fa1ad470c9aace18082d39ec0d2f918d11cc9ba28", size = 86035, upload-time = "2026-04-09T19:53:42.359Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/9b/d4b1e644385499c8346fa9b622a3f030dce14cd6ef8a1871c221a17a67e7/prometheus_client-0.25.0-py3-none-any.whl", hash = "sha256:d5aec89e349a6ec230805d0df882f3807f74fd6c1a2fa86864e3c2279059fed1", size = 64154, upload-time = "2026-04-09T19:53:41.324Z" },
 ]
 
 [[package]]

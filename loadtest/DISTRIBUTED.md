@@ -115,9 +115,6 @@ nc -zv <master-host> 5557
 - The master's CSV output (`/app/results/run_*.csv`) and the
   `--csv-full-history` data continue to come out of the master box
   only. You don't need to collect anything from the worker boxes.
-- The Prometheus exporter on the master (`--prometheus-exporter` if
-  enabled via the observability profile) also aggregates across all
-  workers — scrape the master, not each worker.
 - `MOCK_LATENCY_MS` and the mock-oidc keypair live on box 1; workers
   hit whichever public URL the IDMS hands back, so no per-worker
   configuration of the mock is needed.

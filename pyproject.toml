@@ -265,14 +265,6 @@ local = [
     "sphinx-rtd-theme==3.1.0",
     "django-sslserver",
 ]
-loadtest = [
-    # Optional: only needed when running with LOADTEST_PROMETHEUS=1 to expose
-    # /metrics for Prometheus scraping during a load run. Install with:
-    #   uv sync --group loadtest
-    # The stable releases pin django<6.1; this project is on django 6.1,
-    # so we use the latest published dev release that allows it.
-    "django-prometheus==2.6.0.dev9",
-]
 
 [tool.commitizen]
 version = "4.59.0"
