@@ -1,3 +1,9 @@
+## 4.60.1 (2026-10-26)
+
+### Fix
+
+- **ror**: make match_ror rebuild ROR lookups for every institution
+
 ## 4.60.0 (2026-10-26)
 
 ### Feat
