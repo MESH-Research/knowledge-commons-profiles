@@ -1,5 +1,6 @@
 # healthcheck functions
 import logging
+import platform
 
 import django
 import redis
@@ -9,6 +10,7 @@ from django.db import connections
 from django.http import JsonResponse
 
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.newprofile.ecs_metadata import ecs_service_name
 from knowledge_commons_profiles.rest_api.utils import check_api_endpoints_health
 
 logger = logging.getLogger(__name__)
@@ -67,5 +69,7 @@ def health(request):
     health_result["Branch"] = settings.APP_BRANCH
     health_result["Image"] = settings.BUILD_TAG
     health_result["SHA"] = settings.GIT_SHA
+    health_result["Python"] = platform.python_version()
+    health_result["ECS Service"] = ecs_service_name() or "unavailable"
 
     return JsonResponse(health_result, status=200 if not fail else 500)
