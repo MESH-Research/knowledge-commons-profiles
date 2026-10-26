@@ -1,3 +1,18 @@
+## 4.60.0 (2026-10-26)
+
+### Feat
+
+- **stats**: include ROR country in the users CSV and table
+
+### Fix
+
+- **stats**: replace the stats row atomically and guard the dashboard
+- **stats**: comply with the OpenStreetMap tile policy and add a map fallback
+
+### Perf
+
+- **stats**: stream users in chunks when building stats
+
 ## 4.59.1 (2026-10-26)
 
 ### Refactor
