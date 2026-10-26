@@ -422,6 +422,17 @@ class WpUser(models.Model):
 
         return get_user_data(output_stream=output_stream, limit=limit)
 
+    @staticmethod
+    def iter_user_data(limit: int = -1, chunk_size: int = 1000):
+        """
+        Stream annotated user dicts in bounded chunks
+        """
+        from knowledge_commons_profiles.newprofile.stats_utils import (
+            iter_user_data,
+        )
+
+        return iter_user_data(limit=limit, chunk_size=chunk_size)
+
 
 class Profile(models.Model):
     """
