@@ -1,3 +1,13 @@
+## 4.61.0 (2026-10-26)
+
+### Feat
+
+- **stats**: show the number of countries members are based in
+
+### Fix
+
+- **trigger**: trigger the CI process
+
 ## 4.60.2 (2026-10-26)
 
 ### Fix
