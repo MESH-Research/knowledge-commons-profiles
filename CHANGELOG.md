@@ -1,3 +1,9 @@
+## 4.59.1 (2026-10-26)
+
+### Refactor
+
+- **loadtest**: remove the Prometheus and Grafana metrics stack
+
 ## 4.59.0 (2026-10-26)
 
 ### Feat
