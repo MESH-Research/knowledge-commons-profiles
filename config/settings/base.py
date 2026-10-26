@@ -107,6 +107,7 @@ LOCAL_APPS = [
     "knowledge_commons_profiles.newprofile.apps.NewProfileConfig",
     "knowledge_commons_profiles.rest_api.apps.RestAPIConfig",
     "knowledge_commons_profiles.pages.apps.PagesConfig",
+    "knowledge_commons_profiles.up_salesforce.apps.UPSalesforceConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -608,6 +609,25 @@ UP_API_BASE_URL = env("UP_API_BASE_URL", default="https://www.up.org/api/")
 UP_CLIENT_ID = env("UP_CLIENT_ID", default="")
 UP_CLIENT_SECRET = env("UP_CLIENT_SECRET", default="")
 UP_REFRESH_TOKEN = env("UP_REFRESH_TOKEN", default="")
+
+# UP (Association of University Presses) Salesforce access via an External
+# Client App using the OAuth 2.0 client-credentials flow. These are
+# independent of the legacy UP_* refresh-token settings above so the two
+# integrations can coexist while the new credentials are rolled out, and
+# so the consumer secret can be rotated by changing the environment only.
+UP_ECA_CONSUMER_KEY = env("UP_ECA_CONSUMER_KEY", default="")
+UP_ECA_CONSUMER_SECRET = env("UP_ECA_CONSUMER_SECRET", default="")
+UP_ECA_LOGIN_URL = env(
+    "UP_ECA_LOGIN_URL", default="https://aupresses.my.salesforce.com"
+)
+UP_ECA_API_VERSION = env("UP_ECA_API_VERSION", default="v62.0")
+# Client-credentials tokens carry no expires_in; the client transparently
+# re-authenticates on a 401, so this only bounds how long one token is
+# reused from the cache.
+UP_ECA_TOKEN_CACHE_TIMEOUT = env.int(
+    "UP_ECA_TOKEN_CACHE_TIMEOUT", default=15 * 60
+)
+UP_ECA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
 
 EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("MLA", ["Modern Language Association", "MLA"]),
