@@ -4,8 +4,6 @@
 #   * mock-oidc       — FastAPI mock CILogon
 #   * locust-master   — UI on :8089
 #   * locust-worker   — scaled with --scale locust-worker=N
-#   * prometheus      — scrapes locust + mock + the target-side exporters
-#   * grafana         — :3000, provisioned with the IDMS load-test dashboard
 #
 # The Django app under test runs separately on profile.hcommons-test.org.
 # Point Locust at it via LOCUST_HOST=https://profile.hcommons-test.org.
@@ -90,43 +88,6 @@ services:
     depends_on:
       locust-master:
         condition: service_started
-
-  # The prometheus + grafana stack is opt-in via the `observability` profile
-  # because it only earns its keep against a real test deployment with all
-  # the server-side exporters running (postgres-exporter, redis-exporter,
-  # node-exporter, django-prometheus). For local verification work, the
-  # built-in Locust UI at http://localhost:8089 is enough.
-  #
-  # Bring it up explicitly when needed:
-  #   docker compose -f docker-compose.loadtest-driver.yml \
-  #     --profile observability up -d
-  prometheus:
-    profiles: ["observability"]
-    image: prom/prometheus:v2.55.0
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=14d
-    ports:
-      - "9090:9090"
-
-  grafana:
-    profiles: ["observability"]
-    image: grafana/grafana:11.3.0
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-loadtest}
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-    volumes:
-      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
 
 volumes:
   mock_oidc_key:
