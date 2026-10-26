@@ -1447,6 +1447,11 @@ class UserStats(models.Model):
     emails = models.TextField()
     emailcount = models.TextField()
 
+    # Countries of members' ROR-matched institutions
+    country_count = models.IntegerField(default=0)
+    # JSON object of ISO country code -> member count, most common first
+    countries = models.TextField(default="{}")
+
     def __str__(self):
         return (
             f"Stats(pk={self.pk}, users={self.user_count}, "

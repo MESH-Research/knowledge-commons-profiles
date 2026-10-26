@@ -44,6 +44,7 @@ class StatsAccumulator:
         self.lat_long: dict[str, list] = {}
         self.institutions: Counter = Counter()
         self.emails: Counter = Counter()
+        self.countries: Counter = Counter()
 
     def add(self, user: dict) -> None:
         """
@@ -55,46 +56,56 @@ class StatsAccumulator:
             user["ror_record"] is not None
             and user["canonical_institution_name"] is not None
         ):
-            if user["canonical_institution_name"]:
-                self.institutions[user["canonical_institution_name"]] += 1
-
-            # count the email domain if found
-            with contextlib.suppress(IndexError):
-                if user["user_email"]:
-                    domain = user["user_email"].split("@")[1]
-
-                    if domain not in settings.EXCLUDE_STATS_EMAILS:
-                        self.emails[domain] += 1
-
-            current_score = self.lat_long.get(
-                user["canonical_institution_name"], [0, 0, 0]
-            )[2]
-
-            self.lat_long[user["canonical_institution_name"]] = [
-                user["ror_record"].lat,
-                user["ror_record"].lon,
-                current_score + 1,
-            ]
+            self._add_institution(user)
 
         with contextlib.suppress(ValueError, TypeError, KeyError):
             if user["user_registered"] is not None:
                 self.signups_by_year[str(user["user_registered"].year)] += 1
 
         if user["latest_activity"] is not None:
-            if user["latest_activity"] > self.now - datetime.timedelta(
-                weeks=166
-            ):
-                self.user_count_active += 1
+            self._add_activity(user["latest_activity"])
 
-            if user["latest_activity"] > self.now - datetime.timedelta(
-                weeks=104
-            ):
-                self.user_count_active_two += 1
+    def _add_institution(self, user: dict) -> None:
+        """
+        Count a ROR-matched user's institution, country, email domain and
+        map point
+        """
+        institution = user["canonical_institution_name"]
 
-            if user["latest_activity"] > self.now - datetime.timedelta(
-                weeks=52
-            ):
-                self.user_count_active_three += 1
+        if institution:
+            self.institutions[institution] += 1
+
+        if user.get("country"):
+            self.countries[user["country"]] += 1
+
+        # count the email domain if found
+        with contextlib.suppress(IndexError):
+            if user["user_email"]:
+                domain = user["user_email"].split("@")[1]
+
+                if domain not in settings.EXCLUDE_STATS_EMAILS:
+                    self.emails[domain] += 1
+
+        current_score = self.lat_long.get(institution, [0, 0, 0])[2]
+
+        self.lat_long[institution] = [
+            user["ror_record"].lat,
+            user["ror_record"].lon,
+            current_score + 1,
+        ]
+
+    def _add_activity(self, latest_activity: datetime.datetime) -> None:
+        """
+        Count the user as active in each window their latest activity falls in
+        """
+        if latest_activity > self.now - datetime.timedelta(weeks=166):
+            self.user_count_active += 1
+
+        if latest_activity > self.now - datetime.timedelta(weeks=104):
+            self.user_count_active_two += 1
+
+        if latest_activity > self.now - datetime.timedelta(weeks=52):
+            self.user_count_active_three += 1
 
     def add_all(self, users: Iterable[dict]) -> None:
         for user in users:
@@ -126,6 +137,8 @@ class StatsAccumulator:
             "topinstscount": str(list(top_institutions.values())),
             "emails": str(list(top_emails.keys())),
             "emailcount": str(list(top_emails.values())),
+            "country_count": len(self.countries),
+            "countries": json.dumps(dict(self.countries.most_common())),
         }
 
 
