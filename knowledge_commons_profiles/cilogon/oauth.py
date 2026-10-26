@@ -209,7 +209,7 @@ def network_base_domain(host: str) -> str | None:
     NetworkSubdomainMiddleware's host parsing so login forwarding and
     request routing agree on what counts as a network subdomain.
     """
-    host = host.split(":")[0].lower()
+    host = host.split(":", maxsplit=1)[0].lower()
     for base in settings.NETWORK_SUBDOMAIN_BASE_DOMAINS:
         base_domain = base.lower()
         if host != base_domain and host.endswith("." + base_domain):

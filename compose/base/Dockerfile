@@ -7,7 +7,7 @@
 #   production: BUILD_ENVIRONMENT=production -> kcprofiles-base
 #   dev/local:  BUILD_ENVIRONMENT=local      -> kcprofiles-base-dev
 
-FROM docker.io/python:3.12.13-slim-bookworm AS python
+FROM docker.io/python:3.14.9-slim-bookworm AS python
 
 # Python build stage — compiles native extensions, installs dependencies
 FROM python AS python-build-stage
@@ -81,3 +81,9 @@ COPY --chown=1000:1000 --from=python-build-stage /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 ENV UV_NO_CACHE=1
+# The entrypoints run `uv sync` at start-up. Pin uv to the interpreter baked
+# into this image and forbid downloads, otherwise uv honours the repo's
+# .python-version, fetches that CPython and rebuilds the whole venv on every
+# container start.
+ENV UV_PYTHON=/usr/local/bin/python3
+ENV UV_PYTHON_DOWNLOADS=never

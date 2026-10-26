@@ -60,7 +60,6 @@ class WorksDepositsHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-# ruff: noqa: PLC0415
 @override_settings(
     CACHES={
         "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}

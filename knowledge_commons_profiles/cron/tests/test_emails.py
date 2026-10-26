@@ -125,7 +125,7 @@ class TestSendEmail:
 
     def test_send_email_raises_without_recipients(self, client):
         """Test that ValueError is raised when no recipients are provided."""
-        with pytest.raises(ValueError, match="recipients.*must be provided"):
+        with pytest.raises(ValueError, match=r"recipients.*must be provided"):
             client.send_email(
                 from_email="sender@example.com",
                 from_name="Sender Name",

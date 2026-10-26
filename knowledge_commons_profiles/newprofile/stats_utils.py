@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 @staticmethod
 def get_user_data(
-    output_stream: "SupportsWrite[str] | None" = None, limit: int = -1
-) -> "QuerySet[WpUser]":
+    output_stream: SupportsWrite[str] | None = None, limit: int = -1
+) -> QuerySet[WpUser]:
     """
     :param output_stream: if given, write CSV rows here
     :param limit: max number of users, or -1 for all

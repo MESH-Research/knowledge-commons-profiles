@@ -15,7 +15,6 @@ from knowledge_commons_profiles.newprofile.models import Profile
 
 logger = logging.getLogger(__name__)
 
-# ruff: noqa: BLE001
 
 
 @receiver(pre_save, sender=Profile)

@@ -1,9 +1,12 @@
 import logging
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 
-from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.rest_api import utils
+
+if TYPE_CHECKING:
+    from knowledge_commons_profiles.newprofile.models import Profile
 
 logger = logging.getLogger(__name__)
 

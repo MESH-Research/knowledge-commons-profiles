@@ -91,7 +91,7 @@ class Command(BaseCommand):
                         )
 
                         (
-                            cover_image,
+                            _cover_image,
                             created,
                         ) = CoverImage.objects.update_or_create(
                             profile=profile_object,

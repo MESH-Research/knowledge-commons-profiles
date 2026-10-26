@@ -2,6 +2,8 @@
 Administrative views for CILogon.
 """
 
+from typing import TYPE_CHECKING
+
 from django import forms
 from django.contrib import admin
 from django.contrib import messages
@@ -18,7 +20,9 @@ from knowledge_commons_profiles.cilogon.reserved_usernames import import_terms
 from knowledge_commons_profiles.cilogon.reserved_usernames import (
     serialize_reserved_terms,
 )
-from knowledge_commons_profiles.newprofile.models import Profile
+
+if TYPE_CHECKING:
+    from knowledge_commons_profiles.newprofile.models import Profile
 
 
 class ProfileChoiceField(forms.ModelChoiceField):

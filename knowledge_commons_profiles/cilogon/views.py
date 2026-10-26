@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from enum import IntEnum
 from importlib import import_module
+from typing import TYPE_CHECKING
 from typing import Any
 from urllib.parse import quote as urlquote
 from uuid import uuid4
@@ -33,7 +34,6 @@ from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session as DjangoSession
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.handlers.wsgi import WSGIRequest
 from django.core.validators import validate_email
 from django.db import IntegrityError
 from django.db import transaction
@@ -103,6 +103,9 @@ from knowledge_commons_profiles.newprofile.views.members import (
 from knowledge_commons_profiles.pages.models import SitePage
 from knowledge_commons_profiles.rest_api.sync import ExternalSync
 from knowledge_commons_profiles.rest_api.utils import logout_all_endpoints_sync
+
+if TYPE_CHECKING:
+    from django.core.handlers.wsgi import WSGIRequest
 
 logger = logging.getLogger(__name__)
 

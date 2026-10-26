@@ -9,8 +9,6 @@ import logging
 import re
 from datetime import date
 from datetime import datetime
-
-# ruff: noqa: TC003
 from http import HTTPMethod
 from typing import Generic
 from typing import Literal
@@ -58,7 +56,6 @@ def _parse_sf_datetime(value: str) -> datetime:
     if value is None:
         return value  # type: ignore[return-value]
     # Already ISO-like with colon? Let fromisoformat try first.
-    # ruff: noqa: BLE001
     try:
         return datetime.fromisoformat(value)
     except ValueError:

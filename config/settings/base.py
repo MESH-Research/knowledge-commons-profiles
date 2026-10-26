@@ -611,8 +611,8 @@ OPEN_REGISTRATION_NETWORKS = env(
         (
             "STEMEd+",
             "STEMEd+ Commons",
-            "An open platform for individual researchers and communities "
-            "to organize projects, share knowledge, and expand access",
+            ("An open platform for individual researchers and communities "
+            "to organize projects, share knowledge, and expand access"),
         ),
     ],
 )

@@ -16,3 +16,7 @@ venv
 .bash_history
 .lesshst
 .python_history
+
+# Local CI stand-in (never needed inside an image)
+kcbuild/
+kcb.py
