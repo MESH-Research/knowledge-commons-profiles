@@ -1,4 +1,4 @@
-FROM docker.io/postgres:18
+FROM docker.io/postgres:18.6
 
 COPY ./compose/github/postgres/maintenance /usr/local/bin/maintenance
 RUN chmod +x /usr/local/bin/maintenance/*
