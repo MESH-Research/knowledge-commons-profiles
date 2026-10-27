@@ -1,3 +1,12 @@
+## 4.66.0 (2026-10-27)
+
+### Feat
+
+- **stats**: show the group member total as a headline at the top of the card
+- **stats**: show cumulative member totals per country group
+- **stats**: add members-by-region section to the stats dashboard
+- **stats**: add country_group_stats management command
+
 ## 4.65.2 (2026-10-27)
 
 ### Fix
