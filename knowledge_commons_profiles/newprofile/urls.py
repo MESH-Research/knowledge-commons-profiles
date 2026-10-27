@@ -82,6 +82,12 @@ from knowledge_commons_profiles.newprofile.views.profile.works import (
 )
 from knowledge_commons_profiles.newprofile.views.search import search
 from knowledge_commons_profiles.newprofile.views.stats import stats_board
+from knowledge_commons_profiles.newprofile.views.stats import (
+    stats_country_groups_doc,
+)
+from knowledge_commons_profiles.newprofile.views.stats import (
+    stats_country_groups_doc_download,
+)
 from knowledge_commons_profiles.newprofile.views.stats import stats_download
 from knowledge_commons_profiles.newprofile.views.stats import stats_table
 
@@ -235,6 +241,16 @@ urlpatterns = [
     path("stats/", stats_board, name="stats"),
     path("stats/download/", stats_download, name="get_stats_csv"),
     path("stats/table/", stats_table, name="stats_table"),
+    path(
+        "stats/country-groups/",
+        stats_country_groups_doc,
+        name="stats_country_groups_doc",
+    ),
+    path(
+        "stats/country-groups/download/",
+        stats_country_groups_doc_download,
+        name="stats_country_groups_doc_download",
+    ),
     path("works/", go_to_works, name="go_to_works"),
     path(
         "network/<str:network_name>/members/",
