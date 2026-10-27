@@ -304,6 +304,8 @@
       <else-if type="article-journal" variable="issue">
         <text macro="issue"/>
       </else-if>
+      <else-if type="article-journal">
+      </else-if>
       <else-if match="any" variable="publisher-place publisher">
         <text macro="issue"/>
       </else-if>
