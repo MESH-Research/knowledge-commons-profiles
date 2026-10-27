@@ -553,3 +553,32 @@ def group_member_counts(
         rows = [row for row in rows if row[2] > 0]
 
     return sorted(rows, key=lambda row: (-row[2], row[1]))
+
+
+def country_group_breakdown(counts: dict[str, int]) -> list[dict]:
+    """
+    Summarise every group for the dashboard, alphabetically by name
+
+    :param counts: member counts keyed by ISO code
+    :return: one dict per group with its name, the countries that have
+        members (as code/name/count dicts, most members first), the member
+        total and the number of countries that make up the group
+    """
+    breakdown = []
+
+    for name in sorted(COUNTRY_GROUPS, key=str.casefold):
+        rows = group_member_counts(COUNTRY_GROUPS[name], counts)
+
+        breakdown.append(
+            {
+                "name": name,
+                "countries": [
+                    {"code": code, "name": country, "count": count}
+                    for code, country, count in rows
+                ],
+                "total": sum(count for _, _, count in rows),
+                "size": len(COUNTRY_GROUPS[name]),
+            }
+        )
+
+    return breakdown

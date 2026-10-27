@@ -523,3 +523,63 @@ class StatsBoardWithoutStatsTests(SimpleTestCase):
             )
 
         self.assertEqual(response.status_code, 503)
+
+
+@override_settings(BASICAUTH_USERS=dict([STATS_CREDENTIALS]))
+class StatsBoardCountryGroupTests(SimpleTestCase):
+    """
+    The dashboard offers a per-group country breakdown chosen from a dropdown
+    """
+
+    def _get(self):
+        user_stats = MagicMock()
+        user_stats.objects.all.return_value.first.return_value = (
+            _user_stats()
+        )
+        wp_user = MagicMock()
+        wp_user.get_user_data.return_value = []
+
+        with (
+            patch(f"{STATS_VIEWS}.UserStats", user_stats),
+            patch(f"{STATS_VIEWS}.WpUser", wp_user),
+        ):
+            return self.client.get(
+                reverse("stats"), headers=_basic_auth_header()
+            )
+
+    def test_country_groups_are_in_context_alphabetically(self):
+        response = self._get()
+
+        names = [g["name"] for g in response.context["country_groups"]]
+        self.assertGreater(len(names), 1)
+        self.assertEqual(names, sorted(names, key=str.casefold))
+
+    def test_country_groups_reflect_stored_counts(self):
+        response = self._get()
+
+        anglophone = next(
+            g
+            for g in response.context["country_groups"]
+            if g["name"] == "Anglophone"
+        )
+        self.assertEqual(
+            anglophone["countries"],
+            [{"code": "US", "name": "United States", "count": 1}],
+        )
+
+    def test_page_embeds_country_groups_as_json(self):
+        response = self._get()
+        content = response.content.decode()
+
+        self.assertIn('id="country_group_data"', content)
+        self.assertIn("Anglophone", content)
+
+    def test_page_has_group_dropdown_with_alphabetical_options(self):
+        response = self._get()
+        content = response.content.decode()
+
+        self.assertIn('id="country_group_select"', content)
+        self.assertLess(content.index(">Africa<"), content.index(">Europe<"))
+        self.assertLess(
+            content.index(">Europe<"), content.index(">Global South<")
+        )

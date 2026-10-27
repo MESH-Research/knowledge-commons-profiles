@@ -7,6 +7,9 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from knowledge_commons_profiles.newprofile.country_groups import (
+    country_group_breakdown,
+)
 from knowledge_commons_profiles.newprofile.models import UserStats
 from knowledge_commons_profiles.newprofile.models import WpUser
 
@@ -33,6 +36,8 @@ def stats_board(request):
 
     users = WpUser.get_user_data(limit=10)
 
+    countries = json.loads(stats.countries or "{}")
+
     context = {
         "user_count": stats.user_count,
         "user_count_active": stats.user_count_active,
@@ -46,7 +51,8 @@ def stats_board(request):
         "emails": stats.emails,
         "emailcount": stats.emailcount,
         "country_count": stats.country_count,
-        "countries": json.loads(stats.countries or "{}"),
+        "countries": countries,
+        "country_groups": country_group_breakdown(countries),
         "users": users,
         "map_tile_url": settings.STATS_MAP_TILE_URL,
         "map_tile_attribution": settings.STATS_MAP_TILE_ATTRIBUTION,

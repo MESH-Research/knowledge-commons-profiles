@@ -287,3 +287,49 @@ class LoadCountryCountsTests(SimpleTestCase):
             counts = country_group_stats.load_country_counts()
 
         self.assertIsNone(counts)
+
+
+class CountryGroupBreakdownTests(SimpleTestCase):
+    """
+    The dashboard breakdown lists every group alphabetically with its rows
+    """
+
+    COUNTS = {"VN": 12, "KH": 3, "US": 500, "GB": 90, "IN": 40}
+
+    def test_groups_are_alphabetical(self):
+        breakdown = country_groups.country_group_breakdown(self.COUNTS)
+
+        names = [group["name"] for group in breakdown]
+        self.assertEqual(names, sorted(names, key=str.casefold))
+        self.assertEqual(set(names), set(COUNTRY_GROUPS))
+
+    def test_group_rows_only_include_countries_with_members(self):
+        breakdown = country_groups.country_group_breakdown(self.COUNTS)
+        indo_china = next(g for g in breakdown if g["name"] == "Indo-China")
+
+        self.assertEqual(
+            indo_china["countries"],
+            [
+                {"code": "VN", "name": "Vietnam", "count": 12},
+                {"code": "KH", "name": "Cambodia", "count": 3},
+            ],
+        )
+
+    def test_group_carries_total_and_size(self):
+        breakdown = country_groups.country_group_breakdown(self.COUNTS)
+        indo_china = next(g for g in breakdown if g["name"] == "Indo-China")
+
+        self.assertEqual(indo_china["total"], 15)
+        self.assertEqual(indo_china["size"], len(COUNTRY_GROUPS["Indo-China"]))
+
+    def test_group_with_no_members_has_empty_rows_and_zero_total(self):
+        breakdown = country_groups.country_group_breakdown({"US": 1})
+        nordic = next(g for g in breakdown if g["name"] == "Nordic")
+
+        self.assertEqual(nordic["countries"], [])
+        self.assertEqual(nordic["total"], 0)
+
+    def test_empty_counts_still_lists_every_group(self):
+        breakdown = country_groups.country_group_breakdown({})
+
+        self.assertEqual(len(breakdown), len(COUNTRY_GROUPS))
