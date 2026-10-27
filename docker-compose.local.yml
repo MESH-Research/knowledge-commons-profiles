@@ -31,4 +31,4 @@ services:
       - '443:443'
 
   redis:
-    image: docker.io/redis:6
+    image: docker.io/redis:8.10.3

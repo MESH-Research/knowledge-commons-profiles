@@ -77,4 +77,4 @@ services:
       - '0.0.0.0:80:80'
 
   redis:
-    image: docker.io/redis:6
+    image: docker.io/redis:8.10.3
