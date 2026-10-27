@@ -5,6 +5,7 @@ Classes for syncing external data
 import datetime
 import json
 import logging
+from typing import TYPE_CHECKING
 from typing import Any
 
 import requests
@@ -14,18 +15,22 @@ from requests import RequestException
 from knowledge_commons_profiles.cilogon.sync_apis import arlisna
 from knowledge_commons_profiles.cilogon.sync_apis import mla
 from knowledge_commons_profiles.cilogon.sync_apis import msu
-from knowledge_commons_profiles.cilogon.sync_apis import up
-from knowledge_commons_profiles.cilogon.sync_apis.sync_class import SyncClass
-from knowledge_commons_profiles.newprofile import models
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.newprofile.models import RoleStatus
+from knowledge_commons_profiles.up_salesforce.sync import UPExternalClientApp
+
+if TYPE_CHECKING:
+    from knowledge_commons_profiles.cilogon.sync_apis.sync_class import (
+        SyncClass,
+    )
+    from knowledge_commons_profiles.newprofile import models
 
 CLASS_LOOKUPS: dict[str, SyncClass] = {
     "MLA": mla.MLA(),
     "MSU": msu.MSU(),
     "ARLISNA": arlisna.ARLISNA(),
-    "UP": up.UP(),
+    "UP": UPExternalClientApp(),
 }
 
 logger = logging.getLogger(__name__)
@@ -88,7 +93,6 @@ class ExternalSync:
         except TypeError:
             is_member_of = {}
 
-        # ruff: noqa: B007
         for class_name, role_organization in class_list:
             class_to_use: SyncClass = CLASS_LOOKUPS[class_name]
 

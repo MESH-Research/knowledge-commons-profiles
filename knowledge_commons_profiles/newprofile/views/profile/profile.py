@@ -1,5 +1,4 @@
 # profile views
-# ruff: noqa: A005
 import json
 import logging
 

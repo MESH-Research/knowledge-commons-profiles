@@ -207,6 +207,11 @@ sentry_sdk.init(
     _experiments={"enable_logs": True},
 )
 
+# UP Salesforce: report missing External Client App credentials to Sentry at
+# startup. The app still boots; UP lookups just report no contact.
+UP_ECA_REQUIRE_CREDENTIALS = env.bool(
+    "UP_ECA_REQUIRE_CREDENTIALS", default=True
+)
 
 # Application stuff...
 # ------------------------------------------------------------------------------

@@ -200,7 +200,7 @@ class MaintenanceMode(models.Model):
         }
 
     @classmethod
-    def load(cls) -> "MaintenanceMode":
+    def load(cls) -> MaintenanceMode:
         """Return the singleton row, creating it with defaults if absent."""
         obj, _ = cls.objects.get_or_create(pk=cls.SINGLETON_PK)
         return obj

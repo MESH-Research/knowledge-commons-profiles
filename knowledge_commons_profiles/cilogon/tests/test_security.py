@@ -406,7 +406,7 @@ class EncryptionSecurityTests(CILogonTestBase):
             raised = False
             try:
                 result = encoder.decode(tampered)
-            except (ValueError, Exception):
+            except (ValueError, Exception):  # noqa: BLE001
                 # Crypto or padding error — tampered data rejected
                 raised = True
 
@@ -608,7 +608,7 @@ class AuthorizationSecurityTests(CILogonTestBase):
                 packed = pack_state(f"https://example.com/{malicious_path}")
                 # Should handle malicious paths appropriately
                 self.assertIsInstance(packed, str)
-            except (ValueError, Exception) as e:
+            except (ValueError, Exception) as e:  # noqa: BLE001
                 # Acceptable to reject malicious input
                 self.assertIsInstance(e, (ValueError, Exception))
 

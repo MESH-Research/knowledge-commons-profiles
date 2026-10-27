@@ -152,6 +152,26 @@ This guide documents the environment variables used for application startup and 
 - **Security**: Should be a strong password
 - **Example**: `STATS_PASSWORD=secure_stats_password`
 
+### STATS_MAP_TILE_URL
+- **Purpose**: Tile URL template for the participation map on the stats dashboard
+- **Type**: String
+- **Default**: `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
+- **Usage**: Lets the tile source be switched without a code change, as the OpenStreetMap tile usage policy requests. Must use HTTPS and contain the `{z}`, `{x}` and `{y}` placeholders
+- **Example**: `STATS_MAP_TILE_URL=https://tiles.example.org/{z}/{x}/{y}.png`
+
+### STATS_MAP_TILE_ATTRIBUTION
+- **Purpose**: Attribution HTML shown on the participation map
+- **Type**: String
+- **Default**: OpenStreetMap contributors attribution with a link to the copyright page
+- **Usage**: Must be changed to match the provider when `STATS_MAP_TILE_URL` points at a different tile server
+- **Example**: `STATS_MAP_TILE_ATTRIBUTION=&copy; Example Tiles`
+
+### STATS_MAP_TILE_MAX_ZOOM
+- **Purpose**: Maximum zoom level offered by the tile server
+- **Type**: Integer
+- **Default**: 19
+- **Example**: `STATS_MAP_TILE_MAX_ZOOM=18`
+
 ### VERIFICATION_LIMIT_HOURS
 - **Purpose**: Hours before email verification links expire
 - **Type**: Integer

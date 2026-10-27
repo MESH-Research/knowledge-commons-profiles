@@ -6,8 +6,6 @@ from knowledge_commons_profiles.newprofile.models import WpBpGroup
 from knowledge_commons_profiles.newprofile.models import WpBpNotification
 from knowledge_commons_profiles.newprofile.models import WpUser
 
-# ruff: noqa: PLC0415
-
 
 class BuddyPressNotification:
     """
@@ -82,8 +80,8 @@ class BuddyPressNotification:
 
                 return (
                     f"You have an invitation to the group: {group.name}",
-                    f"https://hcommons.org/members/{api_me.wp_user.user_login}"
-                    f"/groups/invites/?n=1",
+                    (f"https://hcommons.org/members/{api_me.wp_user.user_login}"
+                    f"/groups/invites/?n=1"),
                     False,
                 )
             case "new_message":
@@ -96,8 +94,8 @@ class BuddyPressNotification:
 
                 return (
                     f"New message from {from_user.user_login}",
-                    f"https://hcommons.org/members/"
-                    f"{api_me.wp_user.user_login}/messages/view/{message_id}/",
+                    (f"https://hcommons.org/members/"
+                    f"{api_me.wp_user.user_login}/messages/view/{message_id}/"),
                     False,
                 )
             case "new_follow":
@@ -112,8 +110,8 @@ class BuddyPressNotification:
 
                     return (
                         f"You have {count} new followers",
-                        f"https://hcommons.org/members/"
-                        f"{api_me.wp_user.user_login}/notifications/",
+                        (f"https://hcommons.org/members/"
+                        f"{api_me.wp_user.user_login}/notifications/"),
                         False,
                     )
 

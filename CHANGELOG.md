@@ -1,3 +1,132 @@
+## 4.65.1 (2026-10-27)
+
+### Fix
+
+- **docker**: bump Traefik, Redis and Postgres images to patched releases
+- **deps**: bump Authlib to 1.9.1 to patch security advisories
+
+## 4.65.0 (2026-10-27)
+
+### Feat
+
+- **up_salesforce**: report missing External Client App credentials to Sentry
+
+## 4.64.0 (2026-10-27)
+
+### Feat
+
+- **sync**: switch the production UP sync to the External Client App class
+
+### Fix
+
+- **up_salesforce**: read UP_ECA_* settings at use time, not at construction
+
+## 4.63.0 (2026-10-27)
+
+### Feat
+
+- **up_salesforce**: add read-only dry-run sync command
+
+## 4.62.0 (2026-10-26)
+
+### Feat
+
+- **up_salesforce**: add up_eca_* management commands to exercise the new credentials
+- **up_salesforce**: add UP Salesforce sync via External Client App credentials
+
+## 4.61.0 (2026-10-26)
+
+### Feat
+
+- **stats**: show the number of countries members are based in
+
+### Fix
+
+- **trigger**: trigger the CI process
+
+## 4.60.2 (2026-10-26)
+
+### Fix
+
+- **ror**: import the schema v2 ROR data dump
+
+## 4.60.1 (2026-10-26)
+
+### Fix
+
+- **ror**: make match_ror rebuild ROR lookups for every institution
+
+## 4.60.0 (2026-10-26)
+
+### Feat
+
+- **stats**: include ROR country in the users CSV and table
+
+### Fix
+
+- **stats**: replace the stats row atomically and guard the dashboard
+- **stats**: comply with the OpenStreetMap tile policy and add a map fallback
+
+### Perf
+
+- **stats**: stream users in chunks when building stats
+
+## 4.59.1 (2026-10-26)
+
+### Refactor
+
+- **loadtest**: remove the Prometheus and Grafana metrics stack
+
+## 4.59.0 (2026-10-26)
+
+### Feat
+
+- **health**: report Python version and ECS service name
+
+## 4.58.0 (2026-10-26)
+
+### Feat
+
+- **tooling**: add up, down and logs commands for the local HTTPS stack
+- **tooling**: add local build, push and deploy tool for use when CI is down
+
+### Fix
+
+- **tests**: drop event-loop-bound Future from works_html test setup
+- **build**: trigger build
+- **members**: clip over-long interest tags to the card
+
+## 4.57.0 (2026-10-22)
+
+### Feat
+
+- **members**: make each member card a single clickable link
+
+## 4.56.0 (2026-10-22)
+
+### Feat
+
+- **members**: add a per-page selector that keeps the grid complete
+
+## 4.55.0 (2026-10-22)
+
+### Feat
+
+- **members**: show the directory as a grid of compact cards
+- **members**: order the directory by login recency
+
+## 4.54.2 (2026-10-21)
+
+### Fix
+
+- **deps**: remove unmaintained django-bleach and upgrade bleach to 6.4.0
+
+## 4.54.1 (2026-10-13)
+
+### Fix
+
+- **HASTAC**: remove hastac from open networks
+
 ## 4.54.0 (2026-10-12)
 
 ### Feat

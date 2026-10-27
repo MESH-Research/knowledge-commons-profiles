@@ -19,7 +19,6 @@ from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpUser
 
 logger = logging.getLogger(__name__)
-# ruff: noqa: PLC0415
 
 
 _HTML_CLEANER = None

@@ -225,6 +225,85 @@ class TestHealthView(TestCase):
         self.assertIn("SHA", data)
 
 
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_health_reports_running_python_version(
+        self, mock_cache, mock_connections, mock_api_check
+    ):
+        """/health/ reports the interpreter version the container runs."""
+        mock_api_check.return_value = {}
+        mock_db = Mock()
+        mock_db.cursor.return_value = Mock()
+        mock_connections.__getitem__.return_value = mock_db
+
+        response = health(self.factory.get("/health/"))
+
+        import json
+        import platform
+
+        data = json.loads(response.content)
+        self.assertEqual(data["Python"], platform.python_version())
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".ecs_service_name",
+        return_value="kcprofiles-blue",
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_health_reports_ecs_service_name(
+        self, mock_cache, mock_connections, mock_api_check, mock_ecs
+    ):
+        """/health/ echoes the ECS service the task belongs to."""
+        mock_api_check.return_value = {}
+        mock_db = Mock()
+        mock_db.cursor.return_value = Mock()
+        mock_connections.__getitem__.return_value = mock_db
+
+        response = health(self.factory.get("/health/"))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertEqual(data["ECS Service"], "kcprofiles-blue")
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".ecs_service_name",
+        return_value=None,
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_health_marks_ecs_service_unavailable_off_ecs(
+        self, mock_cache, mock_connections, mock_api_check, mock_ecs
+    ):
+        """Outside ECS the field is still present with a clear value."""
+        mock_api_check.return_value = {}
+        mock_db = Mock()
+        mock_db.cursor.return_value = Mock()
+        mock_connections.__getitem__.return_value = mock_db
+
+        response = health(self.factory.get("/health/"))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertEqual(data["ECS Service"], "unavailable")
+        self.assertEqual(response.status_code, 200)
+
+
 class TestHealthAdminEmails(TestCase):
     """Regression tests for the /health/ admin-email flood (issue #561).
 

@@ -1,7 +1,9 @@
 import json
 import logging
+from http import HTTPStatus
 
 from basicauth.decorators import basic_auth_required
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 
@@ -21,6 +23,14 @@ def stats_board(request):
 
     stats = UserStats.objects.all().first()
 
+    if stats is None:
+        logger.warning("Stats requested before build_stats has been run")
+        return HttpResponse(
+            "Statistics have not been generated yet. Please try again later.",
+            status=HTTPStatus.SERVICE_UNAVAILABLE,
+            content_type="text/plain; charset=utf-8",
+        )
+
     users = WpUser.get_user_data(limit=10)
 
     context = {
@@ -35,7 +45,12 @@ def stats_board(request):
         "topinstscount": stats.topinstscount,
         "emails": stats.emails,
         "emailcount": stats.emailcount,
+        "country_count": stats.country_count,
+        "countries": json.loads(stats.countries or "{}"),
         "users": users,
+        "map_tile_url": settings.STATS_MAP_TILE_URL,
+        "map_tile_attribution": settings.STATS_MAP_TILE_ATTRIBUTION,
+        "map_tile_max_zoom": settings.STATS_MAP_TILE_MAX_ZOOM,
     }
 
     return render(request, "newprofile/dashboard.html", context)

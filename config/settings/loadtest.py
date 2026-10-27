@@ -1,4 +1,4 @@
-# ruff: noqa: F401, F403, F405, E501
+# ruff: noqa: F403, E501
 """Settings module for stress / load testing.
 
 Inherits from `base.py` directly (not `production.py`) so a load-test run
@@ -22,7 +22,6 @@ Recommended env:
   CILOGON_DISCOVERY_URL        — point at the mock IdP
 
 Optional:
-  LOADTEST_PROMETHEUS=1        — enable django-prometheus /metrics
   LOADTEST_STUB_EXTERNAL_SYNC  — default 1; stubs Mailchimp/MLA/ARLISNA/UP/ROR
   LOADTEST_STUB_IDMS_API       — default 1; stubs the rest_api IDMS event client
   SENTRY_DSN                   — if set, Sentry is initialised; otherwise skipped
@@ -48,7 +47,6 @@ for _key, _default in (
 
 from .base import *  # noqa: E402
 from .base import INSTALLED_APPS  # noqa: E402
-from .base import MIDDLEWARE  # noqa: E402
 from .base import env  # noqa: E402
 
 # --- Safety guard: never load on production by accident -----------------
@@ -201,23 +199,6 @@ for _optional_app in ("django_extensions", "sslserver"):
     if _importlib_util.find_spec(_optional_app) is not None:
         INSTALLED_APPS.append(_optional_app)
 
-
-# --- Optional django-prometheus ----------------------------------------
-
-if env.bool("LOADTEST_PROMETHEUS", default=False):
-    if _importlib_util.find_spec("django_prometheus") is None:
-        msg = (
-            "LOADTEST_PROMETHEUS=1 was set but django-prometheus is not "
-            "installed. Add it to the deployment image via "
-            "`uv sync --group loadtest` or unset the env var."
-        )
-        raise RuntimeError(msg)
-    INSTALLED_APPS = ["django_prometheus", *INSTALLED_APPS]
-    MIDDLEWARE = [
-        "django_prometheus.middleware.PrometheusBeforeMiddleware",
-        *MIDDLEWARE,
-        "django_prometheus.middleware.PrometheusAfterMiddleware",
-    ]
 
 # --- Allow loadtest broker return_to domains ----------------------------
 

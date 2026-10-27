@@ -1393,6 +1393,29 @@ div {
           opacity:.55;
           cursor: not-allowed;
         }
+        .pager .per-page-form{
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin: 0;
+          font-weight: 600;
+        }
+        .pager .per-page-form select{
+          appearance: auto;
+          background: var(--card);
+          color: var(--text);
+          border: 1px solid #d1d9e0;
+          border-radius: 10px;
+          padding: 6px 10px;
+          font: inherit;
+          font-weight: 600;
+          box-shadow: var(--shadow);
+          cursor: pointer;
+        }
+        .pager .per-page-form select:focus-visible{
+          outline: 2px solid var(--ring);
+          outline-offset: 2px;
+        }
 
         /* Responsive tweaks */
         @media (max-width: 640px){
@@ -1469,12 +1492,101 @@ div {
           white-space: nowrap;
         }
 
+        /* Members directory: compact cards in a responsive grid */
+        .wrap.member-directory {
+          max-width: 1200px;
+        }
+
+        .member-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 12px;
+        }
+
+        .member-card {
+          position: relative; /* anchor for the card-wide link overlay */
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          min-width: 0;
+          background: var(--card);
+          border-radius: 12px;
+          padding: 12px;
+          box-shadow: var(--shadow);
+          cursor: pointer;
+          transition: transform .08s ease, box-shadow .08s ease,
+                      background-color .12s ease;
+        }
+        .member-card:hover {
+          transform: translateY(-1px);
+          background: #f3f7f5;
+        }
+        .member-card:focus-within {
+          outline: 2px solid var(--ring);
+          outline-offset: 2px;
+        }
+
+        /* The name link is stretched over the whole card, so a click
+           anywhere opens the profile; it stays a single, real link for
+           keyboard and screen-reader users. */
+        .member-card-link::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          border-radius: inherit;
+        }
+        .member-card-link:focus-visible { outline: none }
+
+        /* Interest tags sit above the overlay so they remain their
+           own links to the filtered listing. */
+        .member-card .member-interests {
+          position: relative;
+          z-index: 2;
+        }
+
+        .member-card .avatar {
+          width: 56px; height: 56px; flex: 0 0 56px;
+        }
+
+        .member-card-body {
+          min-width: 0;
+          flex: 1 1 auto;
+        }
+        .member-card .name {
+          font-size: .95rem;
+          text-align: left;
+        }
+        .member-card-username {
+          margin: 1px 0 0;
+          font-size: .8rem;
+          color: var(--muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .member-card .aff {
+          margin-top: 2px;
+          font-size: .85rem;
+          text-align: left;
+        }
+        .member-card .member-interests { margin-top: 5px }
+
+        @media (max-width: 640px) {
+          .member-grid { grid-template-columns: 1fr; gap: 10px }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .member-card { transition: none }
+        }
+
         /* Member interest tags on cards */
         .member-interests {
           display: flex;
           flex-wrap: wrap;
           gap: 5px;
           margin-top: 6px;
+          min-width: 0;
         }
 
         .member-interest-tag {
@@ -1487,6 +1599,13 @@ div {
           border: 1px solid #d1e3da;
           text-decoration: none;
           white-space: nowrap;
+          /* an unsplit, sentence-long interest is clipped to the card
+             rather than running across its neighbours; the full text
+             is in the title attribute */
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
+          text-overflow: ellipsis;
           transition: background 0.15s ease;
         }
 

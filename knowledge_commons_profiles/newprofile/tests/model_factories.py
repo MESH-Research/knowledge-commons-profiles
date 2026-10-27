@@ -292,7 +292,7 @@ class ProfileFactory(factory.django.DjangoModelFactory):
 
     # Social media fields
     twitter = factory.LazyFunction(lambda: f"@{fake.user_name()}")
-    github = factory.LazyFunction(lambda: fake.user_name())
+    github = factory.LazyFunction(fake.user_name)
     email = factory.Faker("email")
     orcid = factory.LazyFunction(
         lambda: f"0000-{fake.random_number(digits=4)}-"

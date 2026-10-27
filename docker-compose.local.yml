@@ -17,7 +17,18 @@ services:
       - ${HOME}/key.pem:/certs/key.pem:ro
     env_file:
       - ./.envs/.local/.django
+    # Overrides for the env file so the stack is self-contained: Redis is
+    # the compose service below and Postgres defaults to the host's test
+    # container (kcb.py up --database-url changes it).
+    environment:
+      REDIS_SERVER: redis://redis:6379
+      DATABASE_URL: ${LOCAL_DATABASE_URL:-postgres://kcp:kcp@host.docker.internal:5459/kcp}
+    depends_on:
+      - redis
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - '443:443'
+
+  redis:
+    image: docker.io/redis:8.10.3

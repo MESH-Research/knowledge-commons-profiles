@@ -22,7 +22,7 @@ from .string import join
 ORDINAL_THRESHOLD = 10
 AD_THRESHOLD = 1000
 
-# ruff: noqa: PLC0415 RUF005
+# ruff: noqa: RUF005
 class SomewhatObjectifiedElement(etree.ElementBase):
     nsmap = {
         "cs": "http://purl.org/net/xbiblio/csl",
@@ -70,7 +70,7 @@ class CitationStylesElement(SomewhatObjectifiedElement):
         for i, node in enumerate(full_xpath.split("/")[1:]):
             xpath += "/" + node
             element = self.xpath(xpath)[0]
-            namespace, tag = element.tag.split("}", 1)
+            _namespace, tag = element.tag.split("}", 1)
             attribs = "".join(
                 f' {key}="{value}"' for key, value in element.attrib.items()
             )

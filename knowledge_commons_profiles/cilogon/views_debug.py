@@ -113,5 +113,5 @@ def _percentile(ordered: list[float], pct: int) -> float:
         return ordered[0]
     # Nearest-rank percentile; cheap and deterministic.
     last = len(ordered) - 1
-    k = max(0, min(last, int(round(pct / 100 * last))))
+    k = max(0, min(last, round(pct / 100 * last)))
     return ordered[k]

@@ -5,6 +5,7 @@ Middleware for profiles
 import contextlib
 import logging
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import requests
 import sentry_sdk
@@ -18,7 +19,6 @@ from django.db import DatabaseError
 from django.db import OperationalError
 from django.db.models import Q
 from django.db.models.enums import IntEnum
-from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.urls import Resolver404
 from django.urls import resolve
@@ -32,6 +32,9 @@ from knowledge_commons_profiles.cilogon.oauth import oauth
 from knowledge_commons_profiles.cilogon.oauth import revoke_token
 from knowledge_commons_profiles.cilogon.oauth import store_session_variables
 from knowledge_commons_profiles.cilogon.oauth import token_expired
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
 

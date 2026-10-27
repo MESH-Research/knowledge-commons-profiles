@@ -22,8 +22,6 @@ from knowledge_commons_profiles.newprofile.utils import (
     profile_exists_or_has_been_created,
 )
 
-# ruff: noqa: PLC0415
-
 
 class TestProfileExistsOrHasBeenCreated(TestCase):
     """Test the profile_exists_or_has_been_created function"""

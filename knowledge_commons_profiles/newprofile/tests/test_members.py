@@ -1,11 +1,16 @@
 # tests/test_people_by_username.py
 import base64
+import re
+from datetime import timedelta
 from math import ceil
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
 
 from knowledge_commons_profiles.newprofile.models import AcademicInterest
 from knowledge_commons_profiles.newprofile.models import Profile
@@ -17,6 +22,8 @@ from knowledge_commons_profiles.newprofile.views.members import _prefix_count_qs
 from knowledge_commons_profiles.newprofile.views.members import (
     people_by_username,
 )
+
+User = get_user_model()
 
 
 class CursorHelpersTests(TestCase):
@@ -53,25 +60,29 @@ class PrefixCountTests(TestCase):
         self.p3 = Profile.objects.create(username="bob", name="Bob A")
         self.p4 = Profile.objects.create(username="carol", name="Carol A")
 
-        self.qs = (
-            Profile.objects.filter(name__isnull=False)
-            .exclude(name__exact="")
-            .order_by("username", "id")
-        )
+        self.qs = members.with_last_login(
+            Profile.objects.filter(name__isnull=False).exclude(
+                name__exact=""
+            )
+        ).order_by(*members.LISTING_ORDER)
 
     def test_prefix_count_qs_at_beginning(self):
         # Count rows <= ("alice", p1.id)
-        cnt = _prefix_count_qs(self.qs, "alice", self.p1.id)
+        cnt = _prefix_count_qs(
+            self.qs, {"username": "alice", "id": self.p1.id}
+        )
         self.assertEqual(cnt, 1)
 
     def test_prefix_count_qs_with_same_username(self):
         # Count rows <= ("alice2", p2.id) should include alice and alice2
-        cnt = _prefix_count_qs(self.qs, "alice2", self.p2.id)
+        cnt = _prefix_count_qs(
+            self.qs, {"username": "alice2", "id": self.p2.id}
+        )
         self.assertEqual(cnt, 2)
 
     def test_prefix_count_qs_across_usernames(self):
         # Count rows <= ("bob", p3.id) should include alice, alice2, and bob
-        cnt = _prefix_count_qs(self.qs, "bob", self.p3.id)
+        cnt = _prefix_count_qs(self.qs, {"username": "bob", "id": self.p3.id})
         self.assertEqual(cnt, 3)
 
 
@@ -183,8 +194,11 @@ class PeopleByUsernameViewTests(TestCase):
 
         # next_cursor points at the last returned row
         last_row = ctx["profiles"][-1]
-        expected_next = self._encode(last_row.username, last_row.id)
-        self.assertEqual(ctx["next_cursor"], expected_next)
+        decoded = _decode_cursor(ctx["next_cursor"])
+        self.assertEqual(
+            (decoded["username"], decoded["id"]),
+            (last_row.username, last_row.id),
+        )
         self.assertIsNone(ctx["prev_cursor"])
 
         # page_count should be ceil(6/5)=2
@@ -552,3 +566,417 @@ class InterestFilterTests(TestCase):
             self.assertEqual(len(c2["profiles"]), 1)
             self.assertFalse(c2["has_next"])
             self.assertEqual(c2["interest_filter"], "Digital Humanities")
+
+
+class RecencyOrderingHelperTests(TestCase):
+    """Pure helpers behind the login-recency listing order."""
+
+    def test_parse_key_tolerates_legacy_cursor_without_last_login(self):
+        last_login, username, id_ = members._parse_key(
+            {"username": "alice", "id": 7}
+        )
+        self.assertIsNone(last_login)
+        self.assertEqual((username, id_), ("alice", 7))
+
+    def test_cursor_payload_roundtrips_through_encode_decode(self):
+        when = timezone.now().replace(microsecond=123456)
+        profile = SimpleNamespace(last_login=when, username="alice", id=3)
+        token = _encode_cursor(members._cursor_payload(profile))
+        parsed = members._parse_key(_decode_cursor(token))
+        self.assertEqual(parsed, (when, "alice", 3))
+
+    def test_cursor_payload_roundtrips_with_no_login(self):
+        profile = SimpleNamespace(last_login=None, username="bob", id=9)
+        token = _encode_cursor(members._cursor_payload(profile))
+        parsed = members._parse_key(_decode_cursor(token))
+        self.assertEqual(parsed, (None, "bob", 9))
+
+    def test_sort_key_puts_recent_logins_first_and_never_last(self):
+        now = timezone.now()
+        rows = [
+            SimpleNamespace(last_login=None, username="zed", id=1),
+            SimpleNamespace(
+                last_login=now - timedelta(days=2), username="old", id=2
+            ),
+            SimpleNamespace(last_login=None, username="amy", id=3),
+            SimpleNamespace(last_login=now, username="new", id=4),
+            SimpleNamespace(last_login=now, username="new", id=0),
+        ]
+        ordered = sorted(rows, key=members._sort_key)
+        self.assertEqual(
+            [(r.username, r.id) for r in ordered],
+            [("new", 0), ("new", 4), ("old", 2), ("amy", 3), ("zed", 1)],
+        )
+
+
+class RecencyOrderingQueryTests(TestCase):
+    """Database-backed ordering, cursor filtering and prefix counts."""
+
+    def setUp(self):
+        self.now = timezone.now()
+        self.alice = Profile.objects.create(username="alice", name="Alice")
+        self.bob = Profile.objects.create(username="bob", name="Bob")
+        self.carol = Profile.objects.create(username="carol", name="Carol")
+        self.dave = Profile.objects.create(username="dave", name="Dave")
+        User.objects.create(username="carol", last_login=self.now)
+        User.objects.create(
+            username="alice", last_login=self.now - timedelta(days=1)
+        )
+        # bob has a user who has never completed a login
+        User.objects.create(username="bob", last_login=None)
+        self.qs = members.with_last_login(
+            Profile.objects.filter(name__isnull=False)
+        ).order_by(*members.LISTING_ORDER)
+
+    def test_with_last_login_reads_auth_user_last_login(self):
+        by_name = {p.username: p.last_login for p in self.qs}
+        self.assertEqual(by_name["carol"], self.now)
+        self.assertEqual(by_name["alice"], self.now - timedelta(days=1))
+        self.assertIsNone(by_name["bob"])
+        self.assertIsNone(by_name["dave"])
+
+    def test_listing_order_is_recent_first_then_username(self):
+        self.assertEqual(
+            [p.username for p in self.qs],
+            ["carol", "alice", "bob", "dave"],
+        )
+
+    def test_after_q_selects_rows_following_a_logged_in_cursor(self):
+        key = members._cursor_payload(self.qs.get(username="alice"))
+        self.assertEqual(
+            [p.username for p in self.qs.filter(members._after_q(key))],
+            ["bob", "dave"],
+        )
+
+    def test_after_q_selects_rows_following_a_never_logged_in_cursor(self):
+        key = members._cursor_payload(self.qs.get(username="bob"))
+        self.assertEqual(
+            [p.username for p in self.qs.filter(members._after_q(key))],
+            ["dave"],
+        )
+
+    def test_before_q_selects_rows_preceding_a_never_logged_in_cursor(self):
+        key = members._cursor_payload(self.qs.get(username="bob"))
+        self.assertEqual(
+            [p.username for p in self.qs.filter(members._before_q(key))],
+            ["carol", "alice"],
+        )
+
+    def test_before_q_selects_rows_preceding_a_logged_in_cursor(self):
+        key = members._cursor_payload(self.qs.get(username="alice"))
+        self.assertEqual(
+            [p.username for p in self.qs.filter(members._before_q(key))],
+            ["carol"],
+        )
+
+    def test_prefix_count_counts_rows_up_to_and_including_key(self):
+        self.assertEqual(
+            _prefix_count_qs(
+                self.qs,
+                members._cursor_payload(self.qs.get(username="carol")),
+            ),
+            1,
+        )
+        self.assertEqual(
+            _prefix_count_qs(
+                self.qs,
+                members._cursor_payload(self.qs.get(username="bob")),
+            ),
+            3,
+        )
+
+
+class RecencyOrderingViewTests(TestCase):
+    """The members views list recently active members first."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        now = timezone.now()
+        for username in ("alice", "bob", "carol", "dave", "erin"):
+            Profile.objects.create(username=username, name=username.title())
+        User.objects.create(username="dave", last_login=now)
+        User.objects.create(
+            username="bob", last_login=now - timedelta(hours=3)
+        )
+        self.expected = ["dave", "bob", "alice", "carol", "erin"]
+
+    def _stub_render(self, request, template_name, context):
+        return SimpleNamespace(
+            status_code=200, template_name=template_name, context=context
+        )
+
+    def _usernames(self, response):
+        return [p.username for p in response.context["profiles"]]
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_first_page_is_ordered_by_recency(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        response = people_by_username(self.factory.get("/members"))
+        self.assertEqual(self._usernames(response), self.expected)
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_cursor_pages_cross_the_login_boundary_in_order(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        with patch(
+            "knowledge_commons_profiles.newprofile.views.members.PAGE_SIZE", 2
+        ):
+            r1 = people_by_username(self.factory.get("/members"))
+            self.assertEqual(self._usernames(r1), self.expected[:2])
+            self.assertEqual(r1.context["current_page"], 1)
+
+            r2 = people_by_username(
+                self.factory.get(
+                    "/members",
+                    {"cursor": r1.context["next_cursor"], "dir": "next"},
+                )
+            )
+            self.assertEqual(self._usernames(r2), self.expected[2:4])
+            self.assertEqual(r2.context["current_page"], 2)
+            self.assertTrue(r2.context["has_prev"])
+            self.assertTrue(r2.context["has_next"])
+
+            r3 = people_by_username(
+                self.factory.get(
+                    "/members",
+                    {"cursor": r2.context["next_cursor"], "dir": "next"},
+                )
+            )
+            self.assertEqual(self._usernames(r3), self.expected[4:])
+            self.assertEqual(r3.context["current_page"], 3)
+            self.assertFalse(r3.context["has_next"])
+
+            back = people_by_username(
+                self.factory.get(
+                    "/members",
+                    {"cursor": r3.context["prev_cursor"], "dir": "prev"},
+                )
+            )
+            self.assertEqual(self._usernames(back), self.expected[2:4])
+            self.assertEqual(back.context["current_page"], 2)
+
+            back_again = people_by_username(
+                self.factory.get(
+                    "/members",
+                    {"cursor": back.context["prev_cursor"], "dir": "prev"},
+                )
+            )
+            self.assertEqual(self._usernames(back_again), self.expected[:2])
+            self.assertFalse(back_again.context["has_prev"])
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_search_results_are_ordered_by_recency(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        # "e" matches alice, dave and erin; dave is the only one of
+        # those who has logged in, so he leads and the rest are A-Z
+        response = people_by_username(
+            self.factory.post("/members", {"username": "e"})
+        )
+        self.assertEqual(
+            self._usernames(response), ["dave", "alice", "erin"]
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_is_ordered_by_recency(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        interest = AcademicInterest.objects.create(text="Book History")
+        for username in ("alice", "bob", "carol"):
+            Profile.objects.get(username=username).academic_interests.add(
+                interest
+            )
+        response = people_by_username(
+            self.factory.get("/members", {"interest": "Book History"})
+        )
+        self.assertEqual(self._usernames(response), ["bob", "alice", "carol"])
+
+    def test_rendered_listing_places_recent_members_first(self):
+        response = self.client.get("/members/")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        positions = [
+            html.index(reverse("profile", args=[u])) for u in self.expected
+        ]
+        self.assertEqual(positions, sorted(positions))
+
+
+class PerPageChoiceTests(TestCase):
+    """Readers can pick a page size; every size completes the grid."""
+
+    def test_choices_divide_evenly_across_every_grid_width(self):
+        for choice in members.PAGE_SIZE_CHOICES:
+            for columns in (1, 2, 3, 4):
+                self.assertEqual(choice % columns, 0)
+
+    def test_default_page_size_is_one_of_the_choices(self):
+        self.assertIn(members.PAGE_SIZE, members.PAGE_SIZE_CHOICES)
+
+    def test_resolve_accepts_a_listed_choice(self):
+        for choice in members.PAGE_SIZE_CHOICES:
+            self.assertEqual(members._resolve_page_size(str(choice)), choice)
+
+    def test_resolve_falls_back_for_missing_or_bad_values(self):
+        for raw in (None, "", "abc", "7", "-12", "12.5", "1000000"):
+            self.assertEqual(
+                members._resolve_page_size(raw), members.PAGE_SIZE, raw
+            )
+
+
+class PerPageViewTests(TestCase):
+    """The directory honours ?per_page= and carries it through paging."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        for i in range(30):
+            Profile.objects.create(username=f"user{i:02d}", name=f"U{i:02d}")
+
+    def _stub_render(self, request, template_name, context):
+        return SimpleNamespace(
+            status_code=200, template_name=template_name, context=context
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_listing_pages_by_the_chosen_size(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+
+        r1 = people_by_username(
+            self.factory.get("/members", {"per_page": "12"})
+        )
+        c1 = r1.context
+        self.assertEqual(len(c1["profiles"]), 12)
+        self.assertEqual(c1["page_size"], 12)
+        self.assertEqual(c1["page_count"], 3)
+        self.assertEqual(c1["current_page"], 1)
+        self.assertTrue(c1["has_next"])
+
+        r2 = people_by_username(
+            self.factory.get(
+                "/members",
+                {"per_page": "12", "cursor": c1["next_cursor"]},
+            )
+        )
+        c2 = r2.context
+        self.assertEqual(len(c2["profiles"]), 12)
+        self.assertEqual(c2["current_page"], 2)
+        self.assertEqual(
+            c2["profiles"][0].username, "user12"
+        )
+
+        r3 = people_by_username(
+            self.factory.get(
+                "/members",
+                {"per_page": "12", "cursor": c2["next_cursor"]},
+            )
+        )
+        c3 = r3.context
+        self.assertEqual(len(c3["profiles"]), 6)
+        self.assertEqual(c3["current_page"], 3)
+        self.assertFalse(c3["has_next"])
+
+        back = people_by_username(
+            self.factory.get(
+                "/members",
+                {
+                    "per_page": "12",
+                    "cursor": c3["prev_cursor"],
+                    "dir": "prev",
+                },
+            )
+        )
+        self.assertEqual(
+            [p.username for p in back.context["profiles"]],
+            [p.username for p in c2["profiles"]],
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_unlisted_size_falls_back_to_default(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        ctx = people_by_username(
+            self.factory.get("/members", {"per_page": "7"})
+        ).context
+        self.assertEqual(ctx["page_size"], members.PAGE_SIZE)
+        self.assertEqual(len(ctx["profiles"]), min(30, members.PAGE_SIZE))
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_context_offers_the_size_choices(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        ctx = people_by_username(self.factory.get("/members")).context
+        self.assertEqual(
+            tuple(ctx["page_size_choices"]), members.PAGE_SIZE_CHOICES
+        )
+
+    @patch("knowledge_commons_profiles.newprofile.views.members.render")
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.members.get_profile_photo"
+    )
+    def test_interest_filter_pages_by_the_chosen_size(
+        self, mock_get_photo, mock_render
+    ):
+        mock_render.side_effect = self._stub_render
+        mock_get_photo.return_value = "IMG"
+        interest = AcademicInterest.objects.create(text="Maps")
+        for p in Profile.objects.all()[:20]:
+            p.academic_interests.add(interest)
+        ctx = people_by_username(
+            self.factory.get(
+                "/members", {"per_page": "12", "interest": "Maps"}
+            )
+        ).context
+        self.assertEqual(len(ctx["profiles"]), 12)
+        self.assertEqual(ctx["total_count"], 20)
+        self.assertEqual(ctx["page_count"], 2)
+
+    def test_rendered_pager_links_keep_the_chosen_size_and_filter(self):
+        interest = AcademicInterest.objects.create(text="Maps")
+        for p in Profile.objects.all()[:20]:
+            p.academic_interests.add(interest)
+        response = self.client.get("/members/?interest=Maps&per_page=12")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        match = re.search(r'href="([^"]*)">\s*Next', html)
+        self.assertIsNotNone(match)
+        next_href = match.group(1)
+        self.assertIn("per_page=12", next_href)
+        self.assertIn("interest=Maps", next_href)
+        self.assertIn("cursor=", next_href)
