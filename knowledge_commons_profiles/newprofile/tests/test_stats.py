@@ -574,6 +574,16 @@ class StatsBoardCountryGroupTests(SimpleTestCase):
         self.assertIn('id="country_group_data"', content)
         self.assertIn("Anglophone", content)
 
+    def test_group_total_is_shown_at_the_top_before_the_dropdown(self):
+        response = self._get()
+        content = response.content.decode()
+
+        self.assertIn('id="country_group_total"', content)
+        self.assertLess(
+            content.index('id="country_group_total"'),
+            content.index('id="country_group_select"'),
+        )
+
     def test_page_has_group_dropdown_with_alphabetical_options(self):
         response = self._get()
         content = response.content.decode()

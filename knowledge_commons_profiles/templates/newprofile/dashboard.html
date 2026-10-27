@@ -65,6 +65,30 @@
       border-color: #43A047;
       box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.2);
     }
+    .country-group-headline {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      padding: 0.35rem 1rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f1 100%);
+      border: 1px solid #c8e6c9;
+    }
+    .country-group-headline-number {
+      font-size: 2.25rem;
+      line-height: 1.1;
+      font-weight: 700;
+      color: #2e7d32;
+      font-variant-numeric: tabular-nums;
+    }
+    .country-group-headline-label {
+      font-size: 0.875rem;
+      color: #344767;
+      white-space: nowrap;
+    }
+    .country-group-headline-label strong {
+      font-weight: 700;
+    }
     .country-group-stat {
       border-radius: 0.75rem;
       padding: 1rem 1.25rem;
@@ -459,6 +483,12 @@
                     Countries of ROR-matched institutions, grouped by region, language or bloc
                   </p>
                 </div>
+                <div class="country-group-headline ms-md-auto">
+                  <span class="country-group-headline-number" id="country_group_total">–</span>
+                  <span class="country-group-headline-label">
+                    members in <strong id="country_group_total_label">this group</strong>
+                  </span>
+                </div>
                 <div class="country-group-picker">
                   <label for="country_group_select" class="form-label text-xs text-uppercase text-secondary font-weight-bolder mb-1">
                     Choose a group
@@ -473,19 +503,13 @@
             </div>
             <div class="card-body pt-3">
               <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                  <div class="country-group-stat">
-                    <p>Members</p>
-                    <h4 id="country_group_total">–</h4>
-                  </div>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <div class="country-group-stat">
                     <p>Countries represented</p>
                     <h4 id="country_group_represented">–</h4>
                   </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <div class="country-group-stat">
                     <p>Share of all located members</p>
                     <h4 id="country_group_share">–</h4>

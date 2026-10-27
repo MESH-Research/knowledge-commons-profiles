@@ -101,6 +101,9 @@
     });
 
     elements.total.textContent = formatNumber(group.total);
+    if (elements.totalLabel) {
+      elements.totalLabel.textContent = group.name;
+    }
     elements.represented.textContent =
       formatNumber(group.countries.length) + " of " + formatNumber(group.size);
     elements.share.textContent = formatPercent(group.total, allTotal);
@@ -115,6 +118,7 @@
     var elements = {
       rows: document.getElementById("country_group_rows"),
       total: document.getElementById("country_group_total"),
+      totalLabel: document.getElementById("country_group_total_label"),
       represented: document.getElementById("country_group_represented"),
       share: document.getElementById("country_group_share"),
       tableContainer: document.getElementById("country_group_table_cont"),
