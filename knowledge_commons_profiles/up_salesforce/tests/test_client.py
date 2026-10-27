@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.core.cache import cache
 from django.test import SimpleTestCase
 from django.test import override_settings
@@ -225,3 +227,28 @@ class SalesforceRestClientTests(SimpleTestCase):
             FakeResponse(200, payload),
         )
         self.assertEqual(self.client.describe("Contact"), payload)
+
+
+class ClientLazySettingsTests(SimpleTestCase):
+    @override_settings(UP_ECA_API_VERSION="v58.0")
+    def test_api_version_is_read_when_used_not_when_constructed(self):
+        client = SalesforceRestClient(
+            token_provider=mock.Mock(), session=FakeSession()
+        )
+        with override_settings(UP_ECA_API_VERSION="v62.0"):
+            self.assertEqual(
+                client.build_url("limits", INSTANCE_URL),
+                f"{INSTANCE_URL}/services/data/v62.0/limits",
+            )
+
+    def test_explicit_api_version_wins_over_settings(self):
+        client = SalesforceRestClient(
+            token_provider=mock.Mock(),
+            session=FakeSession(),
+            api_version="v58.0",
+        )
+        with override_settings(UP_ECA_API_VERSION="v62.0"):
+            self.assertEqual(
+                client.build_url("limits", INSTANCE_URL),
+                f"{INSTANCE_URL}/services/data/v58.0/limits",
+            )

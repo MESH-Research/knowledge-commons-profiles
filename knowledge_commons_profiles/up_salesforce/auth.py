@@ -49,25 +49,39 @@ class ClientCredentialsTokenProvider:
         cache_timeout: int | None = None,
         session: requests.Session | None = None,
     ):
-        self.consumer_key = (
-            consumer_key
-            if consumer_key is not None
-            else settings.UP_ECA_CONSUMER_KEY
-        )
-        self.consumer_secret = (
-            consumer_secret
-            if consumer_secret is not None
-            else settings.UP_ECA_CONSUMER_SECRET
-        )
-        self.login_url = (
-            login_url if login_url is not None else settings.UP_ECA_LOGIN_URL
-        )
-        self.cache_timeout = (
-            cache_timeout
-            if cache_timeout is not None
-            else settings.UP_ECA_TOKEN_CACHE_TIMEOUT
-        )
+        # Explicit values are kept; anything left as None is read from
+        # settings at use time, so an instance created at import (as the
+        # production sync registry does) follows later settings changes
+        # and a rotated secret only needs a restart, not a code change.
+        self._consumer_key = consumer_key
+        self._consumer_secret = consumer_secret
+        self._login_url = login_url
+        self._cache_timeout = cache_timeout
         self.session = session or requests.Session()
+
+    @property
+    def consumer_key(self) -> str:
+        if self._consumer_key is not None:
+            return self._consumer_key
+        return settings.UP_ECA_CONSUMER_KEY
+
+    @property
+    def consumer_secret(self) -> str:
+        if self._consumer_secret is not None:
+            return self._consumer_secret
+        return settings.UP_ECA_CONSUMER_SECRET
+
+    @property
+    def login_url(self) -> str:
+        if self._login_url is not None:
+            return self._login_url
+        return settings.UP_ECA_LOGIN_URL
+
+    @property
+    def cache_timeout(self) -> int:
+        if self._cache_timeout is not None:
+            return self._cache_timeout
+        return settings.UP_ECA_TOKEN_CACHE_TIMEOUT
 
     @property
     def token_url(self) -> str:

@@ -66,7 +66,12 @@ class SalesforceRestClient:
         self.token_provider = token_provider or ClientCredentialsTokenProvider(
             session=self.session
         )
-        self.api_version = api_version or settings.UP_ECA_API_VERSION
+        self._api_version = api_version
+
+    @property
+    def api_version(self) -> str:
+        """Explicit value if given, otherwise settings at use time."""
+        return self._api_version or settings.UP_ECA_API_VERSION
 
     def build_url(self, path: str, instance_url: str) -> str:
         """

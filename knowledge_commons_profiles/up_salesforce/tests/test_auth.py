@@ -140,3 +140,47 @@ class ClientCredentialsTokenProviderTests(SimpleTestCase):
         self.assertIsNone(provider.peek_cached())
         provider.get_token()
         self.assertEqual(len(self.session.calls_to(TOKEN_URL)), 2)
+
+
+class LazySettingsTests(SimpleTestCase):
+    """
+    A provider built at import time (as the production sync registry does)
+    must honour settings as they are when it is used, not when it was
+    constructed; explicit constructor values still win.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.session = FakeSession()
+        self.session.add("POST", TOKEN_URL, FakeResponse(200, TOKEN_BODY))
+
+    @override_settings(
+        UP_ECA_CONSUMER_KEY="", UP_ECA_CONSUMER_SECRET="", UP_ECA_LOGIN_URL=""
+    )
+    def test_settings_applied_after_construction_are_used(self):
+        provider = ClientCredentialsTokenProvider(session=self.session)
+        with override_settings(**SETTINGS):
+            token = provider.fetch_token()
+        self.assertEqual(token.access_token, TOKEN_BODY["access_token"])
+        call = self.session.calls_to(TOKEN_URL)[0]
+        self.assertEqual(call["data"]["client_id"], "consumer-key")
+        self.assertEqual(call["data"]["client_secret"], "consumer-secret")
+
+    @override_settings(**SETTINGS)
+    def test_explicit_constructor_values_are_not_overridden_by_settings(self):
+        provider = ClientCredentialsTokenProvider(
+            session=self.session, consumer_key="explicit-key"
+        )
+        with override_settings(UP_ECA_CONSUMER_KEY="later-key"):
+            provider.fetch_token()
+        call = self.session.calls_to(TOKEN_URL)[0]
+        self.assertEqual(call["data"]["client_id"], "explicit-key")
+
+    @override_settings(**SETTINGS)
+    def test_login_url_changes_are_honoured(self):
+        provider = ClientCredentialsTokenProvider(session=self.session)
+        with override_settings(UP_ECA_LOGIN_URL="https://other.example"):
+            self.assertEqual(
+                provider.token_url,
+                "https://other.example/services/oauth2/token",
+            )
