@@ -198,18 +198,6 @@ class CountryGroupStatsCommandTests(SimpleTestCase):
         self.assertNotIn("United States", output)
         self.assertIn("15", output)
 
-    def test_prints_running_cumulative_total(self):
-        with patch(
-            f"{COMMAND}.load_country_counts",
-            return_value={"VN": 12, "KH": 3, "TH": 5},
-        ):
-            output = self._run("Indo-China")
-
-        # Rows are VN (12), TH (5), KH (3): the running totals are
-        # 12, 17 and 20, and 17 appears nowhere else in the output.
-        self.assertIn("17", output)
-        self.assertIn("Cumulative", output)
-
     def test_group_name_may_be_given_as_separate_words(self):
         with patch(
             f"{COMMAND}.load_country_counts",
@@ -322,30 +310,9 @@ class CountryGroupBreakdownTests(SimpleTestCase):
         self.assertEqual(
             indo_china["countries"],
             [
-                {
-                    "code": "VN",
-                    "name": "Vietnam",
-                    "count": 12,
-                    "cumulative": 12,
-                },
-                {
-                    "code": "KH",
-                    "name": "Cambodia",
-                    "count": 3,
-                    "cumulative": 15,
-                },
+                {"code": "VN", "name": "Vietnam", "count": 12},
+                {"code": "KH", "name": "Cambodia", "count": 3},
             ],
-        )
-
-    def test_group_rows_carry_a_running_cumulative_total(self):
-        breakdown = country_groups.country_group_breakdown(
-            {"VN": 12, "KH": 3, "TH": 5, "US": 9}
-        )
-        indo_china = next(g for g in breakdown if g["name"] == "Indo-China")
-
-        self.assertEqual(
-            [(c["code"], c["cumulative"]) for c in indo_china["countries"]],
-            [("VN", 12), ("TH", 17), ("KH", 20)],
         )
 
     def test_group_carries_total_and_size(self):

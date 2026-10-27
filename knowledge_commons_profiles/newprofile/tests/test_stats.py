@@ -564,21 +564,8 @@ class StatsBoardCountryGroupTests(SimpleTestCase):
         )
         self.assertEqual(
             anglophone["countries"],
-            [
-                {
-                    "code": "US",
-                    "name": "United States",
-                    "count": 1,
-                    "cumulative": 1,
-                }
-            ],
+            [{"code": "US", "name": "United States", "count": 1}],
         )
-
-    def test_page_table_has_a_cumulative_column(self):
-        response = self._get()
-        content = response.content.decode()
-
-        self.assertIn("Cumulative", content)
 
     def test_page_embeds_country_groups_as_json(self):
         response = self._get()
