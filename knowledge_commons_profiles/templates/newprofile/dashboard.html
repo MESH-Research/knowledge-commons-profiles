@@ -38,6 +38,137 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
   <!-- CSS Files -->
   <link id="pagestyle" href="{% static "css/material-dashboard.css" %}?v=3.2.0" rel="stylesheet" />
+  <style>
+    /* Members by region or group */
+    .country-group-picker {
+      min-width: 16rem;
+    }
+    .country-group-picker .form-select {
+      border: 1px solid #d2d6da;
+      border-radius: 0.5rem;
+      padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #344767;
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23344767' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 14px 10px;
+      appearance: none;
+      -webkit-appearance: none;
+      box-shadow: 0 1px 2px rgba(52, 71, 103, 0.08);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .country-group-picker .form-select:focus {
+      outline: 0;
+      border-color: #43A047;
+      box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.2);
+    }
+    .country-group-headline {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      padding: 0.35rem 1rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f1 100%);
+      border: 1px solid #c8e6c9;
+    }
+    .country-group-headline-number {
+      font-size: 2.25rem;
+      line-height: 1.1;
+      font-weight: 700;
+      color: #2e7d32;
+      font-variant-numeric: tabular-nums;
+    }
+    .country-group-headline-label {
+      font-size: 0.875rem;
+      color: #344767;
+      white-space: nowrap;
+    }
+    .country-group-headline-label strong {
+      font-weight: 700;
+    }
+    .country-group-stat {
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: linear-gradient(180deg, #f8f9fa 0%, #f1f3f5 100%);
+      border: 1px solid #eceef1;
+      height: 100%;
+    }
+    .country-group-stat p {
+      margin: 0 0 0.25rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+      color: #7b809a;
+    }
+    .country-group-stat h4 {
+      margin: 0;
+      font-weight: 700;
+      color: #344767;
+    }
+    .country-group-stat small {
+      color: #7b809a;
+      font-weight: 500;
+    }
+    #country_group_table th {
+      white-space: nowrap;
+    }
+    #country_group_table td {
+      vertical-align: middle;
+    }
+    #country_group_table .country-rank {
+      width: 3rem;
+      color: #7b809a;
+      font-variant-numeric: tabular-nums;
+    }
+    #country_group_table .country-code {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 0.35rem;
+      background: #eef2f6;
+      color: #7b809a;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      vertical-align: middle;
+    }
+    #country_group_table .country-members {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: #344767;
+      text-align: right;
+      white-space: nowrap;
+    }
+    #country_group_table .country-share {
+      min-width: 14rem;
+    }
+    #country_group_table .country-share .progress {
+      height: 6px;
+      background: #eef2f6;
+      flex: 1 1 auto;
+      margin: 0;
+      overflow: hidden;
+    }
+    #country_group_table .country-share .progress-bar {
+      background: linear-gradient(90deg, #66BB6A 0%, #43A047 100%);
+      transition: width 0.35s ease;
+    }
+    #country_group_table .country-share .share-value {
+      width: 3.5rem;
+      text-align: right;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #7b809a;
+      font-variant-numeric: tabular-nums;
+    }
+    #country_group_table tbody tr:first-child .country-members {
+      color: #2e7d32;
+    }
+  </style>
   <!-- leaflet for maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -337,6 +468,71 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header pb-0">
+              <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
+                <div>
+                  <h6 class="mb-0">Members by Region or Group</h6>
+                  <p class="text-sm mb-0">
+                    Countries of ROR-matched institutions, grouped by region, language or bloc
+                  </p>
+                </div>
+                <div class="country-group-headline ms-md-auto">
+                  <span class="country-group-headline-number" id="country_group_total">–</span>
+                  <span class="country-group-headline-label">
+                    members in <strong id="country_group_total_label">this group</strong>
+                  </span>
+                </div>
+                <div class="country-group-picker">
+                  <label for="country_group_select" class="form-label text-xs text-uppercase text-secondary font-weight-bolder mb-1">
+                    Choose a group
+                  </label>
+                  <select id="country_group_select" class="form-select" aria-controls="country_group_table">
+                    {% for group in country_groups %}
+                      <option value="{{ group.name }}">{{ group.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="card-body pt-3">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <div class="country-group-stat">
+                    <p>Countries represented</p>
+                    <h4 id="country_group_represented">–</h4>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="country-group-stat">
+                    <p>Share of all located members</p>
+                    <h4 id="country_group_share">–</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="table-responsive" id="country_group_table_cont">
+                <table class="table align-items-center mb-0" id="country_group_table">
+                  <thead>
+                    <tr>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">#</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Country</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end">Members</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Share of group</th>
+                    </tr>
+                  </thead>
+                  <tbody id="country_group_rows"></tbody>
+                </table>
+              </div>
+              <p id="country_group_empty" class="text-sm text-secondary mb-0 mt-3" hidden>
+                No members from this group yet.
+              </p>
+              {{ country_groups|json_script:"country_group_data" }}
             </div>
           </div>
         </div>
@@ -772,6 +968,7 @@
   <script src="{% static "js/material-dashboard.min.js" %}?v=3.2.0"></script>
 
   <script src="{% static "js/stats_map.js" %}"></script>
+  <script src="{% static "js/stats_country_groups.js" %}"></script>
   <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
       let table = new DataTable('#users');
