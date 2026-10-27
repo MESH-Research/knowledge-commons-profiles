@@ -27,9 +27,11 @@ Southern Territories and so on). They are kept in the table so that any code
 ROR emits can be named, and they are placed in the geographically obvious
 group; they will never carry members.
 
-Kosovo has no ISO 3166-1 code. If ROR records use the user-assigned code `XK`
-for institutions there, those members will appear with the bare code and will
-belong to no group. This has not yet been checked against live data.
+Kosovo has no ISO 3166-1 code. ROR uses the user-assigned code `XK` for its
+Kosovo organisations (28 records, including the University of Prishtina, as
+of October 2026), so `XK` is included in the names table as "Kosovo" and is
+placed in `Europe` and therefore `Global North`. It is the one non-ISO code in
+the table.
 
 ## How the lists were compiled
 
@@ -71,7 +73,7 @@ overlapping groups stay consistent with one another.
 | Group | Basis and judgement calls |
 | --- | --- |
 | **World** | Every ISO 3166-1 code. Used as the denominator for shares. |
-| **Europe** | UN M49 Europe, including Russia, Belarus, Ukraine and Moldova, the Western Balkans, the microstates and the Crown Dependencies, Faroe Islands, Gibraltar, Svalbard and Åland. **Cyprus** is included because it is an EU member, although M49 places it in Western Asia. Türkiye, Armenia, Azerbaijan, Georgia and Kazakhstan are not included. |
+| **Europe** | UN M49 Europe, including Russia, Belarus, Ukraine and Moldova, the Western Balkans, the microstates and the Crown Dependencies, Faroe Islands, Gibraltar, Svalbard and Åland, and Kosovo under ROR's `XK`. **Cyprus** is included because it is an EU member, although M49 places it in Western Asia. Türkiye, Armenia, Azerbaijan, Georgia and Kazakhstan are not included. |
 | **European Union** | The 27 member states as of 2026. Does not include EFTA states, candidates or the UK. |
 | **Nordic** | Denmark, Finland, Iceland, Norway and Sweden plus the Faroe Islands, Greenland, Svalbard and Åland. Greenland is therefore in both `Nordic` and `North America`. |
 | **Baltic** | Estonia, Latvia, Lithuania. |

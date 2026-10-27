@@ -84,6 +84,12 @@ class CountryGroupDataTests(SimpleTestCase):
         self.assertIn("BR", COUNTRY_GROUPS["Latin America"])
         self.assertIn("MX", COUNTRY_GROUPS["Latin America"])
 
+    def test_kosovo_uses_the_ror_user_assigned_code(self):
+        # ROR has no ISO code to use for Kosovo and emits XK instead
+        self.assertEqual(COUNTRY_NAMES.get("XK"), "Kosovo")
+        self.assertIn("XK", COUNTRY_GROUPS["Europe"])
+        self.assertIn("XK", COUNTRY_GROUPS["Global North"])
+
     def test_global_south_and_north_do_not_overlap(self):
         south = COUNTRY_GROUPS["Global South"]
         north = COUNTRY_GROUPS["Global North"]
