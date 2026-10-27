@@ -1,3 +1,9 @@
+## 4.63.0 (2026-10-27)
+
+### Feat
+
+- **up_salesforce**: add read-only dry-run sync command
+
 ## 4.62.0 (2026-10-26)
 
 ### Feat
