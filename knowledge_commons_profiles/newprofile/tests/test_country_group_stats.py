@@ -3,6 +3,7 @@ Tests for country groups and the country_group_stats management command
 """
 
 import io
+from pathlib import Path
 from unittest.mock import patch
 
 from django.core.management import CommandError
@@ -333,3 +334,35 @@ class CountryGroupBreakdownTests(SimpleTestCase):
         breakdown = country_groups.country_group_breakdown({})
 
         self.assertEqual(len(breakdown), len(COUNTRY_GROUPS))
+
+
+class CountryGroupSourcesDocumentTests(SimpleTestCase):
+    """
+    The editorial document must cover every group defined in the code
+    """
+
+    DOC = (
+        Path(__file__).resolve().parents[3]
+        / "docs"
+        / "newprofile"
+        / "country_groups_sources.md"
+    )
+
+    def test_document_exists(self):
+        self.assertTrue(self.DOC.is_file(), self.DOC)
+
+    def test_every_group_is_documented(self):
+        text = self.DOC.read_text(encoding="utf-8")
+
+        for name in COUNTRY_GROUPS:
+            self.assertIn(name, text, f"{name} is not covered in {self.DOC}")
+
+    def test_every_alias_is_documented(self):
+        from knowledge_commons_profiles.newprofile.country_groups import (
+            GROUP_ALIASES,
+        )
+
+        text = self.DOC.read_text(encoding="utf-8")
+
+        for alias in GROUP_ALIASES:
+            self.assertIn(alias, text, f"alias {alias} is not documented")
