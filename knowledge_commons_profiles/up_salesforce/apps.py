@@ -15,3 +15,14 @@ class UPSalesforceConfig(AppConfig):
     name = "knowledge_commons_profiles.up_salesforce"
     label = "up_salesforce"
     verbose_name = _("UP Salesforce (External Client App)")
+
+    def ready(self):
+        # Imported lazily: apps.py loads before the app registry is ready.
+        from knowledge_commons_profiles.up_salesforce.checks import (
+            report_missing_credentials,
+        )
+
+        # Reports (never raises) when a deployment that requires the
+        # credentials is missing them, so the silent "no contact" failure
+        # mode is visible in Sentry from the first boot.
+        report_missing_credentials()

@@ -628,6 +628,12 @@ UP_ECA_TOKEN_CACHE_TIMEOUT = env.int(
     "UP_ECA_TOKEN_CACHE_TIMEOUT", default=15 * 60
 )
 UP_ECA_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
+# When True, a missing consumer key/secret is reported to Sentry at
+# startup (the app still boots and runs). Off by default; production turns
+# it on.
+UP_ECA_REQUIRE_CREDENTIALS = env.bool(
+    "UP_ECA_REQUIRE_CREDENTIALS", default=False
+)
 
 EXTERNAL_SYNC_CLASSES: list[tuple[str, list[str]]] = [
     ("MLA", ["Modern Language Association", "MLA"]),
