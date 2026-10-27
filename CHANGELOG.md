@@ -1,3 +1,10 @@
+## 4.65.1 (2026-10-27)
+
+### Fix
+
+- **docker**: bump Traefik, Redis and Postgres images to patched releases
+- **deps**: bump Authlib to 1.9.1 to patch security advisories
+
 ## 4.65.0 (2026-10-27)
 
 ### Feat
