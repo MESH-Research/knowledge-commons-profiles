@@ -1,3 +1,13 @@
+## 4.64.0 (2026-10-27)
+
+### Feat
+
+- **sync**: switch the production UP sync to the External Client App class
+
+### Fix
+
+- **up_salesforce**: read UP_ECA_* settings at use time, not at construction
+
 ## 4.63.0 (2026-10-27)
 
 ### Feat
