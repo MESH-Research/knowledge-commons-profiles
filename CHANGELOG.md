@@ -1,3 +1,9 @@
+## 4.65.0 (2026-10-27)
+
+### Feat
+
+- **up_salesforce**: report missing External Client App credentials to Sentry
+
 ## 4.64.0 (2026-10-27)
 
 ### Feat
