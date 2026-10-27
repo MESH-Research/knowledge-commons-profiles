@@ -85,6 +85,15 @@
     return td;
   }
 
+  function cumulativeCell(country, total) {
+    var td = cell("country-cumulative text-sm");
+    td.appendChild(document.createTextNode(formatNumber(country.cumulative)));
+    var share = document.createElement("small");
+    share.textContent = formatPercent(country.cumulative, total) + " so far";
+    td.appendChild(share);
+    return td;
+  }
+
   function render(group, allTotal, elements) {
     var rows = elements.rows;
     while (rows.firstChild) {
@@ -97,6 +106,7 @@
       tr.appendChild(countryCell(country));
       tr.appendChild(cell("country-members text-sm", formatNumber(country.count)));
       tr.appendChild(shareCell(country.count, group.total));
+      tr.appendChild(cumulativeCell(country, group.total));
       rows.appendChild(tr);
     });
 

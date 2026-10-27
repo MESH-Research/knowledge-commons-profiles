@@ -76,15 +76,26 @@ def build_group_table(
         "Members", justify="right", style="magenta", footer=f"{total:,}"
     )
     table.add_column("Share", justify="right", style="green", footer="100%")
+    table.add_column(
+        "Cumulative", justify="right", style="blue", footer=f"{total:,}"
+    )
+    table.add_column(
+        "Cum. share", justify="right", style="blue", footer="100%"
+    )
 
+    running = 0
     for rank, (code, name, count) in enumerate(rows, start=1):
+        running += count
         share = (count / total * 100) if total else 0
+        cumulative_share = (running / total * 100) if total else 0
         table.add_row(
             str(rank),
             name,
             code,
             f"{count:,}",
             f"{share:.1f}%",
+            f"{running:,}",
+            f"{cumulative_share:.1f}%",
         )
 
     return table

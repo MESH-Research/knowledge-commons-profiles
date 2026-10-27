@@ -144,6 +144,19 @@
     #country_group_table tbody tr:first-child .country-members {
       color: #2e7d32;
     }
+    #country_group_table .country-cumulative {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: #344767;
+    }
+    #country_group_table .country-cumulative small {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #7b809a;
+    }
   </style>
   <!-- leaflet for maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -500,6 +513,7 @@
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Country</th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end">Members</th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Share of group</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end">Cumulative</th>
                     </tr>
                   </thead>
                   <tbody id="country_group_rows"></tbody>

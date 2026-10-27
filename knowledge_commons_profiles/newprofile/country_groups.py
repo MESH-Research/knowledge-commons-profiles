@@ -561,7 +561,8 @@ def country_group_breakdown(counts: dict[str, int]) -> list[dict]:
 
     :param counts: member counts keyed by ISO code
     :return: one dict per group with its name, the countries that have
-        members (as code/name/count dicts, most members first), the member
+        members (as code/name/count/cumulative dicts, most members first,
+        where cumulative is the running total down the list), the member
         total and the number of countries that make up the group
     """
     breakdown = []
@@ -569,13 +570,23 @@ def country_group_breakdown(counts: dict[str, int]) -> list[dict]:
     for name in sorted(COUNTRY_GROUPS, key=str.casefold):
         rows = group_member_counts(COUNTRY_GROUPS[name], counts)
 
+        countries = []
+        running = 0
+        for code, country, count in rows:
+            running += count
+            countries.append(
+                {
+                    "code": code,
+                    "name": country,
+                    "count": count,
+                    "cumulative": running,
+                }
+            )
+
         breakdown.append(
             {
                 "name": name,
-                "countries": [
-                    {"code": code, "name": country, "count": count}
-                    for code, country, count in rows
-                ],
+                "countries": countries,
                 "total": sum(count for _, _, count in rows),
                 "size": len(COUNTRY_GROUPS[name]),
             }
