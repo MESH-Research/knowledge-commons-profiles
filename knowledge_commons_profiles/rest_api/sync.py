@@ -15,10 +15,10 @@ from requests import RequestException
 from knowledge_commons_profiles.cilogon.sync_apis import arlisna
 from knowledge_commons_profiles.cilogon.sync_apis import mla
 from knowledge_commons_profiles.cilogon.sync_apis import msu
-from knowledge_commons_profiles.cilogon.sync_apis import up
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import Role
 from knowledge_commons_profiles.newprofile.models import RoleStatus
+from knowledge_commons_profiles.up_salesforce.sync import UPExternalClientApp
 
 if TYPE_CHECKING:
     from knowledge_commons_profiles.cilogon.sync_apis.sync_class import (
@@ -30,7 +30,7 @@ CLASS_LOOKUPS: dict[str, SyncClass] = {
     "MLA": mla.MLA(),
     "MSU": msu.MSU(),
     "ARLISNA": arlisna.ARLISNA(),
-    "UP": up.UP(),
+    "UP": UPExternalClientApp(),
 }
 
 logger = logging.getLogger(__name__)
