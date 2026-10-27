@@ -1,3 +1,9 @@
+## 4.65.2 (2026-10-27)
+
+### Fix
+
+- **csl-styles**: fix duplicated date in MHRA journal styles
+
 ## 4.65.1 (2026-10-27)
 
 ### Fix
