@@ -113,6 +113,18 @@
     elements.empty.hidden = !empty;
   }
 
+  // The "how these groups are defined" document is loaded into a modal by
+  // htmx; make its external links open in a new tab so the dashboard stays.
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (!event.target || event.target.id !== "country_groups_doc_body") {
+      return;
+    }
+    event.target.querySelectorAll('a[href^="http"]').forEach(function (link) {
+      link.target = "_blank";
+      link.rel = "noopener";
+    });
+  });
+
   document.addEventListener("DOMContentLoaded", function () {
     var select = document.getElementById("country_group_select");
     var elements = {

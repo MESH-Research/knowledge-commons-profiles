@@ -89,6 +89,84 @@
     .country-group-headline-label strong {
       font-weight: 700;
     }
+    .country-groups-doc-link {
+      color: #2e7d32;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .country-groups-doc-link:hover {
+      color: #1b5e20;
+      text-decoration: underline;
+    }
+    .country-groups-doc {
+      font-size: 0.875rem;
+      color: #344767;
+      line-height: 1.6;
+    }
+    .country-groups-doc p,
+    .country-groups-doc li {
+      font-size: inherit;
+      line-height: inherit;
+    }
+    .country-groups-doc h1 {
+      font-size: 1.25rem;
+      margin: 0 0 1rem;
+    }
+    .country-groups-doc h2 {
+      font-size: 1.05rem;
+      margin: 1.75rem 0 0.75rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .country-groups-doc h3 {
+      font-size: 0.95rem;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .country-groups-doc blockquote {
+      margin: 0 0 1rem;
+      padding: 0.6rem 1rem;
+      border-left: 3px solid #43A047;
+      background: #f1f8f1;
+      border-radius: 0 0.5rem 0.5rem 0;
+      color: #4f5a6a;
+    }
+    .country-groups-doc blockquote p:last-child {
+      margin-bottom: 0;
+    }
+    .country-groups-doc table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 1.25rem;
+      font-size: 0.8125rem;
+    }
+    .country-groups-doc th,
+    .country-groups-doc td {
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #e9ecef;
+      vertical-align: top;
+      text-align: left;
+    }
+    .country-groups-doc th {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #7b809a;
+      background: #f8f9fa;
+    }
+    .country-groups-doc td:first-child {
+      white-space: nowrap;
+    }
+    .country-groups-doc code {
+      font-size: 0.8em;
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.3rem;
+      background: #eef2f6;
+      color: #344767;
+    }
+    .country-groups-doc a {
+      color: #2e7d32;
+      text-decoration: underline;
+    }
     .country-group-stat {
       border-radius: 0.75rem;
       padding: 1rem 1.25rem;
@@ -480,7 +558,17 @@
                 <div>
                   <h6 class="mb-0">Members by Region or Group</h6>
                   <p class="text-sm mb-0">
-                    Countries of ROR-matched institutions, grouped by region, language or bloc
+                    Countries of ROR-matched institutions, grouped by region, language or bloc.
+                    <a href="{% url "stats_country_groups_doc" %}"
+                       class="country-groups-doc-link"
+                       data-bs-toggle="modal"
+                       data-bs-target="#country_groups_doc_modal"
+                       hx-get="{% url "stats_country_groups_doc" %}"
+                       hx-target="#country_groups_doc_body"
+                       hx-trigger="click once"
+                       hx-swap="innerHTML">
+                      <i class="fa fa-book-open me-1" aria-hidden="true"></i>How these groups are defined
+                    </a>
                   </p>
                 </div>
                 <div class="country-group-headline ms-md-auto">
@@ -533,6 +621,25 @@
                 No members from this group yet.
               </p>
               {{ country_groups|json_script:"country_group_data" }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="country_groups_doc_modal" tabindex="-1" aria-labelledby="country_groups_doc_title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h6 class="modal-title" id="country_groups_doc_title">How the country groups are defined</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body country-groups-doc" id="country_groups_doc_body">
+              <p class="text-sm text-secondary mb-0">Loading…</p>
+            </div>
+            <div class="modal-footer">
+              <a href="{% url "stats_country_groups_doc_download" %}" class="btn btn-outline-dark btn-sm mb-0" download>
+                <i class="fa fa-download me-1" aria-hidden="true"></i>Download markdown
+              </a>
+              <button type="button" class="btn bg-gradient-dark btn-sm mb-0" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>

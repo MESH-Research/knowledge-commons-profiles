@@ -7,6 +7,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from knowledge_commons_profiles.newprofile import country_groups_doc
 from knowledge_commons_profiles.newprofile.country_groups import (
     country_group_breakdown,
 )
@@ -91,3 +92,29 @@ def stats_table(request):
     return render(
         request, "newprofile/partials/stats_table.html", {"users": users}
     )
+
+
+@basic_auth_required
+def stats_country_groups_doc(request):
+    """
+    The country groups editorial document rendered as an HTML fragment
+    """
+    html = country_groups_doc.render_html(country_groups_doc.load_document())
+
+    return HttpResponse(html, content_type="text/html; charset=utf-8")
+
+
+@basic_auth_required
+def stats_country_groups_doc_download(request):
+    """
+    The country groups editorial document as a markdown download
+    """
+    response = HttpResponse(
+        country_groups_doc.load_document(),
+        content_type="text/markdown; charset=utf-8",
+    )
+    response["Content-Disposition"] = (
+        'attachment; filename="country_groups_sources.md"'
+    )
+
+    return response

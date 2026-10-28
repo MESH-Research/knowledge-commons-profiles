@@ -584,6 +584,14 @@ class StatsBoardCountryGroupTests(SimpleTestCase):
             content.index('id="country_group_select"'),
         )
 
+    def test_page_links_to_the_country_groups_document_and_download(self):
+        response = self._get()
+        content = response.content.decode()
+
+        self.assertIn(reverse("stats_country_groups_doc"), content)
+        self.assertIn(reverse("stats_country_groups_doc_download"), content)
+        self.assertIn('id="country_groups_doc_modal"', content)
+
     def test_page_has_group_dropdown_with_alphabetical_options(self):
         response = self._get()
         content = response.content.decode()

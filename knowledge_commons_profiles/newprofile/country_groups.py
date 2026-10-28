@@ -263,6 +263,8 @@ COUNTRY_NAMES: dict[str, str] = {
     "VU": "Vanuatu",
     "WF": "Wallis and Futuna",
     "WS": "Samoa",
+    # Not an ISO 3166-1 code: ROR uses the user-assigned XK for Kosovo
+    "XK": "Kosovo",
     "YE": "Yemen",
     "YT": "Mayotte",
     "ZA": "South Africa",
@@ -316,7 +318,7 @@ EUROPEAN_UNION = _codes(
 
 EUROPE = EUROPEAN_UNION | _codes(
     "AL AD AX BA BY CH FO GB GG GI IM IS JE LI MC MD ME MK NO RS RU SJ SM "
-    "UA VA"
+    "UA VA XK"
 )
 
 NORDIC = _codes("DK FI IS NO SE FO GL AX SJ")
