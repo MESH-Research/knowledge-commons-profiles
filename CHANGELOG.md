@@ -1,3 +1,9 @@
+## 4.67.2 (2026-10-28)
+
+### Fix
+
+- **mla**: accept v3 API response shapes in sync models
+
 ## 4.67.1 (2026-10-28)
 
 ### Fix
