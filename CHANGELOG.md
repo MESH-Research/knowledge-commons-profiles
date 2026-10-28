@@ -1,3 +1,13 @@
+## 4.67.0 (2026-10-28)
+
+### Feat
+
+- **stats**: show the country groups document in a modal on the dashboard
+
+### Fix
+
+- **stats**: recognise ROR's XK code for Kosovo in country groups
+
 ## 4.66.0 (2026-10-27)
 
 ### Feat
