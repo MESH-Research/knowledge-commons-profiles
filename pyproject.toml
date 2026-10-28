@@ -163,7 +163,7 @@ force-single-line = true
 
 [project]
 name = "newprofile"
-version = "4.67.0"
+version = "4.67.1"
 description = "The profiles and IDMS system for Knowledge Commons"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -269,7 +269,7 @@ local = [
 ]
 
 [tool.commitizen]
-version = "4.67.0"
+version = "4.67.1"
 version_files = [
     "knowledge_commons_profiles/__version__.py",
     "pyproject.toml:version"

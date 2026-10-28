@@ -1,3 +1,9 @@
+## 4.67.1 (2026-10-28)
+
+### Fix
+
+- **deps**: bump filelock to 4.2.4 for published security advisories
+
 ## 4.67.0 (2026-10-28)
 
 ### Feat
