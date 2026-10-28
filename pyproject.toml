@@ -168,6 +168,7 @@ description = "The profiles and IDMS system for Knowledge Commons"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "filelock>=4.2.4",
     "multidict>=7.1.0",
     "bleach>=6.4.0",
     "virtualenv>=21.14.13",
