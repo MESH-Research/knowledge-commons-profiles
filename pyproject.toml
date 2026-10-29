@@ -204,7 +204,7 @@ dependencies = [
     "pydantic==2.13.5",
     "httpx==0.28.1",
     "tenacity==9.2.1",
-    "pandas==3.0.3",
+    "pandas==3.1.0",
     "altair==6.2.2",
     "django-basicauth==0.5.3",
     "Authlib==1.9.1",
