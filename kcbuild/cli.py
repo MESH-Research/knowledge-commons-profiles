@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 import click
 
 from kcbuild import aws
+from kcbuild import ci
 from kcbuild import images
 from kcbuild import local
 from kcbuild import metadata
@@ -74,7 +75,7 @@ def handle_errors(func: Callable[..., None]) -> Callable[..., None]:
         except CommandError as exc:
             click.secho(f"\nFAILED: {exc}", fg="red", err=True)
             sys.exit(exc.result.returncode or 1)
-        except aws.AwsAuthError as exc:
+        except (aws.AwsAuthError, ci.CiTriggerError) as exc:
             click.secho(f"\nFAILED: {exc}", fg="red", err=True)
             sys.exit(2)
 
@@ -569,6 +570,47 @@ def down(app: AppContext) -> None:
 def logs(app: AppContext) -> None:
     """Follow the local dev stack's logs."""
     local.local_stack_logs(app.runner, app.repo, app.registry)
+
+
+# -- GitHub Actions ----------------------------------------------------------
+
+
+@main.command("ci-trigger")
+@click.argument("what", type=click.Choice(sorted(ci.CI_TRIGGERS)))
+@click.option(
+    "--base-target", type=click.Choice(ci.BASE_TARGETS), default="both",
+    show_default=True,
+    help="For `base`: which base image(s) to rebuild.",
+)
+@click.option(
+    "--watch", is_flag=True,
+    help="Follow the run until it finishes (exit non-zero if it fails).",
+)
+@pass_app
+@handle_errors
+def ci_trigger(
+    app: AppContext, *, what: str, base_target: str, watch: bool,
+) -> None:
+    """Start a GitHub Actions run: `main`, `dev` (ci.yml) or `base`."""
+    inputs = {"target": base_target} if what == "base" else {}
+    trigger = ci.get_trigger(what, **inputs)
+    banner(f"Dispatch {trigger.workflow} on {trigger.ref}")
+    ci.trigger_workflow(app.runner, trigger)
+    if getattr(app.runner, "dry_run", False):
+        return  # nothing was dispatched, so there is no run to look up
+    run = ci.find_dispatched_run(app.runner, trigger)
+    if run is None:
+        click.secho(
+            "Dispatched, but the run is not listed yet. Find it with:\n"
+            f"  gh run list --workflow {trigger.workflow} "
+            f"--branch {trigger.ref} --event workflow_dispatch",
+            fg="yellow",
+        )
+        return
+    click.secho(f"Run {run.run_id} {run.status}: {run.url}", fg="green")
+    if watch:
+        banner(f"Watch run {run.run_id}")
+        ci.watch_run(app.runner, run)
 
 
 # -- Chained run -------------------------------------------------------------

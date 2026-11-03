@@ -185,7 +185,15 @@ uv run kcb.py release                # lint, test, build, push, deploy
 uv run kcb.py release --skip-tests --skip-lint   # just build, push, deploy
 uv run kcb.py --target dev build     # same again for the dev environment
 uv run kcb.py --dry-run release      # print every command instead
+uv run kcb.py ci-trigger main        # ask GitHub Actions to run ci.yml on main (release)
+uv run kcb.py ci-trigger dev         # ... on dev (deploy to the dev environment)
+uv run kcb.py ci-trigger base        # rebuild both base images in CI (--base-target production|dev)
+uv run kcb.py ci-trigger main --watch   # and follow the run until it finishes
 ```
+
+`ci-trigger` is the one command that talks to GitHub: it needs a logged-in
+`gh` CLI and dispatches the workflow with `gh workflow run`, so a release or
+deploy can be re-run without pushing an empty commit.
 
 Images are tagged exactly as CI tags them: the full commit SHA,
 `vX.Y.Z-<sha7>`, `vX.Y.Z` (production only) and `latest`. `build` reuses a
