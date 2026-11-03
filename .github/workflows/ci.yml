@@ -6,6 +6,11 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: 1
 
 on:
+  # Manual runs (`gh workflow run ci.yml --ref main|dev`, or
+  # `uv run kcb.py ci-trigger main|dev`) behave exactly like a push to
+  # that branch: lint, test, then release (main) or deploy (dev).
+  workflow_dispatch:
+
   pull_request:
     branches: ['main', 'dev']
     paths-ignore: ['docs/**']
@@ -108,7 +113,7 @@ jobs:
     name: Release (main)
     runs-on: ubuntu-24.04-arm
     needs: [linter, test]
-    if: github.event_name == 'push' && github.ref_name == 'main' && !startsWith(github.event.head_commit.message, 'bump:')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_name == 'main' && !startsWith(github.event.head_commit.message, 'bump:')
     environment: production
 
     env:
@@ -273,7 +278,7 @@ jobs:
     name: Deploy (dev)
     runs-on: ubuntu-24.04-arm
     needs: [linter, test]
-    if: github.event_name == 'push' && github.ref_name == 'dev'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_name == 'dev'
     environment: dev
 
     env:
