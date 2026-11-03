@@ -1,3 +1,9 @@
+## 4.70.0 (2026-11-03)
+
+### Feat
+
+- **python**: upgrade python version
+
 ## 4.69.0 (2026-11-03)
 
 ### Feat
