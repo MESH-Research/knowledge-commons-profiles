@@ -306,8 +306,9 @@ class TestHealthView(TestCase):
 
 
 class TestHealthSyncStatus(TestCase):
-    """The ``sync`` key reports per-sync-class credential status and is only
-    shown to superusers (it exposes deployment configuration)."""
+    """The ``sync-variables-set`` key reports per-sync-class credential
+    status and is only shown to superusers (it exposes deployment
+    configuration)."""
 
     def setUp(self):
         self.factory = RequestFactory()
@@ -325,7 +326,7 @@ class TestHealthSyncStatus(TestCase):
 
     @patch(
         "knowledge_commons_profiles.newprofile.views.health.sync_status",
-        return_value={"UP": True},
+        return_value={"UP": True, "MLA": True},
     )
     @patch(
         "knowledge_commons_profiles.newprofile.views.health"
@@ -344,12 +345,14 @@ class TestHealthSyncStatus(TestCase):
         import json
 
         data = json.loads(response.content)
-        self.assertEqual(data["sync"], {"UP": True})
+        self.assertEqual(
+            data["sync-variables-set"], {"UP": True, "MLA": True}
+        )
         self.assertEqual(response.status_code, 200)
 
     @patch(
         "knowledge_commons_profiles.newprofile.views.health.sync_status",
-        return_value={"UP": False},
+        return_value={"UP": False, "MLA": False},
     )
     @patch(
         "knowledge_commons_profiles.newprofile.views.health"
@@ -369,12 +372,14 @@ class TestHealthSyncStatus(TestCase):
         import json
 
         data = json.loads(response.content)
-        self.assertEqual(data["sync"], {"UP": False})
+        self.assertEqual(
+            data["sync-variables-set"], {"UP": False, "MLA": False}
+        )
         self.assertEqual(response.status_code, 200)
 
     @patch(
         "knowledge_commons_profiles.newprofile.views.health.sync_status",
-        return_value={"UP": True},
+        return_value={"UP": True, "MLA": True},
     )
     @patch(
         "knowledge_commons_profiles.newprofile.views.health"
@@ -393,11 +398,11 @@ class TestHealthSyncStatus(TestCase):
         import json
 
         data = json.loads(response.content)
-        self.assertNotIn("sync", data)
+        self.assertNotIn("sync-variables-set", data)
 
     @patch(
         "knowledge_commons_profiles.newprofile.views.health.sync_status",
-        return_value={"UP": True},
+        return_value={"UP": True, "MLA": True},
     )
     @patch(
         "knowledge_commons_profiles.newprofile.views.health"
@@ -415,12 +420,12 @@ class TestHealthSyncStatus(TestCase):
         import json
 
         data = json.loads(response.content)
-        self.assertNotIn("sync", data)
+        self.assertNotIn("sync-variables-set", data)
         self.assertEqual(response.status_code, 200)
 
     @patch(
         "knowledge_commons_profiles.newprofile.views.health.sync_status",
-        return_value={"UP": True},
+        return_value={"UP": True, "MLA": True},
     )
     @patch(
         "knowledge_commons_profiles.newprofile.views.health"
@@ -440,7 +445,7 @@ class TestHealthSyncStatus(TestCase):
         import json
 
         data = json.loads(response.content)
-        self.assertNotIn("sync", data)
+        self.assertNotIn("sync-variables-set", data)
         self.assertEqual(response.status_code, 200)
 
     @patch(
@@ -464,7 +469,7 @@ class TestHealthSyncStatus(TestCase):
         import json
 
         data = json.loads(response.content)
-        self.assertEqual(data["sync"], "check failed")
+        self.assertEqual(data["sync-variables-set"], "check failed")
         self.assertEqual(response.status_code, 200)
 
 

@@ -16,7 +16,6 @@ from knowledge_commons_profiles.up_salesforce.checks import missing_credentials
 from knowledge_commons_profiles.up_salesforce.checks import (
     report_missing_credentials,
 )
-from knowledge_commons_profiles.up_salesforce.checks import sync_status
 
 UP_SYNC = [("UP", ["Association of American University Presses"])]
 CONFIGURED = {
@@ -44,24 +43,6 @@ class MissingCredentialsTests(SimpleTestCase):
             missing_credentials(),
             ["UP_ECA_CONSUMER_KEY", "UP_ECA_CONSUMER_SECRET"],
         )
-
-
-class SyncStatusTests(SimpleTestCase):
-    @override_settings(**CONFIGURED)
-    def test_up_true_when_both_credentials_set(self):
-        self.assertEqual(sync_status(), {"UP": True})
-
-    @override_settings(UP_ECA_CONSUMER_KEY="", UP_ECA_CONSUMER_SECRET="s")
-    def test_up_false_when_key_missing(self):
-        self.assertEqual(sync_status(), {"UP": False})
-
-    @override_settings(UP_ECA_CONSUMER_KEY="k", UP_ECA_CONSUMER_SECRET="")
-    def test_up_false_when_secret_missing(self):
-        self.assertEqual(sync_status(), {"UP": False})
-
-    @override_settings(UP_ECA_CONSUMER_KEY="", UP_ECA_CONSUMER_SECRET="")
-    def test_up_false_when_both_missing(self):
-        self.assertEqual(sync_status(), {"UP": False})
 
 
 @override_settings(

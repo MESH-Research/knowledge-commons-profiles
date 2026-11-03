@@ -29,14 +29,6 @@ def missing_credentials() -> list[str]:
     ]
 
 
-def sync_status() -> dict[str, bool]:
-    """
-    Per-sync-class credential status for the health check page: ``True``
-    when every credential the sync class needs is set, ``False`` otherwise.
-    """
-    return {SYNC_KEY: not missing_credentials()}
-
-
 def _up_sync_is_active() -> bool:
     return any(
         class_name == SYNC_KEY

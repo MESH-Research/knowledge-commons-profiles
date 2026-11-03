@@ -10,9 +10,9 @@ from django.db import connections
 from django.http import JsonResponse
 
 from knowledge_commons_profiles.__version__ import VERSION
+from knowledge_commons_profiles.common.sync_checks import sync_status
 from knowledge_commons_profiles.newprofile.ecs_metadata import ecs_service_name
 from knowledge_commons_profiles.rest_api.utils import check_api_endpoints_health
-from knowledge_commons_profiles.up_salesforce.checks import sync_status
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,10 @@ REDIS_TEST_TIMEOUT_VALUE = 25
 
 def _add_sync_status(request, health_result):
     """
-    Add per-sync-class credential status for superusers only. The status
-    reveals deployment configuration, so anonymous callers (load-balancer
-    probes carry no user at all) and ordinary users never see the key.
+    Add ``sync-variables-set``, the per-sync-class credential status, for
+    superusers only. The status reveals deployment configuration, so
+    anonymous callers (load-balancer probes carry no user at all) and
+    ordinary users never see the key.
     """
     user = getattr(request, "user", None)
     if not (
@@ -32,10 +33,10 @@ def _add_sync_status(request, health_result):
     ):
         return
     try:
-        health_result["sync"] = sync_status()
+        health_result["sync-variables-set"] = sync_status()
     except Exception:
         logger.exception("Health check: sync status check failed")
-        health_result["sync"] = "check failed"
+        health_result["sync-variables-set"] = "check failed"
 
 
 def health(request):
