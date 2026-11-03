@@ -7,7 +7,7 @@
 #   production: BUILD_ENVIRONMENT=production -> kcprofiles-base
 #   dev/local:  BUILD_ENVIRONMENT=local      -> kcprofiles-base-dev
 
-FROM docker.io/python:3.14.9-slim-bookworm AS python
+FROM docker.io/python:3.14.10-slim-bookworm AS python
 
 # Python build stage — compiles native extensions, installs dependencies
 FROM python AS python-build-stage
