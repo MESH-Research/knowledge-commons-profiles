@@ -1,3 +1,9 @@
+## 4.71.0 (2026-11-03)
+
+### Feat
+
+- **kcb**: add ci-trigger command to start GitHub Actions runs
+
 ## 4.70.0 (2026-11-03)
 
 ### Feat
