@@ -1,3 +1,10 @@
+## 4.68.0 (2026-11-03)
+
+### Feat
+
+- **health**: report MLA sync credentials and rename key
+- **health**: show UP sync credential status to superusers
+
 ## 4.67.2 (2026-10-28)
 
 ### Fix
