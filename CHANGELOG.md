@@ -1,3 +1,9 @@
+## 4.69.0 (2026-11-03)
+
+### Feat
+
+- **traefik**: upgrade traefik version for security patches
+
 ## 4.68.0 (2026-11-03)
 
 ### Feat
