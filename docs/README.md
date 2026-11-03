@@ -18,6 +18,8 @@ This documentation provides technical guides for developers, system administrato
 
 ### Profile Management
 
+- **[Country Groups: Sources and Editorial Decisions](newprofile/country_groups_sources.md)** - Where the named groups of countries used by the stats dashboard and the `country_group_stats` command come from, and the judgement calls made in drawing their boundaries.
+
 - **[Profiles App Technical Guide](newprofile/profiles_app_technical_guide.md)** - Technical documentation for the core profile management system, covering data models, views, API layer, forms, and integration points with WordPress and external services.
 
 ### Configuration and Environment

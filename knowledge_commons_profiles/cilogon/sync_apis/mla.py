@@ -22,7 +22,9 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
+from pydantic import AliasChoices
 from pydantic import BaseModel
+from pydantic import Field
 from pydantic import SecretStr
 from pydantic import TypeAdapter
 from pydantic import ValidationError
@@ -73,16 +75,19 @@ class SimpleGeneralInfo(BaseModel):
     Simple general info returned by search
     """
 
-    title: str
-    first_name: str
-    last_name: str
+    title: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
     suffix: str | None = None
     email: str | None = ""
     email_visible: Literal["Y", "N", ""] | None = None
     email_shareable: str | None = None
     phone: str | None = ""
-    web_site: str | None = ""
-    addresses: list[SimpleAddress]
+    web_site: str | None = Field(
+        default="",
+        validation_alias=AliasChoices("web_site", "website"),
+    )
+    addresses: list[SimpleAddress] = Field(default_factory=list)
 
 
 class SimpleMembershipInfo(BaseModel):
@@ -90,9 +95,9 @@ class SimpleMembershipInfo(BaseModel):
     Simple membership info returned by search
     """
 
-    class_code: str
-    year_joined: str
-    membership_years: str
+    class_code: str | None = None
+    year_joined: str | None = None
+    membership_years: str | None = None
 
 
 class SimpleSearchResult(BaseModel):
@@ -129,7 +134,7 @@ class DetailedAddress(BaseModel):
     """
 
     id: str | None = None
-    type: str
+    type: str | None = None
     hidden: str | None = None
     send_mail: str | None = None
     affiliation: str | None = None
@@ -167,7 +172,11 @@ class DetailedGeneralInfo(BaseModel):
     email_unsubscribe: str | None = None
     online_newsletter: str | None = None
     phone: str | None = None
-    web_site: str | None = None
+    web_site: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("web_site", "website"),
+    )
+    mobile_phone: str | None = None
     joined_commons: str | None = None
     donor_exclude: str | None = None
     orcid: str | None = None
@@ -179,13 +188,14 @@ class DetailedMembershipInfo(BaseModel):
     Detailed membership info returned by id
     """
 
-    class_code: str
+    class_code: str | None = None
     year_joined: str | None = None
     starting_date: str | None = None
     expiring_date: str | None = None
     membership_years: str | None = None
     arb_status: str | None = None
     arb_bill_date: str | None = None
+    is_undergrad: str | None = None
 
 
 class Authentication(BaseModel):
@@ -212,10 +222,10 @@ class PublicationHistoryEntry(BaseModel):
     Publication history returned by id
     """
 
-    year: str
-    pub_code: str
-    name: str
-    price: str
+    year: str | None = None
+    pub_code: str | None = None
+    name: str | None = None
+    price: str | None = None
 
 
 class Pmla(BaseModel):
@@ -277,9 +287,19 @@ class Language(BaseModel):
     Language returned by id
     """
 
-    code: str
-    name: str
-    primary: str | None = None
+    code: str | None = None
+    name: str | None = None
+    primary: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("primary", "is_primary_lang"),
+    )
+
+    @property
+    def is_primary(self) -> bool:
+        """
+        Whether this is the member's primary language
+        """
+        return (self.primary or "").upper() == "Y"
 
 
 class MemberProfile(BaseModel):
@@ -288,17 +308,28 @@ class MemberProfile(BaseModel):
     """
 
     id: str
-    authentication: Authentication
+    authentication: Authentication | None = None
     membership: DetailedMembershipInfo
     general: DetailedGeneralInfo
-    addresses: list[DetailedAddress]
-    publications_access: list[PublicationAccessEntry]
-    publications_history: list[PublicationHistoryEntry]
-    pmla: Pmla
-    organizations: list[Organization]
-    dues_history: list[DuesHistoryEntry]
-    contributions_history: list[ContributionHistoryEntry]
-    languages: list[Language]
+    addresses: list[DetailedAddress] = Field(default_factory=list)
+    # v2 returns a list of entries; v3 returns a single object
+    publications_access: (
+        PublicationAccessEntry | list[PublicationAccessEntry] | None
+    ) = None
+    # v2 key is "publications_history"; v3 key is "publication_history"
+    publication_history: list[PublicationHistoryEntry] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices(
+            "publication_history", "publications_history"
+        ),
+    )
+    pmla: Pmla | None = None
+    organizations: list[Organization] = Field(default_factory=list)
+    dues_history: list[DuesHistoryEntry] = Field(default_factory=list)
+    contributions_history: list[ContributionHistoryEntry] = Field(
+        default_factory=list
+    )
+    languages: list[Language] = Field(default_factory=list)
 
 
 class MemberResponseSuccess(BaseModel):
@@ -481,9 +512,7 @@ class MLA(SyncClass):
 
             try:
                 logger.info("Searching for %s in MLA", email)
-                result = self._query_mla_api(
-                    search_params, cache_key=cache_key
-                )
+                result = self._query_mla_api(search_params, cache_key=cache_key)
 
                 adapted = self._process_adapter(SearchApiResponse, result)
 

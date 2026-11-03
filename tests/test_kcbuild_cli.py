@@ -350,6 +350,117 @@ def test_release_stops_when_lint_fails(repo: Path):
     assert not fake.commands_starting("docker", "compose")
 
 
+RUN_URL = (
+    "https://github.com/MESH-Research/knowledge-commons-profiles/actions/"
+    "runs/42"
+)
+GH_RUN = answer(
+    ("gh", "run", "list"), 0,
+    f'[{{"databaseId": 42, "url": "{RUN_URL}", "status": "queued"}}]',
+)
+
+
+def test_ci_trigger_main_dispatches_ci_and_reports_the_run(repo: Path):
+    fake = FakeRunner(GH_RUN)
+
+    result = invoke(fake, repo, "ci-trigger", "main")
+
+    assert result.exit_code == 0
+    assert fake.commands[0] == [
+        "gh", "workflow", "run", "ci.yml", "--ref", "main",
+    ]
+    assert RUN_URL in result.output
+    assert not fake.commands_starting("gh", "run", "watch")
+
+
+def test_ci_trigger_dev_dispatches_ci_on_dev(repo: Path):
+    fake = FakeRunner(GH_RUN)
+
+    result = invoke(fake, repo, "ci-trigger", "dev")
+
+    assert result.exit_code == 0
+    assert fake.commands[0] == [
+        "gh", "workflow", "run", "ci.yml", "--ref", "dev",
+    ]
+
+
+def test_ci_trigger_base_rebuilds_both_base_images_by_default(repo: Path):
+    fake = FakeRunner(GH_RUN)
+
+    result = invoke(fake, repo, "ci-trigger", "base")
+
+    assert result.exit_code == 0
+    assert fake.commands[0] == [
+        "gh", "workflow", "run", "build-base.yml", "--ref", "main",
+        "-f", "target=both",
+    ]
+
+
+def test_ci_trigger_base_target_can_be_chosen(repo: Path):
+    fake = FakeRunner(GH_RUN)
+
+    result = invoke(
+        fake, repo, "ci-trigger", "base", "--base-target", "production",
+    )
+
+    assert result.exit_code == 0
+    assert "target=production" in fake.commands[0]
+
+
+def test_ci_trigger_can_watch_the_run(repo: Path):
+    fake = FakeRunner(GH_RUN)
+
+    result = invoke(fake, repo, "ci-trigger", "main", "--watch")
+
+    assert result.exit_code == 0
+    assert fake.commands[-1] == ["gh", "run", "watch", "42", "--exit-status"]
+
+
+def test_ci_trigger_still_succeeds_when_the_run_is_not_listed_yet(repo: Path):
+    fake = FakeRunner(answer(("gh", "run", "list"), 0, "[]"))
+
+    result = invoke(fake, repo, "ci-trigger", "main")
+
+    assert result.exit_code == 0
+    assert fake.commands[0][:3] == ["gh", "workflow", "run"]
+    assert "gh run list" in result.output
+
+
+def test_ci_trigger_rejects_unknown_targets(repo: Path):
+    fake = FakeRunner()
+
+    result = CliRunner().invoke(
+        main, ["--repo", str(repo), "ci-trigger", "staging"], obj=fake,
+    )
+
+    assert result.exit_code != 0
+    assert not fake.commands
+
+
+def test_ci_trigger_explains_when_gh_is_not_logged_in(repo: Path):
+    fake = FakeRunner(answer(("gh", "workflow", "run"), 4, ""))
+
+    result = CliRunner().invoke(
+        main, ["--repo", str(repo), "ci-trigger", "main"], obj=fake,
+    )
+
+    assert result.exit_code != 0
+    assert "gh auth login" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_ci_trigger_dry_run_prints_the_dispatch_without_running_it(repo: Path):
+    result = CliRunner().invoke(
+        main, ["--repo", str(repo), "--dry-run", "ci-trigger", "dev"],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    assert "gh workflow run ci.yml --ref dev" in result.output
+    # Nothing was dispatched, so there is no run to look for or wait on.
+    assert "gh run list" not in result.output
+
+
 def test_dry_run_without_injected_runner_executes_nothing(repo: Path):
     result = CliRunner().invoke(
         main, ["--repo", str(repo), "--dry-run", "deploy"],

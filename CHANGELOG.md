@@ -1,3 +1,65 @@
+## 4.71.0 (2026-11-03)
+
+### Feat
+
+- **kcb**: add ci-trigger command to start GitHub Actions runs
+
+## 4.70.0 (2026-11-03)
+
+### Feat
+
+- **python**: upgrade python version
+
+## 4.69.0 (2026-11-03)
+
+### Feat
+
+- **traefik**: upgrade traefik version for security patches
+
+## 4.68.0 (2026-11-03)
+
+### Feat
+
+- **health**: report MLA sync credentials and rename key
+- **health**: show UP sync credential status to superusers
+
+## 4.67.2 (2026-10-28)
+
+### Fix
+
+- **mla**: accept v3 API response shapes in sync models
+
+## 4.67.1 (2026-10-28)
+
+### Fix
+
+- **deps**: bump filelock to 4.2.4 for published security advisories
+
+## 4.67.0 (2026-10-28)
+
+### Feat
+
+- **stats**: show the country groups document in a modal on the dashboard
+
+### Fix
+
+- **stats**: recognise ROR's XK code for Kosovo in country groups
+
+## 4.66.0 (2026-10-27)
+
+### Feat
+
+- **stats**: show the group member total as a headline at the top of the card
+- **stats**: show cumulative member totals per country group
+- **stats**: add members-by-region section to the stats dashboard
+- **stats**: add country_group_stats management command
+
+## 4.65.2 (2026-10-27)
+
+### Fix
+
+- **csl-styles**: fix duplicated date in MHRA journal styles
+
 ## 4.65.1 (2026-10-27)
 
 ### Fix
