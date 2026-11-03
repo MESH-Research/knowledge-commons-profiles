@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import Mock
 from unittest.mock import patch
 
+from django.contrib.auth.models import AnonymousUser
 from django.core import mail
 from django.test import Client
 from django.test import RequestFactory
@@ -301,6 +302,169 @@ class TestHealthView(TestCase):
 
         data = json.loads(response.content)
         self.assertEqual(data["ECS Service"], "unavailable")
+        self.assertEqual(response.status_code, 200)
+
+
+class TestHealthSyncStatus(TestCase):
+    """The ``sync`` key reports per-sync-class credential status and is only
+    shown to superusers (it exposes deployment configuration)."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def _healthy_infra(self, mock_connections, mock_api_check):
+        mock_api_check.return_value = {}
+        mock_db = Mock()
+        mock_db.cursor.return_value = Mock()
+        mock_connections.__getitem__.return_value = mock_db
+
+    def _request_as(self, user):
+        request = self.factory.get("/health/")
+        request.user = user
+        return request
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health.sync_status",
+        return_value={"UP": True},
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_superuser_sees_sync_true_when_configured(
+        self, mock_cache, mock_connections, mock_api_check, mock_sync
+    ):
+        self._healthy_infra(mock_connections, mock_api_check)
+        superuser = Mock(is_authenticated=True, is_superuser=True)
+
+        response = health(self._request_as(superuser))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertEqual(data["sync"], {"UP": True})
+        self.assertEqual(response.status_code, 200)
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health.sync_status",
+        return_value={"UP": False},
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_superuser_sees_sync_false_when_unconfigured(
+        self, mock_cache, mock_connections, mock_api_check, mock_sync
+    ):
+        """Missing credentials are informational: still HTTP 200."""
+        self._healthy_infra(mock_connections, mock_api_check)
+        superuser = Mock(is_authenticated=True, is_superuser=True)
+
+        response = health(self._request_as(superuser))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertEqual(data["sync"], {"UP": False})
+        self.assertEqual(response.status_code, 200)
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health.sync_status",
+        return_value={"UP": True},
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_staff_non_superuser_does_not_see_sync(
+        self, mock_cache, mock_connections, mock_api_check, mock_sync
+    ):
+        self._healthy_infra(mock_connections, mock_api_check)
+        staff = Mock(is_authenticated=True, is_superuser=False, is_staff=True)
+
+        response = health(self._request_as(staff))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertNotIn("sync", data)
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health.sync_status",
+        return_value={"UP": True},
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_anonymous_user_does_not_see_sync(
+        self, mock_cache, mock_connections, mock_api_check, mock_sync
+    ):
+        self._healthy_infra(mock_connections, mock_api_check)
+
+        response = health(self._request_as(AnonymousUser()))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertNotIn("sync", data)
+        self.assertEqual(response.status_code, 200)
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health.sync_status",
+        return_value={"UP": True},
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_request_without_user_attribute_does_not_see_sync(
+        self, mock_cache, mock_connections, mock_api_check, mock_sync
+    ):
+        """Requests that never passed through auth middleware (no ``user``
+        attribute) must not crash and must not reveal the status."""
+        self._healthy_infra(mock_connections, mock_api_check)
+
+        response = health(self.factory.get("/health/"))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertNotIn("sync", data)
+        self.assertEqual(response.status_code, 200)
+
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health.sync_status",
+        side_effect=RuntimeError("boom"),
+    )
+    @patch(
+        "knowledge_commons_profiles.newprofile.views.health"
+        ".check_api_endpoints_health"
+    )
+    @patch("knowledge_commons_profiles.newprofile.views.health.connections")
+    @patch("knowledge_commons_profiles.newprofile.views.health.cache")
+    def test_sync_status_failure_does_not_crash_health(
+        self, mock_cache, mock_connections, mock_api_check, mock_sync
+    ):
+        self._healthy_infra(mock_connections, mock_api_check)
+        superuser = Mock(is_authenticated=True, is_superuser=True)
+
+        response = health(self._request_as(superuser))
+
+        import json
+
+        data = json.loads(response.content)
+        self.assertEqual(data["sync"], "check failed")
         self.assertEqual(response.status_code, 200)
 
 
