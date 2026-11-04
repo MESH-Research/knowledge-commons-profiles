@@ -254,7 +254,7 @@ local = [
     "sphinx-autobuild==2025.8.25",
     # Code quality
     "ruff==0.17.1",
-    "coverage==7.16.2",
+    "coverage==7.17.0",
     "djlint==1.46.6",
     "pre-commit==4.7.0",
     # Django dev tools
