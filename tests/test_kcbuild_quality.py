@@ -38,24 +38,26 @@ def test_docker_tests_follow_the_ci_test_job(tmp_path: Path):
         [*run, "python", "manage.py", "makemigrations", "--check"],
         [*run, "python", "manage.py", "migrate"],
         [*run, "coverage", "run", "manage.py", "test"],
-        [*run, "python", "-m", "pytest",
-         "knowledge_commons_profiles/cron/tests/", "-v"],
         [*compose, "down"],
     ]
     assert all(call.env["ECR_REGISTRY"] == REG for call in runner.calls)
 
 
-def test_docker_tests_can_skip_migration_check_and_cron_tests(tmp_path: Path):
+def test_docker_tests_can_skip_migration_check(tmp_path: Path):
     runner = FakeRunner()
 
-    quality.run_tests_in_docker(
-        runner, tmp_path, REG, check_migrations=False, cron_tests=False,
-    )
+    quality.run_tests_in_docker(runner, tmp_path, REG, check_migrations=False)
 
     flattened = [" ".join(args) for args in runner.commands]
     assert not any("makemigrations" in line for line in flattened)
-    assert not any("pytest" in line for line in flattened)
     assert any("coverage run manage.py test" in line for line in flattened)
+
+
+def test_docker_tests_reject_removed_cron_tests_option(tmp_path: Path):
+    runner = FakeRunner()
+
+    with pytest.raises(TypeError):
+        quality.run_tests_in_docker(runner, tmp_path, REG, cron_tests=False)
 
 
 def test_docker_tests_tear_down_the_stack_even_when_tests_fail(

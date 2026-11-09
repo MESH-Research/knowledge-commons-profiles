@@ -17,7 +17,6 @@ def test_production_target_matches_the_release_job():
     assert target.ecr_repository == "kcprofiles"
     assert target.ecr_repository_traefik == "kcprofiles-traefik"
     assert target.ecr_repository_idms == "kcprofiles-idms"
-    assert target.ecr_repository_monitor == "kcprofiles-monitor"
     assert target.ecs_cluster == "kcprofiles"
     assert target.ecs_service == "kcprofiles-blue"
     assert target.autoscale_group.startswith("Infra-ECS-Cluster-kcprofiles-ee")
@@ -32,7 +31,6 @@ def test_dev_target_matches_the_deploy_dev_job():
     assert target.ecr_repository == "kcprofiles-dev"
     assert target.ecr_repository_traefik == "kcprofiles-traefik-dev"
     assert target.ecr_repository_idms == "kcprofiles-idms-dev"
-    assert target.ecr_repository_monitor is None
     assert target.ecs_cluster == "kcprofiles-dev-2"
     assert target.ecs_service == "kcprofiles-dev"
     assert target.autoscale_group.startswith(
@@ -49,12 +47,11 @@ def test_both_targets_build_from_the_production_base_image():
         assert target.base_build_environment == "production"
 
 
-def test_repositories_skips_monitor_when_absent():
+def test_repositories_lists_app_traefik_and_idms_only():
     assert config.get_target("production").repositories == [
         "kcprofiles",
         "kcprofiles-traefik",
         "kcprofiles-idms",
-        "kcprofiles-monitor",
     ]
     assert config.get_target("dev").repositories == [
         "kcprofiles-dev",

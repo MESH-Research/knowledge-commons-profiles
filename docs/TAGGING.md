@@ -2,8 +2,8 @@
 
 Every successful CI deploy publishes one or more tags to the relevant
 ECR repository (`kcprofiles` / `kcprofiles-dev`,
-`kcprofiles-traefik` / `kcprofiles-traefik-dev`, and `kcprofiles-monitor`
-on `main`). This document describes which tags are pushed when, what
+`kcprofiles-traefik` / `kcprofiles-traefik-dev`, and
+`kcprofiles-idms` / `kcprofiles-idms-dev`). This document describes which tags are pushed when, what
 each one means, and how to use them to roll back in an emergency.
 
 ## Tags pushed on every deploy

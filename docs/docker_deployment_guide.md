@@ -59,7 +59,6 @@ The application uses a multi-stage Docker build to optimize image size and secur
 **Services**:
 - `django`: Application server with Gunicorn
 - `traefik`: Load balancer and SSL termination
-- `monitor`: Website monitoring service (see Monitor Service section below)
 
 **Environment Files**:
 - `.envs/.production/.django`: Django application settings
@@ -125,30 +124,6 @@ The application uses a multi-stage Docker build to optimize image size and secur
 - MySQL client libraries (`libmariadb-dev`)
 - Translation tools (`gettext`)
 - Process management utilities (`wait-for-it`)
-
-### Monitor Service Container
-
-**Dockerfile**: `compose/production/monitor/Dockerfile`
-
-The monitor service is a lightweight container for website monitoring tasks:
-
-**Features**:
-- Python 3.12.12 slim-bookworm base image
-- AWS CLI for CloudWatch metrics publishing
-- Minimal dependencies (requests, django-environ)
-- Non-root `monitor` user for security
-- Runs cron-based monitoring scripts
-
-**Purpose**:
-- Website availability monitoring
-- Health check execution
-- CloudWatch metrics publishing
-- Automated alerting integration
-
-**Configuration**:
-- Copies the `cron` module from the main application
-- Runs independently of the main Django container
-- Restarts automatically unless stopped
 
 ### Startup Scripts
 
