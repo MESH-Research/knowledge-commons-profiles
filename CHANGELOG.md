@@ -1,3 +1,9 @@
+## 4.71.1 (2026-11-09)
+
+### Refactor
+
+- **deploy**: remove the website monitor service
+
 ## 4.71.0 (2026-11-03)
 
 ### Feat
