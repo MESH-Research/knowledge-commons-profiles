@@ -15,9 +15,9 @@ SHA = "0123456789abcdef0123456789abcdef01234567"
 REG = "755997884632.dkr.ecr.us-east-1.amazonaws.com"
 BASE = f"{REG}/kcprofiles-base:latest"
 BASE_DEV = f"{REG}/kcprofiles-base-dev:latest"
-PROD_RETAGS = 8  # 4 repositories x (build tag + version tag)
+PROD_RETAGS = 6  # 3 repositories x (build tag + version tag)
 DEV_RETAGS = 3  # 3 repositories x build tag
-PROD_PUSHES = 16  # 4 repositories x (sha, build, version, latest)
+PROD_PUSHES = 12  # 3 repositories x (sha, build, version, latest)
 
 GIT = (
     answer(("git", "rev-parse", "HEAD"), 0, f"{SHA}\n"),
@@ -164,7 +164,8 @@ def test_push_logs_in_and_pushes_every_release_tag(repo: Path):
     pushes = fake.commands_starting("docker", "push")
     assert len(pushes) == PROD_PUSHES
     assert ["docker", "push", f"{REG}/kcprofiles:v4.57.0"] in pushes
-    assert ["docker", "push", f"{REG}/kcprofiles-monitor:latest"] in pushes
+    assert ["docker", "push", f"{REG}/kcprofiles-idms:latest"] in pushes
+    assert not any("monitor" in " ".join(push) for push in pushes)
 
 
 def test_push_can_skip_the_login(repo: Path):
@@ -243,7 +244,17 @@ def test_test_in_docker_builds_dev_base_then_runs_the_ci_steps(repo: Path):
     lines = flat(fake)
     assert "docker compose -f docker-compose.github.yml build" in lines
     assert any("coverage run manage.py test" in line for line in lines)
+    assert not any("pytest" in line for line in lines)
     assert lines[-1] == "docker compose -f docker-compose.github.yml down"
+
+
+def test_test_no_longer_offers_skip_cron_tests(repo: Path):
+    fake = FakeRunner(BASE_MISSING)
+
+    result = invoke(fake, repo, "test", "--skip-cron-tests")
+
+    assert result.exit_code != 0
+    assert "No such option" in result.output
 
 
 def test_test_on_host_runs_manage_py_test(repo: Path):

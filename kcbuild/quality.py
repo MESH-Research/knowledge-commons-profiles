@@ -20,13 +20,12 @@ def run_lint(runner: Runner, repo: Path) -> None:
     runner.run([*UV_LOCAL, "pre-commit", "run", "--all-files"], cwd=repo)
 
 
-def run_tests_in_docker(  # noqa: PLR0913
+def run_tests_in_docker(
     runner: Runner,
     repo: Path,
     registry: str,
     *,
     check_migrations: bool = True,
-    cron_tests: bool = True,
     keep_up: bool = False,
 ) -> None:
     env = {
@@ -46,11 +45,6 @@ def run_tests_in_docker(  # noqa: PLR0913
             step([*django, "python", "manage.py", "makemigrations", "--check"])
         step([*django, "python", "manage.py", "migrate"])
         step([*django, "coverage", "run", "manage.py", "test"])
-        if cron_tests:
-            step([
-                *django, "python", "-m", "pytest",
-                "knowledge_commons_profiles/cron/tests/", "-v",
-            ])
     finally:
         if not keep_up:
             step([*compose, "down"])

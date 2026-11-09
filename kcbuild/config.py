@@ -23,7 +23,6 @@ class Target:
     ecr_repository: str
     ecr_repository_traefik: str
     ecr_repository_idms: str
-    ecr_repository_monitor: str | None
     ecs_cluster: str
     ecs_service: str
     autoscale_group: str
@@ -34,14 +33,11 @@ class Target:
 
     @property
     def repositories(self) -> list[str]:
-        repos = [
+        return [
             self.ecr_repository,
             self.ecr_repository_traefik,
             self.ecr_repository_idms,
         ]
-        if self.ecr_repository_monitor:
-            repos.append(self.ecr_repository_monitor)
-        return repos
 
 
 def ecr_registry(
@@ -58,7 +54,6 @@ TARGETS: dict[str, Target] = {
         ecr_repository="kcprofiles",
         ecr_repository_traefik="kcprofiles-traefik",
         ecr_repository_idms="kcprofiles-idms",
-        ecr_repository_monitor="kcprofiles-monitor",
         ecs_cluster="kcprofiles",
         ecs_service="kcprofiles-blue",
         autoscale_group=(
@@ -74,7 +69,6 @@ TARGETS: dict[str, Target] = {
         ecr_repository="kcprofiles-dev",
         ecr_repository_traefik="kcprofiles-traefik-dev",
         ecr_repository_idms="kcprofiles-idms-dev",
-        ecr_repository_monitor=None,
         ecs_cluster="kcprofiles-dev-2",
         ecs_service="kcprofiles-dev",
         autoscale_group=(

@@ -201,10 +201,6 @@ def lint(app: AppContext) -> None:
     help="Docker mode: skip `makemigrations --check`.",
 )
 @click.option(
-    "--skip-cron-tests", is_flag=True,
-    help="Docker mode: skip the cron/monitor pytest run.",
-)
-@click.option(
     "--keep-up", is_flag=True,
     help="Docker mode: leave the compose stack running afterwards.",
 )
@@ -223,7 +219,6 @@ def test(  # noqa: PLR0913
     env_file: str,
     labels: tuple[str, ...],
     skip_migration_check: bool,
-    skip_cron_tests: bool,
     keep_up: bool,
     rebuild_base: bool,
 ) -> None:
@@ -240,7 +235,6 @@ def test(  # noqa: PLR0913
         docker_test_stage(
             app,
             check_migrations=not skip_migration_check,
-            cron_tests=not skip_cron_tests,
             keep_up=keep_up,
             rebuild_base=rebuild_base,
         )
@@ -270,7 +264,6 @@ def docker_test_stage(
     app: AppContext,
     *,
     check_migrations: bool = True,
-    cron_tests: bool = True,
     keep_up: bool = False,
     rebuild_base: bool = False,
 ) -> None:
@@ -284,7 +277,6 @@ def docker_test_stage(
         app.repo,
         app.registry,
         check_migrations=check_migrations,
-        cron_tests=cron_tests,
         keep_up=keep_up,
     )
 

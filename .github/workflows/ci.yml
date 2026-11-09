@@ -87,9 +87,6 @@ jobs:
       - name: Run Django Tests
         run: docker compose -f docker-compose.github.yml run --rm django uv run coverage run manage.py test
 
-      - name: Run Cron/Monitor Tests (pytest)
-        run: docker compose -f docker-compose.github.yml run --rm django uv run python -m pytest knowledge_commons_profiles/cron/tests/ -v
-
       - name: Generate lcov
         run: docker compose -f docker-compose.github.yml run --rm django uv run coverage lcov
 
@@ -120,7 +117,6 @@ jobs:
       AWS_REGION: us-east-1
       ECR_REPOSITORY: kcprofiles
       ECR_REPOSITORY_TRAEFIK: kcprofiles-traefik
-      ECR_REPOSITORY_MONITOR: kcprofiles-monitor
       ECR_REPOSITORY_IDMS: kcprofiles-idms
       ECS_CLUSTER: kcprofiles
       ECS_SERVICE: kcprofiles-blue
@@ -232,23 +228,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_IDMS:latest
 
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Build, tag, and push monitor image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ steps.bump_commit.outputs.sha }}
-          VERSION_TAG: ${{ steps.project_version.outputs.version }}
-          BUILD_TAG: ${{ steps.project_version.outputs.build }}
-        run: |
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG \
-            $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
-
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$BUILD_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:$VERSION_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_MONITOR:latest
 
       - name: Push bump commit and tag to main
         # Only happens after every ECR push above has succeeded; a failure

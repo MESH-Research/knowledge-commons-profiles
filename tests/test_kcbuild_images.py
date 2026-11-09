@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 SHA = "0123456789abcdef0123456789abcdef01234567"
 REG = "755997884632.dkr.ecr.us-east-1.amazonaws.com"
-PROD_PUSHES = 16  # 4 repositories x (sha, build, version, latest)
+PROD_PUSHES = 12  # 3 repositories x (sha, build, version, latest)
 DEV_PUSHES = 9  # 3 repositories x (sha, build, latest)
 
 
@@ -116,17 +116,14 @@ def test_production_retag_pairs_cover_build_and_version_tags():
     pairs = images.retag_pairs(target, REG, tags)
 
     expected = []
-    for repo in (
-        "kcprofiles", "kcprofiles-traefik", "kcprofiles-idms",
-        "kcprofiles-monitor",
-    ):
+    for repo in ("kcprofiles", "kcprofiles-traefik", "kcprofiles-idms"):
         source = f"{REG}/{repo}:{SHA}"
         expected.append((source, f"{REG}/{repo}:v4.57.0-0123456"))
         expected.append((source, f"{REG}/{repo}:v4.57.0"))
     assert pairs == expected
 
 
-def test_dev_retag_pairs_have_no_version_tag_and_no_monitor():
+def test_dev_retag_pairs_have_no_version_tag():
     target = get_target("dev")
     info = BuildInfo(sha=SHA, branch="dev", version="4.57.0")
     tags = compute_tags(target, info)
@@ -177,7 +174,7 @@ def test_push_refs_lists_every_tag_the_release_job_pushes():
             assert f"{REG}/{repo}:{tag}" in refs
 
 
-def test_push_refs_for_dev_omits_version_and_monitor():
+def test_push_refs_for_dev_omits_version():
     target = get_target("dev")
     info = BuildInfo(sha=SHA, branch="dev", version="4.57.0")
     tags = compute_tags(target, info)

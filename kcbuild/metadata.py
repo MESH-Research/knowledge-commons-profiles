@@ -104,8 +104,6 @@ def compose_environment(
         "APP_BRANCH": info.branch,
         "GIT_SHA": info.sha,
     }
-    if target.ecr_repository_monitor:
-        env["ECR_REPOSITORY_MONITOR"] = target.ecr_repository_monitor
     if tags.version_tag:
         env["VERSION_TAG"] = tags.version_tag
     return env

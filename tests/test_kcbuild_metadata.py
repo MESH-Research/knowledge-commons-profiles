@@ -91,20 +91,15 @@ def test_compose_environment_supplies_every_variable_compose_reads(
     assert env["GIT_SHA"] == SHA
 
 
-def test_compose_environment_includes_monitor_only_for_production():
+def test_compose_environment_has_no_monitor_repository():
     info = metadata.BuildInfo(sha=SHA, branch="main", version="4.57.0")
 
-    production = get_target("production")
-    prod_env = metadata.compose_environment(
-        production, "reg", info, metadata.compute_tags(production, info),
-    )
-    dev = get_target("dev")
-    dev_env = metadata.compose_environment(
-        dev, "reg", info, metadata.compute_tags(dev, info),
-    )
-
-    assert prod_env["ECR_REPOSITORY_MONITOR"] == "kcprofiles-monitor"
-    assert "ECR_REPOSITORY_MONITOR" not in dev_env
+    for name in ("production", "dev"):
+        target = get_target(name)
+        env = metadata.compose_environment(
+            target, "reg", info, metadata.compute_tags(target, info),
+        )
+        assert "ECR_REPOSITORY_MONITOR" not in env
 
 
 def test_git_queries_are_marked_safe_for_dry_runs(tmp_path: Path):
