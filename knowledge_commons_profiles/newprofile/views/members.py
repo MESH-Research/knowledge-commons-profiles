@@ -204,6 +204,49 @@ def _has_network_membership(profile: Profile, network_lower: str) -> bool:
     )
 
 
+def network_member_candidates(
+    qs: QuerySet[Profile, Profile], network: str
+) -> QuerySet[Profile, Profile]:
+    """
+    Narrow a profile queryset to possible members of the network.
+
+    A cheap substring prefilter on the is_member_of JSON and the
+    role_overrides array. It yields no false negatives (a matching role
+    must contain the network name verbatim) but can yield false
+    positives (e.g. a role synced as false), so each candidate must
+    still be verified with _has_network_membership.
+    """
+    return qs.annotate(
+        role_overrides_text=Cast("role_overrides", TextField())
+    ).filter(
+        Q(is_member_of__icontains=f'"{network}"')
+        | Q(role_overrides_text__icontains=network)
+    )
+
+
+def network_member_ids(network: str) -> list[int]:
+    """
+    Primary keys of every profile whose final roles include the network.
+
+    ``network`` is the canonical network name (the output of
+    resolve_network_name, as carried on request.network). Membership is
+    decided exactly as on the network members listing: prefilter in the
+    database, then verify against each profile's final roles.
+    """
+    network_lower = network.lower()
+
+    # only the columns the final-roles merge reads
+    candidates = network_member_candidates(
+        Profile.objects.all(), network
+    ).only("username", "is_member_of", "role_overrides")
+
+    return [
+        profile.id
+        for profile in candidates
+        if _has_network_membership(profile, network_lower)
+    ]
+
+
 def _paginate_profile_list(
     rows_all: list[Profile],
     cursor: str | None,
@@ -271,9 +314,8 @@ def network_members(request, network_name):
     """
     List members whose final roles include the given network.
 
-    The database narrows candidates with a cheap substring prefilter on
-    the is_member_of JSON and the role_overrides array (no false
-    negatives: a matching role must contain the network name verbatim).
+    The database narrows candidates with a cheap substring prefilter
+    (network_member_candidates: no false negatives).
     Final membership is then verified per profile via the canonical
     get_external_memberships merge, so this listing always agrees with
     the manage-roles page.
@@ -293,14 +335,12 @@ def network_members(request, network_name):
     search = request.POST.get("username", "").strip()
 
     candidates = with_last_login(
-        Profile.objects.filter(name__isnull=False)
-        .exclude(name__exact="")
-        .annotate(role_overrides_text=Cast("role_overrides", TextField()))
-        .filter(
-            Q(is_member_of__icontains=f'"{network}"')
-            | Q(role_overrides_text__icontains=network)
-        )
-        .prefetch_related(
+        network_member_candidates(
+            Profile.objects.filter(name__isnull=False).exclude(
+                name__exact=""
+            ),
+            network,
+        ).prefetch_related(
             Prefetch(
                 "academic_interests",
                 queryset=AcademicInterest.objects.all(),

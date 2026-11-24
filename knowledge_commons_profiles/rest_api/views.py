@@ -21,6 +21,9 @@ from knowledge_commons_profiles.cilogon.views import RedirectBehaviour
 from knowledge_commons_profiles.cilogon.views import app_logout
 from knowledge_commons_profiles.newprofile.models import Profile
 from knowledge_commons_profiles.newprofile.models import WpBpGroup
+from knowledge_commons_profiles.newprofile.views.members import (
+    network_member_ids,
+)
 from knowledge_commons_profiles.rest_api.authentication import (
     HasStaticBearerToken,
 )
@@ -109,6 +112,10 @@ class ProfileListView(generics.ListAPIView):
     List all profiles. Publicly readable: anonymous callers receive the
     redacted view of each profile (no email addresses); callers presenting
     the API bearer token receive the full view.
+
+    The list is network aware, like the /members/ directory: on a network
+    host (e.g. stemedplus.profile.hcommons.org) it only contains the
+    members of that network; on the root domain it contains everyone.
     """
 
     authentication_classes = [StaticBearerAuthentication]
@@ -121,6 +128,16 @@ class ProfileListView(generics.ListAPIView):
 
     serializer_class = ProfileSerializer
     pagination_class = ProfileCursorPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # set by NetworkSubdomainMiddleware; None on the root domain
+        network = getattr(self.request, "network", None)
+        if network:
+            queryset = queryset.filter(pk__in=network_member_ids(network))
+
+        return queryset
 
 
 class ProfileDetailView(generics.RetrieveAPIView):

@@ -46,6 +46,58 @@ class ResolveNetworkNameTests(TestCase):
         self.assertEqual(resolve_network_name("up"), "up")
 
 
+class NetworkMemberIdsTests(TestCase):
+    """The canonical 'who is in this network' answer, by primary key."""
+
+    def setUp(self):
+        self.synced = _make_profile("alice", is_member_of={"STEMED+": True})
+        self.synced_false = _make_profile(
+            "bob", is_member_of={"STEMED+": False}
+        )
+        self.override = _make_profile("carol", role_overrides=["STEMED+"])
+        self.both = _make_profile(
+            "dave",
+            is_member_of={"STEMED+": False, "MLA": True},
+            role_overrides=["STEMED+"],
+        )
+        self.other_network = _make_profile("erin", is_member_of={"MLA": True})
+        self.no_roles = _make_profile("frank")
+
+    def test_includes_synced_and_override_members_only(self):
+        self.assertEqual(
+            set(members.network_member_ids("STEMED+")),
+            {self.synced.id, self.override.id, self.both.id},
+        )
+
+    def test_excludes_roles_synced_as_false(self):
+        self.assertNotIn(
+            self.synced_false.id, members.network_member_ids("STEMED+")
+        )
+
+    def test_network_name_is_matched_case_insensitively(self):
+        self.assertEqual(
+            set(members.network_member_ids("mla")),
+            {self.both.id, self.other_network.id},
+        )
+
+    def test_network_with_no_members_is_empty(self):
+        self.assertEqual(list(members.network_member_ids("HASTAC")), [])
+
+    def test_does_not_match_a_network_whose_name_merely_contains_it(self):
+        lookalike = _make_profile("gina", is_member_of={"MLAX": True})
+
+        self.assertNotIn(lookalike.id, members.network_member_ids("mla"))
+
+    def test_agrees_with_the_final_roles_of_each_profile(self):
+        expected = {
+            profile.id
+            for profile in Profile.objects.all()
+            if profile.get_external_memberships().get("STEMED+")
+        }
+
+        self.assertEqual(set(members.network_member_ids("STEMED+")), expected)
+
+
 @override_settings(NETWORK_DISPLAY_NAMES=DISPLAY_NAMES)
 class ResolveNetworkDisplayNameTests(TestCase):
     def test_mapped_network_gets_display_name(self):

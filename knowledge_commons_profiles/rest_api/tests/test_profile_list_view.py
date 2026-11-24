@@ -4,8 +4,12 @@ Tests for the public members list endpoint (/api/v1/members/).
 The list is anonymously readable, but anonymous callers must only ever see
 the redacted view of a profile: the same private fields that the detail
 endpoint withholds from them.
+
+The list is also network aware: on a network host it only contains the
+members of that network, exactly as the /members/ directory does.
 """
 
+import json
 from unittest import mock
 
 from django.test import TestCase
@@ -175,3 +179,162 @@ class TestProfileListViewAccess(TestCase):
         for row in rows:
             self.assertFalse(PRIVATE_FIELDS & set(row))
         self.assertNotIn("@example.", second.content.decode())
+
+
+SOCIETY_MAPPINGS = {"stemedplus": "STEMED+", "hastac": "HASTAC"}
+DISPLAY_NAMES = {
+    "stemed+": "STEMEd+ Commons",
+    "hastac": "HASTAC",
+    "mla": "Modern Language Association",
+}
+BASE_HOST = "profile.hcommons.org"
+STEMED_HOST = f"stemedplus.{BASE_HOST}"
+MLA_HOST = f"MLA.{BASE_HOST}"
+
+
+@override_settings(
+    STATIC_API_BEARER=TEST_TOKEN,
+    CACHES=LOCMEM_CACHES,
+    ALLOWED_HOSTS=["*"],
+    KNOWN_SOCIETY_MAPPINGS=SOCIETY_MAPPINGS,
+    NETWORK_DISPLAY_NAMES=DISPLAY_NAMES,
+    NETWORK_SUBDOMAIN_BASE_DOMAINS=[BASE_HOST],
+    NETWORK_SUBDOMAIN_IGNORED=["www"],
+    NETWORK_HOST_ALIASES={"profile.stemedplus.org": "stemedplus"},
+)
+class TestProfileListViewNetworkScoping(TestCase):
+    """The members list is scoped to the network of the requesting host."""
+
+    def setUp(self):
+        patcher = mock.patch.object(
+            StaticBearerAuthentication, "static_token", TEST_TOKEN
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        self.client = APIClient()
+        self.url = reverse("profiles_list_view")
+
+        self._make("alice", is_member_of={"STEMED+": True, "MLA": False})
+        self._make("bob", is_member_of={"MLA": True})
+        self._make("carol", role_overrides=["STEMED+"])
+        self._make("dave")
+        self._make("erin", is_member_of={"STEMED+": False})
+        self._make("frank", role_overrides=["MLA"])
+
+    def _make(self, username, is_member_of=None, role_overrides=None, **kw):
+        kw.setdefault("name", username.title())
+        return Profile.objects.create(
+            username=username,
+            email=f"{username}@example.org",
+            emails=[f"{username}@example.org"],
+            is_member_of=json.dumps(is_member_of) if is_member_of else None,
+            role_overrides=role_overrides or [],
+            **kw,
+        )
+
+    def _get(self, host, token=None, url=None):
+        headers = {"host": host}
+        if token is not None:
+            headers["authorization"] = f"Bearer {token}"
+        return self.client.get(url or self.url, headers=headers)
+
+    def _all_usernames(self, host, token=None):
+        """Walk every page of the list on a host, collecting usernames."""
+        usernames = []
+        url = self.url
+        while url:
+            response = self._get(host, token=token, url=url)
+            self.assertEqual(response.status_code, 200)
+            body = response.json()
+            usernames.extend(row["username"] for row in body["results"])
+            url = body["next"]
+        return usernames
+
+    def test_root_domain_lists_every_member(self):
+        self.assertEqual(
+            set(self._all_usernames(BASE_HOST)),
+            {"alice", "bob", "carol", "dave", "erin", "frank"},
+        )
+
+    def test_network_subdomain_lists_only_that_networks_members(self):
+        self.assertEqual(
+            set(self._all_usernames(STEMED_HOST)), {"alice", "carol"}
+        )
+
+    def test_other_network_subdomain_lists_only_its_role_holders(self):
+        self.assertEqual(set(self._all_usernames(MLA_HOST)), {"bob", "frank"})
+
+    def test_dedicated_network_host_is_scoped_like_a_subdomain(self):
+        self.assertEqual(
+            set(self._all_usernames("profile.stemedplus.org")),
+            {"alice", "carol"},
+        )
+
+    def test_network_with_no_members_gives_an_empty_list(self):
+        response = self._get(f"hastac.{BASE_HOST}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"], [])
+
+    def test_unknown_network_host_is_not_found(self):
+        response = self._get(f"notanetwork.{BASE_HOST}")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_ignored_subdomain_is_treated_as_the_root_domain(self):
+        self.assertEqual(len(self._all_usernames(f"www.{BASE_HOST}")), 6)
+
+    def test_anonymous_network_list_is_redacted(self):
+        response = self._get(STEMED_HOST)
+
+        rows = response.json()["results"]
+        self.assertTrue(rows)
+        for row in rows:
+            self.assertFalse(PRIVATE_FIELDS & set(row))
+        self.assertNotIn("@example.org", response.content.decode())
+
+    def test_authenticated_network_list_is_scoped_and_unredacted(self):
+        response = self._get(STEMED_HOST, token=TEST_TOKEN)
+
+        rows = {row["username"]: row for row in response.json()["results"]}
+        self.assertEqual(set(rows), {"alice", "carol"})
+        self.assertEqual(rows["alice"]["email"], "alice@example.org")
+        self.assertEqual(rows["carol"]["emails"], ["carol@example.org"])
+
+    def test_network_scoping_holds_across_pages(self):
+        for i in range(30):
+            self._make(f"mla{i:03d}", is_member_of={"MLA": True})
+            self._make(f"other{i:03d}", is_member_of={"STEMED+": True})
+
+        usernames = self._all_usernames(MLA_HOST)
+
+        self.assertEqual(
+            sorted(usernames),
+            sorted(["bob", "frank"] + [f"mla{i:03d}" for i in range(30)]),
+        )
+
+    def test_network_list_matches_the_members_directory(self):
+        """The API and /members/ agree on who belongs to a network."""
+        with mock.patch(
+            "knowledge_commons_profiles.newprofile.views.members."
+            "get_profile_photo",
+            return_value="",
+        ):
+            directory = self.client.get(
+                "/members/", headers={"host": STEMED_HOST}
+            )
+        directory_usernames = {
+            profile.username for profile in directory.context["profiles"]
+        }
+
+        self.assertTrue(directory_usernames)
+        self.assertEqual(
+            set(self._all_usernames(STEMED_HOST)), directory_usernames
+        )
+
+    def test_network_member_without_a_display_name_is_still_listed(self):
+        self._make("nameless", is_member_of={"MLA": True}, name="")
+
+        self.assertIn("nameless", self._all_usernames(MLA_HOST))
+        self.assertIn("nameless", self._all_usernames(BASE_HOST))
