@@ -27,6 +27,11 @@ from knowledge_commons_profiles.rest_api.utils import wp_unslash
 
 logger = logging.getLogger(__name__)
 
+# Profile fields that are only ever shown to callers holding the API token.
+# Anonymous callers get every other field, on both the members list and the
+# member detail endpoints.
+PRIVATE_PROFILE_FIELDS = ("email", "emails")
+
 
 class GroupMembershipSerializer(serializers.Serializer):
     """
@@ -163,18 +168,20 @@ class ProfileSerializer(serializers.ModelSerializer):
     academic_interests = AcademicInterestSerializer(many=True, read_only=True)
     url = serializers.SerializerMethodField()
 
-    def __init__(self, *args, **kwargs):
-        # Don't return emails when listing users
-        try:
-            request = self.context.get("request")
-            logged_in = bool(request and request.auth)
-        except (KeyError, AttributeError):
-            logged_in = False
+    def get_fields(self):
+        # Don't return emails to anonymous callers. This is resolved here,
+        # rather than in __init__, because the request only becomes
+        # reachable once the serializer is bound to its (list) parent.
+        fields = super().get_fields()
 
-        if not logged_in and "email" in self.fields:
-            del self.fields["email"]
+        request = self.context.get("request")
+        has_full_access = bool(getattr(request, "auth", None))
 
-        super().__init__(*args, **kwargs)
+        if not has_full_access:
+            for field_name in PRIVATE_PROFILE_FIELDS:
+                fields.pop(field_name, None)
+
+        return fields
 
     class Meta:
         """
@@ -260,8 +267,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         logged_in = False if not request else bool(request.auth)
 
         if not logged_in:
-            del self.fields["email"]
-            del self.fields["emails"]
+            for field_name in PRIVATE_PROFILE_FIELDS:
+                del self.fields[field_name]
 
         super().__init__(*args, **kwargs)
 

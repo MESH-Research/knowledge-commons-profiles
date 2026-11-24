@@ -106,11 +106,13 @@ class SubSingleView(generics.ListAPIView):
 
 class ProfileListView(generics.ListAPIView):
     """
-    List all profiles
+    List all profiles. Publicly readable: anonymous callers receive the
+    redacted view of each profile (no email addresses); callers presenting
+    the API bearer token receive the full view.
     """
 
     authentication_classes = [StaticBearerAuthentication]
-    permission_classes = [HasStaticBearerToken]
+    permission_classes = [AllowAny]
     queryset = (
         Profile.objects.all()
         .prefetch_related("academic_interests")
