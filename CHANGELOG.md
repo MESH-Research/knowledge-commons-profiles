@@ -1,3 +1,10 @@
+## 4.72.0 (2026-11-24)
+
+### Feat
+
+- **api**: scope the members list to the requesting network
+- **api**: make the members list publicly readable
+
 ## 4.71.1 (2026-11-09)
 
 ### Refactor
